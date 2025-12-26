@@ -7,12 +7,12 @@ import Image from "next/image";
 const heroSlides = [
   {
     type: "image",
-    src: "/kankana-silks/DSC07534.jpg",
+    src: "https://nfteccx7oojuechu.public.blob.vercel-storage.com/static/kankana-silks/DSC07534.jpg",
     alt: "Luxury silk saree with traditional weave",
   },
   {
     type: "image",
-    src: "/kankana-silks/DSC06184.jpg",
+    src: "https://nfteccx7oojuechu.public.blob.vercel-storage.com/static/kankana-silks/DSC06184.jpg",
     alt: "Handcrafted heritage saree",
   },
   {
