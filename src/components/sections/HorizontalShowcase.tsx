@@ -12,28 +12,28 @@ const sarees = [
     title: "Kanchipuram Silk",
     price: "₹24,999",
     image:
-      "https://nfteccx7oojuechu.public.blob.vercel-storage.com/static/kankana-silks/DSC06749.jpg",
+      "/kankana-silks/DSC06749.jpg",
     description: "Traditional South Indian silk with rich zari work",
   },
   {
     title: "Banarasi Gold",
     price: "₹18,499",
     image:
-      "https://nfteccx7oojuechu.public.blob.vercel-storage.com/static/kankana-silks/DSC06187.jpg",
+      "/kankana-silks/DSC06187.jpg",
     description: "Elegant Banarasi weave with golden motifs",
   },
   {
     title: "Chanderi Grace",
     price: "₹12,999",
     image:
-      "https://nfteccx7oojuechu.public.blob.vercel-storage.com/static/kankana-silks/DSC07417.jpg",
+      "/kankana-silks/DSC07417.jpg",
     description: "Lightweight Chanderi with delicate patterns",
   },
   {
     title: "Tussar Elegance",
     price: "₹15,999",
     image:
-      "https://nfteccx7oojuechu.public.blob.vercel-storage.com/static/kankana-silks/DSC06719.jpg",
+      "/kankana-silks/DSC06719.jpg",
     description: "Natural tussar silk with contemporary design",
   },
 ];

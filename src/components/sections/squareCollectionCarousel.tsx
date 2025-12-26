@@ -9,27 +9,27 @@ const cards = [
     title: "Premium",
     subtitle: "Handwoven Silks",
     image:
-      "https://nfteccx7oojuechu.public.blob.vercel-storage.com/static/kankana-silks/DSC08313.jpg",
+      "/kankana-silks/DSC08313.jpg",
   },
   {
     title: "Affordable",
     subtitle: "Everyday Elegance",
-    image: "https://nfteccx7oojuechu.public.blob.vercel-storage.com/static/kankana-silks/DSC08020.jpg",
+    image: "/kankana-silks/DSC08020.jpg",
   },
   {
     title: "Wedding",
     subtitle: "Bridal Heritage",
-    image: "https://nfteccx7oojuechu.public.blob.vercel-storage.com/static/kankana-silks/DSC07981.jpg",
+    image: "/kankana-silks/DSC07981.jpg",
   },
   {
     title: "Contemporary",
     subtitle: "Modern Drapes",
-    image: "https://nfteccx7oojuechu.public.blob.vercel-storage.com/static/kankana-silks/DSC07689.jpg",
+    image: "/kankana-silks/DSC07689.jpg",
   },
   {
     title: "Luxury",
     subtitle: "Limited Edition",
-    image: "https://nfteccx7oojuechu.public.blob.vercel-storage.com/static/kankana-silks/DSC07456.jpg",
+    image: "/kankana-silks/DSC07456.jpg",
   },
 ];
 

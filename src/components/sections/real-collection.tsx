@@ -9,25 +9,25 @@ const collections = [
     title: "Premium",
     subtitle: "Handwoven Silks",
     image:
-      "https://nfteccx7oojuechu.public.blob.vercel-storage.com/static/kankana-silks/DSC06565.jpg",
+      "/kankana-silks/DSC06565.jpg",
   },
   {
     title: "Affordable",
     subtitle: "Everyday Elegance",
     image:
-      "https://nfteccx7oojuechu.public.blob.vercel-storage.com/static/kankana-silks/DSC07193.jpg",
+      "/kankana-silks/DSC07193.jpg",
   },
   {
     title: "Wedding",
     subtitle: "Bridal Heritage",
     image:
-      "https://nfteccx7oojuechu.public.blob.vercel-storage.com/static/kankana-silks/DSC06728.jpg",
+      "/kankana-silks/DSC06728.jpg",
   },
   {
     title: "Contemporary",
     subtitle: "Modern Drapes",
     image:
-      "https://nfteccx7oojuechu.public.blob.vercel-storage.com/static/kankana-silks/DSC07287.jpg",
+      "/kankana-silks/DSC07287.jpg",
   },
 ];
 
