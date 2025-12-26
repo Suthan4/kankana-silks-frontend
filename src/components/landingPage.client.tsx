@@ -1,6 +1,4 @@
-"use client";
 
-import dynamic from "next/dynamic";
 import HorizontalShowcase from "./sections/HorizontalShowcase";
 import PremiumCollectionCarousel from "./sections/premium-collection";
 import VerticalParallaxHero from "./sections/verticalParallaxScroll";
