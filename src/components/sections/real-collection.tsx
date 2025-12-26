@@ -57,7 +57,9 @@ export default function RealCollection() {
     <section className="relative w-full overflow-hidden bg-white py-24">
       {/* HEADER */}
       <div className="px-16 mb-12">
-        <h2 className="text-5xl font-light tracking-tight">Premium Collections</h2>
+        <h2 className="text-5xl font-light tracking-tight">
+          Premium Collections
+        </h2>
       </div>
 
       {/* CHEVRONS */}
