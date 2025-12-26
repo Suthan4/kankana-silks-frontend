@@ -4,6 +4,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
+
 const heroSlides = [
   {
     type: "image",
@@ -23,7 +24,6 @@ const heroSlides = [
   },
 ];
 
-const MotionImage = motion(Image);
 export default function HeroSection() {
   const ref = useRef(null);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
@@ -37,6 +37,7 @@ export default function HeroSection() {
 
   const y = useTransform(scrollYProgress, [0, 1], [0, 150]);
 
+  // Auto-slide effect
   useEffect(() => {
     if (!autoPlay) return;
     const interval = setInterval(() => {
@@ -45,6 +46,7 @@ export default function HeroSection() {
     return () => clearInterval(interval);
   }, [autoPlay]);
 
+  // Video control
   useEffect(() => {
     videoRefs.current.forEach((video, index) => {
       if (video) {
@@ -58,7 +60,7 @@ export default function HeroSection() {
     });
   }, [currentSlide]);
 
-  const goToSlide = (index:number) => {
+  const goToSlide = (index: number) => {
     setCurrentSlide(index);
     setAutoPlay(false);
   };
@@ -81,43 +83,44 @@ export default function HeroSection() {
       className="relative w-full overflow-hidden bg-background"
     >
       <div className="relative w-full h-screen flex items-center justify-center overflow-hidden">
-        {/* Carousel Slides */}
+        {/* Static Image / Video Layer */}
         {heroSlides.map((slide, index) => (
-          <motion.div
+          <div
             key={index}
-            className="absolute inset-0"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: index === currentSlide ? 1 : 0 }}
-            transition={{ duration: 0.8, ease: "easeInOut" }}
+            className={`absolute inset-0 transition-opacity duration-800 ${
+              index === currentSlide ? "opacity-100" : "opacity-0"
+            }`}
           >
             {slide.type === "image" ? (
-              <MotionImage
+              <Image
                 src={slide.src}
                 alt={slide.alt}
                 className="w-full h-full object-cover"
-                style={{ y}}
-                width={500}
-                height={500}
+                fill
                 priority
               />
             ) : (
-              <motion.video
+              <video
                 ref={(el) => {
                   videoRefs.current[index] = el;
                 }}
                 src={slide.src}
                 poster={slide.poster}
                 className="w-full h-full object-cover"
-                style={{ y }}
                 loop
                 muted
                 playsInline
               />
             )}
-            <div className="absolute inset-0 bg-black/20" />
-          </motion.div>
+            {/* Overlay animated, not image */}
+            <motion.div
+              className="absolute inset-0 bg-black/20"
+              style={{ y }}
+            />
+          </div>
         ))}
 
+        {/* Animated Content */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -152,6 +155,7 @@ export default function HeroSection() {
           </motion.button>
         </motion.div>
 
+        {/* Navigation Arrows */}
         <button
           onClick={prevSlide}
           className="absolute left-6 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-white/20 hover:bg-white/40 transition-all backdrop-blur-sm"
@@ -167,6 +171,7 @@ export default function HeroSection() {
           <ChevronRight className="w-6 h-6 text-white" />
         </button>
 
+        {/* Dots */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-2">
           {heroSlides.map((_, index) => (
             <motion.button
