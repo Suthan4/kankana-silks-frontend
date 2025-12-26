@@ -47,21 +47,21 @@ export default function AuthModal() {
           className="rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden my-auto flex flex-col"
         >
           {/* Header - Fixed */}
-          <div className="relative bg-white/90 p-4 sm:p-6 text-black flex-shrink-0">
+          <div className="relative bg-white/80 p-4 sm:p-6 text-black flex-shrink-0">
             <button
               onClick={closeModal}
               className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 hover:bg-white/20 rounded-full transition"
             >
               <X className="w-5 h-5" />
             </button>
-            {/* <motion.div
+            <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring" }}
               className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4"
             >
               <User className="w-6 h-6 sm:w-8 sm:h-8" />
-            </motion.div> */}
+            </motion.div>
             <h2 className="text-xl sm:text-2xl font-bold text-center">
               {mode === "login"
                 ? "Welcome Back"

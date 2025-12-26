@@ -11,6 +11,7 @@ import {
   X,
   Search,
   ChevronDown,
+  Home,
 } from "lucide-react";
 import Tooltip from "./ui/Tooltip";
 import Image from "next/image";
@@ -20,7 +21,7 @@ import Link from "next/link";
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeNav, setActiveNav] = useState("WOMENSWEAR");
-  const [activeIcon, setActiveIcon] = useState("Wishlist");
+  const [activeIcon, setActiveIcon] = useState("Home");
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const openModal = useAuthModal((state) => state.openModal);
   const [showNav, setShowNav] = useState(true);
@@ -114,10 +115,10 @@ function Header() {
 
   const icons = [
     {
-      name: "Video purchasing",
-      icon: Video,
+      name: "Home",
+      icon: Home,
       type: "link",
-      url: "/my-account/video-appointment",
+      url: "/",
     },
     {
       name: "Whatsapp connect",
@@ -182,9 +183,8 @@ function Header() {
               width={200}
               height={200}
               priority
-              // className="h-12 w-auto object-contain"
               className={`transition-all duration-300 ${
-                showNav ? "h-10" : "h-14"
+                showNav ? "lg:h-10" : "lg:h-14"
               } w-auto object-contain`}
             />
           </motion.div>
@@ -235,7 +235,7 @@ function Header() {
                   }`}
                   onClick={() => {
                     if (item.type === "modal") {
-                      openModal("login"); // 🔥 open sign-in modal
+                      () => openModal("login"); // 🔥 open sign-in modal
                     }
                     if (item.type === "action") {
                       item.onClick?.();
@@ -396,7 +396,11 @@ function Header() {
             )}
           </motion.button>
 
-          <img src="/image-removebg-preview.png" alt="knakana_silks" />
+          <img
+            src="/image-removebg-preview.png"
+            className="h-10 w-auto"
+            alt="knakana_silks"
+          />
 
           <motion.button whileTap={{ scale: 0.9 }} className="p-2">
             <Search className="w-5 h-5" />
@@ -488,7 +492,14 @@ function Header() {
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.3, delay: 0.5 + index * 0.08 }}
                 whileTap={{ scale: 0.85 }}
-                onClick={() => setActiveIcon(item.name)}
+                onClick={() => {
+                  if (item.type === "modal") {
+                    openModal("login"); // 🔥 open sign-in modal
+                  }
+                  if (item.type === "action") {
+                    item.onClick?.();
+                  }
+                }}
                 className="flex flex-col items-center gap-1 cursor-pointer p-2 relative"
               >
                 {isActive && (
