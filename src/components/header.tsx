@@ -376,11 +376,11 @@ function Header() {
         className="md:hidden sticky top-0 z-50 bg-white shadow-md"
       >
         {/* Promo Banner Mobile */}
-        <div className="bg-gradient-to-r from-amber-100 via-amber-50 to-amber-100 text-center py-2 px-4">
+        {/* <div className="bg-gradient-to-r from-amber-100 via-amber-50 to-amber-100 text-center py-2 px-4">
           <p className="text-[10px] font-medium text-gray-800">
             ✨ 15% OFF FIRST PURCHASE
           </p>
-        </div>
+        </div> */}
 
         {/* Top Bar */}
         <div className="flex items-center justify-between px-4 py-3">

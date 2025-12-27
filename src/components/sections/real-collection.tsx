@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Image from "next/image";
 import gsap from "gsap";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -30,74 +31,100 @@ const collections = [
 export default function RealCollection() {
   const trackRef = useRef<HTMLDivElement>(null);
   const indexRef = useRef(0);
+  const getMaxIndex = () => collections.length - 1;
 
-  const slideTo = (direction: "next" | "prev") => {
+  const slideTo = (dir: "next" | "prev") => {
     if (!trackRef.current) return;
 
-    const maxIndex = collections.length - 1;
+    const slides = trackRef.current.children;
+    const maxIndex = slides.length - 1;
 
-    if (direction === "next") {
-      indexRef.current = Math.min(indexRef.current + 1, maxIndex);
-    } else {
-      indexRef.current = Math.max(indexRef.current - 1, 0);
-    }
+    if (dir === "next" && indexRef.current >= maxIndex) return;
+    if (dir === "prev" && indexRef.current <= 0) return;
+
+    indexRef.current =
+      dir === "next" ? indexRef.current + 1 : indexRef.current - 1;
+
+    const slideEl = slides[0] as HTMLElement;
+    const slideWidth = slideEl.offsetWidth;
 
     gsap.to(trackRef.current, {
-      x: `-${indexRef.current * 80}vw`,
-      duration: 1,
+      x: -indexRef.current * slideWidth,
+      duration: 0.6,
       ease: "power3.out",
     });
   };
 
+  
+
   return (
-    <section className="relative w-full overflow-hidden bg-white py-24">
+    // <section className="relative w-full bg-white py-10">
+    <section className="relative w-full overflow-hidden bg-white py-24 md:py-10">
       {/* HEADER */}
-      <div className="px-16 mb-12">
-        <h2 className="text-5xl font-light tracking-tight">
+      <div className="px-4 mb-6 md:px-16 md:mb-12">
+        <h2 className="text-3xl md:text-5xl font-light tracking-tight">
           Premium Collections
         </h2>
       </div>
-
-      {/* CHEVRONS */}
-      <button
-        onClick={() => slideTo("prev")}
-        className="absolute left-6 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/80 backdrop-blur p-3 shadow"
-      >
-        <ChevronLeft size={28} />
-      </button>
-
-      <button
-        onClick={() => slideTo("next")}
-        className="absolute right-6 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/80 backdrop-blur p-3 shadow"
-      >
-        <ChevronRight size={28} />
-      </button>
-
-      {/* TRACK */}
-      <div className="pl-16">
-        <div ref={trackRef} className="flex gap-10 will-change-transform">
+      {/* SLIDER */}
+      <div className="relative overflow-hidden">
+        {/* TRACK */}
+        <div ref={trackRef} className="flex touch-none">
           {collections.map((item, i) => (
             <div
               key={i}
-              className="relative min-w-[80vw] h-[70vh] rounded-3xl overflow-hidden bg-gray-100"
+              className="
+  relative
+  w-screen flex-shrink-0
+  aspect-[3/4]
+
+  md:w-[80vw]
+  md:h-[70vh]
+  md:aspect-auto
+  md:ml-10
+  md:rounded-3xl
+
+  overflow-hidden
+  bg-gray-100
+"
             >
-              {/* IMAGE */}
-              <div
-                className="absolute inset-0 bg-cover bg-center"
-                style={{ backgroundImage: `url(${item.image})` }}
+              <Image
+                src={item.image}
+                alt={item.title}
+                fill
+                priority={i === 0}
+                sizes="100vw"
+                className="object-cover"
               />
 
-              {/* OVERLAY */}
+              {/* Overlay */}
               <div className="absolute inset-0 bg-black/30" />
 
-              {/* TEXT */}
-              <div className="relative z-10 h-full flex flex-col justify-end p-16 text-white">
-                <h3 className="text-4xl font-light">{item.title}</h3>
-                <p className="text-lg opacity-80 mt-2">{item.subtitle}</p>
+              {/* Text */}
+              <div className="absolute bottom-6 left-6 right-6 text-white">
+                <h3 className="text-2xl md:text-5xl font-light">
+                  {item.title}
+                </h3>
+                <p className="text- md:text-2xl opacity-80">{item.subtitle}</p>
               </div>
             </div>
           ))}
         </div>
+
+        {/* CHEVRONS */}
+        <button
+          onClick={() => slideTo("prev")}
+          className="absolute left-3 top-1/2 -translate-y-1/2 z-10 bg-white/80 rounded-full p-2 shadow"
+        >
+          <ChevronLeft />
+        </button>
+
+        <button
+          onClick={() => slideTo("next")}
+          className="absolute right-3 top-1/2 -translate-y-1/2 z-10 bg-white/80 rounded-full p-2 shadow"
+        >
+          <ChevronRight />
+        </button>
       </div>
     </section>
   );

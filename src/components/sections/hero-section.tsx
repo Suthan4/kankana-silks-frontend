@@ -89,11 +89,11 @@ export default function HeroSection() {
       style={{ contain: "layout paint size" }}
     >
       {/* ------------------ BACKGROUND MEDIA ------------------ */}
-      {/* <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 w-full h-full overflow-hidden">
         {heroSlides.map((slide, index) => (
           <motion.div
             key={index}
-            className="absolute inset-0"
+            className="absolute inset-0 w-full h-full"
             initial={{ opacity: 0 }}
             animate={{ opacity: index === currentSlide ? 1 : 0 }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
@@ -109,24 +109,22 @@ export default function HeroSection() {
                 className="object-cover"
               />
             ) : (
-              enableVideo && (
-                <video
-                  src={slide.src}
-                  poster={slide.poster}
-                  className="absolute inset-0 object-cover"
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  preload="metadata"
-                />
-              )
+              <video
+                src={slide.src}
+                poster={slide.poster}
+                className="w-full h-full object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+              />
             )}
           </motion.div>
         ))}
         <div className="absolute inset-0 bg-black/20" />
-      </div> */}
-      <div className="absolute inset-0">
+      </div>
+      {/* <div className="absolute inset-0">
         {heroSlides.map((slide, i) => (
           <motion.div
             key={i}
@@ -162,14 +160,14 @@ export default function HeroSection() {
             </motion.div>
           </motion.div>
         ))}
-      </div>
+      </div> */}
 
       {/* ------------------ CONTENT ------------------ */}
       <div className="relative z-10 flex h-full items-center justify-center px-4">
         <motion.div
           className="text-center max-w-4xl"
           initial={{ opacity: 0, y: 70 }}
-          animate={{ opacity: 1, y: "100%"}}
+          animate={{ opacity: 1, y: "100%" }}
           transition={{ duration: 1 }}
         >
           <h1 className="text-6xl md:text-8xl font-light text-white mb-6 tracking-tight">
