@@ -16,20 +16,17 @@ const slides: Slide[] = [
   {
     title: "Woven in Tradition",
     subtitle: "Centuries of craftsmanship in every drape",
-    image:
-      "/kankana-silks/DSC07288.jpg",
+    image: "/kankana-silks-webp/DSC07288.webp",
   },
   {
     title: "Pure Silk Stories",
     subtitle: "Sourced ethically. Crafted patiently.",
-    image:
-      "/kankana-silks/DSC07848.jpg",
+    image: "/kankana-silks-webp/DSC07848.webp",
   },
   {
     title: "Designed for Today",
     subtitle: "Timeless elegance for the modern woman",
-    image:
-      "/kankana-silks/DSC08243.jpg",
+    image: "/kankana-silks-webp/DSC08243.webp",
   },
 ];
 
