@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/header";
 import AuthModalProvider from "@/components/authModalProvider";
+import ClientLayout from "@/components/clientLayout";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -121,7 +122,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} "bg-[#faf7f2] text-neutral-900 antialiased overflow-x-hidden`}
       >
-        {children}
+        <ClientLayout>{children}</ClientLayout>
         <AuthModalProvider />
       </body>
     </html>
