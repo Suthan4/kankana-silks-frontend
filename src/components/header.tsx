@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Video,
@@ -15,8 +15,13 @@ import {
 } from "lucide-react";
 import Tooltip from "./ui/Tooltip";
 import Image from "next/image";
-import { useAuthModal } from "@/store/useAuthModalStore";
+import { authModalStore, useAuthModal } from "@/store/useAuthModalStore";
 import Link from "next/link";
+import { useOnClickOutside } from "@/hooks/useClickOutside";
+import { BaseApiService } from "@/lib/api/api.base.service";
+import adminApiService from "@/lib/api/api.admin.service";
+import clientApiService from "@/lib/api/api.client.service";
+import { toast } from "@/store/useToastStore";
 
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -25,6 +30,40 @@ function Header() {
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const openModal = useAuthModal((state) => state.openModal);
   const [showNav, setShowNav] = useState(true);
+  const [cartCount, setCartCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const ref = useRef<HTMLDivElement|null>(null);
+
+  const { user } = useAuthModal();
+  useOnClickOutside(ref, () => setUserMenuOpen(false));
+  console.log("user", user);
+
+  /* -------------------- HELPERS -------------------- */
+  const getDisplayName = () => {
+    if (!user?.firstName) return "";
+    return user.firstName.length > 8
+      ? user.firstName.slice(0, 8) + "…"
+      : user.firstName;
+  };
+
+  const authGuard = (cb?: () => void) => {
+    if (!user) {
+      openModal("login");
+      return;
+    }
+    cb?.();
+  };
+
+  const handleLogout = async() =>{
+    try {
+      await clientApiService.logout();
+      authModalStore.logout();
+    } catch (error) {
+      console.log("error",error);
+      toast.error("Invalid Token",1000)
+    }
+  }
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -124,6 +163,7 @@ function Header() {
       name: "Whatsapp connect",
       icon: MessageCircle,
       type: "action",
+      requiresAuth: true,
       onClick: () => {
         window.open("https://wa.me/91XXXXXXXXXX", "_blank");
       },
@@ -133,17 +173,16 @@ function Header() {
       icon: ShoppingCart,
       type: "link",
       url: "/cart",
+      requiresAuth: true,
+      badgeCount: cartCount,
     },
     {
       name: "Wishlist",
       icon: Heart,
       type: "link",
+      requiresAuth: true,
       url: "/wishlist",
-    },
-    {
-      name: "Sign up/Sign in",
-      icon: User,
-      type: "modal",
+      badgeCount: wishlistCount,
     },
   ];
 
@@ -207,66 +246,107 @@ function Header() {
           </motion.div>
 
           {/* Icons */}
-          <motion.div
-            initial={{ x: 50, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="flex gap-6 items-center flex-1 justify-end"
-          >
-            {icons.map((item, index) => {
-              const IconComponent = item.icon;
-              const isActive = activeIcon === item.name;
+          <div className="flex items-center gap-6">
+            {icons.map((item) => {
+              const Icon = item.icon;
+
               const Button = (
                 <motion.button
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.4, delay: 0.6 + index * 0.1 }}
-                  whileHover={{
-                    scale: 0.9,
-                    transition: {
-                      type: "spring",
-                      stiffness: 500,
-                      damping: 25,
-                    },
-                  }}
-                  whileTap={{ scale: 0.8, y: 0 }}
-                  className={`relative transition-colors duration-300 ${
-                    isActive ? "text-black" : "text-gray-600 hover:text-black"
-                  }`}
+                  whileHover={{ scale: 0.9 }}
+                  whileTap={{ scale: 0.85 }}
                   onClick={() => {
-                    if (item.type === "modal") {
-                      () => openModal("login"); // 🔥 open sign-in modal
-                    }
-                    if (item.type === "action") {
+                    if (item.requiresAuth) {
+                      authGuard(item.onClick);
+                    } else {
                       item.onClick?.();
                     }
                   }}
+                  className="relative text-gray-600 hover:text-black"
                 >
-                  <IconComponent className="w-5 h-5" />
+                  <Icon className="w-5 h-5" />
 
-                  {item.name === "Cart" && (
-                    <span className="absolute -top-2 -right-2 bg-black text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-medium">
-                      2
+                  {"badgeCount" in item && (
+                    <span className="absolute -top-2 -right-2 bg-black text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+                      {item.badgeCount ?? 0}
                     </span>
                   )}
                 </motion.button>
               );
 
-              return (
-                <motion.div key={index} className="relative group">
-                  <Tooltip label={item.name}>
-                    {item.type === "link" ? (
-                      <Link href={item.url!} prefetch>
-                        {Button}
-                      </Link>
-                    ) : (
-                      Button
-                    )}
-                  </Tooltip>
-                </motion.div>
-              );
+              if (item.type === "link") {
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.url!}
+                    onClick={(e) => {
+                      if (item.requiresAuth && !user) {
+                        e.preventDefault();
+                        openModal("login");
+                      }
+                    }}
+                  >
+                    {Button}
+                  </Link>
+                );
+              }
+
+              return <div key={item.name}>{Button}</div>;
             })}
-          </motion.div>
+
+            {/* USER SECTION */}
+            <div className="relative">
+              {!user ? (
+                <button onClick={() => openModal("login")}>
+                  <User className="w-5 h-5 text-gray-600" />
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setUserMenuOpen((p) => !p)}
+                    className="flex items-center gap-1 text-sm font-medium text-gray-800"
+                  >
+                    {getDisplayName()}
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform duration-200 ${
+                        userMenuOpen ? "rotate-180" : "rotate-0"
+                      }`}
+                    />{" "}
+                  </button>
+
+                  <AnimatePresence>
+                    {userMenuOpen && (
+                      <motion.div
+                        ref={ref}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="absolute right-0 mt-3 w-44 bg-white rounded-xl shadow-2xl overflow-hidden z-50"
+                      >
+                        <Link
+                          href="/account"
+                          className="block px-4 py-2 text-sm hover:bg-gray-100"
+                        >
+                          My Account
+                        </Link>
+                        <Link
+                          href="/orders"
+                          className="block px-4 py-2 text-sm hover:bg-gray-100"
+                        >
+                          Orders
+                        </Link>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                        >
+                          Sign Out
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </>
+              )}
+            </div>
+          </div>
         </div>
         {/* Navigation Bar */}
         <motion.nav
@@ -274,6 +354,7 @@ function Header() {
           animate={{
             y: showNav ? 0 : -80,
             opacity: showNav ? 1 : 0,
+            display: showNav ? "block" : "none",
           }}
           transition={{
             duration: 0.3,

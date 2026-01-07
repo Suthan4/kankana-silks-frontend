@@ -9,6 +9,7 @@ import {
 import { useRef, useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
+import { useAuthModal } from "@/store/useAuthModalStore";
 
 const heroSlides = [
   {
@@ -35,6 +36,7 @@ export default function HeroSection() {
   const [autoPlay, setAutoPlay] = useState(true);
   const [enableScrollAnim, setEnableScrollAnim] = useState(false);
   const [enableVideo, setEnableVideo] = useState(false);
+  const {openModal} = useAuthModal()
 
   /* ------------------ SCROLL ANIMATION ------------------ */
   const { scrollYProgress } = useScroll({

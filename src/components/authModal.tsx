@@ -1,13 +1,96 @@
 "use client";
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, User, Mail, Lock, Eye, EyeOff, Phone } from "lucide-react";
+import {
+  X,
+  User,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Phone,
+  AlertCircle,
+} from "lucide-react";
 import { useAuthModal } from "@/store/useAuthModalStore";
+import apiService from "@/lib/api/api.admin.service";
+import { z } from "zod";
+
+// Zod Schemas
+const loginSchema = z.object({
+  email: z.string().min(1, "Email is required").email("Invalid email address"),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters")
+    .max(100, "Password is too long"),
+});
+
+export const RegisterDTOSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number"),
+  firstName: z.string().min(1, "First name is required").max(50),
+  lastName: z.string().min(1, "Last name is required").max(50),
+  termsAccepted: z.boolean().refine((val) => val === true, {
+    message: "You must accept the terms and conditions",
+  }),
+  phone: z.string().regex(/^[6-9]\d{9}$/, "Invalid phone number"),
+});
+
+export type RegisterDTO = z.infer<typeof RegisterDTOSchema>;
+
+const forgotPasswordSchema = z.object({
+  email: z.string().min(1, "Email is required").email("Invalid email address"),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
+type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 
 export default function AuthModal() {
-  const { isOpen, mode, closeModal, setMode } = useAuthModal();
+  const { isOpen, mode, closeModal, setMode, setAuth } = useAuthModal();
   const [mounted, setMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Form states
+  const [loginData, setLoginData] = useState<LoginFormData>({
+    email: "",
+    password: "",
+  });
+  const [registerData, setRegisterData] = useState<RegisterDTO>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    phone: "",
+    termsAccepted: false,
+  });
+  const [forgotData, setForgotData] = useState<ForgotPasswordFormData>({
+    email: "",
+  });
+
+  // Error states
+  const [loginErrors, setLoginErrors] = useState<
+    Partial<Record<keyof LoginFormData, string>>
+  >({});
+  const [registerErrors, setRegisterErrors] = useState<
+    Partial<Record<keyof RegisterDTO, string>>
+  >({});
+  const [forgotErrors, setForgotErrors] = useState<
+    Partial<Record<keyof ForgotPasswordFormData, string>>
+  >({});
+  const [apiError, setApiError] = useState<string>("");
+
+  // Reset form when mode changes
+  useEffect(() => {
+    setLoginErrors({});
+    setRegisterErrors({});
+    setForgotErrors({});
+    setApiError("");
+  }, [mode]);
 
   // Prevent hydration mismatch
   useEffect(() => {
@@ -25,6 +108,134 @@ export default function AuthModal() {
       document.body.style.overflow = "unset";
     };
   }, [isOpen]);
+
+  const handleLoginSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoginErrors({});
+    setApiError("");
+
+    try {
+      // Validate with Zod
+      const validatedData = loginSchema.parse(loginData);
+      setIsLoading(true);
+
+      const res = await apiService.login({
+        email: validatedData.email,
+        password: validatedData.password,
+      });
+
+      // Store auth data
+      if (res.data.data) {
+        const { accessToken, user } = res.data.data;
+        setAuth(accessToken, user);
+      }
+
+      closeModal();
+      console.log("Login successful", res);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        // Handle Zod validation errors
+        const errors: Partial<Record<keyof LoginFormData, string>> = {};
+        error.issues.forEach((err) => {
+          if (err.path[0]) {
+            errors[err.path[0] as keyof LoginFormData] = err.message;
+          }
+        });
+        setLoginErrors(errors);
+      } else {
+        // Handle API errors
+        setApiError("Invalid email or password. Please try again.");
+        console.error("Login error:", error);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegisterSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setRegisterErrors({});
+    setApiError("");
+
+    try {
+      // Validate with Zod
+      const validatedData = RegisterDTOSchema.parse(registerData);
+      setIsLoading(true);
+
+      const res = await apiService.register({
+        firstName: validatedData.firstName,
+        lastName: validatedData.lastName,
+        email: validatedData.email,
+        password: validatedData.password,
+        phone: validatedData.phone,
+      });
+
+      // Store auth data if registration returns tokens
+      if (res.data.data) {
+        const { accessToken, user } = res.data.data;
+        setAuth(accessToken, user);
+      }
+
+      closeModal();
+      console.log("Registration successful", res);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        // Handle Zod validation errors
+        const errors: Partial<Record<keyof RegisterDTO, string>> = {};
+        error.issues.forEach((err) => {
+          if (err.path[0]) {
+            errors[err.path[0] as keyof RegisterDTO] = err.message;
+          }
+        });
+        setRegisterErrors(errors);
+      } else {
+        // Handle API errors
+        setApiError("Registration failed. Please try again.");
+        console.error("Registration error:", error);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setForgotErrors({});
+    setApiError("");
+
+    try {
+      // Validate with Zod
+      const validatedData = forgotPasswordSchema.parse(forgotData);
+      setIsLoading(true);
+
+      const res = await apiService.forgotPassword({
+        email: validatedData.email,
+      });
+
+      // Show success message or redirect
+      setApiError(""); // Clear any previous errors
+      alert("Password reset link sent! Check your email.");
+      setMode("login");
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        // Handle Zod validation errors
+        const errors: Partial<Record<keyof ForgotPasswordFormData, string>> =
+          {};
+        error.issues.forEach((err) => {
+          if (err.path[0]) {
+            errors[err.path[0] as keyof ForgotPasswordFormData] = err.message;
+          }
+        });
+        setForgotErrors(errors);
+      } else {
+        // Handle API errors
+        setApiError("Failed to send reset link. Please try again.");
+        console.error("Forgot password error:", error);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Don't render until mounted
   if (!mounted || !isOpen) return null;
@@ -80,6 +291,18 @@ export default function AuthModal() {
 
           {/* Form - Scrollable */}
           <div className="bg-white p-4 sm:p-4 sm:py-6 overflow-y-auto flex-1">
+            {/* API Error Message */}
+            {apiError && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2"
+              >
+                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-700">{apiError}</p>
+              </motion.div>
+            )}
+
             <AnimatePresence mode="wait">
               {/* Login Form */}
               {mode === "login" && (
@@ -89,20 +312,34 @@ export default function AuthModal() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   className="space-y-4"
-                  onSubmit={(e) => e.preventDefault()}
+                  onSubmit={handleLoginSubmit}
                 >
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email or Phone
+                      Email
                     </label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
                         type="text"
                         placeholder="name@example.com"
-                        className="w-full pl-10 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none transition text-sm sm:text-base"
+                        className={`w-full pl-10 pr-4 py-2.5 sm:py-3 border rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none transition text-sm sm:text-base ${
+                          loginErrors.email
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        }`}
+                        onChange={(e) =>
+                          setLoginData({ ...loginData, email: e.target.value })
+                        }
+                        value={loginData.email}
+                        disabled={isLoading}
                       />
                     </div>
+                    {loginErrors.email && (
+                      <p className="mt-1 text-xs text-red-500">
+                        {loginErrors.email}
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -114,7 +351,19 @@ export default function AuthModal() {
                       <input
                         type={showPassword ? "text" : "password"}
                         placeholder="••••••••"
-                        className="w-full pl-10 pr-12 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none transition text-sm sm:text-base"
+                        className={`w-full pl-10 pr-12 py-2.5 sm:py-3 border rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none transition text-sm sm:text-base ${
+                          loginErrors.password
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        }`}
+                        onChange={(e) =>
+                          setLoginData({
+                            ...loginData,
+                            password: e.target.value,
+                          })
+                        }
+                        value={loginData.password}
+                        disabled={isLoading}
                       />
                       <button
                         type="button"
@@ -128,6 +377,11 @@ export default function AuthModal() {
                         )}
                       </button>
                     </div>
+                    {loginErrors.password && (
+                      <p className="mt-1 text-xs text-red-500">
+                        {loginErrors.password}
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -151,11 +405,12 @@ export default function AuthModal() {
 
                   <motion.button
                     type="submit"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full bg-black text-white py-2.5 sm:py-3 rounded-full font-semibold shadow-lg text-sm sm:text-base"
+                    whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                    whileTap={{ scale: isLoading ? 1 : 0.98 }}
+                    disabled={isLoading}
+                    className="w-full bg-black text-white py-2.5 sm:py-3 rounded-full font-semibold shadow-lg text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Sign In
+                    {isLoading ? "Signing in..." : "Sign In"}
                   </motion.button>
 
                   <p className="text-center text-xs sm:text-sm text-gray-600">
@@ -179,21 +434,98 @@ export default function AuthModal() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   className="space-y-4"
-                  onSubmit={(e) => e.preventDefault()}
+                  onSubmit={handleRegisterSubmit}
                 >
-                  <div className="flex gap-2 justify-center items-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Full Name
+                        First Name
                       </label>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                         <input
                           type="text"
                           placeholder="Aisha Kapoor"
-                          className="w-full pl-10 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none transition text-sm sm:text-base"
+                          className={`w-full pl-10 pr-4 py-2.5 sm:py-3 border rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none transition text-sm sm:text-base ${
+                            registerErrors.firstName
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                          onChange={(e) =>
+                            setRegisterData({
+                              ...registerData,
+                              firstName: e.target.value,
+                            })
+                          }
+                          value={registerData.firstName}
+                          disabled={isLoading}
                         />
                       </div>
+                      {registerErrors.firstName && (
+                        <p className="mt-1 text-xs text-red-500">
+                          {registerErrors.firstName}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Last Name
+                      </label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Aisha Kapoor"
+                          className={`w-full pl-10 pr-4 py-2.5 sm:py-3 border rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none transition text-sm sm:text-base ${
+                            registerErrors.lastName
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                          onChange={(e) =>
+                            setRegisterData({
+                              ...registerData,
+                              lastName: e.target.value,
+                            })
+                          }
+                          value={registerData.lastName}
+                          disabled={isLoading}
+                        />
+                      </div>
+                      {registerErrors.lastName && (
+                        <p className="mt-1 text-xs text-red-500">
+                          {registerErrors.lastName}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Phone
+                      </label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Aisha Kapoor"
+                          className={`w-full pl-10 pr-4 py-2.5 sm:py-3 border rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none transition text-sm sm:text-base ${
+                            registerErrors.phone
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                          onChange={(e) =>
+                            setRegisterData({
+                              ...registerData,
+                              phone: e.target.value,
+                            })
+                          }
+                          value={registerData.phone}
+                          disabled={isLoading}
+                        />
+                      </div>
+                      {registerErrors.phone && (
+                        <p className="mt-1 text-xs text-red-500">
+                          {registerErrors.phone}
+                        </p>
+                      )}
                     </div>
 
                     <div>
@@ -205,54 +537,104 @@ export default function AuthModal() {
                         <input
                           type="email"
                           placeholder="name@example.com"
-                          className="w-full pl-10 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none transition text-sm sm:text-base"
+                          className={`w-full pl-10 pr-4 py-2.5 sm:py-3 border rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none transition text-sm sm:text-base ${
+                            registerErrors.email
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                          onChange={(e) =>
+                            setRegisterData({
+                              ...registerData,
+                              email: e.target.value,
+                            })
+                          }
+                          value={registerData.email}
+                          disabled={isLoading}
                         />
                       </div>
+                      {registerErrors.email && (
+                        <p className="mt-1 text-xs text-red-500">
+                          {registerErrors.email}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Password
+                      </label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          className={`w-full pl-10 pr-12 py-2.5 sm:py-3 border rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none transition text-sm sm:text-base ${
+                            registerErrors.password
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                          onChange={(e) =>
+                            setRegisterData({
+                              ...registerData,
+                              password: e.target.value,
+                            })
+                          }
+                          value={registerData.password}
+                          disabled={isLoading}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          {showPassword ? (
+                            <EyeOff className="w-5 h-5" />
+                          ) : (
+                            <Eye className="w-5 h-5" />
+                          )}
+                        </button>
+                      </div>
+                      {registerErrors.password && (
+                        <p className="mt-1 text-xs text-red-500">
+                          {registerErrors.password}
+                        </p>
+                      )}
                     </div>
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Password
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <label className="flex items-start gap-2 cursor-pointer">
                       <input
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        className="w-full pl-10 pr-12 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none transition text-sm sm:text-base"
+                        type="checkbox"
+                        className={`w-4 h-4 mt-0.5 accent-amber-400 rounded flex-shrink-0 ${
+                          registerErrors ? "border-red-500" : ""
+                        }`}
+                        checked={registerData.termsAccepted}
+                        onChange={(e) =>
+                          setRegisterData({
+                            ...registerData,
+                            termsAccepted: e.target.checked,
+                          })
+                        }
+                        disabled={isLoading}
                       />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        {showPassword ? (
-                          <EyeOff className="w-5 h-5" />
-                        ) : (
-                          <Eye className="w-5 h-5" />
-                        )}
-                      </button>
-                    </div>
+                      <span className="text-xs text-gray-600">
+                        I agree to the Terms of Service and Privacy Policy
+                      </span>
+                    </label>
+                    {registerErrors.termsAccepted && (
+                      <p className="mt-1 text-xs text-red-500">
+                        {registerErrors.termsAccepted}
+                      </p>
+                    )}
                   </div>
-
-                  <label className="flex items-start gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 mt-0.5 accent-amber-400 rounded flex-shrink-0"
-                    />
-                    <span className="text-xs text-gray-600">
-                      I agree to the Terms of Service and Privacy Policy
-                    </span>
-                  </label>
-
                   <motion.button
                     type="submit"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full bg-black text-white py-2.5 sm:py-3 rounded-full font-semibold shadow-lg text-sm sm:text-base"
+                    whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                    whileTap={{ scale: isLoading ? 1 : 0.98 }}
+                    disabled={isLoading}
+                    className="w-full bg-black text-white py-2.5 sm:py-3 rounded-full font-semibold shadow-lg text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Create Account
+                    {isLoading ? "Creating Account..." : "Create Account"}
                   </motion.button>
 
                   <p className="text-center text-xs sm:text-sm text-gray-600">
@@ -276,7 +658,7 @@ export default function AuthModal() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   className="space-y-4"
-                  onSubmit={(e) => e.preventDefault()}
+                  onSubmit={handleForgotSubmit}
                 >
                   <p className="text-xs sm:text-sm text-gray-600 text-center mb-4">
                     Enter your email and we'll send you a link to reset your
@@ -292,18 +674,33 @@ export default function AuthModal() {
                       <input
                         type="email"
                         placeholder="name@example.com"
-                        className="w-full pl-10 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none transition text-sm sm:text-base"
+                        className={`w-full pl-10 pr-4 py-2.5 sm:py-3 border rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none transition text-sm sm:text-base ${
+                          forgotErrors.email
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        }`}
+                        onChange={(e) =>
+                          setForgotData({ email: e.target.value })
+                        }
+                        value={forgotData.email}
+                        disabled={isLoading}
                       />
                     </div>
+                    {forgotErrors.email && (
+                      <p className="mt-1 text-xs text-red-500">
+                        {forgotErrors.email}
+                      </p>
+                    )}
                   </div>
 
                   <motion.button
                     type="submit"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full bg-gradient-to-r from-amber-400 to-orange-400 text-white py-2.5 sm:py-3 rounded-xl font-semibold shadow-lg text-sm sm:text-base"
+                    whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                    whileTap={{ scale: isLoading ? 1 : 0.98 }}
+                    disabled={isLoading}
+                    className="w-full bg-gradient-to-r from-amber-400 to-orange-400 text-white py-2.5 sm:py-3 rounded-xl font-semibold shadow-lg text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Send Reset Link
+                    {isLoading ? "Sending..." : "Send Reset Link"}
                   </motion.button>
 
                   <button
@@ -329,14 +726,14 @@ export default function AuthModal() {
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-300" />
                   </div>
-                  <div className="relative flex justify-center text-xs sm:text-sm">
+                  {/* <div className="relative flex justify-center text-xs sm:text-sm">
                     <span className="px-2 bg-white text-gray-500">
                       Or continue with
                     </span>
-                  </div>
+                  </div> */}
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mt-4">
+                {/* <div className="grid grid-cols-2 gap-3 mt-4">
                   <motion.button
                     type="button"
                     whileHover={{ scale: 1.02 }}
@@ -377,7 +774,7 @@ export default function AuthModal() {
                       Phone
                     </span>
                   </motion.button>
-                </div>
+                </div> */}
               </motion.div>
             )}
           </div>

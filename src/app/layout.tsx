@@ -124,6 +124,7 @@ export default function RootLayout({
       >
         <ClientLayout>{children}</ClientLayout>
         <AuthModalProvider />
+        <div id="portal-root" />
       </body>
     </html>
   );
