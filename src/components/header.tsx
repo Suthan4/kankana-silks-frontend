@@ -18,8 +18,6 @@ import Image from "next/image";
 import { authModalStore, useAuthModal } from "@/store/useAuthModalStore";
 import Link from "next/link";
 import { useOnClickOutside } from "@/hooks/useClickOutside";
-import { BaseApiService } from "@/lib/api/api.base.service";
-import adminApiService from "@/lib/api/api.admin.service";
 import clientApiService from "@/lib/api/api.client.service";
 import { toast } from "@/store/useToastStore";
 

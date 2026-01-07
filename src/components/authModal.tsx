@@ -12,8 +12,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useAuthModal } from "@/store/useAuthModalStore";
-import apiService from "@/lib/api/api.admin.service";
 import { z } from "zod";
+import { authService } from "@/lib/api/api.base.service";
 
 // Zod Schemas
 const loginSchema = z.object({
@@ -119,7 +119,7 @@ export default function AuthModal() {
       const validatedData = loginSchema.parse(loginData);
       setIsLoading(true);
 
-      const res = await apiService.login({
+      const res = await authService.login({
         email: validatedData.email,
         password: validatedData.password,
       });
@@ -162,7 +162,7 @@ export default function AuthModal() {
       const validatedData = RegisterDTOSchema.parse(registerData);
       setIsLoading(true);
 
-      const res = await apiService.register({
+      const res = await authService.register({
         firstName: validatedData.firstName,
         lastName: validatedData.lastName,
         email: validatedData.email,
@@ -208,7 +208,7 @@ export default function AuthModal() {
       const validatedData = forgotPasswordSchema.parse(forgotData);
       setIsLoading(true);
 
-      const res = await apiService.forgotPassword({
+      const res = await authService.forgotPassword({
         email: validatedData.email,
       });
 
