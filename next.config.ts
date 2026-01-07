@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
         hostname: "*.public.blob.vercel-storage.com",
       },
     ],
+    formats: ["image/avif", "image/webp"],
   },
 };
 

@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/header";
 import AuthModalProvider from "@/components/authModalProvider";
+import ClientLayout from "@/components/clientLayout";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -108,6 +109,7 @@ export const metadata: Metadata = {
   //   // yandex: "your-yandex-verification-code",
   //   // bing: "your-bing-verification-code",
   // },
+  // },
 };
 
 export default function RootLayout({
@@ -120,8 +122,9 @@ export default function RootLayout({
       <body
         className={`${inter.variable} "bg-[#faf7f2] text-neutral-900 antialiased overflow-x-hidden`}
       >
-        {children}
+        <ClientLayout>{children}</ClientLayout>
         <AuthModalProvider />
+        <div id="portal-root" />
       </body>
     </html>
   );

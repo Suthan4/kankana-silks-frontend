@@ -10,9 +10,11 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.4.2",
     "@vercel/blob": "^2.0.0",
+    "axios": "^1.13.2",
     "clsx": "^2.1.1",
     "cross-env": "^10.1.0",
     "dotenv": "^17.2.3",
@@ -22,6 +24,8 @@
     "next": "16.1.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-hook-form": "^7.69.0",
+    "sharp": "^0.34.5",
     "tailwind-merge": "^3.4.0",
     "zustand": "^5.0.9"
   },
