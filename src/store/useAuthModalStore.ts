@@ -1,5 +1,5 @@
 // store/useAuthModalStore.ts
-import { User } from "@/lib/admin/types/auth";
+import { User } from "@/lib/api/api.base.service";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 

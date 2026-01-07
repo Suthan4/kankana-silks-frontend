@@ -1,7 +1,19 @@
+import { authModalStore } from "@/store/useAuthModalStore";
 import axios, { AxiosInstance, AxiosError } from "axios";
 
-
 const API_BASE_URL = "http://localhost:3000/api";
+
+
+export type UserRole = "SUPERADMIN" | "ADMIN" | "USER";
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  role: UserRole;
+}
+
 
 export class BaseApiService {
   protected api: AxiosInstance;
@@ -110,3 +122,9 @@ export class BaseApiService {
     });
   }
 }
+export const authService = new BaseApiService(() => {
+  // Centralized auth failure handling
+  console.log("Auth failed. Redirecting to login...");
+  authModalStore.openModal();
+  // or router.push("/login")
+});
