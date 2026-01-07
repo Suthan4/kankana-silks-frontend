@@ -1,6 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from "axios";
-import { AuthTokens } from "@/lib/admin/types/auth";
-import { ApiResponse } from "@/lib/admin/types/api";
+
 
 const API_BASE_URL = "http://localhost:3000/api";
 
@@ -49,7 +48,7 @@ export class BaseApiService {
               throw new Error("No refresh token");
             }
 
-            const response = await axios.post<ApiResponse<AuthTokens>>(
+            const response = await axios.post(
               `${API_BASE_URL}/auth/refresh-token`,
               { refreshToken }
             );
@@ -91,12 +90,7 @@ export class BaseApiService {
 
   // Shared auth methods
   async login(credentials: { email: string; password: string }) {
-    return this.api.post<
-      ApiResponse<{
-        accessToken: string;
-        user: any;
-      }>
-    >("/auth/login", credentials);
+    return this.api.post("/auth/login", credentials);
   }
   async forgotPassword(credentials: { email: string }) {
     return this.api.post("/auth/forgot-password", credentials);
@@ -107,11 +101,11 @@ export class BaseApiService {
   }
 
   async getProfile() {
-    return this.api.get<ApiResponse<any>>("/auth/me");
+    return this.api.get("/auth/me");
   }
 
   async refreshToken(refreshToken: string) {
-    return this.api.post<ApiResponse<AuthTokens>>("/auth/refresh-token", {
+    return this.api.post("/auth/refresh-token", {
       refreshToken,
     });
   }
