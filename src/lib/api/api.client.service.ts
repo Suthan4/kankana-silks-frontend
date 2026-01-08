@@ -6,6 +6,7 @@ class ClientApiService extends BaseApiService {
     super(() => {
       authModalStore.openModal();
     }); // Redirect to client login on auth failure
+    
   }
 }
 
