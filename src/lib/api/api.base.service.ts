@@ -3,7 +3,6 @@ import axios, { AxiosInstance, AxiosError } from "axios";
 
 const API_BASE_URL = "http://localhost:3000/api";
 
-
 export type UserRole = "SUPERADMIN" | "ADMIN" | "USER";
 export interface User {
   id: string;
@@ -14,9 +13,8 @@ export interface User {
   role: UserRole;
 }
 
-
 export class BaseApiService {
-  protected api: AxiosInstance;
+  public api: AxiosInstance;
   private onAuthFailure: () => void;
 
   constructor(onAuthFailure: () => void) {
