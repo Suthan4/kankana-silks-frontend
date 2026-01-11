@@ -1,5 +1,5 @@
-"use client"
-import { useState } from "react";
+"use client";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Heart,
@@ -8,15 +8,41 @@ import {
   SlidersHorizontal,
   Search,
   X,
+  ShoppingCart,
 } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import {
+  productApi,
+  type Product,
+  type ProductQueryParams,
+} from "@/lib/api/product.api";
+import { wishlistApi } from "@/lib/api/wishlist.api";
+import { cartApi } from "@/lib/api/cart.api";
+import { useAuthModal } from "@/store/useAuthModalStore";
+import { toast } from "@/store/useToastStore";
 
-function ProductListing() {
+export default function ProductListing() {
+  const { user, openModal } = useAuthModal();
+
+  // State
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All Products");
-  const [priceRange, setPriceRange] = useState([120, 850]);
-  const [selectedMaterials, setSelectedMaterials] = useState(["Cotton Silk"]);
-  const [likedProducts, setLikedProducts] = useState<number[]>([]);
+  const [priceRange, setPriceRange] = useState([0, 100000]);
+  const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
+  const [likedProducts, setLikedProducts] = useState<Set<string>>(new Set());
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
-  const [sortBy, setSortBy] = useState("Featured");
+  const [sortBy, setSortBy] = useState<
+    "createdAt-desc" | "price-asc" | "price-desc"
+  >("createdAt-desc");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const limit = 12;
 
   const categories = [
     "All Products",
@@ -36,69 +62,132 @@ function ProductListing() {
     { name: "Pink", color: "#EC4899" },
   ];
 
-  const products = [
-    {
-      id: 1,
-      name: "Royal Crimson Kanjivaram",
-      subtitle: "Pure Zari Weave",
-      price: 345.0,
-      image:
-        "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=500&h=500&fit=crop",
-      badge: "NEW",
-      badgeColor: "bg-green-600",
-    },
-    {
-      id: 2,
-      name: "Golden Beige Banarasi",
-      subtitle: "Handwoven Silk",
-      price: 280.0,
-      originalPrice: 420.0,
-      image:
-        "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=500&h=500&fit=crop",
-    },
-    {
-      id: 3,
-      name: "Midnight Violet Soft Silk",
-      subtitle: "Contemporary Design",
-      price: 195.0,
-      originalPrice: 245.0,
-      image:
-        "https://images.unsplash.com/photo-1610030469750-9f629fe04c6a?w=500&h=500&fit=crop",
-      badge: "-20%",
-      badgeColor: "bg-pink-600",
-    },
-    {
-      id: 4,
-      name: "Peacock Blue Mysore Silk",
-      subtitle: "Gold Zari Border",
-      price: 210.8,
-      image:
-        "https://images.unsplash.com/photo-1583391733981-6d1f1f0e3f3f?w=500&h=500&fit=crop",
-    },
-    {
-      id: 5,
-      name: "Sunset Orange Organza",
-      subtitle: "Lightweight Festive Wear",
-      price: 150.0,
-      image:
-        "https://images.unsplash.com/photo-1583391733970-8b6635a17e5d?w=500&h=500&fit=crop",
-    },
-    {
-      id: 6,
-      name: "Emerald Heritage Silk",
-      subtitle: "Wedding Collection",
-      price: 450.0,
-      image:
-        "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=500&h=500&fit=crop",
-      badge: "BEST SELLER",
-      badgeColor: "bg-gray-900",
-    },
-  ];
+  // Fetch products
+  useEffect(() => {
+    fetchProducts();
+  }, [currentPage, sortBy, searchQuery, selectedCategory, priceRange]);
 
-  const toggleLike = (id: number) => {
-    setLikedProducts((prev) =>
-      prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id]
-    );
+  // Fetch wishlist status for products
+  useEffect(() => {
+    if (user && products.length > 0) {
+      checkWishlistStatus();
+    }
+  }, [user, products]);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+
+      const params: ProductQueryParams = {
+        page: currentPage,
+        limit,
+        isActive: true,
+      };
+
+      // Add search
+      if (searchQuery) params.search = searchQuery;
+
+      // Add category filter
+      // Note: You'll need to map category names to IDs from your backend
+      // if (selectedCategory !== "All Products") {
+      //   params.categoryId = getCategoryId(selectedCategory);
+      // }
+
+      // Add price range
+      if (priceRange[0] > 0) params.minPrice = priceRange[0];
+      if (priceRange[1] < 100000) params.maxPrice = priceRange[1];
+
+      // Add sorting
+      const [field, order] = sortBy.split("-") as [string, "asc" | "desc"];
+      if (field === "createdAt") {
+        params.sortBy = "createdAt";
+        params.sortOrder = order;
+      } else if (field === "price") {
+        params.sortBy = "price";
+        params.sortOrder = order;
+      }
+
+      const response = await productApi.getProducts(params);
+
+      if (response.success) {
+        setProducts(response.data.products);
+        setTotalPages(response.data.pagination.totalPages);
+        setTotal(response.data.pagination.total);
+      }
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      toast.error("Failed to load products");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkWishlistStatus = async () => {
+    if (!user) return;
+
+    try {
+      const wishlistedSet = new Set<string>();
+
+      for (const product of products) {
+        const response = await wishlistApi.checkProduct(product.id);
+        if (response.data.isInWishlist) {
+          wishlistedSet.add(product.id);
+        }
+      }
+
+      setLikedProducts(wishlistedSet);
+    } catch (error) {
+      console.error("Error checking wishlist:", error);
+    }
+  };
+
+  const toggleWishlist = async (productId: string) => {
+    if (!user) {
+      openModal("login");
+      return;
+    }
+
+    try {
+      const isLiked = likedProducts.has(productId);
+
+      if (isLiked) {
+        // Find wishlist item and remove
+        const wishlist = await wishlistApi.getWishlist();
+        const item = wishlist.data.items?.find(
+          (i: any) => i.productId === productId
+        );
+
+        if (item) {
+          await wishlistApi.removeFromWishlist(item.id);
+          setLikedProducts((prev) => {
+            const next = new Set(prev);
+            next.delete(productId);
+            return next;
+          });
+          toast.success("Removed from wishlist");
+        }
+      } else {
+        await wishlistApi.addToWishlist({ productId });
+        setLikedProducts((prev) => new Set(prev).add(productId));
+        toast.success("Added to wishlist");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update wishlist");
+    }
+  };
+
+  const handleAddToCart = async (productId: string) => {
+    if (!user) {
+      openModal("login");
+      return;
+    }
+
+    try {
+      await cartApi.addToCart({ productId, quantity: 1 });
+      toast.success("Added to cart");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to add to cart");
+    }
   };
 
   const toggleMaterial = (material: string) => {
@@ -164,8 +253,8 @@ function ProductListing() {
         <div className="space-y-4">
           <input
             type="range"
-            min="50"
-            max="1000"
+            min="0"
+            max="100000"
             value={priceRange[1]}
             onChange={(e) =>
               setPriceRange([priceRange[0], Number(e.target.value)])
@@ -173,8 +262,8 @@ function ProductListing() {
             className="w-full accent-yellow-500"
           />
           <div className="flex justify-between text-sm text-gray-600">
-            <span>${priceRange[0]}</span>
-            <span>${priceRange[1]}</span>
+            <span>₹{priceRange[0]}</span>
+            <span>₹{priceRange[1]}</span>
           </div>
         </div>
       </motion.div>
@@ -251,7 +340,9 @@ function ProductListing() {
       >
         <div className="container mx-auto px-6 py-3">
           <div className="flex items-center gap-2 text-sm text-gray-600">
-            <span className="hover:text-gray-900 cursor-pointer">Home</span>
+            <Link href="/" className="hover:text-gray-900 cursor-pointer">
+              Home
+            </Link>
             <span>›</span>
             <span className="text-gray-900">All Products</span>
           </div>
@@ -271,7 +362,7 @@ function ProductListing() {
           </motion.div>
           <div>
             <h2 className="font-semibold text-gray-900">Sarees</h2>
-            <p className="text-xs text-gray-500">1,004 items</p>
+            <p className="text-xs text-gray-500">{total} items</p>
           </div>
           <div className="ml-auto flex items-center gap-3">
             <motion.div whileTap={{ scale: 0.9 }}>
@@ -287,21 +378,36 @@ function ProductListing() {
         <div className="flex gap-2 px-4 pb-3 overflow-x-auto">
           <motion.button
             whileTap={{ scale: 0.95 }}
-            className="px-4 py-2 bg-yellow-400 text-gray-900 rounded-full text-sm font-medium whitespace-nowrap"
+            onClick={() => setSortBy("createdAt-desc")}
+            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
+              sortBy === "createdAt-desc"
+                ? "bg-yellow-400 text-gray-900"
+                : "bg-gray-100 text-gray-600"
+            }`}
           >
-            Silky
+            Featured
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
-            className="px-4 py-2 border border-gray-300 rounded-full text-sm whitespace-nowrap flex items-center gap-1"
+            onClick={() => setSortBy("price-asc")}
+            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
+              sortBy === "price-asc"
+                ? "bg-yellow-400 text-gray-900"
+                : "border border-gray-300 text-gray-600"
+            }`}
           >
-            Price <ChevronDown className="w-4 h-4" />
+            Price: Low to High
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
-            className="px-4 py-2 border border-gray-300 rounded-full text-sm whitespace-nowrap flex items-center gap-1"
+            onClick={() => setSortBy("price-desc")}
+            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
+              sortBy === "price-desc"
+                ? "bg-yellow-400 text-gray-900"
+                : "border border-gray-300 text-gray-600"
+            }`}
           >
-            Color <ChevronDown className="w-4 h-4" />
+            Price: High to Low
           </motion.button>
         </div>
       </motion.div>
@@ -317,7 +423,9 @@ function ProductListing() {
           <h1 className="text-5xl font-light tracking-tight">
             Exquisite Silk Collection
           </h1>
-          <p className="text-gray-600">Discover 142 handcrafted masterpieces</p>
+          <p className="text-gray-600">
+            Discover {total} handcrafted masterpieces
+          </p>
         </motion.div>
 
         {/* Sort By - Desktop */}
@@ -331,13 +439,12 @@ function ProductListing() {
             <span className="text-sm text-gray-600">Sort by:</span>
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+              onChange={(e) => setSortBy(e.target.value as any)}
               className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
             >
-              <option>Featured</option>
-              <option>Price: Low to High</option>
-              <option>Price: High to Low</option>
-              <option>Newest</option>
+              <option value="createdAt-desc">Featured</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
             </select>
           </div>
         </motion.div>
@@ -357,101 +464,163 @@ function ProductListing() {
 
           {/* Product Grid */}
           <div className="flex-1">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-              {products.map((product, index) => (
-                <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  whileHover={{ y: -4 }}
-                  className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="relative aspect-square overflow-hidden">
-                    <motion.img
-                      whileHover={{ scale: 1.05 }}
-                      transition={{ duration: 0.3 }}
-                      src={product.image}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
-                    {product.badge && (
-                      <motion.span
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{
-                          delay: index * 0.05 + 0.2,
-                          type: "spring",
-                          stiffness: 380,
-                          damping: 30,
-                        }}
-                        className={`absolute top-2 left-2 ${product.badgeColor} text-white text-xs px-2 py-1 rounded`}
-                      >
-                        {product.badge}
-                      </motion.span>
-                    )}
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => toggleLike(product.id)}
-                      className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md"
-                    >
-                      <motion.div
-                        animate={
-                          likedProducts.includes(product.id)
-                            ? { scale: [1, 1.3, 1] }
-                            : {}
-                        }
-                        transition={{ duration: 0.3 }}
-                      >
-                        <Heart
-                          className={`w-4 h-4 transition-colors ${
-                            likedProducts.includes(product.id)
-                              ? "fill-red-500 text-red-500"
-                              : "text-gray-600"
-                          }`}
-                        />
-                      </motion.div>
-                    </motion.button>
-                  </div>
-                  <div className="p-3 md:p-4">
-                    <h3 className="font-semibold text-gray-900 text-sm md:text-base mb-1">
-                      {product.name}
-                    </h3>
-                    <p className="text-xs md:text-sm text-gray-500 mb-2">
-                      {product.subtitle}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-yellow-600 font-bold">
-                        ${product.price.toFixed(2)}
-                      </span>
-                      {product.originalPrice && (
-                        <span className="text-gray-400 line-through text-sm">
-                          ${product.originalPrice.toFixed(2)}
-                        </span>
-                      )}
+            {loading ? (
+              // Skeleton Loading
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                {[...Array(6)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-white rounded-lg overflow-hidden shadow-sm animate-pulse"
+                  >
+                    <div className="aspect-square bg-gray-200" />
+                    <div className="p-4 space-y-2">
+                      <div className="h-4 bg-gray-200 rounded w-3/4" />
+                      <div className="h-4 bg-gray-200 rounded w-1/2" />
                     </div>
                   </div>
-                </motion.div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : products.length === 0 ? (
+              <div className="text-center py-20">
+                <p className="text-gray-500">No products found</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                {Array.isArray(products) &&
+                  products?.map((product, index) => (
+                    <motion.div
+                      key={product.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                      whileHover={{ y: -4 }}
+                      className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <Link href={`/products/${product.slug}`}>
+                        <div className="relative aspect-square overflow-hidden">
+                          <motion.div
+                            className="absolute inset-0"
+                            initial={{ scale: 1 }}
+                            whileHover={{ scale: 1.15 }}
+                            transition={{ duration: 0.3, ease: "easeOut" }}
+                          >
+                            <Image
+                              src={
+                                product.media?.[0]?.url || "/placeholder.jpg"
+                              }
+                              alt={product.media?.[0]?.altText || product.name}
+                              fill
+                              sizes="(max-width: 768px) 50vw, 33vw"
+                              className="object-cover"
+                            />
+                          </motion.div>
 
-            {/* Load More */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="mt-8 text-center"
-            >
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="px-8 py-3 border-2 border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors inline-flex items-center gap-2"
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              toggleWishlist(product.id);
+                            }}
+                            className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md z-10"
+                          >
+                            <Heart
+                              className={`w-4 h-4 transition-colors ${
+                                likedProducts.has(product.id)
+                                  ? "fill-red-500 text-red-500"
+                                  : "text-gray-600"
+                              }`}
+                            />
+                          </motion.button>
+                        </div>
+                      </Link>
+
+                      <div className="p-3 md:p-4">
+                        <Link href={`/products/${product.slug}`}>
+                          <h3 className="font-semibold text-gray-900 text-sm md:text-base mb-1 line-clamp-2">
+                            {product.name}
+                          </h3>
+                        </Link>
+                        <p className="text-xs md:text-sm text-gray-500 mb-2">
+                          {product.category?.name}
+                        </p>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-yellow-600 font-bold">
+                            ₹{Number(product.sellingPrice).toFixed(2)}
+                          </span>
+                          {product.basePrice > product.sellingPrice && (
+                            <>
+                              <span className="text-gray-400 line-through text-sm">
+                                ₹{Number(product.basePrice).toFixed(2)}
+                              </span>
+                              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                                {Math.round(
+                                  ((product.basePrice - product.sellingPrice) /
+                                    product.basePrice) *
+                                    100
+                                )}
+                                % OFF
+                              </span>
+                            </>
+                          )}
+                        </div>
+
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleAddToCart(product.id)}
+                          className="w-full bg-black text-white py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+                        >
+                          <ShoppingCart className="w-4 h-4" />
+                          Add to Cart
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  ))}
+              </div>
+            )}
+
+            {/* Pagination */}
+            {!loading && totalPages > 1 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="mt-8 flex justify-center items-center gap-2"
               >
-                Load More Products
-                <ChevronDown className="w-4 h-4" />
-              </motion.button>
-            </motion.div>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50"
+                >
+                  Previous
+                </button>
+
+                {[...Array(totalPages)].map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentPage(i + 1)}
+                    className={`w-10 h-10 rounded-lg ${
+                      currentPage === i + 1
+                        ? "bg-yellow-400 text-gray-900"
+                        : "hover:bg-gray-100"
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+
+                <button
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </motion.div>
+            )}
           </div>
         </div>
       </div>
@@ -505,7 +674,7 @@ function ProductListing() {
                   onClick={() => setMobileFilterOpen(false)}
                   className="w-full bg-yellow-400 text-gray-900 py-3 rounded-full font-semibold"
                 >
-                  Show 24 Results
+                  Show {total} Results
                 </motion.button>
               </div>
             </motion.div>
@@ -515,5 +684,3 @@ function ProductListing() {
     </div>
   );
 }
-
-export default ProductListing;
