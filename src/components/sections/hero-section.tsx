@@ -234,13 +234,13 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import bannerService, { Banner, MediaType } from "@/lib/api/banner.api.service";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 
 export default function HeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
   const [enableScrollAnim, setEnableScrollAnim] = useState(false);
-  const [banners, setBanners] = useState<Banner[]>([]);
-  const [loading, setLoading] = useState(true);
+  // const [banners, setBanners] = useState<Banner[]>([]);
   const ref = useRef<HTMLDivElement | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -249,21 +249,14 @@ export default function HeroSection() {
   }, []);
 
   /* ------------------ FETCH BANNERS ------------------ */
-  useEffect(() => {
-    const fetchBanners = async () => {
-      try {
-        setLoading(true);
-        const data = await bannerService.getActiveBanners();
-        setBanners(data);
-      } catch (error) {
-        console.error("Failed to fetch banners:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBanners();
-  }, []);
+  const {
+    data: banners = [],
+    isLoading: loading,
+    isError,
+  } = useQuery({
+    queryKey: ["active-banners"],
+    queryFn: () => bannerService.getActiveBanners(),
+  });
 
   /* ------------------ SCROLL ANIMATION ------------------ */
   const { scrollYProgress } = useScroll(

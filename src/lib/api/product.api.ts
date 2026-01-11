@@ -42,6 +42,11 @@ export interface Product {
     fabric?: string;
     price: number;
     sku: string;
+    stock?: Array<{
+      id: string;
+      quantity: number;
+      warehouseId: string;
+    }>;
   }>;
   stock?: Array<{
     id: string;
@@ -52,6 +57,7 @@ export interface Product {
     reviews: number;
     variants: number;
   };
+  createdAt: string;
 }
 
 export interface ProductsResponse {
@@ -65,6 +71,12 @@ export interface ProductsResponse {
       totalPages: number;
     };
   };
+  meta?: {
+    query: {
+      categorySlug?: string;
+      categoriesSearched: number;
+    };
+  };
 }
 
 export interface ProductResponse {
@@ -72,30 +84,65 @@ export interface ProductResponse {
   data: Product;
 }
 
+// ✅ UPDATED: Complete query params matching backend DTO
 export interface ProductQueryParams {
+  // Pagination
   page?: number;
   limit?: number;
+
+  // Search
   search?: string;
+
+  // Categories - Support multiple ways to filter
+  categorySlug?: string;
   categoryId?: string;
+  categoryIds?: string | string[]; // Can be comma-separated string or array
+
+  // Product Flags
   isActive?: boolean;
   hasVariants?: boolean;
+
+  // Price Range
   minPrice?: number;
   maxPrice?: number;
-  sortBy?: "createdAt" | "price" | "name";
+
+  // Sorting
+  sortBy?: "createdAt" | "price" | "name" | "popularity";
   sortOrder?: "asc" | "desc";
+
+  // Filters (Advanced)
+  color?: string;
+  fabric?: string;
+  size?: string;
+  artisan?: string;
+
+  // Stock availability
+  inStock?: boolean;
 }
 
 class ProductApiService {
   /**
-   * Get all products with pagination and filters
+   * ✅ ENHANCED: Get all products with pagination and filters
+   * Supports all backend query parameters including categorySlug, variant filters, etc.
    */
   async getProducts(params?: ProductQueryParams): Promise<ProductsResponse> {
-    const queryString = new URLSearchParams(
-      Object.entries(params || {})
-        .filter(([_, value]) => value !== undefined && value !== null)
-        .map(([key, value]) => [key, String(value)])
-    ).toString();
+    // Build query string with proper handling of arrays
+    const queryParams = new URLSearchParams();
 
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          // Handle arrays (e.g., categoryIds)
+          if (Array.isArray(value)) {
+            queryParams.append(key, value.join(","));
+          } else {
+            queryParams.append(key, String(value));
+          }
+        }
+      });
+    }
+
+    const queryString = queryParams.toString();
     const response = await clientApiService.api.get(
       `/products${queryString ? `?${queryString}` : ""}`
     );

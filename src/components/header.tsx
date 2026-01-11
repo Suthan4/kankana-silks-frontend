@@ -20,6 +20,7 @@ import { useOnClickOutside } from "@/hooks/useClickOutside";
 import clientApiService from "@/lib/api/api.client.service";
 import categoryService, { Category } from "@/lib/api/category.api.service";
 import { toast } from "@/store/useToastStore";
+import { buildCategoryQuery } from "@/lib/shared/builders/productCategoryQuery.builder.ts";
 
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -103,6 +104,20 @@ function Header() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  /* -------------------- GENERATE CATEGORY URL -------------------- */
+  const getCategoryUrl = (slug: string) => {
+    const queryParams = buildCategoryQuery(slug);
+    const searchParams = new URLSearchParams();
+
+    Object.entries(queryParams).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    });
+
+    return `/shop/${slug}?${searchParams.toString()}`;
+  };
 
   const icons = [
     {
@@ -330,8 +345,9 @@ function Header() {
                   onMouseLeave={() => setHoveredCategory(null)}
                   className="relative cursor-pointer group"
                 >
+                  {/* ✅ UPDATED: Category link with query params */}
                   <Link
-                    href={`/category/${category.slug}`}
+                    href={getCategoryUrl(category.slug)}
                     className="flex items-center gap-1"
                   >
                     <span className="text-xs font-bold tracking-wider transition-all duration-300 hover:text-gray-900">
@@ -396,16 +412,16 @@ function Header() {
                               whileHover={{ x: 5 }}
                               className="group cursor-pointer"
                             >
+                              {/* ✅ UPDATED: Subcategory link with query params */}
                               <Link
-                                href={`/category/${subCategory.slug}`}
+                                href={getCategoryUrl(subCategory.slug)}
                                 className="flex items-center gap-2"
                               >
-                                {/* <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-black transition-colors" /> */}
                                 <p className="text-sm font-medium text-gray-800 group-hover:text-black transition-colors duration-300">
                                   {subCategory.name}
                                 </p>
                               </Link>
-                              <div className="h-px bg-gradient-to-r from-gray-300 to-transparent w-0 group-hover:w-full transition-all duration-500 mt-2 ml-6" />
+                              <div className="h-px bg-gradient-to-r from-gray-300 to-transparent w-0 group-hover:w-full transition-all duration-500 mt-2" />
                             </motion.div>
                           ))}
                       </div>
@@ -456,12 +472,13 @@ function Header() {
                               }
                             </p>
                           )}
+                          {/* ✅ UPDATED: View All link with query params */}
                           <Link
-                            href={`/category/${
+                            href={getCategoryUrl(
                               categories.find(
                                 (cat) => cat.id === hoveredCategory
-                              )?.slug
-                            }`}
+                              )?.slug || ""
+                            )}
                             className="inline-block mt-4 text-sm font-medium text-black hover:underline"
                           >
                             View All →
@@ -541,25 +558,35 @@ function Header() {
                     transition={{ delay: index * 0.05 }}
                     className="border-b border-gray-100 pb-4 mb-4"
                   >
-                    <button
-                      onClick={() =>
-                        setActiveNav(
-                          activeNav === category.name ? "" : category.name
-                        )
-                      }
-                      className="w-full flex items-center justify-between py-2"
-                    >
-                      <span className="text-sm font-medium tracking-wide">
-                        {category.name}
-                      </span>
+                    <div className="w-full flex items-center justify-between py-2">
+                      {/* ✅ UPDATED: Mobile category link with query params */}
+                      <Link
+                        href={getCategoryUrl(category.slug)}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex-1"
+                      >
+                        <span className="text-sm font-medium tracking-wide">
+                          {category.name}
+                        </span>
+                      </Link>
+
                       {category.children && category.children.length > 0 && (
-                        <ChevronDown
-                          className={`w-4 h-4 transition-transform duration-300 ${
-                            activeNav === category.name ? "rotate-180" : ""
-                          }`}
-                        />
+                        <button
+                          onClick={() =>
+                            setActiveNav(
+                              activeNav === category.name ? "" : category.name
+                            )
+                          }
+                          className="p-2"
+                        >
+                          <ChevronDown
+                            className={`w-4 h-4 transition-transform duration-300 ${
+                              activeNav === category.name ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
                       )}
-                    </button>
+                    </div>
 
                     <AnimatePresence>
                       {activeNav === category.name &&
@@ -573,9 +600,10 @@ function Header() {
                             className="overflow-hidden"
                           >
                             {category.children.map((subCategory, idx) => (
+                              /* ✅ UPDATED: Mobile subcategory link with query params */
                               <Link
                                 key={subCategory.id}
-                                href={`/category/${subCategory.slug}`}
+                                href={getCategoryUrl(subCategory.slug)}
                                 onClick={() => setMobileMenuOpen(false)}
                               >
                                 <motion.p
