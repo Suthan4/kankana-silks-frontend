@@ -12,6 +12,7 @@ import {
   ChevronDown,
   Home,
   ChevronRight,
+  Video,
 } from "lucide-react";
 import Image from "next/image";
 import { authModalStore, useAuthModal } from "@/store/useAuthModalStore";
@@ -21,42 +22,42 @@ import clientApiService from "@/lib/api/api.client.service";
 import categoryService, { Category } from "@/lib/api/category.api.service";
 import { toast } from "@/store/useToastStore";
 import { buildCategoryQuery } from "@/lib/shared/builders/productCategoryQuery.builder.ts";
+import { useCartStore } from "@/store/useCartStore";
+import { useQuery } from "@tanstack/react-query";
+import { usePathname } from "next/navigation";
 
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeNav, setActiveNav] = useState("");
-  const [activeIcon, setActiveIcon] = useState("Home");
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const openModal = useAuthModal((state) => state.openModal);
   const [showNav, setShowNav] = useState(true);
-  const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
   const [scrolled, setScrolled] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
+  const cartItemsCount = useCartStore((s) => s.getTotalItems());
+  const pathname = usePathname();
 
   const { user } = useAuthModal();
   useOnClickOutside(ref, () => setUserMenuOpen(false));
 
-  /* -------------------- FETCH CATEGORIES -------------------- */
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        setLoading(true);
-        const data = await categoryService.getCategoryTree();
-        setCategories(data);
-      } catch (error) {
-        console.error("Failed to fetch categories:", error);
-        toast.error("Failed to load categories", 2000);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Check if we're on my-account page
+  const isMyAccountPage = pathname?.startsWith("/my-account");
 
-    fetchCategories();
-  }, []);
+  /* -------------------- FETCH CATEGORIES -------------------- */
+  const {
+    data: categories = [],
+    isLoading: loading,
+    isError,
+  } = useQuery({
+    queryKey: ["categories-tree"],
+    queryFn: async () => {
+      return await categoryService.getCategoryTree();
+    },
+    staleTime: 1000 * 60 * 10,
+    retry: 1,
+  });
 
   /* -------------------- HELPERS -------------------- */
   const getDisplayName = () => {
@@ -127,6 +128,13 @@ function Header() {
       url: "/",
     },
     {
+      name: "Consultation",
+      icon: Video,
+      type: "link",
+      url: "/my-account/video-appointment",
+      requiresAuth: false,
+    },
+    {
       name: "Whatsapp",
       icon: MessageCircle,
       type: "action",
@@ -140,14 +148,14 @@ function Header() {
       icon: ShoppingCart,
       type: "link",
       url: "/cart",
-      requiresAuth: true,
-      badgeCount: cartCount,
+      requiresAuth: false,
+      badgeCount: cartItemsCount,
     },
     {
       name: "Wishlist",
       icon: Heart,
       type: "link",
-      requiresAuth: true,
+      requiresAuth: false,
       url: "/wishlist",
       badgeCount: wishlistCount,
     },
@@ -345,7 +353,6 @@ function Header() {
                   onMouseLeave={() => setHoveredCategory(null)}
                   className="relative cursor-pointer group"
                 >
-                  {/* ✅ UPDATED: Category link with query params */}
                   <Link
                     href={getCategoryUrl(category.slug)}
                     className="flex items-center gap-1"
@@ -364,7 +371,6 @@ function Header() {
                     )}
                   </Link>
 
-                  {/* Underline Animation */}
                   {activeNav === category.name && (
                     <motion.div
                       layoutId="activeDesktopNav"
@@ -395,7 +401,6 @@ function Header() {
               >
                 <div className="max-w-7xl mx-auto px-8 py-8">
                   <div className="grid grid-cols-12 gap-8">
-                    {/* Left Side - Subcategories List */}
                     <div className="col-span-7">
                       <div className="grid grid-cols-2 gap-6">
                         {categories
@@ -412,7 +417,6 @@ function Header() {
                               whileHover={{ x: 5 }}
                               className="group cursor-pointer"
                             >
-                              {/* ✅ UPDATED: Subcategory link with query params */}
                               <Link
                                 href={getCategoryUrl(subCategory.slug)}
                                 className="flex items-center gap-2"
@@ -427,7 +431,6 @@ function Header() {
                       </div>
                     </div>
 
-                    {/* Right Side - Parent Category with Image */}
                     <div className="col-span-5 border-l border-gray-100 pl-8">
                       <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
@@ -472,7 +475,6 @@ function Header() {
                               }
                             </p>
                           )}
-                          {/* ✅ UPDATED: View All link with query params */}
                           <Link
                             href={getCategoryUrl(
                               categories.find(
@@ -501,7 +503,6 @@ function Header() {
         transition={{ duration: 0.6 }}
         className="md:hidden sticky top-0 z-50 bg-white shadow-md"
       >
-        {/* Top Bar */}
         <div className="flex items-center justify-between px-4 py-3">
           <motion.button
             whileTap={{ scale: 0.9 }}
@@ -537,7 +538,7 @@ function Header() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
             transition={{ duration: 0.3 }}
-            className="md:hidden fixed inset-0 bg-white z-40 overflow-y-auto"
+            className="md:hidden fixed inset-0 bg-white z-50 overflow-y-auto"
             style={{ top: "64px" }}
           >
             <div className="px-4 py-6">
@@ -559,7 +560,6 @@ function Header() {
                     className="border-b border-gray-100 pb-4 mb-4"
                   >
                     <div className="w-full flex items-center justify-between py-2">
-                      {/* ✅ UPDATED: Mobile category link with query params */}
                       <Link
                         href={getCategoryUrl(category.slug)}
                         onClick={() => setMobileMenuOpen(false)}
@@ -600,7 +600,6 @@ function Header() {
                             className="overflow-hidden"
                           >
                             {category.children.map((subCategory, idx) => (
-                              /* ✅ UPDATED: Mobile subcategory link with query params */
                               <Link
                                 key={subCategory.id}
                                 href={getCategoryUrl(subCategory.slug)}
@@ -628,104 +627,87 @@ function Header() {
         )}
       </AnimatePresence>
 
-      {/* Mobile Bottom Navigation */}
-      <motion.nav
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.3 }}
-        className="md:hidden fixed bottom-0 left-0 right-0 bg-white z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.08)] border-t border-gray-100"
-      >
-        <ul className="flex justify-around items-center py-3">
-          {icons.map((item, index) => {
-            const IconComponent = item.icon;
-            const isActive = activeIcon === item.name;
-            return (
-              <motion.li
-                key={index}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.3, delay: 0.5 + index * 0.08 }}
-                whileTap={{ scale: 0.85 }}
-                onClick={() => {
-                  setActiveIcon(item.name);
-                  if (item.type === "action") {
-                    item.onClick?.();
-                  }
-                }}
-                className="flex flex-col items-center gap-1 cursor-pointer p-2 relative"
-              >
-                {item.type === "link" ? (
-                  <Link
-                    href={item.url!}
-                    onClick={(e) => {
-                      if (item.requiresAuth && !user) {
-                        e.preventDefault();
-                        openModal("login");
-                      }
-                    }}
-                    className="flex flex-col items-center gap-1"
-                  >
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeMobileIcon"
-                        className="absolute -top-0 left-0 right-0 h-0.5 bg-black rounded-full"
-                        transition={{
-                          type: "spring",
-                          stiffness: 380,
-                          damping: 30,
-                        }}
-                      />
-                    )}
-                    <IconComponent
-                      className={`w-5 h-5 transition-colors duration-300 ${
-                        isActive ? "text-black" : "text-gray-600"
-                      }`}
-                    />
-                    <span
-                      className={`text-[10px] font-medium transition-colors duration-300 ${
-                        isActive ? "text-black" : "text-gray-600"
-                      }`}
+      {/* Mobile Bottom Navigation - HIDE ON MY-ACCOUNT PAGES */}
+      {!isMyAccountPage && (
+        <motion.nav
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="md:hidden fixed bottom-0 left-0 right-0 bg-white z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.08)] border-t border-gray-100"
+        >
+          <ul className="flex justify-around items-center py-3">
+            {icons.map((item, index) => {
+              const IconComponent = item.icon;
+              // Check if current path matches the item's URL
+              const isActive =
+                pathname === item.url || pathname?.startsWith(item.url + "/");
+
+              return (
+                <motion.li
+                  key={index}
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.3, delay: 0.5 + index * 0.08 }}
+                  whileTap={{ scale: 0.85 }}
+                  className="flex flex-col items-center gap-1 cursor-pointer p-2 relative"
+                >
+                  {item.type === "link" ? (
+                    <Link
+                      href={item.url!}
+                      onClick={(e) => {
+                        if (item.requiresAuth && !user) {
+                          e.preventDefault();
+                          openModal("login");
+                        }
+                      }}
+                      className="flex flex-col items-center gap-1"
                     >
-                      {item.name}
-                    </span>
-                    {"badgeCount" in item && item.badgeCount! > 0 && (
-                      <span className="absolute top-1 right-1 bg-black text-white text-[8px] rounded-full w-3 h-3 flex items-center justify-center font-medium">
-                        {item.badgeCount}
+                      {isActive && (
+                        <motion.div
+                          layoutId="activeMobileIcon"
+                          className="absolute -top-0 left-0 right-0 h-0.5 bg-black rounded-full"
+                          transition={{
+                            type: "spring",
+                            stiffness: 380,
+                            damping: 30,
+                          }}
+                        />
+                      )}
+                      <IconComponent
+                        className={`w-5 h-5 transition-colors duration-300 ${
+                          isActive ? "text-black" : "text-gray-600"
+                        }`}
+                      />
+                      <span
+                        className={`text-[10px] font-medium transition-colors duration-300 ${
+                          isActive ? "text-black" : "text-gray-600"
+                        }`}
+                      >
+                        {item.name}
                       </span>
-                    )}
-                  </Link>
-                ) : (
-                  <>
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeMobileIcon"
-                        className="absolute -top-0 left-0 right-0 h-0.5 bg-black rounded-full"
-                        transition={{
-                          type: "spring",
-                          stiffness: 380,
-                          damping: 30,
-                        }}
-                      />
-                    )}
-                    <IconComponent
-                      className={`w-5 h-5 transition-colors duration-300 ${
-                        isActive ? "text-black" : "text-gray-600"
-                      }`}
-                    />
-                    <span
-                      className={`text-[10px] font-medium transition-colors duration-300 ${
-                        isActive ? "text-black" : "text-gray-600"
-                      }`}
+                      {"badgeCount" in item && item.badgeCount! > 0 && (
+                        <span className="absolute top-1 right-1 bg-black text-white text-[8px] rounded-full w-3 h-3 flex items-center justify-center font-medium">
+                          {item.badgeCount}
+                        </span>
+                      )}
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => item.onClick?.()}
+                      className="flex flex-col items-center gap-1"
                     >
-                      {item.name}
-                    </span>
-                  </>
-                )}
-              </motion.li>
-            );
-          })}
-        </ul>
-      </motion.nav>
+                      <IconComponent className="w-5 h-5 text-gray-600" />
+                      <span className="text-[10px] font-medium text-gray-600">
+                        {item.name}
+                      </span>
+                    </button>
+                  )}
+                </motion.li>
+              );
+            })}
+          </ul>
+        </motion.nav>
+      )}
     </>
   );
 }

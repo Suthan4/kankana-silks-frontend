@@ -9,69 +9,130 @@ import {
   ArrowLeft,
   ArrowRight,
   Lock,
+  ShoppingBag,
+  X,
+  Check,
+  Gift,
+  Percent,
 } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
+import { useCartStore } from "@/store/useCartStore";
+import { useRouter } from "next/navigation";
+import { toast } from "@/store/useToastStore";
 
-const ShoppingCart = () => {
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      name: "Kanchipuram Silk",
-      description: "Royal Blue • Free Size",
-      price: 350.0,
-      quantity: 1,
-      image:
-        "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&q=80",
-    },
-    {
-      id: 2,
-      name: "Banarasi Georgette",
-      description: "Crimson Red • Free Size",
-      price: 210.0,
-      quantity: 1,
-      image:
-        "https://images.unsplash.com/photo-1583391733981-5096a2c669?w=400&q=80",
-    },
-    {
-      id: 3,
-      name: "Mysore Silk",
-      description: "Emerald Green • Free Size",
-      price: 360.0,
-      quantity: 2,
-      image:
-        "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=400&q=80",
-    },
-  ]);
+const AVAILABLE_COUPONS = [
+  {
+    code: "WELCOME10",
+    discount: 10,
+    type: "PERCENTAGE" as const,
+    minPurchase: 1000,
+    description: "10% off on orders above ₹1000",
+  },
+  {
+    code: "FLAT500",
+    discount: 500,
+    type: "FIXED" as const,
+    minPurchase: 5000,
+    description: "₹500 off on orders above ₹5000",
+  },
+  {
+    code: "FIRST20",
+    discount: 20,
+    type: "PERCENTAGE" as const,
+    minPurchase: 2000,
+    description: "20% off for first-time buyers (min ₹2000)",
+  },
+];
 
-  const [promoCode, setPromoCode] = useState("");
-  const [appliedPromo, setAppliedPromo] = useState(false);
+export default function CartPage() {
+  const router = useRouter();
+  const {
+    items,
+    appliedCoupon,
+    addItem,
+    removeItem,
+    updateQuantity,
+    clearCart,
+    applyCoupon,
+    removeCoupon,
+    getTotalItems,
+    getSubtotal,
+    getDiscount,
+    getTotal,
+  } = useCartStore();
 
-  const updateQuantity = (id:number, change:any) => {
-    setCartItems((items) =>
-      items.map((item) =>
-        item.id === id
-          ? { ...item, quantity: Math.max(1, item.quantity + change) }
-          : item
-      )
-    );
-  };
+  const [couponCode, setCouponCode] = useState("");
+  const [showCouponDropdown, setShowCouponDropdown] = useState(false);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
-  const removeItem = (id:number) => {
-    setCartItems((items) => items.filter((item) => item.id !== id));
-  };
+  const subtotal = getSubtotal();
+  const discount = getDiscount();
+  const total = getTotal();
+  const totalItems = getTotalItems();
 
-  const applyPromo = () => {
-    if (promoCode.trim()) {
-      setAppliedPromo(true);
+  const handleApplyCoupon = async (code: string) => {
+    setIsApplyingCoupon(true);
+    try {
+      const coupon = AVAILABLE_COUPONS.find((c) => c.code === code);
+
+      if (!coupon) {
+        toast.error("Invalid coupon code");
+        return;
+      }
+
+      applyCoupon(coupon);
+      toast.success(`Coupon "${code}" applied successfully!`);
+      setCouponCode("");
+      setShowCouponDropdown(false);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to apply coupon");
+    } finally {
+      setIsApplyingCoupon(false);
     }
   };
 
-  const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
-  const shipping = 0;
-  const vat = subtotal * 0.08;
-  const total = subtotal + shipping + vat;
+  const handleRemoveCoupon = () => {
+    removeCoupon();
+    toast.info("Coupon removed");
+  };
+
+  const handleCheckout = () => {
+    if (items.length === 0) {
+      toast.error("Your cart is empty");
+      return;
+    }
+    router.push("/checkout");
+  };
+
+  if (items.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center max-w-md"
+        >
+          <div className="w-32 h-32 bg-gray-100 rounded-full mx-auto mb-6 flex items-center justify-center">
+            <ShoppingBag className="w-16 h-16 text-gray-400" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">
+            Your cart is empty
+          </h2>
+          <p className="text-gray-600 mb-8">
+            Looks like you haven't added anything to your cart yet.
+          </p>
+          <Link
+            href="/shop"
+            className="inline-flex items-center gap-2 bg-black text-white px-8 py-4 rounded-full font-semibold hover:bg-gray-800 transition"
+          >
+            Continue Shopping
+            <ArrowRight className="w-5 h-5" />
+          </Link>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50">
@@ -81,11 +142,18 @@ const ShoppingCart = () => {
         animate={{ y: 0, opacity: 1 }}
         className="lg:hidden sticky top-0 z-50 bg-white shadow-sm px-4 py-4 flex items-center justify-between"
       >
-        <button className="p-2 hover:bg-gray-100 rounded-lg transition">
-          <ArrowLeft className="w-5 h-5" />
+        <Link href="/shop">
+          <button className="p-2 hover:bg-gray-100 rounded-lg transition">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        </Link>
+        <h1 className="text-lg font-bold">My Cart ({totalItems})</h1>
+        <button
+          onClick={() => setShowCouponDropdown(!showCouponDropdown)}
+          className="text-sm text-amber-600 font-medium"
+        >
+          Coupons
         </button>
-        <h1 className="text-lg font-bold">My Cart</h1>
-        <button className="text-sm text-amber-600 font-medium">Help</button>
       </motion.div>
 
       <div className="max-w-7xl mx-auto px-4 py-6 lg:py-12">
@@ -95,53 +163,95 @@ const ShoppingCart = () => {
           animate={{ y: 0, opacity: 1 }}
           className="hidden lg:block mb-8"
         >
-          <h1 className="text-4xl font-bold text-gray-900">
-            My Cart{" "}
-            <span className="text-2xl text-gray-500 font-normal">
-              ({cartItems.length} Items)
-            </span>
-          </h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-4xl font-bold text-gray-900">
+              Shopping Cart
+              <span className="text-2xl text-gray-500 font-normal ml-4">
+                ({totalItems} {totalItems === 1 ? "Item" : "Items"})
+              </span>
+            </h1>
+            <Link
+              href="/shop"
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              Continue Shopping
+            </Link>
+          </div>
         </motion.div>
 
         <div className="lg:grid lg:grid-cols-3 lg:gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4 mb-6 lg:mb-0">
             <AnimatePresence mode="popLayout">
-              {cartItems.map((item, index) => (
+              {items.map((item, index) => (
                 <motion.div
                   key={item.id}
                   layout
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -100 }}
-                  transition={{ delay: index * 0.1 }}
+                  transition={{ delay: index * 0.05 }}
                   className="bg-white rounded-2xl p-4 lg:p-6 shadow-sm hover:shadow-md transition"
                 >
                   <div className="flex gap-4">
                     {/* Product Image */}
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      className="relative flex-shrink-0"
-                    >
-                      <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-xl overflow-hidden bg-gray-100">
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    </motion.div>
+                    <Link href={`/shop/${item.slug}`}>
+                      <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        className="relative flex-shrink-0 cursor-pointer"
+                      >
+                        <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-xl overflow-hidden bg-gray-100">
+                          {item.image ? (
+                            <Image
+                              src={item.image}
+                              alt={item.name}
+                              width={96}
+                              height={96}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                              <ShoppingBag className="w-8 h-8 text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    </Link>
 
                     {/* Product Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="flex-1">
-                          <h3 className="font-bold text-gray-900 text-base lg:text-lg mb-1">
-                            {item.name}
-                          </h3>
-                          <p className="text-sm text-gray-700">
-                            {item.description}
-                          </p>
+                          <Link href={`/products/${item.slug}`}>
+                            <h3 className="font-bold text-gray-900 text-base lg:text-lg mb-1 hover:text-amber-600 transition cursor-pointer">
+                              {item.name}
+                            </h3>
+                          </Link>
+                          {item.variant && (
+                            <div className="flex flex-wrap gap-2 text-sm text-gray-600">
+                              {item.variant.color && (
+                                <span className="bg-gray-100 px-2 py-0.5 rounded">
+                                  {item.variant.color}
+                                </span>
+                              )}
+                              {item.variant.size && (
+                                <span className="bg-gray-100 px-2 py-0.5 rounded">
+                                  Size: {item.variant.size}
+                                </span>
+                              )}
+                              {item.variant.fabric && (
+                                <span className="bg-gray-100 px-2 py-0.5 rounded">
+                                  {item.variant.fabric}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          {item.stock < 5 && item.stock > 0 && (
+                            <p className="text-xs text-orange-600 mt-1">
+                              Only {item.stock} left in stock
+                            </p>
+                          )}
                         </div>
                         <motion.button
                           whileHover={{ scale: 1.1 }}
@@ -154,16 +264,26 @@ const ShoppingCart = () => {
                       </div>
 
                       <div className="flex items-center justify-between mt-4">
-                        <p className="text-xl lg:text-2xl font-bold text-gray-900">
-                          ₹{item.price.toFixed(2)}
-                        </p>
+                        <div>
+                          <p className="text-xl lg:text-2xl font-bold text-gray-900">
+                            ₹{Number(item.price).toFixed(2)}
+                          </p>
+                          {item.basePrice > item.price && (
+                            <p className="text-sm text-gray-400 line-through">
+                              ₹{Number(item.basePrice).toFixed(2)}
+                            </p>
+                          )}
+                        </div>
 
                         {/* Quantity Controls */}
                         <div className="flex items-center gap-2 lg:gap-3 bg-gray-100 rounded-full px-2 py-1">
                           <motion.button
                             whileTap={{ scale: 0.9 }}
-                            onClick={() => updateQuantity(item.id, -1)}
-                            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 transition"
+                            onClick={() =>
+                              updateQuantity(item.id, item.quantity - 1)
+                            }
+                            disabled={item.quantity <= 1}
+                            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Minus className="w-4 h-4" />
                           </motion.button>
@@ -174,8 +294,11 @@ const ShoppingCart = () => {
 
                           <motion.button
                             whileTap={{ scale: 0.9 }}
-                            onClick={() => updateQuantity(item.id, 1)}
-                            className="w-8 h-8 flex items-center justify-center text-white bg-black rounded-full hover:bg-gray-900 transition"
+                            onClick={() =>
+                              updateQuantity(item.id, item.quantity + 1)
+                            }
+                            disabled={item.quantity >= item.stock}
+                            className="w-8 h-8 flex items-center justify-center text-white bg-black rounded-full hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Plus className="w-4 h-4" />
                           </motion.button>
@@ -195,56 +318,141 @@ const ShoppingCart = () => {
             transition={{ delay: 0.3 }}
             className="lg:col-span-1"
           >
-            <div className="bg-white rounded-2xl p-6 shadow-sm sticky top-24">
-              {/* Promo Code - Desktop */}
-              <div className="hidden lg:block mb-6">
-                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <Tag className="w-4 h-4" />
-                  Promo Code
-                </h3>
-                <div className="flex gap-2">
-                  <div className="flex-1 relative">
-                    <input
-                      type="text"
-                      value={promoCode}
-                      onChange={(e) => setPromoCode(e.target.value)}
-                      placeholder="Enter coupon code"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
-                    />
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={applyPromo}
-                    className="px-6 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition"
-                  >
-                    Apply
-                  </motion.button>
+            <div className="bg-white rounded-2xl p-6 shadow-sm sticky top-24 space-y-6">
+              {/* Coupon Section */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Gift className="w-5 h-5 text-amber-600" />
+                  <h3 className="font-semibold text-gray-900">Apply Coupon</h3>
                 </div>
-                {appliedPromo && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-green-600 text-sm mt-2 flex items-center gap-1"
-                  >
-                    ✓ Promo code applied
-                  </motion.p>
+
+                {appliedCoupon ? (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Check className="w-5 h-5 text-green-600" />
+                      <div>
+                        <p className="font-semibold text-green-900">
+                          {appliedCoupon.code}
+                        </p>
+                        <p className="text-xs text-green-700">
+                          {appliedCoupon.type === "PERCENTAGE"
+                            ? `${appliedCoupon.discount}% off`
+                            : `₹${appliedCoupon.discount} off`}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleRemoveCoupon}
+                      className="text-green-600 hover:text-green-700"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={couponCode}
+                        onChange={(e) =>
+                          setCouponCode(e.target.value.toUpperCase())
+                        }
+                        placeholder="Enter coupon code"
+                        className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition uppercase"
+                      />
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => handleApplyCoupon(couponCode)}
+                        disabled={!couponCode || isApplyingCoupon}
+                        className="px-6 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isApplyingCoupon ? "..." : "Apply"}
+                      </motion.button>
+                    </div>
+
+                    <button
+                      onClick={() => setShowCouponDropdown(!showCouponDropdown)}
+                      className="text-sm text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1"
+                    >
+                      <Percent className="w-4 h-4" />
+                      View available coupons
+                    </button>
+
+                    <AnimatePresence>
+                      {showCouponDropdown && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="space-y-2 overflow-hidden"
+                        >
+                          {AVAILABLE_COUPONS.map((coupon) => {
+                            const canApply =
+                              subtotal >= (coupon.minPurchase || 0);
+                            return (
+                              <motion.button
+                                key={coupon.code}
+                                whileHover={canApply ? { scale: 1.02 } : {}}
+                                onClick={() =>
+                                  canApply && handleApplyCoupon(coupon.code)
+                                }
+                                disabled={!canApply}
+                                className={`w-full text-left p-3 rounded-lg border-2 transition ${
+                                  canApply
+                                    ? "border-amber-200 bg-amber-50 hover:border-amber-400 cursor-pointer"
+                                    : "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="font-bold text-gray-900">
+                                    {coupon.code}
+                                  </span>
+                                  <span className="text-xs bg-amber-400 text-gray-900 px-2 py-0.5 rounded-full font-semibold">
+                                    {coupon.type === "PERCENTAGE"
+                                      ? `${coupon.discount}% OFF`
+                                      : `₹${coupon.discount} OFF`}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-600">
+                                  {coupon.description}
+                                </p>
+                                {!canApply && coupon.minPurchase && (
+                                  <p className="text-xs text-red-600 mt-1">
+                                    Add ₹
+                                    {(coupon.minPurchase - subtotal).toFixed(2)}{" "}
+                                    more to apply
+                                  </p>
+                                )}
+                              </motion.button>
+                            );
+                          })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 )}
               </div>
 
               {/* Price Breakdown */}
-              <div className="space-y-4 mb-6 pb-6 border-b border-gray-200">
+              <div className="space-y-4 pb-6 border-b border-gray-200">
                 <div className="flex justify-between text-gray-700">
-                  <span>Subtotal</span>
+                  <span>Subtotal ({totalItems} items)</span>
                   <span className="font-semibold">₹{subtotal.toFixed(2)}</span>
                 </div>
+
+                {discount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount</span>
+                    <span className="font-semibold">
+                      -₹{Number(discount).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex justify-between text-gray-700">
                   <span>Shipping</span>
                   <span className="font-semibold text-green-600">Free</span>
-                </div>
-                <div className="flex justify-between text-gray-700">
-                  <span>VAT (8%)</span>
-                  <span className="font-semibold">₹{vat.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -254,17 +462,23 @@ const ShoppingCart = () => {
                   <span className="text-lg font-bold text-gray-900">Total</span>
                   <div className="text-right">
                     <span className="text-3xl font-bold text-gray-900">
-                      ₹{total.toFixed(2)}
+                      ₹{Number(total).toFixed(2)}
                     </span>
-                    <p className="text-sm text-gray-500">incl. VAT</p>
+                    <p className="text-sm text-gray-500">incl. all taxes</p>
                   </div>
                 </div>
+                {discount > 0 && (
+                  <p className="text-sm text-green-600 text-right">
+                    You saved ₹{Number(discount).toFixed(2)}
+                  </p>
+                )}
               </div>
 
               {/* Checkout Button */}
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                onClick={handleCheckout}
                 className="w-full bg-black text-white py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-xl transition flex items-center justify-center gap-2 group"
               >
                 Proceed to Checkout
@@ -283,81 +497,35 @@ const ShoppingCart = () => {
             </div>
           </motion.div>
         </div>
+      </div>
 
-        {/* Promo Code - Mobile */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="lg:hidden bg-white rounded-2xl p-4 shadow-sm mb-4"
-        >
-          <h3 className="font-semibold text-gray-900 mb-3">Promo Code</h3>
-          <div className="flex gap-2">
-            <div className="flex-1 relative">
-              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                value={promoCode}
-                onChange={(e) => setPromoCode(e.target.value)}
-                placeholder="Enter coupon code"
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-              />
-            </div>
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={applyPromo}
-              className="px-6 py-3 bg-gray-900 text-white rounded-xl font-medium"
-            >
-              Apply
-            </motion.button>
+      {/* Mobile Bottom Bar */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white shadow-lg p-4 z-50 border-t">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <p className="text-sm text-gray-600">TOTAL</p>
+            <p className="text-2xl font-bold text-gray-900">
+              ₹{total.toFixed(2)}
+            </p>
+            {discount > 0 && (
+              <p className="text-xs text-green-600">
+                Saved ₹{Number(discount).toFixed(2)}
+              </p>
+            )}
           </div>
-          {appliedPromo && (
-            <motion.p
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-green-600 text-sm mt-2"
-            >
-              ✓ Promo code applied
-            </motion.p>
-          )}
-        </motion.div>
-
-        {/* Mobile Summary & Checkout */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="lg:hidden bg-white rounded-t-3xl shadow-lg fixed bottom-0 left-0 right-0 p-4 pb-6 z-40"
-        >
-          <div className="flex justify-between items-baseline mb-4">
-            <span className="text-sm text-gray-600">TOTAL</span>
-            <div className="text-right">
-              <span className="text-2xl font-bold text-gray-900">
-                ₹{total.toFixed(2)}
-              </span>
-              <p className="text-xs text-gray-500">incl. VAT</p>
-            </div>
-          </div>
-
           <motion.button
             whileTap={{ scale: 0.98 }}
-            className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white py-4 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2"
+            onClick={handleCheckout}
+            className="bg-black text-white px-8 py-3 rounded-full font-bold shadow-lg flex items-center gap-2"
           >
-            Proceed to Checkout
+            Checkout
             <ArrowRight className="w-5 h-5" />
           </motion.button>
-
-          <p className="text-center text-xs text-gray-500 mt-3 flex items-center justify-center gap-1">
-            <Lock className="w-3 h-3" />
-            Secure Checkout
-          </p>
-        </motion.div>
-
-        {/* Spacer for mobile fixed footer */}
-        <div className="h-32 lg:hidden" />
+        </div>
       </div>
+
+      {/* Spacer for mobile */}
+      <div className="h-24 lg:hidden" />
     </div>
   );
-};
-
-export default ShoppingCart;
+}

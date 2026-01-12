@@ -23,6 +23,7 @@ import { useAuthModal } from "@/store/useAuthModalStore";
 import { toast } from "@/store/useToastStore";
 import { Category } from "@/lib/api/category.api.service";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCartStore } from "@/store/useCartStore";
 
 interface CategoryProductsClientProps {
   category: Category;
@@ -35,6 +36,7 @@ export default function CategoryProductsClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const { addItem: addToLocalCart } = useCartStore();
 
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
@@ -245,21 +247,44 @@ export default function CategoryProductsClient({
   };
 
   const addToCartMutation = useMutation({
-    mutationFn: (productId: string) =>
-      cartApi.addToCart({ productId, quantity: 1 }),
+    mutationFn: async (product: Product) => {
+      // Build cart item
+      const cartItem = {
+        id: crypto.randomUUID(),
+        productId: product.id,
+        variantId: undefined,
+        name: product.name,
+        slug: product.slug,
+        price: product.sellingPrice,
+        basePrice: product.basePrice,
+        quantity: 1,
+        image: product.media?.[0]?.url,
+        stock: product.stock?.[0]?.quantity || 0,
+      };
+
+      // Always add to local cart first
+      addToLocalCart(cartItem);
+      router.push("/cart");
+
+      // If user is logged in, sync with server
+      if (user) {
+        await cartApi.addToCart({ productId: product.id, quantity: 1 });
+      }
+
+      return cartItem;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      if (user) {
+        queryClient.invalidateQueries({ queryKey: ["cart"] });
+      }
+      router.push("/cart");
       toast.success("Added to cart");
     },
     onError: () => toast.error("Failed to add to cart"),
   });
 
-  const handleAddToCart = (productId: string) => {
-    if (!user) {
-      openModal("login");
-      return;
-    }
-    addToCartMutation.mutate(productId);
+  const handleAddToCart = (product: Product) => {
+    addToCartMutation.mutate(product);
   };
 
   /* ------------------ HANDLERS ------------------ */
@@ -511,7 +536,7 @@ export default function CategoryProductsClient({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* ✅ FIXED: Breadcrumb - Desktop */}
+      {/* Breadcrumb - Desktop */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -541,7 +566,6 @@ export default function CategoryProductsClient({
         className="md:hidden bg-white border-b sticky top-0 z-40"
       >
         <div className="flex items-center gap-3 px-4 py-3">
-          {/* ✅ FIXED: Back to shop */}
           <Link href="/shop">
             <motion.div whileTap={{ scale: 0.9 }}>
               <ChevronLeft className="w-6 h-6" />
@@ -705,7 +729,6 @@ export default function CategoryProductsClient({
                     whileHover={{ y: -4 }}
                     className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                   >
-                    {/* ✅ FIXED: Product detail link */}
                     <Link href={`/products/${product.slug}`}>
                       <div className="relative aspect-square overflow-hidden">
                         <motion.div
@@ -776,7 +799,7 @@ export default function CategoryProductsClient({
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => handleAddToCart(product.id)}
+                        onClick={() => handleAddToCart(product)}
                         disabled={addToCartMutation.isPending}
                         className="w-full bg-black text-white py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
                       >

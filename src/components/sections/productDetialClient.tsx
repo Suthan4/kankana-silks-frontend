@@ -18,6 +18,7 @@ import { wishlistApi } from "@/lib/api/wishlist.api";
 import { cartApi } from "@/lib/api/cart.api";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { toast } from "@/store/useToastStore";
+import { useCartStore } from "@/store/useCartStore";
 
 interface ProductDetailsClientProps {
   initialProduct: Product;
@@ -27,7 +28,8 @@ export default function ProductDetailsClient({
   initialProduct,
 }: ProductDetailsClientProps) {
   const { user, openModal } = useAuthModal();
-console.log("initialProduct", initialProduct);
+  const { addItem: addToLocalCart } = useCartStore();
+  console.log("initialProduct", initialProduct);
 
   // State
   const [product] = useState<Product>(initialProduct);
@@ -124,11 +126,6 @@ console.log("initialProduct", initialProduct);
   };
 
   const handleAddToCart = async () => {
-    if (!user) {
-      openModal("login");
-      return;
-    }
-
     if (quantity > availableStock) {
       toast.error(`Only ${availableStock} items available`);
       return;
@@ -136,12 +133,45 @@ console.log("initialProduct", initialProduct);
 
     try {
       setLoading(true);
-      await cartApi.addToCart({
+
+      // Build cart item for local storage
+      const cartItem = {
+        id: crypto.randomUUID(),
         productId: product.id,
         variantId: selectedVariant?.id,
-        quantity,
-      });
+        name: product.name,
+        slug: product.slug,
+        price: displayPrice,
+        basePrice: basePrice,
+        quantity: quantity,
+        image: product.media?.[0]?.url,
+        variant: selectedVariant
+          ? {
+              size: selectedVariant.size,
+              color: selectedVariant.color,
+              fabric: selectedVariant.fabric,
+            }
+          : undefined,
+        stock: availableStock,
+      };
+
+      // Always add to local cart first
+      addToLocalCart(cartItem);
       toast.success("Added to cart");
+
+      // If user is logged in, also sync with server
+      if (user) {
+        try {
+          await cartApi.addToCart({
+            productId: product.id,
+            variantId: selectedVariant?.id,
+            quantity,
+          });
+        } catch (error) {
+          console.error("Failed to sync with server:", error);
+          // Don't show error to user since local cart worked
+        }
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to add to cart");
     } finally {
