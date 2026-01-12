@@ -49,6 +49,7 @@ export async function generateMetadata(): Promise<Metadata> {
       "Kankana Silks",
       "women's wear",
       "men's wear",
+      "bridal's wear",
       "ethnic wear",
       "shop sarees",
     ],

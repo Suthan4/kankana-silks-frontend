@@ -1,373 +1,320 @@
 "use client";
-import React, { useState } from "react";
+
+import { useState } from "react";
 import {
+  Video,
   Calendar,
   Clock,
-  Video,
-  MessageSquare,
-  Star,
-  ChevronLeft,
   Plus,
   X,
-  Check,
-  Mail,
   Phone,
+  Mail,
   User,
+  MessageSquare,
+  Star,
+  ChevronRight,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-const AppointmentsDashboard = () => {
-  const [activeTab, setActiveTab] = useState("upcoming");
+export default function VideoAppointmentPage() {
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPlatform, setSelectedPlatform] = useState("whatsapp");
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    countryCode: "+91",
-  });
+  const [activeTab, setActiveTab] = useState("upcoming");
 
-  const appointments = {
-    upcoming: [
-      {
-        id: 1,
-        date: "Oct 24, 2:00 PM",
-        name: "Priya S.",
-        role: "Senior Retail Consultant",
-        message:
-          '"Client is interested in Kathiyawadi silk options for a winter wedding. Popular..."',
-        type: "next",
-        status: "confirmed",
-      },
-    ],
-    later: [
-      {
-        id: 2,
-        date: "Nov 02, 10:00 AM",
-        name: "Ravi K.",
-        type: "Whatsapp Video • Saree Selection",
-        status: "scheduled",
-      },
-    ],
-    past: [
-      {
-        id: 3,
-        date: "Sep 15",
-        name: "Ananya R.",
-        status: "completed",
-        rating: 5,
-      },
-    ],
-  };
+  const appointments = [
+    {
+      id: "VID-001",
+      date: "Oct 24, 2024",
+      time: "2:00 PM",
+      consultant: "Priya S.",
+      role: "Senior Style Consultant",
+      image:
+        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150",
+      status: "upcoming",
+      platform: "WhatsApp Video",
+    },
+    {
+      id: "VID-002",
+      date: "Nov 02, 2024",
+      time: "10:00 AM",
+      consultant: "Ravi K.",
+      role: "Style Consultant",
+      image:
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+      status: "scheduled",
+      platform: "WhatsApp Video",
+    },
+  ];
 
-  const handleSubmit = () => {
-    console.log("Form submitted:", formData, "Platform:", selectedPlatform);
-    alert("Appointment confirmed! We will contact you shortly.");
-    setIsModalOpen(false);
-  };
+  const pastAppointments = [
+    {
+      id: "VID-003",
+      date: "Sep 15, 2024",
+      consultant: "Ananya R.",
+      rating: 5,
+      status: "completed",
+    },
+  ];
+
+  const displayAppointments =
+    activeTab === "upcoming" ? appointments : pastAppointments;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8 animate-fade-in">
-          <div className="flex items-center gap-4">
-            <button className="p-2 hover:bg-white rounded-full transition-all duration-200 hover:shadow-md">
-              <ChevronLeft className="w-6 h-6 text-gray-700" />
-            </button>
-            <h1 className="text-3xl font-bold text-gray-900">
-              My Appointments
-            </h1>
-          </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-primary-dark text-white p-3 rounded-full hover:shadow-lg transition-all duration-300 hover:scale-110"
-          >
-            <Plus className="w-6 h-6" />
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-2 mb-8 bg-white p-2 rounded-2xl shadow-sm w-fit">
-          {["upcoming", "completed"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-8 py-3 rounded-xl font-medium transition-all duration-300 ${
-                activeTab === tab
-                  ? "bg-primary-dark text-white shadow-md"
-                  : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {/* Next Session Card */}
-          {activeTab === "upcoming" && (
-            <div className="bg-white rounded-3xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 animate-slide-up border border-orange-100">
-              <div className="flex items-center gap-2 text-primary-dark text-sm font-semibold mb-4">
-                <Calendar className="w-4 h-4" />
-                NEXT SESSION
-              </div>
-
-              <div className="flex items-center gap-2 text-amber-600 mb-4">
-                <Clock className="w-5 h-5" />
-                <span className="font-semibold">Oct 24, 2:00 PM</span>
-                <span className="ml-auto w-3 h-3 bg-green-400 rounded-full animate-pulse"></span>
-              </div>
-
-              <div className="flex items-start gap-4 mb-4">
-                <img
-                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop"
-                  alt="Priya S."
-                  className="w-16 h-16 rounded-2xl object-cover ring-2 ring-orange-200"
-                />
-                <div className="flex-1">
-                  <h3 className="font-bold text-lg text-gray-900">Priya S.</h3>
-                  <p className="text-sm text-gray-500">
-                    Senior Retail Consultant
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-4 mb-4 border border-orange-100">
-                <div className="flex items-start gap-2">
-                  <MessageSquare className="w-4 h-4 text-orange-500 mt-1 flex-shrink-0" />
-                  <p className="text-sm text-gray-700 italic">
-                    "Client is interested in Kathiyawadi silk options for a
-                    winter wedding. Popular..."
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button className="flex-1 bg-primary to-orange-400 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105">
-                  Join Session
-                </button>
-                <button className="px-6 py-3 border-2 border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-all duration-300">
-                  Reschedule
-                </button>
-              </div>
+    <div className="min-h-screen">
+      {/* Header */}
+      <div className="bg-white border-b p-4 lg:p-6 sticky top-0 z-10 shadow-sm">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold">Video Shopping</h1>
+              <p className="text-sm text-gray-500 mt-1">
+                Shop from home with our expert stylists
+              </p>
             </div>
-          )}
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl flex items-center justify-center hover:shadow-xl transition-all hover:scale-110 shadow-lg"
+            >
+              <Plus className="w-6 h-6" />
+            </button>
+          </div>
 
-          {/* Later Sessions */}
-          {activeTab === "upcoming" && (
-            <div className="bg-white rounded-3xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 animate-slide-up-delay-1">
-              <div className="flex items-center gap-2 text-gray-500 text-sm font-semibold mb-6">
-                LATER
-              </div>
+          {/* Tabs */}
+          <div className="flex gap-2">
+            {["upcoming", "completed"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+                  activeTab === tab
+                    ? "bg-black text-white shadow-lg"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
-              <div className="flex items-start gap-4 mb-4">
-                <img
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop"
-                  alt="Ravi K."
-                  className="w-16 h-16 rounded-2xl object-cover ring-2 ring-gray-200"
-                />
-                <div className="flex-1">
-                  <h3 className="font-bold text-lg text-gray-900">Ravi K.</h3>
-                  <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
-                    <Clock className="w-4 h-4" />
-                    <span>Nov 02, 10:00 AM</span>
+      {/* Appointments List */}
+      <div className="p-4 lg:p-6 space-y-4 max-w-4xl mx-auto">
+        {activeTab === "upcoming" &&
+          appointments.map((apt) => (
+            <div
+              key={apt.id}
+              className="bg-white rounded-2xl border-2 border-gray-100 overflow-hidden hover:shadow-xl transition-all cursor-pointer"
+              onClick={() =>
+                router.push(`/my-account/video-appointment/${apt.id}`)
+              }
+            >
+              <div className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white p-5 lg:p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2 text-sm font-semibold opacity-90">
+                    <Calendar className="w-4 h-4" />
+                    <span>UPCOMING SESSION</span>
+                  </div>
+                  <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-lg"></div>
+                </div>
+
+                <div className="flex items-center gap-3 mb-3">
+                  <Clock className="w-6 h-6" />
+                  <div>
+                    <div className="text-xl lg:text-2xl font-bold">
+                      {apt.date}
+                    </div>
+                    <div className="text-sm opacity-90">{apt.time}</div>
                   </div>
                 </div>
+
+                <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-lg backdrop-blur-sm">
+                  <MessageSquare className="w-4 h-4" />
+                  <span className="text-sm font-medium">{apt.platform}</span>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2 text-sm text-gray-600 mb-4 bg-green-50 p-3 rounded-xl">
-                <Video className="w-4 h-4 text-green-600" />
-                <span>Whatsapp Video • Saree Selection</span>
-              </div>
+              <div className="p-5 lg:p-6">
+                <div className="flex items-center gap-4 mb-4">
+                  <img
+                    src={apt.image}
+                    alt={apt.consultant}
+                    className="w-16 h-16 rounded-xl object-cover ring-4 ring-purple-100"
+                  />
+                  <div className="flex-1">
+                    <div className="font-bold text-lg">{apt.consultant}</div>
+                    <div className="text-sm text-gray-500">{apt.role}</div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                </div>
 
-              <div className="flex gap-3">
-                <button className="px-6 py-3 border-2 border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-all duration-300">
-                  Cancel
-                </button>
-                <button className="flex-1 bg-primary text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300">
-                  View Details
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button className="flex-1 bg-black text-white py-3 rounded-xl font-semibold hover:bg-gray-800 transition-all flex items-center justify-center gap-2">
+                    <Video className="w-4 h-4" />
+                    Join Now
+                  </button>
+                  <button className="px-4 py-3 border-2 border-gray-200 rounded-xl font-semibold hover:bg-gray-50 transition-all">
+                    Details
+                  </button>
+                </div>
               </div>
             </div>
-          )}
+          ))}
 
-          {/* Past Appointments */}
-          {activeTab === "completed" && (
-            <div className="bg-white rounded-3xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 animate-slide-up">
-              <div className="flex items-center gap-2 text-gray-500 text-sm font-semibold mb-6">
-                PAST
-              </div>
-
+        {activeTab === "completed" &&
+          pastAppointments.map((apt) => (
+            <div
+              key={apt.id}
+              className="bg-white rounded-2xl border-2 border-gray-100 p-5 lg:p-6"
+            >
               <div className="flex items-start gap-4 mb-4">
-                <img
-                  src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop"
-                  alt="Ananya R."
-                  className="w-16 h-16 rounded-2xl object-cover ring-2 ring-gray-200 opacity-75"
-                />
+                <div className="w-16 h-16 bg-gray-200 rounded-xl opacity-75"></div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-lg text-gray-900">Ananya R.</h3>
-                  <p className="text-sm text-gray-500">Already Consulted</p>
-                  <div className="flex items-center gap-1 mt-2">
-                    {[...Array(5)].map((_, i) => (
+                  <div className="font-bold text-lg">{apt.consultant}</div>
+                  <div className="text-sm text-gray-500 mb-2">{apt.date}</div>
+                  <div className="flex items-center gap-1">
+                    {[...Array(apt.rating)].map((_, i) => (
                       <Star
                         key={i}
-                        className="w-4 h-4 fill-amber-400 text-amber-400"
+                        className="w-4 h-4 fill-yellow-400 text-yellow-400"
                       />
                     ))}
                   </div>
                 </div>
               </div>
-
-              <div className="flex gap-3">
-                <button className="flex-1 bg-gray-900 text-white py-3 rounded-xl font-semibold hover:bg-gray-800 transition-all duration-300">
+              <div className="grid grid-cols-2 gap-2">
+                <button className="py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-all">
                   Book Again
                 </button>
-                <button className="px-6 py-3 border-2 border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-all duration-300">
+                <button className="py-3 border-2 border-gray-200 rounded-xl font-semibold hover:bg-gray-50 transition-all">
                   Invoice
                 </button>
               </div>
             </div>
-          )}
+          ))}
+
+        {/* Info Card */}
+        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-6 border-2 border-purple-100">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
+              <Video className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <p className="font-bold text-lg mb-2">Why Video Shopping?</p>
+              <ul className="text-sm text-gray-700 space-y-1">
+                <li>✓ Personal styling consultation from home</li>
+                <li>✓ See products in real-time via video</li>
+                <li>✓ Expert guidance from our stylists</li>
+                <li>✓ Convenient and time-saving</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Booking Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto animate-scale-in">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-3xl z-10">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Book Video Shopping
-              </h2>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="sticky top-0 bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-6 flex items-center justify-between rounded-t-3xl z-10">
+              <div>
+                <h2 className="text-2xl font-bold">Book Video Session</h2>
+                <p className="text-sm opacity-90 mt-1">
+                  Connect with our expert stylists
+                </p>
+              </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-all duration-200"
+                className="p-2 hover:bg-white/20 rounded-full transition"
               >
-                <X className="w-6 h-6 text-gray-600" />
+                <X className="w-6 h-6" />
               </button>
             </div>
 
             <div className="p-6 lg:p-8">
-              <div className="grid lg:grid-cols-2 gap-8">
-                {/* Left Section - Hero */}
-                <div className="space-y-6">
-                  <div className="relative rounded-2xl overflow-hidden shadow-xl group">
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/70 z-10"></div>
-                    <img
-                      src="https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=800&q=80"
-                      alt="Luxury silk saree"
-                      className="w-full h-64 lg:h-80 object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 p-6 z-20 text-white">
-                      <h3 className="text-2xl lg:text-3xl font-serif mb-2">
-                        Experience Luxury Remotely
-                      </h3>
-                      <p className="text-sm opacity-90">
-                        Our experts will walk you through our latest Kanjivaram
-                        and Banarasi collections from the comfort of your home.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* How it Works */}
-                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-100">
-                    <h3 className="text-xl font-serif text-amber-600 mb-4">
-                      How it works
-                    </h3>
-                    <div className="space-y-4">
+              <div className="grid lg:grid-cols-2 gap-6">
+                {/* Left - Info */}
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-5 border-2 border-purple-100">
+                    <h3 className="font-bold text-lg mb-3">How it works</h3>
+                    <div className="space-y-3">
                       {[
                         {
                           num: 1,
-                          title: "Book an Appointment",
-                          desc: "Choose a time and platform that works for you.",
+                          title: "Book Appointment",
+                          desc: "Choose your preferred time",
                         },
                         {
                           num: 2,
-                          title: "Connect with a Stylist",
-                          desc: "Join the video call on your preferred app.",
+                          title: "Connect via Video",
+                          desc: "Join on WhatsApp or FaceTime",
                         },
                         {
                           num: 3,
-                          title: "Shop with Ease",
-                          desc: "Select your favorites and we'll ship them globally.",
+                          title: "Shop & Select",
+                          desc: "Browse with expert guidance",
                         },
                       ].map((step) => (
                         <div key={step.num} className="flex gap-3">
-                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-400 text-white flex items-center justify-center font-semibold">
+                          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">
                             {step.num}
                           </div>
                           <div>
-                            <h4 className="font-semibold text-gray-800 mb-1">
+                            <div className="font-semibold text-sm">
                               {step.title}
-                            </h4>
-                            <p className="text-sm text-gray-600">{step.desc}</p>
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              {step.desc}
+                            </div>
                           </div>
                         </div>
                       ))}
                     </div>
                   </div>
+
+                  <div className="bg-yellow-50 rounded-2xl p-4 border-2 border-yellow-200">
+                    <p className="text-sm font-semibold text-yellow-900">
+                      ✨ Free consultation for all customers
+                    </p>
+                  </div>
                 </div>
 
-                {/* Right Section - Form */}
-                <div className="space-y-5">
-                  <div className="inline-block bg-gradient-to-r from-amber-400 to-amber-500 text-white px-4 py-1 rounded-full text-sm">
-                    ✨ New to us?
-                  </div>
-
-                  {/* Full Name */}
+                {/* Right - Form */}
+                <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-semibold mb-2">
                       Full Name
                     </label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
                         type="text"
-                        placeholder="e.g. Anjali Sharma"
-                        value={formData.fullName}
-                        onChange={(e) =>
-                          setFormData({ ...formData, fullName: e.target.value })
-                        }
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none transition"
+                        placeholder="Enter your name"
+                        className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                       />
                     </div>
                   </div>
 
-                  {/* Email */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-semibold mb-2">
                       Email Address
                     </label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
                         type="email"
-                        placeholder="name@example.com"
-                        value={formData.email}
-                        onChange={(e) =>
-                          setFormData({ ...formData, email: e.target.value })
-                        }
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none transition"
+                        placeholder="your@email.com"
+                        className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                       />
                     </div>
                   </div>
 
-                  {/* Phone */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-semibold mb-2">
                       Phone Number
                     </label>
                     <div className="flex gap-2">
-                      <select
-                        value={formData.countryCode}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            countryCode: e.target.value,
-                          })
-                        }
-                        className="w-24 px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-400 outline-none"
-                      >
+                      <select className="w-24 px-3 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none font-medium">
                         <option>+91</option>
                         <option>+1</option>
                         <option>+44</option>
@@ -377,87 +324,67 @@ const AppointmentsDashboard = () => {
                         <input
                           type="tel"
                           placeholder="98765 43210"
-                          value={formData.phone}
-                          onChange={(e) =>
-                            setFormData({ ...formData, phone: e.target.value })
-                          }
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none transition"
+                          className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                         />
                       </div>
                     </div>
                   </div>
 
-                  {/* Platform Selection */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <label className="block text-sm font-semibold mb-3">
                       Preferred Platform
                     </label>
-                    <div className="space-y-3">
-                      <div
-                        onClick={() => setSelectedPlatform("whatsapp")}
-                        className={`relative flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition ${
-                          selectedPlatform === "whatsapp"
-                            ? "border-green-500 bg-green-50"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                            <MessageSquare className="w-5 h-5 text-white" />
-                          </div>
-                          <div>
-                            <div className="font-semibold text-gray-800">
-                              WhatsApp Video
+                    <div className="space-y-2">
+                      {[
+                        {
+                          id: "whatsapp",
+                          name: "WhatsApp Video",
+                          icon: MessageSquare,
+                          color: "green",
+                        },
+                        {
+                          id: "facetime",
+                          name: "FaceTime",
+                          icon: Video,
+                          color: "gray",
+                        },
+                      ].map((platform) => {
+                        const Icon = platform.icon;
+                        return (
+                          <label
+                            key={platform.id}
+                            className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition"
+                          >
+                            <input
+                              type="radio"
+                              name="platform"
+                              className="w-5 h-5"
+                            />
+                            <div
+                              className={`w-10 h-10 bg-${platform.color}-500 rounded-full flex items-center justify-center`}
+                            >
+                              <Icon className="w-5 h-5 text-white" />
                             </div>
-                            <div className="text-sm text-gray-500">
-                              Best for video viewing
+                            <div className="flex-1">
+                              <div className="font-semibold text-sm">
+                                {platform.name}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                Video call
+                              </div>
                             </div>
-                          </div>
-                        </div>
-                        {selectedPlatform === "whatsapp" && (
-                          <div className="w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center">
-                            <Check className="w-4 h-4 text-white" />
-                          </div>
-                        )}
-                      </div>
-
-                      <div
-                        onClick={() => setSelectedPlatform("facetime")}
-                        className={`relative flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition ${
-                          selectedPlatform === "facetime"
-                            ? "border-gray-800 bg-gray-50"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center">
-                            <Video className="w-5 h-5 text-white" />
-                          </div>
-                          <div>
-                            <div className="font-semibold text-gray-800">
-                              FaceTime
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              Chat in quality video
-                            </div>
-                          </div>
-                        </div>
-                        {selectedPlatform === "facetime" && (
-                          <div className="w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center">
-                            <Check className="w-4 h-4 text-white" />
-                          </div>
-                        )}
-                      </div>
+                          </label>
+                        );
+                      })}
                     </div>
                   </div>
 
-                  {/* Submit Button */}
                   <button
-                    onClick={handleSubmit}
-                    className="w-full bg-gradient-to-r from-amber-400 to-orange-400 text-white font-semibold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 hover:scale-105"
+                    onClick={() => setIsModalOpen(false)}
+                    className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-4 rounded-xl font-bold hover:shadow-xl transition-all flex items-center justify-center gap-2 text-lg"
                   >
-                    Confirm Appointment
-                    <span>→</span>
+                    Confirm Booking
+                    <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -465,9 +392,6 @@ const AppointmentsDashboard = () => {
           </div>
         </div>
       )}
-
     </div>
   );
-};
-
-export default AppointmentsDashboard;
+}

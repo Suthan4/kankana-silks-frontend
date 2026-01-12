@@ -1,17 +1,18 @@
-"use client"
+"use client";
 
-import { motion, useScroll, useTransform } from "framer-motion"
-import { useRef } from "react"
+import { motion, useScroll, useTransform } from "framer-motion";
+import Link from "next/link";
+import { useRef } from "react";
 
 export default function CTASection() {
-  const ref = useRef(null)
+  const ref = useRef(null);
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start center", "end center"],
-  })
+  });
 
-  const scale = useTransform(scrollYProgress, [0, 0.5, 1], [0.95, 1, 1.05])
-  const y = useTransform(scrollYProgress, [0, 1], [40, -40])
+  const scale = useTransform(scrollYProgress, [0, 0.5, 1], [0.95, 1, 1.05]);
+  const y = useTransform(scrollYProgress, [0, 1], [40, -40]);
 
   return (
     <section
@@ -61,13 +62,15 @@ export default function CTASection() {
           viewport={{ once: false }}
           className="flex flex-col sm:flex-row gap-4 justify-center"
         >
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="px-8 py-3 bg-white text-black font-medium rounded-sm hover:bg-opacity-90 transition-all"
-          >
-            Shop Now
-          </motion.button>
+          <Link href={`/shop`}>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-8 py-3 bg-white text-black font-medium rounded-sm hover:bg-opacity-90 transition-all"
+            >
+              Shop Now
+            </motion.button>
+          </Link>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
