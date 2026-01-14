@@ -1,6 +1,6 @@
 "use client";
 
-import { HomeSection } from "@/lib/api/home-section.api.service";
+import { HomeSection } from "@/lib/api/home-section.api";
 import { useState, useEffect } from "react";
 
 function HeroSlider({ section }: { section: HomeSection }) {

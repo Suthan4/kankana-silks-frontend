@@ -15,6 +15,7 @@ export interface CartItem {
     size?: string;
     color?: string;
     fabric?: string;
+    attributes?: Record<string, string>;
   };
   stock: number;
 }

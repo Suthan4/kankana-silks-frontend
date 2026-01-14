@@ -6,7 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { Product } from "@/lib/api/home-section.api.service";
+import { Product } from "@/lib/api/home-section.api";
 
 gsap.registerPlugin(ScrollTrigger);
 

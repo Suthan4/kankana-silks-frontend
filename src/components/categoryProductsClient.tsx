@@ -21,7 +21,7 @@ import { wishlistApi } from "@/lib/api/wishlist.api";
 import { cartApi } from "@/lib/api/cart.api";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { toast } from "@/store/useToastStore";
-import { Category } from "@/lib/api/category.api.service";
+import { Category } from "@/lib/api/category.api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCartStore } from "@/store/useCartStore";
 
@@ -786,8 +786,9 @@ export default function CategoryProductsClient({
                             </span>
                             <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
                               {Math.round(
-                                ((product.basePrice - product.sellingPrice) /
-                                  product.basePrice) *
+                                ((parseInt(product.basePrice) -
+                                  parseInt(product.sellingPrice)) /
+                                  parseInt(product.basePrice)) *
                                   100
                               )}
                               % OFF

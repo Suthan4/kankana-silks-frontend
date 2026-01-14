@@ -1,7 +1,8 @@
 import { authModalStore } from "@/store/useAuthModalStore";
 import axios, { AxiosInstance, AxiosError } from "axios";
+import { getAccessToken, getRefreshToken } from "../utils/authToken";
 
-const API_BASE_URL = "http://localhost:3000/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ||  "http://localhost:3000/api";
 
 export type UserRole = "SUPERADMIN" | "ADMIN" | "USER";
 export interface User {
@@ -16,6 +17,11 @@ export interface User {
 export class BaseApiService {
   public api: AxiosInstance;
   private onAuthFailure: () => void;
+  private isRefreshing = false;
+  private failedQueue: Array<{
+    resolve: (value?: any) => void;
+    reject: (reason?: any) => void;
+  }> = [];
 
   constructor(onAuthFailure: () => void) {
     this.onAuthFailure = onAuthFailure;
@@ -29,11 +35,23 @@ export class BaseApiService {
     this.setupInterceptors();
   }
 
+  private processQueue(error: any, token: string | null = null) {
+    this.failedQueue.forEach((prom) => {
+      if (error) {
+        prom.reject(error);
+      } else {
+        prom.resolve(token);
+      }
+    });
+
+    this.failedQueue = [];
+  }
+
   private setupInterceptors() {
     // Request interceptor
     this.api.interceptors.request.use(
       (config) => {
-        const token = localStorage.getItem("accessToken");
+        const token = getAccessToken();
 
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
@@ -50,10 +68,26 @@ export class BaseApiService {
         const originalRequest = error.config as any;
 
         if (error.response?.status === 401 && !originalRequest._retry) {
+          if (this.isRefreshing) {
+            // If already refreshing, queue this request
+            return new Promise((resolve, reject) => {
+              this.failedQueue.push({ resolve, reject });
+            })
+              .then((token) => {
+                originalRequest.headers.Authorization = `Bearer ${token}`;
+                return this.api(originalRequest);
+              })
+              .catch((err) => {
+                return Promise.reject(err);
+              });
+          }
+
           originalRequest._retry = true;
+          this.isRefreshing = true;
 
           try {
-            const refreshToken = localStorage.getItem("refreshToken");
+            const refreshToken = getRefreshToken();
+
             if (!refreshToken) {
               throw new Error("No refresh token");
             }
@@ -64,15 +98,21 @@ export class BaseApiService {
             );
 
             const { accessToken } = response.data.data;
-            console.log("response.data.data", response.data.data);
 
-            localStorage.setItem("accessToken", accessToken);
+            // Update Zustand store properly
+            const authState = authModalStore.getState();
+            authState.setAuth(accessToken, authState.user!);
+
+            this.processQueue(null, accessToken);
 
             originalRequest.headers.Authorization = `Bearer ${accessToken}`;
             return this.api(originalRequest);
           } catch (refreshError) {
+            this.processQueue(refreshError, null);
             this.clearAuthAndRedirect();
             return Promise.reject(refreshError);
+          } finally {
+            this.isRefreshing = false;
           }
         }
 
@@ -82,9 +122,8 @@ export class BaseApiService {
   }
 
   private clearAuthAndRedirect() {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("user");
+    // Clear all auth data
+    authModalStore.getState().logout();
     this.onAuthFailure();
   }
 
@@ -98,10 +137,10 @@ export class BaseApiService {
     return this.api.post("/auth/register", data);
   }
 
-  // Shared auth methods
   async login(credentials: { email: string; password: string }) {
     return this.api.post("/auth/login", credentials);
   }
+
   async forgotPassword(credentials: { email: string }) {
     return this.api.post("/auth/forgot-password", credentials);
   }
@@ -119,10 +158,16 @@ export class BaseApiService {
       refreshToken,
     });
   }
+  async resetPassword(token: string, password: string) {
+    return this.api.post("/auth/reset-password", {
+      token,
+      password,
+    });
+  }
 }
+
 export const authService = new BaseApiService(() => {
   // Centralized auth failure handling
   console.log("Auth failed. Redirecting to login...");
-  authModalStore.openModal();
-  // or router.push("/login")
+  authModalStore.getState().openModal();
 });

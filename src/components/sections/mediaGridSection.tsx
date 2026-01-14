@@ -1,6 +1,6 @@
 "use client";
 
-import { HomeSection } from "@/lib/api/home-section.api.service";
+import { HomeSection } from "@/lib/api/home-section.api";
 import { useState, useRef, useEffect } from "react";
 
 function MediaGridSection({ section }: { section: HomeSection }) {

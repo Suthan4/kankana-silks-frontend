@@ -1,6 +1,6 @@
 "use client";
 
-import { Product } from "@/lib/api/home-section.api.service";
+import { Product } from "@/lib/api/home-section.api";
 import { useState, useEffect } from "react";
 
 function ProductCarousel({
