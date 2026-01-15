@@ -3,7 +3,7 @@ import ShopClient from "@/components/sections/shopClient";
 import axios from "axios";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
+  process.env.NEXT_PUBLIC_API_URL
 
 interface Category {
   id: string;

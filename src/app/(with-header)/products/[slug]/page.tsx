@@ -7,7 +7,7 @@ type Props = {
 };
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
+  process.env.NEXT_PUBLIC_API_URL;
 
 // Fetch product data (server-side)
 async function getProductBySlug(slug: string) {
