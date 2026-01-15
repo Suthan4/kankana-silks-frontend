@@ -249,21 +249,30 @@ export default function CategoryProductsClient({
   const addToCartMutation = useMutation({
     mutationFn: async (product: Product) => {
       // Build cart item
-      const cartItem = {
-        id: crypto.randomUUID(),
-        productId: product.id,
-        variantId: undefined,
-        name: product.name,
-        slug: product.slug,
-        price: product.sellingPrice,
-        basePrice: product.basePrice,
-        quantity: 1,
-        image: product.media?.[0]?.url,
-        stock: product.stock?.[0]?.quantity || 0,
-      };
+      //  const cartItem = {
+      //    id: crypto.randomUUID(),
+      //    productId: product.id,
+      //    variantId: selectedVariant?.id,
+      //    name: product.name,
+      //    slug: product.slug,
+      //    price: Number(displayPrice),
+      //    basePrice: Number(basePrice),
+      //    quantity,
+      //    image: images?.[0]?.url ?? "/placeholder.jpg",
+      //    stock: availableStock,
+
+      //    variant: selectedVariant
+      //      ? {
+      //          size: selectedVariant.size ?? undefined,
+      //          color: selectedVariant.color ?? undefined,
+      //          fabric: selectedVariant.fabric ?? undefined,
+      //          attributes: selectedVariant.attributes ?? undefined,
+      //        }
+      //      : undefined,
+      //  };
 
       // Always add to local cart first
-      addToLocalCart(cartItem);
+      // addToLocalCart(cartItem);
       router.push("/cart");
 
       // If user is logged in, sync with server
@@ -271,7 +280,7 @@ export default function CategoryProductsClient({
         await cartApi.addToCart({ productId: product.id, quantity: 1 });
       }
 
-      return cartItem;
+      // return cartItem;
     },
     onSuccess: () => {
       if (user) {
