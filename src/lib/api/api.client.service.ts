@@ -4,7 +4,7 @@ import { BaseApiService } from "./api.base.service";
 class ClientApiService extends BaseApiService {
   constructor() {
     super(() => {
-      authModalStore.openModal();
+      authModalStore.getState().openModal();
     }); // Redirect to client login on auth failure
     
   }
