@@ -13,6 +13,7 @@ import {
   MapPin,
   Check,
   X,
+  Zap,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -21,8 +22,9 @@ import { wishlistApi } from "@/lib/api/wishlist.api";
 import { cartApi } from "@/lib/api/cart.api";
 import { shipmentApi } from "@/lib/api/shipment.api";
 import { useAuthModal } from "@/store/useAuthModalStore";
-import { toast } from "@/store/useToastStore";
+import { toast } from "sonner";
 import { useCartStore } from "@/store/useCartStore";
+import { useRouter } from "next/navigation";
 
 interface ProductDetailsClientProps {
   initialProduct: Product;
@@ -33,6 +35,7 @@ export default function ProductDetailsClient({
 }: ProductDetailsClientProps) {
   const { user, openModal } = useAuthModal();
   const { addItem: addToLocalCart } = useCartStore();
+  const router = useRouter();
 
   // State
   const [product] = useState<Product>(initialProduct);
@@ -301,6 +304,66 @@ export default function ProductDetailsClient({
       toast.error(error.message || "Failed to add to cart");
     } finally {
       setLoading(false);
+    }
+  };
+  const handleBuyNow = async () => {
+    // Validate stock
+    if (availableStock === 0) {
+      toast.error("Product is out of stock");
+      return;
+    }
+
+    // Validate quantity
+    if (quantity > availableStock) {
+      toast.error(`Only ${availableStock} items available`);
+      return;
+    }
+
+    // For products with variants, ensure variant is selected
+    if (hasVariants && !selectedVariant) {
+      toast.error("Please select product options");
+      return;
+    }
+
+    // Create buy now item
+    const buyNowItem = {
+      productId: product.id,
+      variantId: selectedVariant?.id,
+      quantity,
+      productName: product.name,
+      slug: product.slug,
+      price: Number(displayPrice),
+      basePrice: Number(basePrice),
+      image: images?.[0]?.url ?? "/placeholder.jpg",
+      stock: availableStock,
+      variant: selectedVariant
+        ? {
+            size: selectedVariant.size ?? undefined,
+            color: selectedVariant.color ?? undefined,
+            fabric: selectedVariant.fabric ?? undefined,
+            attributes: selectedVariant.attributes ?? undefined,
+          }
+        : undefined,
+    };
+
+    // Check if user is logged in
+    if (!user) {
+      // Store buy now data for after login
+      sessionStorage.setItem("pendingAction", "buyNow");
+      sessionStorage.setItem("buyNowData", JSON.stringify(buyNowItem));
+
+      // Open login modal
+      openModal("login");
+      toast.info("Please login to continue");
+      return;
+    }
+
+    // User is logged in - proceed directly
+    try {
+      sessionStorage.setItem("buyNowItem", JSON.stringify(buyNowItem));
+      router.push("/checkout?mode=buyNow");
+    } catch (error) {
+      toast.error("Failed to proceed to checkout");
     }
   };
 
@@ -626,6 +689,17 @@ export default function ProductDetailsClient({
               >
                 <ShoppingCart className="w-5 h-5" />
                 {loading ? "Adding..." : "Add to Cart"}
+              </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleBuyNow}
+                disabled={availableStock === 0}
+                className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white py-4 rounded-full font-semibold shadow-lg hover:shadow-xl transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Zap className="w-5 h-5" />
+                Buy Now
               </motion.button>
 
               <motion.button

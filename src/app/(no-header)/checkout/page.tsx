@@ -12,10 +12,11 @@ import {
   Check,
   Edit2,
   Trash2,
+  Zap,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { toast } from "@/store/useToastStore";
@@ -24,6 +25,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { addressApi, type Address } from "@/lib/api/addresses.api";
 import { orderApi } from "@/lib/api/order.api";
 import { shipmentApi } from "@/lib/api/shipment.api";
+import { cartApi } from "@/lib/api/cart.api";
 
 type PaymentMethod = "RAZORPAY" | "COD";
 
@@ -37,9 +39,13 @@ declare global {
 export default function CheckoutPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  // Detect Buy Now mode
+  const isBuyNowMode = searchParams.get("mode") === "buyNow";
+
   const { user, openModal } = useAuthModal();
   const {
-    items,
+    items: cartItems,
     getSubtotal,
     getDiscount,
     getTotal,
@@ -55,10 +61,38 @@ export default function CheckoutPage() {
   const [shippingCost, setShippingCost] = useState(0);
   const [gstAmount, setGstAmount] = useState(0);
   const [estimatedDelivery, setEstimatedDelivery] = useState("3-5 days");
+  const [buyNowItem, setBuyNowItem] = useState<any>(null);
 
+  // Determine which items to show
+  const items = isBuyNowMode && buyNowItem ? [buyNowItem] : cartItems;
   const subtotal = getSubtotal();
   const discount = getDiscount();
   const total = subtotal - discount + shippingCost + gstAmount;
+
+  // Load items based on mode
+  useEffect(() => {
+    if (isBuyNowMode) {
+      // Load buy now item from session storage
+      const storedItem = sessionStorage.getItem("buyNowItem");
+      if (storedItem) {
+        try {
+          const item = JSON.parse(storedItem);
+          setBuyNowItem(item);
+        } catch (error) {
+          console.error("Error loading buy now item:", error);
+          router.push("/cart");
+        }
+      } else {
+        // No buy now item found, redirect to cart
+        router.push("/cart");
+      }
+    } else {
+      // Regular checkout - redirect if cart is empty
+      if (cartItems.length === 0) {
+        router.push("/cart");
+      }
+    }
+  }, [isBuyNowMode, cartItems, router]);
 
   // Load Razorpay script
   useEffect(() => {
@@ -176,35 +210,16 @@ export default function CheckoutPage() {
     deleteAddressMutation.mutate(addressId);
   };
 
-  // Create Razorpay order
-  const createRazorpayOrder = async () => {
-    try {
-      const orderData = await orderApi.createOrder({
-        shippingAddressId: selectedAddress!.id,
-        billingAddressId: selectedAddress!.id,
-        couponCode: appliedCoupon?.code,
-        paymentMethod: "CARD", // Will be handled by Razorpay
-      });
-
-      return orderData.data.razorpayOrderId;
-    } catch (error) {
-      console.error("Error creating Razorpay order:", error);
-      throw error;
-    }
-  };
-
   // Handle Razorpay payment
-  const handleRazorpayPayment = async () => {
+  const handleRazorpayPayment = async (orderData: any) => {
     try {
-      const razorpayOrderId = await createRazorpayOrder();
-
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: total * 100,
         currency: "INR",
         name: "Kankana Silks",
         description: "Order Payment",
-        order_id: razorpayOrderId,
+        order_id: orderData.data.razorpayOrderId,
         prefill: {
           name: user?.firstName + " " + user?.lastName,
           email: user?.email,
@@ -250,29 +265,10 @@ export default function CheckoutPage() {
     }
   };
 
-  // Handle COD order
-  const handleCODOrder = async () => {
-    try {
-      const orderData = await orderApi.createOrder({
-        shippingAddressId: selectedAddress!.id,
-        billingAddressId: selectedAddress!.id,
-        couponCode: appliedCoupon?.code,
-        paymentMethod: "COD",
-      });
-
-      clearCart();
-      toast.success("Order placed successfully!");
-      router.push("/my-account/orders");
-    } catch (error: any) {
-      console.error("Order creation error:", error);
-      toast.error(error.message || "Failed to place order");
-    }
-  };
-
   const handlePlaceOrder = async () => {
     if (!user) {
       toast.error("Please login to place order");
-      // openModal("login");
+      openModal("login");
       return;
     }
 
@@ -284,10 +280,31 @@ export default function CheckoutPage() {
     try {
       setIsProcessing(true);
 
+      // For Buy Now mode, temporarily add item to cart
+      if (isBuyNowMode && buyNowItem) {
+        await cartApi.addToCart({
+          productId: buyNowItem.productId,
+          variantId: buyNowItem.variantId,
+          quantity: buyNowItem.quantity,
+        });
+      }
+
+      // Create order
+      const orderData = await orderApi.createOrder({
+        shippingAddressId: selectedAddress.id,
+        billingAddressId: selectedAddress.id,
+        couponCode: appliedCoupon?.code,
+        paymentMethod: paymentMethod === "RAZORPAY" ? "CARD" : paymentMethod,
+      });
+
       if (paymentMethod === "RAZORPAY") {
-        await handleRazorpayPayment();
+        await handleRazorpayPayment(orderData);
       } else {
-        await handleCODOrder();
+        // COD success
+        clearCart();
+        sessionStorage.removeItem("buyNowItem");
+        toast.success("Order placed successfully!");
+        router.push("/my-account/orders");
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to place order");
@@ -296,7 +313,25 @@ export default function CheckoutPage() {
     }
   };
 
-  console.log("editingAddress",editingAddress);
+    const handleOrderSuccess = () => {
+      // Clear buy now session data
+      if (isBuyNowMode) {
+        sessionStorage.removeItem("buyNowItem");
+        sessionStorage.removeItem("buyNowData");
+        sessionStorage.removeItem("pendingAction");
+      } else {
+        // Clear regular cart
+        clearCart();
+      }
+
+      // Clear other session storage
+      sessionStorage.removeItem("checkoutAfterLogin");
+
+      // Redirect to orders
+      router.push("/my-account/orders");
+    };
+
+  console.log("editingAddress", editingAddress);
   // Allow viewing checkout page without login
   if (items.length === 0) {
     return null;
@@ -304,6 +339,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Show mode indicator */}
       <div className="max-w-7xl mx-auto px-4 py-6 lg:py-8">
         {/* Header */}
         <motion.div
@@ -323,6 +359,12 @@ export default function CheckoutPage() {
           <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">
             Checkout
           </h1>
+          {isBuyNowMode && (
+            <p className="text-sm text-orange-600 flex items-center gap-2 mt-1">
+              <Zap className="w-4 h-4" />
+              Express Checkout - Buy Now
+            </p>
+          )}
           <p className="text-gray-600 mt-2">Review and complete your order</p>
         </motion.div>
 
