@@ -196,7 +196,7 @@ export default function CartPage() {
                 >
                   <div className="flex gap-4">
                     {/* Product Image */}
-                    <Link href={`/shop/${item.slug}`}>
+                    <Link href={`/products/${item.slug}`}>
                       <motion.div
                         whileHover={{ scale: 1.05 }}
                         className="relative flex-shrink-0 cursor-pointer"

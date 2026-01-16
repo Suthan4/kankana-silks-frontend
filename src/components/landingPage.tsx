@@ -6,7 +6,7 @@ import CTASection from "./sections/cta-section";
 import homeSectionService, {
   HomeSection,
   SectionType,
-} from "@/lib/api/home-section.api.service";
+} from "@/lib/api/home-section.api";
 
 // Import all section components
 import HeroSlider from "./sections/heroSlider";

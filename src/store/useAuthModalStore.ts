@@ -1,87 +1,68 @@
-// store/useAuthModalStore.ts
-import { User } from "@/lib/api/api.base.service";
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 
-type AuthMode = "login" | "register" | "forgot";
+export type UserRole = "SUPERADMIN" | "ADMIN" | "USER";
+
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  role: UserRole;
+}
 
 interface AuthModalState {
   isOpen: boolean;
-  mode: AuthMode;
+  mode: "login" | "register" | "forgot";
+  user: User | null;
   accessToken: string | null;
   refreshToken: string | null;
-  user: User | null;
-  isAuthenticated: boolean;
-
-  openModal: (mode?: AuthMode) => void;
+  openModal: (mode?: "login" | "register" | "forgot") => void;
   closeModal: () => void;
-  setMode: (mode: AuthMode) => void;
-  setAuth: (accessToken: string, user: User) => void;
-  setAccessToken: (accessToken: string) => void;
-  clearAuth: () => void;
-  updateUser: (user: Partial<User>) => void;
+  setMode: (mode: "login" | "register" | "forgot") => void;
+  setAuth: (token: string, user: User, refreshToken?: string) => void;
+  logout: () => void;
 }
 
-export const useAuthModal = create<AuthModalState>()(
+export const authModalStore = create<AuthModalState>()(
   persist(
     (set) => ({
-      // Modal state (not persisted)
       isOpen: false,
       mode: "login",
-
-      // Auth state (persisted)
+      user: null,
       accessToken: null,
       refreshToken: null,
-      user: null,
-      isAuthenticated: false,
 
-      // Modal actions
       openModal: (mode = "login") => set({ isOpen: true, mode }),
+
       closeModal: () => set({ isOpen: false }),
+
       setMode: (mode) => set({ mode }),
 
-      // Auth actions
-      setAuth: (accessToken, user) =>
+      setAuth: (accessToken, user, refreshToken) =>
         set({
           accessToken,
           user,
-          isAuthenticated: true,
+          refreshToken: refreshToken || undefined,
         }),
 
-      setAccessToken: (accessToken) => set({ accessToken }),
-
-      clearAuth: () => {
-        // 1️⃣ clear Zustand state
+      logout: () =>
         set({
+          user: null,
           accessToken: null,
           refreshToken: null,
-          user: null,
-          isAuthenticated: false,
-        });
-        // 2️⃣ clear persisted storage
-        useAuthModal.persist.clearStorage();
-      },
-
-      updateUser: (userData) =>
-        set((state) => ({
-          user: state.user ? { ...state.user, ...userData } : null,
-        })),
+        }),
     }),
     {
       name: "auth-modal-storage",
-      storage: createJSONStorage(() => localStorage),
-      // Only persist auth-related fields, not modal state
       partialize: (state) => ({
+        user: state.user,
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
       }),
     }
   )
 );
 
-export const authModalStore = {
-  openModal: () => useAuthModal.getState().openModal(),
-  logout: () => useAuthModal.getState().clearAuth(),
-};
+export const useAuthModal = authModalStore;

@@ -1,4 +1,4 @@
-import clientApiService from "./api.client.service";
+import { authService } from "./api.base.service";
 
 export interface WishlistItem {
   id: string;
@@ -50,7 +50,7 @@ class WishlistApiService {
    * Get user's wishlist
    */
   async getWishlist(): Promise<WishlistResponse> {
-    const response = await clientApiService.api.get("/wishlist");
+    const response = await authService.api.get("/wishlist");
     return response.data;
   }
 
@@ -60,7 +60,7 @@ class WishlistApiService {
   async addToWishlist(
     data: AddToWishlistDTO
   ): Promise<{ success: boolean; message: string; data: WishlistItem }> {
-    const response = await clientApiService.api.post("/wishlist/items", data);
+    const response = await authService.api.post("/wishlist/items", data);
     return response.data;
   }
 
@@ -70,7 +70,7 @@ class WishlistApiService {
   async removeFromWishlist(
     itemId: string
   ): Promise<{ success: boolean; message: string }> {
-    const response = await clientApiService.api.delete(
+    const response = await authService.api.delete(
       `/wishlist/items/${itemId}`
     );
     return response.data;
@@ -80,7 +80,7 @@ class WishlistApiService {
    * Clear entire wishlist
    */
   async clearWishlist(): Promise<{ success: boolean; message: string }> {
-    const response = await clientApiService.api.delete("/wishlist");
+    const response = await authService.api.delete("/wishlist");
     return response.data;
   }
 
@@ -90,7 +90,7 @@ class WishlistApiService {
   async updateVisibility(
     data: UpdateWishlistDTO
   ): Promise<{ success: boolean; message: string; data: Wishlist }> {
-    const response = await clientApiService.api.put(
+    const response = await authService.api.put(
       "/wishlist/visibility",
       data
     );
@@ -103,7 +103,7 @@ class WishlistApiService {
   async checkProduct(
     productId: string
   ): Promise<{ success: boolean; data: { isInWishlist: boolean } }> {
-    const response = await clientApiService.api.get(
+    const response = await authService.api.get(
       `/wishlist/check/${productId}`
     );
     return response.data;

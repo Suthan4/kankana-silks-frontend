@@ -19,10 +19,12 @@ export function useOnClickOutside<T extends HTMLElement>(
 
     document.addEventListener("mousedown", listener);
     document.addEventListener("touchstart", listener);
+    document.addEventListener("pointerdown", listener);
 
     return () => {
       document.removeEventListener("mousedown", listener);
       document.removeEventListener("touchstart", listener);
+      document.removeEventListener("pointerdown", listener);
     };
   }, [ref, handler]);
 }

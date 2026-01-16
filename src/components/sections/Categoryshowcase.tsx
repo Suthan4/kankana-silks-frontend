@@ -1,6 +1,6 @@
 "use client";
 
-import { Category } from "@/lib/api/home-section.api.service";
+import { Category } from "@/lib/api/home-section.api";
 import { useState, useRef } from "react";
 
 function CategoryShowcase({

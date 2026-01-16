@@ -23,6 +23,7 @@ export interface CartItem {
     color?: string;
     fabric?: string;
     price: number;
+    
   };
 }
 

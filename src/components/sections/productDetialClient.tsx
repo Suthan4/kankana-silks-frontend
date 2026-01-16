@@ -1,21 +1,25 @@
 "use client";
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft,
   ChevronRight,
   Heart,
   ShoppingCart,
-  Star,
   Truck,
   RotateCcw,
   Shield,
+  MapPin,
+  Check,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { productApi, type Product } from "@/lib/api/product.api";
+import { productApi, ProductVariant, type Product } from "@/lib/api/product.api";
 import { wishlistApi } from "@/lib/api/wishlist.api";
 import { cartApi } from "@/lib/api/cart.api";
+import { shipmentApi } from "@/lib/api/shipment.api";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { toast } from "@/store/useToastStore";
 import { useCartStore } from "@/store/useCartStore";
@@ -29,44 +33,104 @@ export default function ProductDetailsClient({
 }: ProductDetailsClientProps) {
   const { user, openModal } = useAuthModal();
   const { addItem: addToLocalCart } = useCartStore();
-  console.log("initialProduct", initialProduct);
 
   // State
   const [product] = useState<Product>(initialProduct);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [selectedVariant, setSelectedVariant] = useState<any>(null);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [activeTab, setActiveTab] = useState<"details" | "specs">("details");
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const images = product.media?.filter((m) => m.type === "IMAGE") || [];
+  // Pincode & Delivery State
+  const [pincode, setPincode] = useState("");
+  const [deliveryInfo, setDeliveryInfo] = useState<{
+    isServiceable: boolean;
+    estimatedDays: string;
+    checked: boolean;
+  } | null>(null);
+  const [isCheckingDelivery, setIsCheckingDelivery] = useState(false);
+
   const hasVariants =
-    product.hasVariants && product.variants && product.variants.length > 0;
+    product.hasVariants &&
+    Array.isArray(product.variants) &&
+    product.variants.length > 0;
 
-  // Calculate available stock
+  // ✅ Auto select first variant for single variant products
+  useEffect(() => {
+    if (hasVariants && product.variants?.length && !selectedVariant) {
+      setSelectedVariant(product.variants[0]);
+    }
+  }, [hasVariants, product.variants, selectedVariant]);
+
+  // ✅ Variant media fallback
+  const images = useMemo(() => {
+    const variantImages =
+      selectedVariant?.media?.filter((m) => m.type === "IMAGE") || [];
+
+    const productImages =
+      product.media?.filter((m) => m.type === "IMAGE") || [];
+
+    // ✅ If variant has media use it, else fallback to product media
+    return variantImages.length > 0 ? variantImages : productImages;
+  }, [product.media, selectedVariant?.media]);
+
+  // ✅ Reset image index when variant changes (avoid out of range)
+  useEffect(() => {
+    setSelectedImageIndex(0);
+  }, [selectedVariant?.id]);
+
+  // ✅ Stock logic
   const availableStock = hasVariants
-    ? selectedVariant?.stock?.[0]?.quantity || 0
-    : product.stock?.[0]?.quantity || 0;
+    ? selectedVariant?.stock?.[0]?.quantity ?? 0
+    : product.stock?.[0]?.quantity ?? 0;
 
-  // Calculate price
+  // ✅ Price + discount (variant first priority)
   const displayPrice =
     hasVariants && selectedVariant
-      ? selectedVariant.price
-      : product.sellingPrice;
+      ? Number(
+          selectedVariant.sellingPrice ??
+            selectedVariant.price ??
+            product.sellingPrice
+        )
+      : Number(product.sellingPrice);
 
-  const basePrice = product.basePrice;
+  const basePrice =
+    hasVariants && selectedVariant
+      ? Number(selectedVariant.basePrice ?? product.basePrice)
+      : Number(product.basePrice);
+
   const discount =
     basePrice > displayPrice
       ? Math.round(((basePrice - displayPrice) / basePrice) * 100)
       : 0;
+
+  // ✅ Variant attributes render (Pattern Style / Weave Type)
+  const selectedVariantAttributes = useMemo(() => {
+    const attrs = selectedVariant?.attributes;
+    if (!attrs) return [];
+
+    return Object.entries(attrs).map(([key, value]) => ({
+      key,
+      value: String(value),
+    }));
+  }, [selectedVariant?.attributes]);
 
   useEffect(() => {
     if (user) {
       checkWishlistStatus();
     }
     fetchRelatedProducts();
+
+    // Load saved pincode
+    const savedLocation = localStorage.getItem("userLocation");
+    if (savedLocation) {
+      const location = JSON.parse(savedLocation);
+      setPincode(location.pincode);
+      checkDeliveryAvailability(location.pincode);
+    }
   }, [user, product.id]);
 
   const checkWishlistStatus = async () => {
@@ -87,7 +151,6 @@ export default function ProductDetailsClient({
         isActive: true,
       });
 
-      // Filter out current product
       const filtered = response.data.products.filter(
         (p) => p.id !== product.id
       );
@@ -95,6 +158,69 @@ export default function ProductDetailsClient({
     } catch (error) {
       console.error("Error fetching related products:", error);
     }
+  };
+
+  const checkDeliveryAvailability = async (pincodeToCheck: string) => {
+    if (pincodeToCheck.length !== 6 || !/^\d+$/.test(pincodeToCheck)) {
+      toast.error("Please enter a valid 6-digit pincode");
+      return;
+    }
+
+    setIsCheckingDelivery(true);
+
+    try {
+      const response = await shipmentApi.checkServiceability({
+        pickupPincode: process.env.NEXT_PUBLIC_WAREHOUSE_PINCODE || "110001",
+        deliveryPincode: pincodeToCheck,
+      });
+
+      const couriers = response.data.couriers;
+      const isServiceable = response.data.serviceable && couriers.length > 0;
+
+      let estimatedDays = "3-5 days";
+      if (isServiceable && couriers.length > 0) {
+        const fastestCourier = couriers.reduce((prev: any, curr: any) => {
+          const prevDays = parseInt(prev.estimated_delivery_days.split("-")[0]);
+          const currDays = parseInt(curr.estimated_delivery_days.split("-")[0]);
+          return prevDays < currDays ? prev : curr;
+        });
+        estimatedDays = fastestCourier.estimated_delivery_days + " days";
+      }
+
+      setDeliveryInfo({
+        isServiceable,
+        estimatedDays,
+        checked: true,
+      });
+
+      localStorage.setItem(
+        "userLocation",
+        JSON.stringify({
+          pincode: pincodeToCheck,
+          isServiceable,
+        })
+      );
+
+      if (isServiceable) {
+        toast.success(`Delivery available! Expected in ${estimatedDays}`);
+      } else {
+        toast.error("Sorry, delivery not available to this pincode");
+      }
+    } catch (error) {
+      console.error("Error checking delivery:", error);
+      toast.error("Failed to check delivery availability");
+      setDeliveryInfo({
+        isServiceable: false,
+        estimatedDays: "N/A",
+        checked: true,
+      });
+    } finally {
+      setIsCheckingDelivery(false);
+    }
+  };
+
+  const handleCheckDelivery = () => {
+    checkDeliveryAvailability(pincode);
   };
 
   const toggleWishlist = async () => {
@@ -134,32 +260,32 @@ export default function ProductDetailsClient({
     try {
       setLoading(true);
 
-      // Build cart item for local storage
       const cartItem = {
         id: crypto.randomUUID(),
         productId: product.id,
         variantId: selectedVariant?.id,
         name: product.name,
         slug: product.slug,
-        price: displayPrice,
-        basePrice: basePrice,
-        quantity: quantity,
-        image: product.media?.[0]?.url,
+        price: Number(displayPrice),
+        basePrice: Number(basePrice),
+        quantity,
+        image: images?.[0]?.url ?? "/placeholder.jpg",
+        stock: availableStock,
+
         variant: selectedVariant
           ? {
-              size: selectedVariant.size,
-              color: selectedVariant.color,
-              fabric: selectedVariant.fabric,
+              size: selectedVariant.size ?? undefined,
+              color: selectedVariant.color ?? undefined,
+              fabric: selectedVariant.fabric ?? undefined,
+              attributes: selectedVariant.attributes ?? undefined,
             }
           : undefined,
-        stock: availableStock,
       };
 
-      // Always add to local cart first
+
       addToLocalCart(cartItem);
       toast.success("Added to cart");
 
-      // If user is logged in, also sync with server
       if (user) {
         try {
           await cartApi.addToCart({
@@ -169,7 +295,6 @@ export default function ProductDetailsClient({
           });
         } catch (error) {
           console.error("Failed to sync with server:", error);
-          // Don't show error to user since local cart worked
         }
       }
     } catch (error: any) {
@@ -180,10 +305,12 @@ export default function ProductDetailsClient({
   };
 
   const nextImage = () => {
+    if (!images.length) return;
     setSelectedImageIndex((prev) => (prev + 1) % images.length);
   };
 
   const prevImage = () => {
+    if (!images.length) return;
     setSelectedImageIndex((prev) =>
       prev === 0 ? images.length - 1 : prev - 1
     );
@@ -218,7 +345,6 @@ export default function ProductDetailsClient({
             transition={{ duration: 0.6 }}
             className="space-y-4"
           >
-            {/* Main Image */}
             <div className="relative aspect-square rounded-2xl overflow-hidden bg-white shadow-xl">
               {images.length > 0 ? (
                 <>
@@ -231,7 +357,6 @@ export default function ProductDetailsClient({
                     className="object-cover"
                   />
 
-                  {/* Navigation Arrows */}
                   {images.length > 1 && (
                     <>
                       <button
@@ -255,7 +380,6 @@ export default function ProductDetailsClient({
                 </div>
               )}
 
-              {/* Discount Badge */}
               {discount > 0 && (
                 <div className="absolute top-4 left-4 bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
                   {discount}% OFF
@@ -264,9 +388,9 @@ export default function ProductDetailsClient({
             </div>
 
             {/* Thumbnail Grid */}
-            {images.length > 1 && (
+            {images?.length > 1 && (
               <div className="grid grid-cols-4 gap-3">
-                {images.map((img, idx) => (
+                {images?.map((img: any, idx: number) => (
                   <motion.button
                     key={img.id}
                     whileHover={{ scale: 1.05 }}
@@ -304,15 +428,16 @@ export default function ProductDetailsClient({
               </h1>
               <p className="text-gray-600">{product.category?.name}</p>
 
-              {/* Price */}
+              {/* ✅ Price (Variant aware) */}
               <div className="flex items-baseline gap-3 mt-4">
                 <span className="text-4xl font-bold text-gray-900">
-                  ₹{Number(displayPrice).toFixed(2)}
+                  ₹{displayPrice.toFixed(2)}
                 </span>
+
                 {discount > 0 && (
                   <>
                     <span className="text-xl text-gray-400 line-through">
-                      ₹{Number(basePrice).toFixed(2)}
+                      ₹{basePrice.toFixed(2)}
                     </span>
                     <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
                       {discount}% OFF
@@ -321,6 +446,25 @@ export default function ProductDetailsClient({
                 )}
               </div>
             </div>
+
+            {/* ✅ Variant Attributes (Pattern Style / Weave Type) */}
+            {hasVariants && selectedVariantAttributes.length > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <div className="space-y-2">
+                  {selectedVariantAttributes?.map((attr) => (
+                    <div
+                      key={attr.key}
+                      className="flex items-center justify-between text-sm"
+                    >
+                      <span className="text-gray-600">{attr.key}</span>
+                      <span className="font-medium text-gray-900">
+                        {attr?.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Variants */}
             {hasVariants && (
@@ -331,101 +475,36 @@ export default function ProductDetailsClient({
                     <h3 className="font-semibold text-gray-900 mb-2">
                       Select Size
                     </h3>
+
                     <div className="flex gap-2 flex-wrap">
-                      {[...new Set(product.variants.map((v) => v.size))].map(
-                        (size) => {
-                          const variant = product.variants!.find(
-                            (v) => v.size === size
-                          );
-                          const isSelected = selectedVariant?.size === size;
+                      {Array.from(
+                        new Set(
+                          product.variants.map((v) => v.size).filter(Boolean)
+                        )
+                      ).map((size) => {
+                        const variant = product.variants!.find(
+                          (v) => v.size === size
+                        );
+                        const isSelected = selectedVariant?.size === size;
 
-                          return (
-                            <motion.button
-                              key={size}
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => setSelectedVariant(variant)}
-                              className={`px-4 py-2 border-2 rounded-lg font-medium transition ${
-                                isSelected
-                                  ? "border-yellow-500 bg-yellow-50 text-yellow-700"
-                                  : "border-gray-300 hover:border-gray-400"
-                              }`}
-                            >
-                              {size}
-                            </motion.button>
-                          );
-                        }
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Color Selection */}
-                {product.variants?.some((v) => v.color) && (
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">
-                      Select Color
-                    </h3>
-                    <div className="flex gap-2 flex-wrap">
-                      {[...new Set(product.variants.map((v) => v.color))].map(
-                        (color) => {
-                          const variant = product.variants!.find(
-                            (v) => v.color === color
-                          );
-                          const isSelected = selectedVariant?.color === color;
-
-                          return (
-                            <motion.button
-                              key={color}
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => setSelectedVariant(variant)}
-                              className={`px-4 py-2 border-2 rounded-lg font-medium transition ${
-                                isSelected
-                                  ? "border-yellow-500 bg-yellow-50 text-yellow-700"
-                                  : "border-gray-300 hover:border-gray-400"
-                              }`}
-                            >
-                              {color}
-                            </motion.button>
-                          );
-                        }
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Fabric Selection */}
-                {product.variants?.some((v) => v.fabric) && (
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">
-                      Select Fabric
-                    </h3>
-                    <div className="flex gap-2 flex-wrap">
-                      {[...new Set(product.variants.map((v) => v.fabric))].map(
-                        (fabric) => {
-                          const variant = product.variants!.find(
-                            (v) => v.fabric === fabric
-                          );
-                          const isSelected = selectedVariant?.fabric === fabric;
-
-                          return (
-                            <motion.button
-                              key={fabric}
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => setSelectedVariant(variant)}
-                              className={`px-4 py-2 border-2 rounded-lg font-medium transition ${
-                                isSelected
-                                  ? "border-yellow-500 bg-yellow-50 text-yellow-700"
-                                  : "border-gray-300 hover:border-gray-400"
-                              }`}
-                            >
-                              {fabric}
-                            </motion.button>
-                          );
-                        }
-                      )}
+                        return (
+                          <motion.button
+                            key={String(size)}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() =>
+                              variant && setSelectedVariant(variant)
+                            }
+                            className={`px-4 py-2 border-2 rounded-lg font-medium transition ${
+                              isSelected
+                                ? "border-yellow-500 bg-yellow-50 text-yellow-700"
+                                : "border-gray-300 hover:border-gray-400"
+                            }`}
+                          >
+                            {size}
+                          </motion.button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -440,6 +519,73 @@ export default function ProductDetailsClient({
                 </p>
               ) : (
                 <p className="text-red-600 font-medium">✗ Out of Stock</p>
+              )}
+            </div>
+
+            {/* Delivery Check */}
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <div className="flex items-center gap-2 mb-3">
+                <MapPin className="w-5 h-5 text-gray-700" />
+                <h3 className="font-semibold text-gray-900">
+                  Check Delivery Availability
+                </h3>
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Enter Pincode"
+                  value={pincode}
+                  onChange={(e) => setPincode(e.target.value)}
+                  maxLength={6}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") checkDeliveryAvailability(pincode);
+                  }}
+                />
+                <button
+                  onClick={handleCheckDelivery}
+                  disabled={isCheckingDelivery}
+                  className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 font-medium"
+                >
+                  {isCheckingDelivery ? "..." : "Check"}
+                </button>
+              </div>
+
+              {deliveryInfo && deliveryInfo.checked && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`mt-3 p-3 rounded-lg flex items-start gap-3 ${
+                    deliveryInfo.isServiceable
+                      ? "bg-green-50 border border-green-200"
+                      : "bg-red-50 border border-red-200"
+                  }`}
+                >
+                  {deliveryInfo.isServiceable ? (
+                    <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  ) : (
+                    <X className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  )}
+                  <div className="flex-1">
+                    <p
+                      className={`font-medium ${
+                        deliveryInfo.isServiceable
+                          ? "text-green-900"
+                          : "text-red-900"
+                      }`}
+                    >
+                      {deliveryInfo.isServiceable
+                        ? "Delivery Available"
+                        : "Not Serviceable"}
+                    </p>
+                    {deliveryInfo.isServiceable && (
+                      <p className="text-sm text-green-700 mt-1">
+                        Expected delivery in {deliveryInfo.estimatedDays}
+                      </p>
+                    )}
+                  </div>
+                </motion.div>
               )}
             </div>
 
@@ -553,23 +699,6 @@ export default function ProductDetailsClient({
                 <p className="text-gray-700 leading-relaxed">
                   {product.description}
                 </p>
-
-                {/* Artisan Information */}
-                {product.artisanName && (
-                  <div className="mt-6 p-6 bg-amber-50 rounded-xl border border-amber-200">
-                    <h3 className="font-semibold text-lg mb-2">
-                      Crafted by {product.artisanName}
-                    </h3>
-                    {product.artisanLocation && (
-                      <p className="text-sm text-gray-600 mb-2">
-                        📍 {product.artisanLocation}
-                      </p>
-                    )}
-                    {product.artisanAbout && (
-                      <p className="text-gray-700">{product.artisanAbout}</p>
-                    )}
-                  </div>
-                )}
               </motion.div>
             )}
 
@@ -621,7 +750,7 @@ export default function ProductDetailsClient({
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.6 + idx * 0.1 }}
+                    transition={{ delay: 0 + idx * 0.1 }}
                     whileHover={{ y: -8 }}
                     className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition cursor-pointer"
                   >
@@ -641,7 +770,7 @@ export default function ProductDetailsClient({
                         {relatedProduct.name}
                       </h4>
                       <p className="font-bold">
-                        ₹{relatedProduct.sellingPrice.toFixed(2)}
+                        ₹{Number(relatedProduct.sellingPrice).toFixed(2)}
                       </p>
                     </div>
                   </motion.div>

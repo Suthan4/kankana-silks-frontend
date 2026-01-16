@@ -1,3 +1,4 @@
+import { authService } from "./api.base.service";
 import clientApiService from "./api.client.service";
 
 export interface Address {
@@ -36,7 +37,7 @@ export interface CreateAddressDTO {
   state: string;
   pincode: string;
   country?: string;
-  type?: "SHIPPING" | "BILLING" | "BOTH";
+  type: "SHIPPING" | "BILLING" | "BOTH";
   isDefault?: boolean;
 }
 
@@ -58,7 +59,7 @@ class AddressApiService {
    * Get all addresses for the user
    */
   async getAddresses(): Promise<AddressesResponse> {
-    const response = await clientApiService.api.get("/addresses");
+    const response = await authService.api.get("/addresses");
     return response.data;
   }
 
@@ -66,7 +67,7 @@ class AddressApiService {
    * Get default address
    */
   async getDefaultAddress(): Promise<AddressResponse> {
-    const response = await clientApiService.api.get("/addresses/default");
+    const response = await authService.api.get("/addresses/default");
     return response.data;
   }
 
@@ -74,7 +75,7 @@ class AddressApiService {
    * Get a single address by ID
    */
   async getAddress(id: string): Promise<AddressResponse> {
-    const response = await clientApiService.api.get(`/addresses/${id}`);
+    const response = await authService.api.get(`/addresses/${id}`);
     return response.data;
   }
 
@@ -84,7 +85,7 @@ class AddressApiService {
   async createAddress(
     data: CreateAddressDTO
   ): Promise<{ success: boolean; message: string; data: Address }> {
-    const response = await clientApiService.api.post("/addresses", data);
+    const response = await authService.api.post("/addresses", data);
     return response.data;
   }
 
@@ -95,7 +96,7 @@ class AddressApiService {
     id: string,
     data: UpdateAddressDTO
   ): Promise<{ success: boolean; message: string; data: Address }> {
-    const response = await clientApiService.api.put(`/addresses/${id}`, data);
+    const response = await authService.api.put(`/addresses/${id}`, data);
     return response.data;
   }
 
@@ -105,9 +106,7 @@ class AddressApiService {
   async setAsDefault(
     id: string
   ): Promise<{ success: boolean; message: string; data: Address }> {
-    const response = await clientApiService.api.put(
-      `/addresses/${id}/set-default`
-    );
+    const response = await authService.api.put(`/addresses/${id}/set-default`);
     return response.data;
   }
 
@@ -117,7 +116,7 @@ class AddressApiService {
   async deleteAddress(
     id: string
   ): Promise<{ success: boolean; message: string }> {
-    const response = await clientApiService.api.delete(`/addresses/${id}`);
+    const response = await authService.api.delete(`/addresses/${id}`);
     return response.data;
   }
 }

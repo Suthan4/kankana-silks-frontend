@@ -119,6 +119,7 @@ export default function AddressModal({
       queryClient.invalidateQueries({ queryKey: ["addresses"] });
       toast.success("Address added successfully");
       onClose();
+      reset();
     },
     onError: () => {
       toast.error("Failed to add address");
@@ -132,6 +133,7 @@ export default function AddressModal({
       queryClient.invalidateQueries({ queryKey: ["addresses"] });
       toast.success("Address updated successfully");
       onClose();
+      reset();
     },
     onError: () => {
       toast.error("Failed to update address");
@@ -253,9 +255,9 @@ export default function AddressModal({
               {...register("type")}
               className="w-full px-4 py-3 border rounded-xl"
             >
-              <option value="SHIPPING">Shipping</option>
-              <option value="BILLING">Billing</option>
-              <option value="BOTH">Both</option>
+              <option value="SHIPPING">SHIPPING</option>
+              <option value="BILLING">BILLING</option>
+              <option value="BOTH">BOTH</option>
             </select>
 
             {/* Default */}
