@@ -1,4 +1,4 @@
-import { authModalStore, useAuthModal } from "@/store/useAuthModalStore";
+import { authModalStore } from "@/store/useAuthModalStore";
 import { BaseApiService } from "./api.base.service";
 
 class ClientApiService extends BaseApiService {

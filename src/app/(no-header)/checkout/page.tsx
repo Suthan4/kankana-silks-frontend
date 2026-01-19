@@ -12,18 +12,21 @@ import {
   Check,
   Edit2,
   Trash2,
+  Zap,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { toast } from "@/store/useToastStore";
 import AddressModal from "@/components/addressModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { addressApi, type Address } from "@/lib/api/addresses.api";
-import { orderApi } from "@/lib/api/order.api";
+import { CreateOrderDTO, orderApi } from "@/lib/api/order.api";
 import { shipmentApi } from "@/lib/api/shipment.api";
+import { cartApi } from "@/lib/api/cart.api";
+import { useCreateOrder, useVerifyPayment } from "@/hooks/useOrders";
 
 type PaymentMethod = "RAZORPAY" | "COD";
 
@@ -37,9 +40,13 @@ declare global {
 export default function CheckoutPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  // Detect Buy Now mode
+  const isBuyNowMode = searchParams.get("mode") === "buyNow";
+
   const { user, openModal } = useAuthModal();
   const {
-    items,
+    items: cartItems,
     getSubtotal,
     getDiscount,
     getTotal,
@@ -55,10 +62,41 @@ export default function CheckoutPage() {
   const [shippingCost, setShippingCost] = useState(0);
   const [gstAmount, setGstAmount] = useState(0);
   const [estimatedDelivery, setEstimatedDelivery] = useState("3-5 days");
+  const [buyNowItem, setBuyNowItem] = useState<any>(null);
+  const [isBuyNowLoading, setIsBuyNowLoading] = useState(false);
 
-  const subtotal = getSubtotal();
-  const discount = getDiscount();
+  // Determine which items to show
+  const items = isBuyNowMode && buyNowItem ? [buyNowItem] : cartItems;
+  const subtotal =
+    isBuyNowMode && buyNowItem
+      ? buyNowItem.price * buyNowItem.quantity
+      : getSubtotal();
+  const discount = isBuyNowMode ? 0 : getDiscount();
   const total = subtotal - discount + shippingCost + gstAmount;
+  // Mutations
+  const createOrderMutation = useCreateOrder();
+  const verifyPaymentMutation = useVerifyPayment();
+
+  // Load items based on mode
+  useEffect(() => {
+    if (isBuyNowMode) {
+      setIsBuyNowLoading(true);
+
+      // Load buy now item from session storage
+      const storedItem = sessionStorage.getItem("buyNowItem");
+      if (storedItem) {
+        try {
+          const item = JSON.parse(storedItem);
+          setBuyNowItem(item);
+        } catch (error) {
+          console.error("Error loading buy now item:", error);
+          router.push("/cart");
+        }
+      } else {
+        router.push("/cart");
+      }
+    }
+  }, [isBuyNowMode, cartItems, router]);
 
   // Load Razorpay script
   useEffect(() => {
@@ -71,13 +109,6 @@ export default function CheckoutPage() {
       document.body.removeChild(script);
     };
   }, []);
-
-  // Redirect if cart is empty
-  useEffect(() => {
-    if (items.length === 0) {
-      router.push("/cart");
-    }
-  }, [items, router]);
 
   // Fetch addresses from API (only when user is logged in)
   const { data: addressesData, isLoading: isLoadingAddresses } = useQuery({
@@ -123,7 +154,7 @@ export default function CheckoutPage() {
 
         if (!calculation.isServiceable) {
           toast.error(
-            "Delivery not available to this pincode. Please select another address."
+            "Delivery not available to this pincode. Please select another address.",
           );
         }
       } catch (error) {
@@ -176,37 +207,20 @@ export default function CheckoutPage() {
     deleteAddressMutation.mutate(addressId);
   };
 
-  // Create Razorpay order
-  const createRazorpayOrder = async () => {
-    try {
-      const orderData = await orderApi.createOrder({
-        shippingAddressId: selectedAddress!.id,
-        billingAddressId: selectedAddress!.id,
-        couponCode: appliedCoupon?.code,
-        paymentMethod: "CARD", // Will be handled by Razorpay
-      });
-
-      return orderData.data.razorpayOrderId;
-    } catch (error) {
-      console.error("Error creating Razorpay order:", error);
-      throw error;
-    }
-  };
-
   // Handle Razorpay payment
-  const handleRazorpayPayment = async () => {
+  const handleRazorpayPayment = async (orderData: any) => {
+    console.log("orderData", orderData);
+    
     try {
-      const razorpayOrderId = await createRazorpayOrder();
-
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: total * 100,
+        key: orderData.razorpayKeyId,
+        amount: orderData.amountInPaise, // Convert to paise
         currency: "INR",
         name: "Kankana Silks",
         description: "Order Payment",
-        order_id: razorpayOrderId,
+        order_id: orderData.razorpayOrderId,
         prefill: {
-          name: user?.firstName + " " + user?.lastName,
+          name: `${user?.firstName} ${user?.lastName}`,
           email: user?.email,
           contact: selectedAddress?.phone,
         },
@@ -219,18 +233,24 @@ export default function CheckoutPage() {
         handler: async function (response: any) {
           try {
             // Verify payment
-            await orderApi.verifyPayment({
+            await verifyPaymentMutation.mutateAsync({
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
             });
 
-            clearCart();
+            if (!isBuyNowMode) {
+              clearCart();
+            } else {
+              sessionStorage.removeItem("buyNowItem");
+            }
             toast.success("Payment successful! Order placed.");
             router.push("/my-account/orders");
           } catch (error) {
             console.error("Payment verification error:", error);
             toast.error("Payment verification failed");
+          } finally {
+            setIsProcessing(false);
           }
         },
         modal: {
@@ -250,29 +270,10 @@ export default function CheckoutPage() {
     }
   };
 
-  // Handle COD order
-  const handleCODOrder = async () => {
-    try {
-      const orderData = await orderApi.createOrder({
-        shippingAddressId: selectedAddress!.id,
-        billingAddressId: selectedAddress!.id,
-        couponCode: appliedCoupon?.code,
-        paymentMethod: "COD",
-      });
-
-      clearCart();
-      toast.success("Order placed successfully!");
-      router.push("/my-account/orders");
-    } catch (error: any) {
-      console.error("Order creation error:", error);
-      toast.error(error.message || "Failed to place order");
-    }
-  };
-
   const handlePlaceOrder = async () => {
     if (!user) {
       toast.error("Please login to place order");
-      // openModal("login");
+      openModal("login");
       return;
     }
 
@@ -284,26 +285,78 @@ export default function CheckoutPage() {
     try {
       setIsProcessing(true);
 
-      if (paymentMethod === "RAZORPAY") {
-        await handleRazorpayPayment();
+      // Map payment method to backend enum
+      const backendPaymentMethod =
+        paymentMethod === "RAZORPAY" ? "CARD" : "COD";
+
+      const orderDTO: CreateOrderDTO = {
+        shippingAddressId: selectedAddress.id,
+        billingAddressId: selectedAddress.id,
+        couponCode: appliedCoupon?.code,
+        paymentMethod: backendPaymentMethod,
+        ...(isBuyNowMode && buyNowItem
+          ? {
+              items: [
+                {
+                  productId: buyNowItem.productId,
+                  variantId: buyNowItem.variantId || undefined,
+                  quantity: buyNowItem.quantity,
+                },
+              ],
+            }
+          : {}),
+      };
+
+      const response = await createOrderMutation.mutateAsync(orderDTO);
+
+      if (paymentMethod === "COD") {
+        // COD order created successfully
+        if (!isBuyNowMode) {
+          clearCart();
+        } else {
+          sessionStorage.removeItem("buyNowItem");
+        }
+        toast.success("Order placed successfully!");
+        router.push("/my-account/orders");
       } else {
-        await handleCODOrder();
+        // Open Razorpay for online payment
+        await handleRazorpayPayment(response.data);
       }
     } catch (error: any) {
+      console.error("Order creation error:", error);
       toast.error(error.message || "Failed to place order");
-    } finally {
       setIsProcessing(false);
     }
   };
 
-  console.log("editingAddress",editingAddress);
+  const handleOrderSuccess = () => {
+    // Clear buy now session data
+    if (isBuyNowMode) {
+      sessionStorage.removeItem("buyNowItem");
+      sessionStorage.removeItem("buyNowData");
+      sessionStorage.removeItem("pendingAction");
+    } else {
+      // Clear regular cart
+      clearCart();
+    }
+
+    // Clear other session storage
+    sessionStorage.removeItem("checkoutAfterLogin");
+
+    // Redirect to orders
+    router.push("/my-account/orders");
+  };
+
+  console.log("editingAddress", editingAddress);
   // Allow viewing checkout page without login
   if (items.length === 0) {
     return null;
   }
+  console.log("buyNowItem", buyNowItem);
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Show mode indicator */}
       <div className="max-w-7xl mx-auto px-4 py-6 lg:py-8">
         {/* Header */}
         <motion.div
@@ -323,6 +376,12 @@ export default function CheckoutPage() {
           <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">
             Checkout
           </h1>
+          {isBuyNowMode && (
+            <p className="text-sm text-orange-600 flex items-center gap-2 mt-1">
+              <Zap className="w-4 h-4" />
+              Express Checkout - Buy Now
+            </p>
+          )}
           <p className="text-gray-600 mt-2">Review and complete your order</p>
         </motion.div>
 
@@ -346,16 +405,16 @@ export default function CheckoutPage() {
               </div>
 
               <div className="space-y-3 max-h-64 overflow-y-auto">
-                {items.map((item) => (
+                {items.map((item, index) => (
                   <div
-                    key={item.id}
+                    key={`${item.productId}-${item.variantId}-${index}`}
                     className="flex gap-3 p-3 bg-gray-50 rounded-xl"
                   >
                     <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                       {item.image ? (
                         <Image
                           src={item.image}
-                          alt={item.name}
+                          alt={item.productName || "Product image"}
                           width={64}
                           height={64}
                           className="w-full h-full object-cover"
@@ -366,10 +425,12 @@ export default function CheckoutPage() {
                         </div>
                       )}
                     </div>
+
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900 text-sm line-clamp-1">
-                        {item.name}
+                        {item.productName}
                       </p>
+
                       {item.variant && (
                         <p className="text-xs text-gray-500">
                           {[
@@ -381,6 +442,7 @@ export default function CheckoutPage() {
                             .join(" • ")}
                         </p>
                       )}
+
                       <div className="flex items-center justify-between mt-1">
                         <p className="text-xs text-gray-500">
                           Qty: {item.quantity}
@@ -564,7 +626,7 @@ export default function CheckoutPage() {
 
               <div className="space-y-3">
                 {/* Cash on Delivery */}
-                <motion.div
+                {/* <motion.div
                   whileHover={{ scale: 1.01 }}
                   onClick={() => setPaymentMethod("COD")}
                   className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
@@ -595,7 +657,7 @@ export default function CheckoutPage() {
                       </p>
                     </div>
                   </div>
-                </motion.div>
+                </motion.div> */}
 
                 {/* Razorpay - Online Payment */}
                 <motion.div
@@ -734,8 +796,8 @@ export default function CheckoutPage() {
                 {isProcessing
                   ? "Processing..."
                   : !user
-                  ? "Login to Place Order"
-                  : "Place Order"}
+                    ? "Login to Place Order"
+                    : "Place Order"}
               </motion.button>
 
               <div className="mt-4 space-y-2">
