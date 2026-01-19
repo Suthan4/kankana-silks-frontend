@@ -25,7 +25,7 @@ export default function OrderTrackingPage({
   const { data: trackingData, isLoading: trackingLoading } =
     useTrackOrderShipment(
       params.id,
-      !!orderData?.data?.shipment?.trackingNumber
+      !!orderData?.data?.shipment?.trackingNumber,
     );
 
   const order = orderData?.data;
@@ -37,7 +37,7 @@ export default function OrderTrackingPage({
   const buildTimeline = () => {
     if (tracking?.tracking_data?.shipment_track_activities?.length > 0) {
       return tracking.tracking_data.shipment_track_activities.map(
-        (activity:any) => ({
+        (activity: any) => ({
           status: activity.status,
           date: new Date(activity.date).toLocaleString("en-IN", {
             month: "short",
@@ -48,7 +48,7 @@ export default function OrderTrackingPage({
           location: activity.location,
           activity: activity.activity,
           completed: true,
-        })
+        }),
       );
     }
 
@@ -68,21 +68,26 @@ export default function OrderTrackingPage({
       },
       {
         status: "Payment Confirmed",
-        date: order?.payment?.status === "completed" ? "Confirmed" : "Pending",
-        completed: order?.payment?.status === "completed",
+        date: order?.payment?.status === "SUCCESS" ? "Confirmed" : "Pending",
+        completed: order?.payment?.status === "SUCCESS",
+      },
+      {
+        status: "Payment Confirmed",
+        date: order?.payment?.status === "SUCCESS" ? "Confirmed" : "Pending",
+        completed: order?.payment?.status === "SUCCESS",
       },
       {
         status: "Processing",
         date:
-          order?.status === "processing" ||
-          order?.status === "shipped" ||
-          order?.status === "delivered"
+          order?.status === "PROCESSING" ||
+          order?.status === "SHIPPED" ||
+          order?.status === "DELIVERED"
             ? "In Progress"
             : "Pending",
         completed:
-          order?.status === "processing" ||
-          order?.status === "shipped" ||
-          order?.status === "delivered",
+          order?.status === "PROCESSING" ||
+          order?.status === "SHIPPED" ||
+          order?.status === "DELIVERED",
       },
       {
         status: "Shipped",
@@ -92,18 +97,18 @@ export default function OrderTrackingPage({
               day: "numeric",
             })
           : order?.shipment?.estimatedDelivery
-          ? `Expected ${new Date(
-              order.shipment.estimatedDelivery
-            ).toLocaleDateString()}`
-          : "Expected Soon",
-        completed: order?.status === "shipped" || order?.status === "delivered",
-        active: order?.status === "shipped",
+            ? `Expected ${new Date(
+                order.shipment.estimatedDelivery,
+              ).toLocaleDateString()}`
+            : "Expected Soon",
+        completed: order?.status === "SHIPPED" || order?.status === "DELIVERED",
+        active: order?.status === "SHIPPED",
       },
       {
         status: "Out for Delivery",
         date: order?.shipment?.estimatedDelivery
           ? `Expected ${new Date(
-              order.shipment.estimatedDelivery
+              order.shipment.estimatedDelivery,
             ).toLocaleDateString()}`
           : "Pending",
         completed: false,
@@ -116,11 +121,11 @@ export default function OrderTrackingPage({
               day: "numeric",
             })
           : order?.shipment?.estimatedDelivery
-          ? `Expected ${new Date(
-              order.shipment.estimatedDelivery
-            ).toLocaleDateString()}`
-          : "Pending",
-        completed: order?.status === "delivered",
+            ? `Expected ${new Date(
+                order.shipment.estimatedDelivery,
+              ).toLocaleDateString()}`
+            : "Pending",
+        completed: order?.status === "DELIVERED",
       },
     ];
 
@@ -129,7 +134,7 @@ export default function OrderTrackingPage({
 
   const timeline = buildTimeline();
   const statusInfo = shipmentApi.formatTrackingStatus(
-    order?.status || "processing"
+    order?.status || "processing",
   );
 
   if (isLoading) {
@@ -185,17 +190,17 @@ export default function OrderTrackingPage({
         {/* Estimated Delivery */}
         <div
           className={`bg-gradient-to-br ${
-            order.status === "delivered"
+            order.status === "DELIVERED"
               ? "from-green-500 to-emerald-600"
-              : order.status === "shipped"
-              ? "from-blue-500 to-indigo-600"
-              : "from-orange-500 to-amber-600"
+              : order.status === "SHIPPED"
+                ? "from-blue-500 to-indigo-600"
+                : "from-orange-500 to-amber-600"
           } text-white rounded-2xl p-6`}
         >
           <div className="flex items-start justify-between mb-3">
             <div>
               <p className="text-sm opacity-90 mb-1">
-                {order.status === "delivered"
+                {order.status === "DELIVERED"
                   ? "DELIVERED"
                   : "ESTIMATED DELIVERY"}
               </p>
@@ -207,16 +212,16 @@ export default function OrderTrackingPage({
                         month: "long",
                         day: "numeric",
                         year: "numeric",
-                      }
+                      },
                     )
                   : order.shipment?.estimatedDelivery
-                  ? new Date(
-                      order.shipment.estimatedDelivery
-                    ).toLocaleDateString("en-IN", {
-                      month: "long",
-                      day: "numeric",
-                    })
-                  : "Processing"}
+                    ? new Date(
+                        order.shipment.estimatedDelivery,
+                      ).toLocaleDateString("en-IN", {
+                        month: "long",
+                        day: "numeric",
+                      })
+                    : "Processing"}
               </h2>
               {currentShipmentTrack?.edd && !order.shipment?.deliveredAt && (
                 <p className="text-sm mt-1 opacity-90">
@@ -225,7 +230,7 @@ export default function OrderTrackingPage({
               )}
             </div>
             <div className="bg-white/20 p-3 rounded-full">
-              {order.status === "delivered" ? (
+              {order.status === "DELIVERED" ? (
                 <CheckCircle2 className="w-6 h-6" />
               ) : (
                 <Truck className="w-6 h-6" />
@@ -290,7 +295,7 @@ export default function OrderTrackingPage({
             Shipment Timeline
           </h3>
           <div className="space-y-6">
-            {timeline?.map((item:any, idx:number) => (
+            {timeline?.map((item: any, idx: number) => (
               <div key={idx} className="flex gap-4">
                 <div className="relative">
                   <div
@@ -298,8 +303,8 @@ export default function OrderTrackingPage({
                       item.completed
                         ? "bg-green-100"
                         : item.active
-                        ? "bg-blue-100"
-                        : "bg-gray-100"
+                          ? "bg-blue-100"
+                          : "bg-gray-100"
                     }`}
                   >
                     {item.completed ? (
@@ -405,7 +410,9 @@ export default function OrderTrackingPage({
     </div>
   );
 }
-function useTrackOrderShipment(id: string, arg1: boolean): { data: any; isLoading: any; } {
+function useTrackOrderShipment(
+  id: string,
+  arg1: boolean,
+): { data: any; isLoading: any } {
   throw new Error("Function not implemented.");
 }
-
