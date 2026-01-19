@@ -1,5 +1,7 @@
 import { authService } from "./api.base.service";
 
+// ==================== TYPES ====================
+
 export interface OrderItem {
   id: string;
   productId: string;
@@ -28,54 +30,36 @@ export interface Address {
   country: string;
 }
 
-export interface Payment {
-  id: string;
-  method: string;
-  status: string;
-  razorpayOrderId?: string;
-  razorpayPaymentId?: string;
-  amount: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Shipment {
-  id: string;
-  trackingNumber?: string;
-  courierName?: string;
-  shiprocketOrderId?: string;
-  shippedAt?: string;
-  deliveredAt?: string;
-  estimatedDelivery?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ShippingInfo {
+export interface OrderShippingInfo {
   id: string;
   orderId: string;
   warehouseId: string;
   warehouseName: string;
   warehouseCode: string;
   pickupAddress: string;
+  pickupAddressLine2?: string;
   pickupCity: string;
   pickupState: string;
   pickupPincode: string;
   pickupCountry: string;
   pickupPhone?: string;
+  pickupEmail?: string;
+  pickupContactPerson?: string;
   totalWeight: number;
   volumetricWeight: number;
   chargeableWeight: number;
   length: number;
   breadth: number;
   height: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Order {
   id: string;
   orderNumber: string;
   userId: string;
-  status: string;
+  status: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "COMPLETED";
   subtotal: number;
   discount: number;
   shippingCost: number;
@@ -83,29 +67,84 @@ export interface Order {
   items: OrderItem[];
   shippingAddress: Address;
   billingAddress: Address;
-  payment?: Payment;
-  shipment?: Shipment;
-  shippingInfo?: ShippingInfo;
-  coupon?: {
-    code: string;
-    discount: number;
-  };
+  shippingAddressSnapshot?: any;
+  billingAddressSnapshot?: any;
   user: {
     id: string;
     email: string;
     firstName: string;
     lastName: string;
+    phone?: string;
+  };
+  payment?: {
+    id: string;
+    method: "COD" | "CARD" | "UPI" | "WALLET" | "NET_BANKING" | "RAZORPAY";
+    status: "PENDING" | "SUCCESS" | "FAILED" | "REFUNDED";
+    amount: number;
+    razorpayOrderId?: string;
+    razorpayPaymentId?: string;
+    refundAmount?: number;
+    createdAt: string;
+  };
+  shipment?: {
+    id: string;
+    trackingNumber?: string;
+    courierName?: string;
+    shiprocketOrderId?: string;
+    shiprocketShipmentId?: string;
+    awbCode?: string;
+    shippedAt?: string;
+    deliveredAt?: string;
+    estimatedDelivery?: string;
+  };
+  shippingInfo?: OrderShippingInfo;
+  coupon?: {
+    code: string;
+    discount: number;
   };
   createdAt: string;
   updatedAt: string;
 }
 
+// ==================== DTOs ====================
+
 export interface CreateOrderDTO {
   shippingAddressId: string;
   billingAddressId: string;
   couponCode?: string;
-  paymentMethod: "COD" | "RAZORPAY" | "CARD" | "UPI" | "WALLET" | "NET_BANKING";
+  paymentMethod: "COD" | "CARD" | "UPI" | "WALLET" | "NET_BANKING";
+  items?:{
+      productId: string;
+      variantId?: string;
+      quantity: number;
+  }[];
 }
+
+export interface VerifyPaymentDTO {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
+export interface UpdateOrderStatusDTO {
+  status: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "COMPLETED";
+}
+
+export interface CancelOrderDTO {
+  reason?: string;
+}
+
+export interface QueryOrderParams {
+  page?: number;
+  limit?: number;
+  status?: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "COMPLETED";
+  startDate?: string;
+  endDate?: string;
+  sortBy?: "createdAt" | "total" | "orderNumber";
+  sortOrder?: "asc" | "desc";
+}
+
+// ==================== RESPONSES ====================
 
 export interface CreateOrderResponse {
   success: boolean;
@@ -114,7 +153,7 @@ export interface CreateOrderResponse {
     order: Order;
     razorpayOrderId: string;
     razorpayKeyId: string;
-    shippingInfo?: {
+    shippingInfo: {
       warehouse: {
         name: string;
         city: string;
@@ -132,10 +171,10 @@ export interface CreateOrderResponse {
   };
 }
 
-export interface VerifyPaymentDTO {
-  razorpay_order_id: string;
-  razorpay_payment_id: string;
-  razorpay_signature: string;
+export interface VerifyPaymentResponse {
+  success: boolean;
+  message: string;
+  data: Order;
 }
 
 export interface OrdersResponse {
@@ -156,16 +195,11 @@ export interface OrderResponse {
   data: Order;
 }
 
-export interface CancelOrderDTO {
-  reason?: string;
-}
-
 export interface CancelOrderResponse {
   success: boolean;
   message: string;
   data: {
     order: Order;
-    shiprocketCancelled?: boolean;
     refundProcessed: boolean;
   };
 }
@@ -178,9 +212,12 @@ export interface CanCancelResponse {
   };
 }
 
+// ==================== API SERVICE ====================
+
 class OrderApiService {
   /**
    * Create a new order from cart
+   * POST /api/orders
    */
   async createOrder(data: CreateOrderDTO): Promise<CreateOrderResponse> {
     const response = await authService.api.post("/orders", data);
@@ -188,25 +225,19 @@ class OrderApiService {
   }
 
   /**
-   * Verify Razorpay payment signature
+   * Verify Razorpay payment
+   * POST /api/orders/verify-payment
    */
-  async verifyPayment(data: VerifyPaymentDTO): Promise<OrderResponse> {
+  async verifyPayment(data: VerifyPaymentDTO): Promise<VerifyPaymentResponse> {
     const response = await authService.api.post("/orders/verify-payment", data);
     return response.data;
   }
 
   /**
    * Get user's orders with pagination and filters
+   * GET /api/orders/my-orders
    */
-  async getUserOrders(params?: {
-    page?: number;
-    limit?: number;
-    status?: string;
-    startDate?: string;
-    endDate?: string;
-    sortBy?: "createdAt" | "total" | "orderNumber";
-    sortOrder?: "asc" | "desc";
-  }): Promise<OrdersResponse> {
+  async getUserOrders(params?: QueryOrderParams): Promise<OrdersResponse> {
     const response = await authService.api.get("/orders/my-orders", {
       params,
     });
@@ -214,7 +245,8 @@ class OrderApiService {
   }
 
   /**
-   * Get single order by ID
+   * Get order by ID
+   * GET /api/orders/:id
    */
   async getOrder(orderId: string): Promise<OrderResponse> {
     const response = await authService.api.get(`/orders/${orderId}`);
@@ -223,6 +255,7 @@ class OrderApiService {
 
   /**
    * Get order by order number
+   * GET /api/orders/number/:orderNumber
    */
   async getOrderByNumber(orderNumber: string): Promise<OrderResponse> {
     const response = await authService.api.get(`/orders/number/${orderNumber}`);
@@ -231,6 +264,7 @@ class OrderApiService {
 
   /**
    * Check if order can be cancelled
+   * GET /api/orders/:id/can-cancel
    */
   async canCancelOrder(orderId: string): Promise<CanCancelResponse> {
     const response = await authService.api.get(`/orders/${orderId}/can-cancel`);
@@ -238,7 +272,8 @@ class OrderApiService {
   }
 
   /**
-   * Cancel an order
+   * Cancel order
+   * POST /api/orders/:id/cancel
    */
   async cancelOrder(
     orderId: string,
@@ -251,31 +286,13 @@ class OrderApiService {
     return response.data;
   }
 
-  /**
-   * Get shipping info for order
-   */
-  async getOrderShippingInfo(orderId: string): Promise<{
-    success: boolean;
-    data: ShippingInfo;
-  }> {
-    const response = await authService.api.get(
-      `/orders/${orderId}/shipping-info`
-    );
-    return response.data;
-  }
+  // ==================== ADMIN ENDPOINTS ====================
 
   /**
-   * Admin: Get all orders with pagination and filters
+   * Get all orders (Admin)
+   * GET /api/admin/orders
    */
-  async getAllOrders(params?: {
-    page?: number;
-    limit?: number;
-    status?: string;
-    startDate?: string;
-    endDate?: string;
-    sortBy?: "createdAt" | "total" | "orderNumber";
-    sortOrder?: "asc" | "desc";
-  }): Promise<OrdersResponse> {
+  async getAllOrders(params?: QueryOrderParams): Promise<OrdersResponse> {
     const response = await authService.api.get("/admin/orders", {
       params,
     });
@@ -283,18 +300,21 @@ class OrderApiService {
   }
 
   /**
-   * Admin: Update order status
+   * Update order status (Admin)
+   * PUT /api/admin/orders/:id/status
    */
   async updateOrderStatus(
     orderId: string,
-    status: string
+    data: UpdateOrderStatusDTO
   ): Promise<OrderResponse> {
     const response = await authService.api.put(
       `/admin/orders/${orderId}/status`,
-      { status }
+      data
     );
     return response.data;
   }
+
+  // ==================== HELPER METHODS ====================
 
   /**
    * Calculate order totals (client-side helper)
@@ -303,7 +323,6 @@ class OrderApiService {
     items: Array<{ price: number; quantity: number }>;
     shippingCost: number;
     discount?: number;
-    gstRate?: number;
   }) {
     const subtotal = params.items.reduce(
       (sum, item) => sum + item.price * item.quantity,
@@ -312,13 +331,12 @@ class OrderApiService {
 
     const discount = params.discount || 0;
     const shipping = params.shippingCost;
-    
-    // Calculate GST (default 18%)
+
+    // Calculate GST (18% included in prices)
     const taxableAmount = subtotal - discount + shipping;
-    const gstRate = params.gstRate || 0.18;
-    const gst = taxableAmount * gstRate;
-    
-    const total = taxableAmount + gst;
+    const gst = taxableAmount * 0.18;
+
+    const total = taxableAmount;
 
     return {
       subtotal,
@@ -327,83 +345,57 @@ class OrderApiService {
       gst,
       total,
       taxableAmount,
-      cgst: gst / 2, // 9% for intra-state
-      sgst: gst / 2, // 9% for intra-state
-      igst: gst, // 18% for inter-state
     };
   }
 
   /**
    * Format order status for display
    */
-  formatOrderStatus(status: string): {
-    label: string;
-    color: string;
-    bgColor: string;
-  } {
-    const statusMap: Record<
-      string,
-      { label: string; color: string; bgColor: string }
-    > = {
-      pending: {
-        label: "Pending",
-        color: "text-yellow-700",
-        bgColor: "bg-yellow-100",
-      },
-      processing: {
-        label: "Processing",
-        color: "text-orange-700",
-        bgColor: "bg-orange-100",
-      },
-      shipped: {
-        label: "Shipped",
-        color: "text-blue-700",
-        bgColor: "bg-blue-100",
-      },
-      delivered: {
-        label: "Delivered",
-        color: "text-green-700",
-        bgColor: "bg-green-100",
-      },
-      cancelled: {
-        label: "Cancelled",
-        color: "text-red-700",
-        bgColor: "bg-red-100",
-      },
-      completed: {
-        label: "Completed",
-        color: "text-green-700",
-        bgColor: "bg-green-100",
-      },
-    };
-
-    return (
-      statusMap[status.toLowerCase()] || {
-        label: status,
-        color: "text-gray-700",
-        bgColor: "bg-gray-100",
-      }
-    );
+  formatStatus(status: string): string {
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
   }
 
   /**
-   * Check if order can be reviewed
+   * Get status color class
    */
-  canReviewOrder(order: Order): boolean {
-    return (
-      order.status === "delivered" || 
-      order.status === "completed"
-    );
-  }
-
-  /**
-   * Get order items that can be reviewed
-   */
-  getReviewableItems(order: Order): OrderItem[] {
-    if (!this.canReviewOrder(order)) {
-      return [];
+  getStatusColor(status: string): string {
+    switch (status.toUpperCase()) {
+      case "DELIVERED":
+        return "bg-green-100 text-green-700";
+      case "SHIPPED":
+        return "bg-blue-100 text-blue-700";
+      case "PROCESSING":
+        return "bg-orange-100 text-orange-700";
+      case "PENDING":
+        return "bg-yellow-100 text-yellow-700";
+      case "CANCELLED":
+        return "bg-red-100 text-red-700";
+      case "COMPLETED":
+        return "bg-green-100 text-green-700";
+      default:
+        return "bg-gray-100 text-gray-700";
     }
-    return order.items;
+  }
+
+  /**
+   * Get status gradient for hero cards
+   */
+  getStatusGradient(status: string): string {
+    switch (status.toUpperCase()) {
+      case "DELIVERED":
+      case "COMPLETED":
+        return "from-green-500 to-emerald-600";
+      case "SHIPPED":
+        return "from-blue-500 to-indigo-600";
+      case "PROCESSING":
+        return "from-orange-500 to-amber-600";
+      case "PENDING":
+        return "from-yellow-500 to-orange-500";
+      case "CANCELLED":
+        return "from-red-500 to-rose-600";
+      default:
+        return "from-gray-500 to-gray-600";
+    }
   }
 }
 
