@@ -103,6 +103,11 @@ export interface Product {
   metaDesc?: string | null;
   schemaMarkup?: any;
 
+  hasVideoConsultation:boolean;
+  videoPurchasingEnabled:boolean;
+  videoConsultationNote:string
+  allowOutOfStockOrders:boolean;
+
   // ✅ product dimensions also string
   length?: string | null;
   breadth?: string | null;

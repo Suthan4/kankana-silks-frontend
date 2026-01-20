@@ -103,7 +103,7 @@ export const couponApi = {
 
   // Validate coupon
   validateCoupon: async (data: ValidateCouponRequest) => {
-    const response = await clientApiService.api.post<ValidateCouponResponse>(
+    const response = await clientApiService.api.post(
       "/coupons/validate",
       data
     );

@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthModal } from "@/store/useAuthModalStore";
 import {
   User,
   MapPin,
@@ -15,6 +16,8 @@ import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { user } = useAuthModal();
+
 
   const quickActions = [
     {
@@ -61,19 +64,19 @@ export default function ProfilePage() {
       label: "Personal Details",
       sub: "Name, Email, Phone",
       href: "/my-account/profile/edit",
-    },
-    {
-      icon: Bell,
-      label: "Notifications",
-      sub: "Manage preferences",
-      href: "/my-account/notifications",
-    },
-    {
-      icon: Settings,
-      label: "Settings",
-      sub: "Privacy & Security",
-      href: "/my-account/settings",
-    },
+    }
+      // {
+      //   icon: Bell,
+      //   label: "Notifications",
+      //   sub: "Manage preferences",
+      //   href: "/my-account/notifications",
+      // },
+      // {
+      //   icon: Settings,
+      //   label: "Settings",
+      //   sub: "Privacy & Security",
+      //   href: "/my-account/settings",
+      // },
   ];
 
   return (
@@ -85,9 +88,11 @@ export default function ProfilePage() {
             👩
           </div>
           <div className="flex-1">
-            <h2 className="font-bold text-xl">Aisha Kapoor</h2>
-            <p className="text-sm opacity-90">aisha@example.com</p>
-            <p className="text-sm opacity-90">+91 98765 43210</p>
+            <h2 className="font-bold text-xl">
+              {user?.firstName} {user?.lastName}
+            </h2>
+            <p className="text-sm opacity-90">{user?.email}</p>
+            <p className="text-sm opacity-90">{user?.phone}</p>
           </div>
         </div>
       </div>
