@@ -5,6 +5,7 @@ export interface CartItem {
   id: string;
   productId: string;
   variantId?: string;
+  categoryId?: string; // ✅ ADDED for coupon API
   name: string;
   slug: string;
   price: number;
@@ -22,10 +23,21 @@ export interface CartItem {
 
 export interface Coupon {
   code: string;
-  discount: number; // percentage or fixed amount
-  type: "PERCENTAGE" | "FIXED";
-  minPurchase?: number;
-  expiresAt?: string;
+
+  // from backend coupon object
+  discountType: "PERCENTAGE" | "FIXED";
+  discountValue: number; // ex: 19.99 or 500
+
+  minOrderValue?: number;
+  maxDiscountAmount?: number | null;
+
+  validFrom?: string;
+  validUntil?: string;
+  isActive?: boolean;
+
+  // calculated from validateCoupon API
+  discountAmount?: number; // ex: 10994.5 (amount reduced)
+  finalAmount?: number; // ex: 44005.5 (after discount)
 }
 
 interface CartState {
@@ -60,7 +72,7 @@ export const useCartStore = create<CartState>()(
         set((state) => {
           const existingItem = state.items.find(
             (i) =>
-              i.productId === item.productId && i.variantId === item.variantId
+              i.productId === item.productId && i.variantId === item.variantId,
           );
 
           if (existingItem) {
@@ -71,7 +83,7 @@ export const useCartStore = create<CartState>()(
                       ...i,
                       quantity: Math.min(i.quantity + item.quantity, i.stock),
                     }
-                  : i
+                  : i,
               ),
             };
           }
@@ -96,7 +108,7 @@ export const useCartStore = create<CartState>()(
                   ...item,
                   quantity: Math.min(Math.max(1, quantity), item.stock),
                 }
-              : item
+              : item,
           ),
         }));
       },
@@ -108,13 +120,13 @@ export const useCartStore = create<CartState>()(
       applyCoupon: (coupon) => {
         const subtotal = get().getSubtotal();
 
-        if (coupon.minPurchase && subtotal < coupon.minPurchase) {
+        if (coupon.minOrderValue && subtotal < coupon.minOrderValue) {
           throw new Error(
-            `Minimum purchase of ₹${coupon.minPurchase} required`
+            `Minimum purchase of ₹${coupon.minOrderValue} required`,
           );
         }
 
-        if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
+        if (coupon.validUntil && new Date(coupon.validUntil) < new Date()) {
           throw new Error("Coupon has expired");
         }
 
@@ -132,21 +144,13 @@ export const useCartStore = create<CartState>()(
       getSubtotal: () => {
         return get().items.reduce(
           (total, item) => total + item.price * item.quantity,
-          0
+          0,
         );
       },
 
       getDiscount: () => {
         const { appliedCoupon } = get();
-        if (!appliedCoupon) return 0;
-
-        const subtotal = get().getSubtotal();
-
-        if (appliedCoupon.type === "PERCENTAGE") {
-          return (subtotal * appliedCoupon.discount) / 100;
-        }
-
-        return appliedCoupon.discount;
+        return appliedCoupon?.discountAmount ?? 0;
       },
 
       getTotal: () => {
@@ -162,6 +166,6 @@ export const useCartStore = create<CartState>()(
     {
       name: "cart-storage",
       storage: createJSONStorage(() => localStorage),
-    }
-  )
+    },
+  ),
 );

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Trash2,
@@ -14,43 +14,22 @@ import {
   Check,
   Gift,
   Percent,
+  ChevronDown,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useCartStore } from "@/store/useCartStore";
 import { useRouter } from "next/navigation";
 import { toast } from "@/store/useToastStore";
-
-const AVAILABLE_COUPONS = [
-  {
-    code: "WELCOME10",
-    discount: 10,
-    type: "PERCENTAGE" as const,
-    minPurchase: 1000,
-    description: "10% off on orders above ₹1000",
-  },
-  {
-    code: "FLAT500",
-    discount: 500,
-    type: "FIXED" as const,
-    minPurchase: 5000,
-    description: "₹500 off on orders above ₹5000",
-  },
-  {
-    code: "FIRST20",
-    discount: 20,
-    type: "PERCENTAGE" as const,
-    minPurchase: 2000,
-    description: "20% off for first-time buyers (min ₹2000)",
-  },
-];
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { couponApi, type Coupon } from "@/lib/api/coupon.api";
 
 export default function CartPage() {
   const router = useRouter();
   const {
     items,
     appliedCoupon,
-    addItem,
     removeItem,
     updateQuantity,
     clearCart,
@@ -64,37 +43,141 @@ export default function CartPage() {
 
   const [couponCode, setCouponCode] = useState("");
   const [showCouponDropdown, setShowCouponDropdown] = useState(false);
-  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const subtotal = getSubtotal();
   const discount = getDiscount();
   const total = getTotal();
   const totalItems = getTotalItems();
 
-  const handleApplyCoupon = async (code: string) => {
-    setIsApplyingCoupon(true);
-    try {
-      const coupon = AVAILABLE_COUPONS.find((c) => c.code === code);
+  // Fetch applicable coupons from API
+  const {
+    data: applicableCouponsData,
+    isLoading: isLoadingCoupons,
+    refetch: refetchCoupons,
+  } = useQuery({
+    queryKey: ["applicableCoupons", subtotal, items.length],
+    queryFn: async () => {
+      if (items.length === 0) return { data: [] };
 
-      if (!coupon) {
-        toast.error("Invalid coupon code");
-        return;
-      }
+      const cartItems = items.map((item) => ({
+        productId: item.productId,
+        categoryId: item.categoryId,
+        quantity: item.quantity,
+        price: item.price,
+      }));
 
-      applyCoupon(coupon);
-      toast.success(`Coupon "${code}" applied successfully!`);
-      setCouponCode("");
-      setShowCouponDropdown(false);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to apply coupon");
-    } finally {
-      setIsApplyingCoupon(false);
+      return await couponApi.getApplicableCoupons({
+        orderAmount: subtotal,
+        cartItems,
+      });
+    },
+    enabled: items.length > 0,
+    staleTime: 30000, // 30 seconds
+  });
+
+  const availableCoupons = applicableCouponsData?.data || [];
+  const [filteredCoupons, setFilteredCoupons] =
+    useState<Coupon[]>(availableCoupons);
+
+  // Update filtered coupons when available coupons change
+  useEffect(() => {
+    setFilteredCoupons(availableCoupons);
+  }, [availableCoupons]);
+
+  // Filter coupons based on input
+  useEffect(() => {
+    if (couponCode) {
+      const filtered = availableCoupons.filter((coupon) =>
+        coupon.code.toLowerCase().includes(couponCode.toLowerCase()),
+      );
+      setFilteredCoupons(filtered);
+      setShowAutocomplete(true);
+    } else {
+      setFilteredCoupons(availableCoupons);
+      setShowAutocomplete(false);
     }
+  }, [couponCode, availableCoupons]);
+
+  // Close autocomplete when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
+        setShowAutocomplete(false);
+        setShowCouponDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Validate and apply coupon mutation
+  const validateCouponMutation = useMutation({
+    mutationFn: async (code: string) => {
+      const cartItems = items.map((item) => ({
+        productId: item.productId,
+        categoryId: item.categoryId,
+        quantity: item.quantity,
+        price: item.price,
+      }));
+
+      return await couponApi.validateCoupon({
+        code: code.toUpperCase(),
+        orderAmount: subtotal,
+        cartItems,
+      });
+    },
+    onSuccess: (response, code) => {
+      if (response.valid && response.coupon && response.discount) {
+        // Apply coupon to cart store
+        const couponData = {
+          code: response.coupon.code,
+          discountType: response.coupon.discountType,
+          discountValue: response.coupon.discountValue,
+          minOrderValue: response.coupon.minOrderValue,
+          maxDiscountAmount: response.coupon.maxDiscountAmount,
+          validFrom: response.coupon.validFrom,
+          validUntil: response.coupon.validUntil,
+          isActive: response.coupon.isActive,
+
+          discountAmount: response.discount,
+          finalAmount: response.finalAmount,
+        };
+        applyCoupon(couponData);
+        toast.success(`Coupon "${code}" applied successfully!`);
+        setCouponCode("");
+        setShowCouponDropdown(false);
+        setShowAutocomplete(false);
+        refetchCoupons(); // Refresh available coupons
+      } else {
+        toast.error(response.error || "Invalid coupon code");
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to apply coupon");
+    },
+  });
+
+  const handleApplyCoupon = (code: string) => {
+    if (!code.trim()) {
+      toast.error("Please enter a coupon code");
+      return;
+    }
+    validateCouponMutation.mutate(code);
   };
 
   const handleRemoveCoupon = () => {
     removeCoupon();
     toast.info("Coupon removed");
+    refetchCoupons(); // Refresh available coupons
   };
 
   const handleCheckout = () => {
@@ -103,6 +186,12 @@ export default function CartPage() {
       return;
     }
     router.push("/checkout");
+  };
+
+  const handleCouponSelect = (coupon: Coupon) => {
+    setCouponCode(coupon.code);
+    setShowAutocomplete(false);
+    handleApplyCoupon(coupon.code);
   };
 
   if (items.length === 0) {
@@ -319,11 +408,14 @@ export default function CartPage() {
             className="lg:col-span-1"
           >
             <div className="bg-white rounded-2xl p-6 shadow-sm sticky top-24 space-y-6">
-              {/* Coupon Section */}
+              {/* Coupon Section - API INTEGRATED */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <Gift className="w-5 h-5 text-amber-600" />
                   <h3 className="font-semibold text-gray-900">Apply Coupon</h3>
+                  {isLoadingCoupons && (
+                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                  )}
                 </div>
 
                 {appliedCoupon ? (
@@ -335,9 +427,9 @@ export default function CartPage() {
                           {appliedCoupon.code}
                         </p>
                         <p className="text-xs text-green-700">
-                          {appliedCoupon.type === "PERCENTAGE"
-                            ? `${appliedCoupon.discount}% off`
-                            : `₹${appliedCoupon.discount} off`}
+                          {appliedCoupon.discountType === "PERCENTAGE"
+                            ? `${appliedCoupon.discountType}% off`
+                            : `₹${appliedCoupon.discountType} off`}
                         </p>
                       </div>
                     </div>
@@ -350,86 +442,155 @@ export default function CartPage() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={couponCode}
-                        onChange={(e) =>
-                          setCouponCode(e.target.value.toUpperCase())
-                        }
-                        placeholder="Enter coupon code"
-                        className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition uppercase"
-                      />
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleApplyCoupon(couponCode)}
-                        disabled={!couponCode || isApplyingCoupon}
-                        className="px-6 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isApplyingCoupon ? "..." : "Apply"}
-                      </motion.button>
+                    {/* Input with Autocomplete */}
+                    <div className="relative" ref={dropdownRef}>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <input
+                            ref={inputRef}
+                            type="text"
+                            value={couponCode}
+                            onChange={(e) =>
+                              setCouponCode(e.target.value.toUpperCase())
+                            }
+                            onFocus={() => {
+                              if (couponCode) setShowAutocomplete(true);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && couponCode) {
+                                handleApplyCoupon(couponCode);
+                              }
+                            }}
+                            placeholder="Enter coupon code"
+                            className="w-full px-4 py-3 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition uppercase"
+                            disabled={validateCouponMutation.isPending}
+                          />
+                          <button
+                            onClick={() => {
+                              setShowAutocomplete(!showAutocomplete);
+                              setShowCouponDropdown(!showCouponDropdown);
+                            }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          >
+                            <ChevronDown className="w-5 h-5" />
+                          </button>
+                        </div>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleApplyCoupon(couponCode)}
+                          disabled={
+                            !couponCode || validateCouponMutation.isPending
+                          }
+                          className="px-6 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                          {validateCouponMutation.isPending ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <span className="hidden sm:inline">Apply</span>
+                            </>
+                          ) : (
+                            "Apply"
+                          )}
+                        </motion.button>
+                      </div>
+
+                      {/* Autocomplete Dropdown */}
+                      <AnimatePresence>
+                        {(showAutocomplete || showCouponDropdown) &&
+                          filteredCoupons.length > 0 && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden max-h-96 overflow-y-auto"
+                            >
+                              {filteredCoupons.map((coupon, index) => {
+                                const canApply =
+                                  subtotal >= coupon.minOrderValue;
+                                const savings = coupon.estimatedDiscount || 0;
+
+                                return (
+                                  <motion.button
+                                    key={coupon.code}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: index * 0.05 }}
+                                    onClick={() =>
+                                      canApply && handleCouponSelect(coupon)
+                                    }
+                                    disabled={
+                                      !canApply ||
+                                      validateCouponMutation.isPending
+                                    }
+                                    className={`w-full text-left p-4 border-b last:border-b-0 transition ${
+                                      canApply
+                                        ? "hover:bg-amber-50 cursor-pointer"
+                                        : "opacity-50 cursor-not-allowed bg-gray-50"
+                                    }`}
+                                  >
+                                    <div className="flex items-start justify-between mb-2">
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <span className="font-bold text-gray-900 text-sm">
+                                            {coupon.code}
+                                          </span>
+                                          <span className="text-xs bg-amber-400 text-gray-900 px-2 py-1 rounded-full font-semibold">
+                                            {coupon.discountType ===
+                                            "PERCENTAGE"
+                                              ? `${coupon.discountValue}% OFF`
+                                              : `₹${coupon.discountValue} OFF`}
+                                          </span>
+                                        </div>
+                                        {coupon.description && (
+                                          <p className="text-xs text-gray-600 mb-1">
+                                            {coupon.description}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {!canApply && (
+                                      <p className="text-xs text-red-600 font-medium">
+                                        Add ₹
+                                        {(
+                                          coupon.minOrderValue - subtotal
+                                        ).toFixed(2)}{" "}
+                                        more to apply
+                                      </p>
+                                    )}
+                                    {canApply && savings > 0 && (
+                                      <p className="text-xs text-green-600 font-medium mt-1">
+                                        ✓ Save ₹{savings.toFixed(2)} with this
+                                        coupon
+                                      </p>
+                                    )}
+                                  </motion.button>
+                                );
+                              })}
+                            </motion.div>
+                          )}
+                      </AnimatePresence>
                     </div>
 
                     <button
-                      onClick={() => setShowCouponDropdown(!showCouponDropdown)}
+                      onClick={() => {
+                        setShowCouponDropdown(!showCouponDropdown);
+                        setShowAutocomplete(!showAutocomplete);
+                      }}
                       className="text-sm text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1"
                     >
                       <Percent className="w-4 h-4" />
-                      View available coupons
+                      {showCouponDropdown
+                        ? "Hide available coupons"
+                        : `View ${availableCoupons.length} available coupons`}
                     </button>
 
-                    <AnimatePresence>
-                      {showCouponDropdown && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="space-y-2 overflow-hidden"
-                        >
-                          {AVAILABLE_COUPONS.map((coupon) => {
-                            const canApply =
-                              subtotal >= (coupon.minPurchase || 0);
-                            return (
-                              <motion.button
-                                key={coupon.code}
-                                whileHover={canApply ? { scale: 1.02 } : {}}
-                                onClick={() =>
-                                  canApply && handleApplyCoupon(coupon.code)
-                                }
-                                disabled={!canApply}
-                                className={`w-full text-left p-3 rounded-lg border-2 transition ${
-                                  canApply
-                                    ? "border-amber-200 bg-amber-50 hover:border-amber-400 cursor-pointer"
-                                    : "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
-                                }`}
-                              >
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="font-bold text-gray-900">
-                                    {coupon.code}
-                                  </span>
-                                  <span className="text-xs bg-amber-400 text-gray-900 px-2 py-0.5 rounded-full font-semibold">
-                                    {coupon.type === "PERCENTAGE"
-                                      ? `${coupon.discount}% OFF`
-                                      : `₹${coupon.discount} OFF`}
-                                  </span>
-                                </div>
-                                <p className="text-xs text-gray-600">
-                                  {coupon.description}
-                                </p>
-                                {!canApply && coupon.minPurchase && (
-                                  <p className="text-xs text-red-600 mt-1">
-                                    Add ₹
-                                    {(coupon.minPurchase - subtotal).toFixed(2)}{" "}
-                                    more to apply
-                                  </p>
-                                )}
-                              </motion.button>
-                            );
-                          })}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                    {availableCoupons.length === 0 && !isLoadingCoupons && (
+                      <p className="text-xs text-gray-500 text-center py-2">
+                        No coupons available for your cart
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
