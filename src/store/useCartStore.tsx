@@ -118,19 +118,12 @@ export const useCartStore = create<CartState>()(
       },
 
       applyCoupon: (coupon) => {
-        const subtotal = get().getSubtotal();
+  if (coupon.validUntil && new Date(coupon.validUntil) < new Date()) {
+    throw new Error("Coupon has expired");
+  }
 
-        if (coupon.minOrderValue && subtotal < coupon.minOrderValue) {
-          throw new Error(
-            `Minimum purchase of ₹${coupon.minOrderValue} required`,
-          );
-        }
+  set({ appliedCoupon: coupon });
 
-        if (coupon.validUntil && new Date(coupon.validUntil) < new Date()) {
-          throw new Error("Coupon has expired");
-        }
-
-        set({ appliedCoupon: coupon });
       },
 
       removeCoupon: () => {

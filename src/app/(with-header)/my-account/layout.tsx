@@ -1,7 +1,16 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { User, Package, Heart, MapPin, LogOut, Video, Home } from "lucide-react";
+import {
+  User,
+  Package,
+  Heart,
+  MapPin,
+  LogOut,
+  Video,
+  Home,
+} from "lucide-react";
+import { useAuthModal } from "@/store/useAuthModalStore";
 
 const menuItems = [
   { label: "Profile", href: "/my-account/profile", icon: User },
@@ -15,7 +24,6 @@ const menuItems = [
   { label: "Wishlist", href: "/my-account/wishlist", icon: Heart },
 ];
 
-
 export default function MyAccountLayout({
   children,
 }: {
@@ -23,7 +31,8 @@ export default function MyAccountLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-
+  const { user } = useAuthModal();
+console.log("user", user);
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Desktop Layout */}
@@ -40,24 +49,27 @@ export default function MyAccountLayout({
                       👩
                     </div>
                     <h3 className="font-bold text-gray-900 text-lg">
-                      Aisha Kapoor
+                      {user?.firstName} {user?.lastName}
                     </h3>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <h3 className="text-sm opacity-80">
+                      {user?.email}
+                    </h3>
+                    {/* <p className="text-xs text-gray-500 mt-1">
                       Member since 2023
-                    </p>
+                    </p> */}
                   </div>
                 </div>
 
                 {/* Menu Items */}
                 <nav className="p-3">
                   {/* Home Button */}
-                  <button
+                  {/* <button
                     onClick={() => router.push("/")}
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all mb-2 text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-b border-gray-100"
                   >
                     <Home className="w-5 h-5" />
                     <span className="font-medium text-sm">Back to Home</span>
-                  </button>
+                  </button> */}
 
                   {menuItems.map((item) => {
                     const Icon = item.icon;

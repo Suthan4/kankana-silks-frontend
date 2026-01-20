@@ -10,7 +10,6 @@ import {
   X,
   Search,
   ChevronDown,
-  ChevronRight,
   Video,
   MapPin,
   Check,
@@ -29,6 +28,7 @@ import { usePathname } from "next/navigation";
 import { shipmentApi } from "@/lib/api/shipment.api";
 import VideoConsultationModal from "./video-consultationModal";
 import { useRouter } from "next/navigation";
+import UnifiedSearchModal from "./unifiedSearchModal";
 
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -41,7 +41,8 @@ function Header() {
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [pincode, setPincode] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const router = useRouter()
+  const [isSearchOpen, setIsSearchOpen] = useState(false); // ✅ Search modal state
+  const router = useRouter();
 
   const [location, setLocation] = useState<{
     city: string;
@@ -82,7 +83,7 @@ function Header() {
   useEffect(() => {
     if (user && defaultAddress) {
       const locationData = {
-        city: defaultAddress.city?.trim() || "Your Area", // ✅ FIX
+        city: defaultAddress.city?.trim() || "Your Area",
         pincode: defaultAddress.pincode,
         isServiceable: true,
       };
@@ -96,7 +97,7 @@ function Header() {
 
         setLocation({
           ...parsed,
-          city: parsed.city?.trim() || "Your Area", // ✅ FIX
+          city: parsed.city?.trim() || "Your Area",
         });
       }
     }
@@ -239,13 +240,6 @@ function Header() {
   });
 
   /* -------------------- HELPERS -------------------- */
-  const getDisplayName = () => {
-    if (!user?.firstName) return "";
-    return user.firstName.length > 8
-      ? user.firstName.slice(0, 8) + "…"
-      : user.firstName;
-  };
-
   const authGuard = (cb?: () => void) => {
     if (!user) {
       openModal("login");
@@ -258,10 +252,8 @@ function Header() {
     try {
       await clientApiService.logout();
       authModalStore.getState().logout();
-      // Clear location when logging out
       localStorage.removeItem("userLocation");
       localStorage.removeItem("auth-modal-storage");
-      localStorage.removeItem("userLocation");
       setLocation(null);
       toast.success("Logged out successfully");
     } catch (error) {
@@ -575,21 +567,27 @@ function Header() {
             </div>
           </div>
 
-          {/* Center - Search Bar */}
+          {/* ✅ Center - Updated Search Bar */}
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.3 }}
             className="flex-1 max-w-xl mx-8"
           >
-            <div className="relative group">
-              <input
-                type="text"
-                placeholder="Search for products..."
-                className="w-full px-4 py-2 pl-10 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent transition-all duration-300"
-              />
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-gray-600 transition-colors" />
-            </div>
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="w-full"
+            >
+              <div className="relative group">
+                <input
+                  type="text"
+                  placeholder="Search for products, categories..."
+                  className="w-full px-4 py-2 pl-10 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent transition-all duration-300 cursor-pointer"
+                  readOnly
+                />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-gray-600 transition-colors" />
+              </div>
+            </button>
           </motion.div>
 
           {/* Right - Icons */}
@@ -922,7 +920,12 @@ function Header() {
             />
           </Link>
 
-          <motion.button whileTap={{ scale: 0.9 }} className="p-2">
+          {/* ✅ Mobile Search Button */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setIsSearchOpen(true)}
+            className="p-2"
+          >
             <Search className="w-5 h-5" />
           </motion.button>
         </div>
@@ -1338,7 +1341,6 @@ function Header() {
                   if (!user) {
                     openModal("login");
                   } else {
-                    // Navigate to my account on mobile
                     window.location.href = "/my-account";
                   }
                 }}
@@ -1366,11 +1368,17 @@ function Header() {
         </motion.nav>
       )}
 
-      {/* Video COnsultation Modal */}
+      {/* ✅ Unified Search Modal */}
+      <UnifiedSearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
+
+      {/* Video Consultation Modal */}
       <VideoConsultationModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onConfirm={() => console.log("Confirmed")}
+        // onConfirm={() => console.log("Confirmed")}
       />
     </>
   );

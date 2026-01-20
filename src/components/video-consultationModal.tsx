@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   X,
   User,
@@ -7,22 +7,85 @@ import {
   MessageSquare,
   Video,
   ChevronRight,
+  Calendar,
+  Clock,
+  Loader2,
 } from "lucide-react";
 import { useAuthModal } from "@/store/useAuthModalStore";
+import { useMutation } from "@tanstack/react-query";
+import {
+  consultationApi,
+  ConsultationPlatform,
+  CreateConsultationRequest,
+} from "@/lib/api/consultation";
+import { toast } from "sonner";
 
 type VideoConsultationModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm?: () => void;
+  onSuccess?: () => void;
+  productId?: string;
+  categoryId?: string;
+  productName?: string;
 };
 
 const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
   isOpen,
   onClose,
-  onConfirm,
+  onSuccess,
+  productId,
+  categoryId,
+  productName,
 }) => {
   const { user } = useAuthModal();
   const openModal = useAuthModal((state) => state.openModal);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    platform: ConsultationPlatform.WHATSAPP,
+    preferredDate: "",
+    preferredTime: "",
+    notes: "",
+  });
+
+  // Populate form with user data when available
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        fullName: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+        email: user.email || "",
+        phone: user.phone || "",
+      }));
+    }
+  }, [user]);
+
+  // Create consultation mutation
+  const createConsultationMutation = useMutation({
+    mutationFn: (data: CreateConsultationRequest) =>
+      consultationApi.createConsultation(data),
+    onSuccess: (response) => {
+      toast.success("Consultation request submitted successfully!");
+      onClose();
+      onSuccess?.();
+      // Reset form
+      setFormData({
+        fullName: "",
+        email: "",
+        phone: "",
+        platform: ConsultationPlatform.WHATSAPP,
+        preferredDate: "",
+        preferredTime: "",
+        notes: "",
+      });
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to submit request");
+    },
+  });
 
   // Close on ESC
   useEffect(() => {
@@ -34,7 +97,59 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
     return () => window.removeEventListener("keydown", handleEsc);
   }, [isOpen, onClose]);
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!user) {
+      openModal("login");
+      toast.info("Please login to book a consultation");
+      onClose();
+      return;
+    }
+
+    // Validation
+    if (!formData.preferredDate || !formData.preferredTime) {
+      toast.error("Please select date and time for consultation");
+      return;
+    }
+
+    // Combine date and time into ISO datetime string
+    const dateTime = new Date(
+      `${formData.preferredDate}T${formData.preferredTime}:00`,
+    );
+    const isoDateTime = dateTime.toISOString();
+
+    // Submit consultation request
+    const requestData: CreateConsultationRequest = {
+      productId,
+      categoryId,
+      platform: formData.platform,
+      preferredDate: isoDateTime,
+      preferredTime: formData.preferredTime,
+      isPurchaseConsultation: !!productId,
+      consultationNotes: formData.notes || undefined,
+    };
+
+    createConsultationMutation.mutate(requestData);
+  };
+
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePlatformChange = (platform: ConsultationPlatform) => {
+    setFormData((prev) => ({ ...prev, platform }));
+  };
+
   if (!isOpen) return null;
+
+  // Get minimum date (today)
+  const today = new Date().toISOString().split("T")[0];
 
   return (
     <div
@@ -42,15 +157,17 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl"
+        className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-6 flex items-center justify-between rounded-t-3xl z-10">
           <div>
-            <h2 className="text-2xl font-bold">Book Video Session</h2>
+            <h2 className="text-2xl font-bold">Book Video Consultation</h2>
             <p className="text-sm opacity-90 mt-1">
-              Connect with our expert stylists
+              {productName
+                ? `For ${productName}`
+                : "Connect with our expert stylists"}
             </p>
           </div>
 
@@ -63,7 +180,10 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
         </div>
 
         {/* Body */}
-        <div className="p-6 lg:p-8 max-h-[80vh] overflow-y-auto">
+        <form
+          onSubmit={handleSubmit}
+          className="p-6 lg:p-8 overflow-y-auto flex-1"
+        >
           <div className="grid lg:grid-cols-2 gap-6">
             {/* Left - Info */}
             <div className="space-y-4">
@@ -80,7 +200,7 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                     {
                       num: 2,
                       title: "Connect via Video",
-                      desc: "Join on WhatsApp or FaceTime",
+                      desc: "Join on WhatsApp or Zoom/Meet",
                     },
                     {
                       num: 3,
@@ -112,6 +232,7 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
 
             {/* Right - Form */}
             <div className="space-y-4">
+              {/* Full Name */}
               <div>
                 <label className="block text-sm font-semibold mb-2">
                   Full Name
@@ -120,12 +241,17 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
                     placeholder="Enter your name"
-                    className="w-full pl-11 pr-4 py-3 border-none outline outline-gray-00 rounded-xl focus:outline-black"
+                    required
+                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 transition"
                   />
                 </div>
               </div>
 
+              {/* Email */}
               <div>
                 <label className="block text-sm font-semibold mb-2">
                   Email Address
@@ -134,18 +260,23 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
                     placeholder="your@email.com"
-                    className="w-full pl-11 pr-4 py-3 border-none outline outline-gray-400 rounded-xl focus:outline-black"
+                    required
+                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 transition"
                   />
                 </div>
               </div>
 
+              {/* Phone */}
               <div>
                 <label className="block text-sm font-semibold mb-2">
                   Phone Number
                 </label>
                 <div className="flex gap-2">
-                  <select className="w-24 px-3 py-3 border-none outline outline-gray-400 rounded-xl focus:outline-black font-medium">
+                  <select className="w-24 px-3 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 font-medium">
                     <option>+91</option>
                   </select>
 
@@ -153,13 +284,56 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                       type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
                       placeholder="98765 43210"
-                      className="w-full pl-11 pr-4 py-3 outline outline-gray-400 rounded-xl focus:border-black border-none"
+                      required
+                      pattern="[0-9]{10}"
+                      className="w-full pl-11 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 transition"
                     />
                   </div>
                 </div>
               </div>
 
+              {/* Preferred Date */}
+              <div>
+                <label className="block text-sm font-semibold mb-2">
+                  Preferred Date
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="date"
+                    name="preferredDate"
+                    value={formData.preferredDate}
+                    onChange={handleInputChange}
+                    min={today}
+                    required
+                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 transition"
+                  />
+                </div>
+              </div>
+
+              {/* Preferred Time */}
+              <div>
+                <label className="block text-sm font-semibold mb-2">
+                  Preferred Time
+                </label>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="time"
+                    name="preferredTime"
+                    value={formData.preferredTime}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 transition"
+                  />
+                </div>
+              </div>
+
+              {/* Platform Selection */}
               <div>
                 <label className="block text-sm font-semibold mb-3">
                   Preferred Platform
@@ -168,29 +342,42 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                 <div className="space-y-2">
                   {[
                     {
-                      id: "whatsapp",
+                      id: ConsultationPlatform.WHATSAPP,
                       name: "WhatsApp Video",
                       icon: MessageSquare,
                       bg: "bg-green-500",
                     },
                     {
-                      id: "zoom/googlemeet",
-                      name: "Zoom or Google meet",
+                      id: ConsultationPlatform.ZOOM,
+                      name: "Zoom",
                       icon: Video,
-                      bg: "bg-gray-600",
+                      bg: "bg-blue-500",
+                    },
+                    {
+                      id: ConsultationPlatform.GOOGLE_MEET,
+                      name: "Google Meet",
+                      icon: Video,
+                      bg: "bg-orange-500",
                     },
                   ].map((platform) => {
                     const Icon = platform.icon;
+                    const isSelected = formData.platform === platform.id;
 
                     return (
                       <label
                         key={platform.id}
-                        className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition"
+                        className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer hover:bg-gray-50 transition ${
+                          isSelected
+                            ? "border-purple-500 bg-purple-50"
+                            : "border-gray-200"
+                        }`}
                       >
                         <input
                           type="radio"
                           name="platform"
-                          className="w-5 h-5"
+                          checked={isSelected}
+                          onChange={() => handlePlatformChange(platform.id)}
+                          className="w-5 h-5 accent-purple-500"
                         />
 
                         <div
@@ -213,24 +400,42 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                 </div>
               </div>
 
-              <button
-                onClick={() => {
-                  if(!user){
-                    openModal("login")
-                    onClose();
-                  }
-                  onClose();
-                }}
-                // disabled={true}
-                className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-4 rounded-xl font-bold hover:shadow-xl transition-all flex items-center justify-center gap-2 text-lg"
-              >
-                {!user?.email ? "Login to continue" : "Confirm Booking"}
+              {/* Additional Notes */}
+              <div>
+                <label className="block text-sm font-semibold mb-2">
+                  Additional Notes (Optional)
+                </label>
+                <textarea
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleInputChange}
+                  placeholder="Any specific requirements or questions..."
+                  rows={3}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 transition resize-none"
+                />
+              </div>
 
-                <ChevronRight className="w-5 h-5" />
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={createConsultationMutation.isPending}
+                className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-4 rounded-xl font-bold hover:shadow-xl transition-all flex items-center justify-center gap-2 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {createConsultationMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    Confirm Booking
+                    <ChevronRight className="w-5 h-5" />
+                  </>
+                )}
               </button>
             </div>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );
