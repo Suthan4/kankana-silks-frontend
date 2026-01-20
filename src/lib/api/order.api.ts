@@ -108,16 +108,115 @@ export interface Order {
 
 // ==================== DTOs ====================
 
+export interface OrderPreviewDTO {
+  shippingAddressId: string;
+  couponCode?: string;  // ✅ NEW
+  items?: {
+    productId: string;
+    variantId?: string;
+    quantity: number;
+  }[];
+}
+export interface ShippingDimensions {
+  totalWeight: number;
+  volumetricWeight: number;
+  chargeableWeight: number;
+  length: number;
+  breadth: number;
+  height: number;
+}
+
+export interface OrderPreviewResponse {
+  success: boolean;
+  data: {
+    breakdown: {
+      subtotal: number;
+      discount: number;
+      couponDiscount: number;  // ✅ NEW
+      shippingCost: number;
+      gstAmount: number;
+      taxableAmount: number;
+      total: number;
+    };
+    estimatedDelivery: string;
+    itemCount: number;
+    isServiceable: boolean;
+    appliedCoupon?: {  // ✅ NEW
+      id: string;
+      code: string;
+      description?: string;
+      discountType: "PERCENTAGE" | "FIXED";
+      discountValue: number;
+      minOrderValue: number;
+      maxDiscountAmount: number | null;
+      scope: "ALL" | "CATEGORY" | "PRODUCT";
+      userEligibility: "ALL" | "SPECIFIC_USERS" | "FIRST_TIME" | "NEW_USERS";
+      newUserDays: number | null;
+      maxUsage: number | null;
+      perUserLimit: number | null;
+      usageCount: number;
+      validFrom: string;
+      validUntil: string;
+      isActive: boolean;
+      // Categories and products might be included for display
+      categories?: Array<{
+        id: string;
+        name: string;
+        slug: string;
+      }>;
+      products?: Array<{
+        id: string;
+        name: string;
+        slug: string;
+        sellingPrice: number;
+      }>;
+    };
+    couponError?: string;  // ✅ NEW: If coupon validation fails
+  };
+}
+
 export interface CreateOrderDTO {
   shippingAddressId: string;
   billingAddressId: string;
-  couponCode?: string;
+  couponCode?: string;  // ✅ NEW
   paymentMethod: "COD" | "CARD" | "UPI" | "WALLET" | "NET_BANKING";
-  items?:{
-      productId: string;
-      variantId?: string;
-      quantity: number;
+  items?: {
+    productId: string;
+    variantId?: string;
+    quantity: number;
   }[];
+}
+
+export interface CreateOrderResponse {
+  success: boolean;
+  message: string;
+  data: {
+    order: Order;
+    razorpayOrderId: string;
+    razorpayKeyId: string;
+    amountInPaise: number;
+    breakdown: {
+      subtotal: number;
+      discount: number;
+      couponDiscount: number;  // ✅ NEW
+      shippingCost: number;
+      gstAmount: number;
+      taxableAmount: number;
+      total: number;
+    };
+    appliedCoupon?: {  // ✅ NEW
+      code: string;
+      discount: number;
+    };
+    shippingInfo: {
+      warehouse: {
+        name: string;
+        city: string;
+        pincode: string;
+      };
+      dimensions: ShippingDimensions;
+    };
+  };
 }
 
 export interface VerifyPaymentDTO {
@@ -146,30 +245,7 @@ export interface QueryOrderParams {
 
 // ==================== RESPONSES ====================
 
-export interface CreateOrderResponse {
-  success: boolean;
-  message: string;
-  data: {
-    order: Order;
-    razorpayOrderId: string;
-    razorpayKeyId: string;
-    shippingInfo: {
-      warehouse: {
-        name: string;
-        city: string;
-        pincode: string;
-      };
-      dimensions: {
-        totalWeight: number;
-        volumetricWeight: number;
-        chargeableWeight: number;
-        length: number;
-        breadth: number;
-        height: number;
-      };
-    };
-  };
-}
+
 
 export interface VerifyPaymentResponse {
   success: boolean;
@@ -215,11 +291,21 @@ export interface CanCancelResponse {
 // ==================== API SERVICE ====================
 
 class OrderApiService {
+
+   /**
+   * ✅ NEW: Get order preview with accurate totals
+   * POST /api/orders/preview
+   */
+  async getOrderPreview(data: OrderPreviewDTO): Promise<OrderPreviewResponse> {
+    const response = await authService.api.post("/orders/preview", data);
+    return response.data;
+  }
+
   /**
    * Create a new order from cart
    * POST /api/orders
    */
-  async createOrder(data: CreateOrderDTO): Promise<CreateOrderResponse> {
+  async createOrder(data: CreateOrderDTO) {
     const response = await authService.api.post("/orders", data);
     return response.data;
   }
