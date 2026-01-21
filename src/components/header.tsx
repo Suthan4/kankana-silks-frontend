@@ -29,6 +29,7 @@ import { shipmentApi } from "@/lib/api/shipment.api";
 import VideoConsultationModal from "./video-consultationModal";
 import { useRouter } from "next/navigation";
 import UnifiedSearchModal from "./unifiedSearchModal";
+import { cartApi } from "@/lib/api/cart.api";
 
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -42,6 +43,7 @@ function Header() {
   const [pincode, setPincode] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false); // ✅ Search modal state
+  const cartItemsCount = useCartStore((s) => s.getTotalItems());
   const router = useRouter();
 
   const [location, setLocation] = useState<{
@@ -53,16 +55,30 @@ function Header() {
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const locationRef = useRef<HTMLDivElement | null>(null);
-  const cartItemsCount = useCartStore((s) => s.getTotalItems());
   const pathname = usePathname();
-
+  
   const { user } = useAuthModal();
   useOnClickOutside(userMenuRef, () => setUserMenuOpen(false));
   useOnClickOutside(locationRef, () => setLocationModalOpen(false));
-
+  
   // Check if we're on my-account page
   const isMyAccountPage = pathname?.startsWith("/my-account");
-
+     const {
+        data: cartData,
+        isLoading: isLoadingCartApi,
+        refetch: refetchCartApi,
+      } = useQuery({
+        queryKey: ["cartApi", user?.id],
+        queryFn: async () => {
+          const res = await cartApi.getCart();
+          return res.data; // ✅ Cart object
+        },
+        enabled: !!user,
+        staleTime: 0,
+      });
+    const apiItems = cartData?.items ?? [];
+    const displayItemsCount = user?.id ? apiItems?.length : cartItemsCount;
+  
   /* -------------------- GET DEFAULT ADDRESS -------------------- */
   const { data: addressesData } = useQuery({
     queryKey: ["addresses", user?.id],
@@ -322,7 +338,7 @@ function Header() {
       type: "link",
       url: "/cart",
       requiresAuth: false,
-      badgeCount: cartItemsCount,
+      badgeCount: displayItemsCount,
     },
     {
       name: "Wishlist",

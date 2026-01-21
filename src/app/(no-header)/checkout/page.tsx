@@ -31,6 +31,7 @@ import { addressApi, type Address } from "@/lib/api/addresses.api";
 import { CreateOrderDTO, orderApi } from "@/lib/api/order.api";
 import { useCreateOrder, useVerifyPayment } from "@/hooks/useOrders";
 import { couponApi, type Coupon } from "@/lib/api/coupon.api";
+import { cartApi } from "@/lib/api/cart.api";
 
 type PaymentMethod = "RAZORPAY" | "COD";
 
@@ -40,6 +41,37 @@ declare global {
     Razorpay: any;
   }
 }
+
+const normalizeAttributes = (attrs: any) => {
+  if (!attrs) return [];
+
+  if (typeof attrs === "object" && !Array.isArray(attrs)) {
+    return Object.entries(attrs).map(([key, value]) => ({
+      key: String(key),
+      value: String(value),
+    }));
+  }
+
+  if (Array.isArray(attrs)) {
+    return attrs
+      .filter((a) => a?.key && a?.value)
+      .map((a) => ({
+        key: String(a.key),
+        value: String(a.value),
+      }));
+  }
+
+  if (typeof attrs === "string") {
+    try {
+      const parsed = JSON.parse(attrs);
+      return normalizeAttributes(parsed);
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+};
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -114,7 +146,23 @@ export default function CheckoutPage() {
     enabled: !!user,
   });
 
-  const addresses = addressesData || [];
+      const {
+        data: cartData,
+        isLoading: isLoadingCartApi,
+        refetch: refetchCartApi,
+      } = useQuery({
+        queryKey: ["cartApi", user?.id],
+        queryFn: async () => {
+          const res = await cartApi.getCart();
+          return res.data; // ✅ Cart object
+        },
+        enabled: !!user,
+        staleTime: 0,
+      });
+
+  const apiItems = cartData?.items ?? [];
+ const displayItems =
+   isBuyNowMode && buyNowItem ? [buyNowItem] : user ? apiItems : cartItems;   const addresses = addressesData || [];
 
   // Auto-select default address
   useEffect(() => {
@@ -124,7 +172,6 @@ export default function CheckoutPage() {
     }
   }, [addresses, selectedAddress]);
 
-  const items = isBuyNowMode && buyNowItem ? [buyNowItem] : cartItems;
 
   // Fetch order preview - THIS IS THE KEY FIX
   const {
@@ -182,6 +229,25 @@ export default function CheckoutPage() {
   const total = orderPreview?.breakdown.total || 0;
   const estimatedDelivery = orderPreview?.estimatedDelivery || "3-5 days";
   const couponError = orderPreview?.couponError;
+  const getStockQty = (item: any) => {
+    return (
+      item?.variant?.stock?.[0]?.quantity ??
+      item?.product?.stock?.find((s: any) => s.variantId === item?.variantId)
+        ?.quantity ??
+      0
+    );
+  };
+
+  const getUnitPrice = (item: any) => {
+    return Number(
+      item?.variant?.sellingPrice ??
+        item?.variant?.price ??
+        item?.product?.sellingPrice ??
+        item?.price ??
+        0,
+    );
+  };
+
 
   console.log("💰 Current totals:", {
     subtotal,
@@ -198,11 +264,13 @@ export default function CheckoutPage() {
     isLoading: isLoadingCoupons,
     refetch: refetchCoupons,
   } = useQuery({
-    queryKey: ["applicableCoupons", subtotal, items.length],
+    queryKey: ["applicableCoupons", subtotal, displayItems.length],
     queryFn: async () => {
-      if (items.length === 0 || !user) return { data: [] };
+      if (!user || displayItems.length === 0 || !orderPreview || subtotal <= 0) {
+        return { data: [] };
+      }
 
-      const cartItems = items.map((item: any) => ({
+      const cartItems = displayItems.map((item: any) => ({
         productId: item.productId,
         categoryId: item.categoryId,
         quantity: item.quantity,
@@ -214,7 +282,7 @@ export default function CheckoutPage() {
         cartItems,
       });
     },
-    enabled: !!user && items.length > 0 && !!orderPreview && subtotal > 0,
+    enabled: !!user && displayItems.length > 0 && !!orderPreview && subtotal > 0,
     staleTime: 30000,
   });
 
@@ -249,11 +317,41 @@ export default function CheckoutPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ✅ REPLACE ONLY THE validateCouponMutation IN YOUR CHECKOUT PAGE
+    const updateQtyMutation = useMutation({
+      mutationFn: async ({
+        itemId,
+        quantity,
+      }: {
+        itemId: string;
+        quantity: number;
+      }) => {
+        return await cartApi.updateCartItem(itemId, { quantity });
+      },
+      onSuccess: async () => {
+        await refetchCartApi();
+      },
+      onError: (err: any) => {
+        toast.error(err?.message || "Failed to update quantity");
+      },
+    });
 
+    const removeItemMutation = useMutation({
+      mutationFn: async (itemId: string) => {
+        return await cartApi.removeFromCart(itemId);
+      },
+      onSuccess: async () => {
+        toast.success("Item removed");
+        await refetchCartApi();
+      },
+      onError: (err: any) => {
+        toast.error(err?.message || "Failed to remove item");
+      },
+    });
+
+  // ✅ REPLACE ONLY THE validateCouponMutation IN YOUR CHECKOUT PAGE
   const validateCouponMutation = useMutation({
     mutationFn: async (code: string) => {
-      const cartItemsForValidation = items.map((item: any) => ({
+      const cartItemsForValidation = displayItems.map((item: any) => ({
         productId: item.productId,
         categoryId: item.categoryId,
         quantity: item.quantity,
@@ -511,7 +609,7 @@ export default function CheckoutPage() {
     }
   };
 
-  if (items.length === 0) {
+  if (displayItems.length === 0) {
     return null;
   }
 
@@ -560,60 +658,174 @@ export default function CheckoutPage() {
                   <ShoppingBag className="w-5 h-5 text-white" />
                 </div>
                 <h2 className="text-xl font-bold text-gray-900">
-                  Order Items ({items.length})
+                  Order Items ({displayItems.length})
                 </h2>
               </div>
 
               <div className="space-y-3 max-h-64 overflow-y-auto">
-                {items.map((item: any, index: number) => (
-                  <div
-                    key={`${item.productId}-${item.variantId}-${index}`}
-                    className="flex gap-3 p-3 bg-gray-50 rounded-xl"
-                  >
-                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                      {item.image ? (
-                        <Image
-                          src={item.image}
-                          alt={item.productName || item.name || "Product"}
-                          width={64}
-                          height={64}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <ShoppingBag className="w-6 h-6 text-gray-400" />
+                {displayItems?.map((item: any, index: number) => {
+                  const stockQty = getStockQty(item);
+                  const unitPrice = getUnitPrice(item);
+
+                  const isBuyNowItem = isBuyNowMode;
+
+                  return (
+                    <div
+                      key={`${item.productId}-${item.variantId}-${index}`}
+                      className="flex gap-3 p-3 bg-gray-50 rounded-xl relative"
+                    >
+                      {/* ✅ Delete Button */}
+                      {!isBuyNowItem && (
+                        <button
+                          onClick={() => {
+                            if (user?.id) {
+                              removeItemMutation.mutate(item.id);
+                            } else {
+                              clearCart(); // OR remove item from zustand if you have removeItem
+                            }
+                          }}
+                          className="absolute top-2 right-2 p-2 hover:bg-red-50 rounded-lg transition"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </button>
+                      )}
+
+                      {/* Image */}
+                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                        {item?.product?.media?.[0]?.url ? (
+                          <Image
+                            src={item.product.media[0].url}
+                            alt={item.product?.name}
+                            width={64}
+                            height={64}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <ShoppingBag className="w-6 h-6 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 text-sm line-clamp-1">
+                          {item.product?.name || item.name}
+                        </p>
+
+                        {/* ✅ Variant + Custom attrs */}
+                        {item?.variant && (
+                          <div className="mt-2 space-y-2">
+                            {/* normal */}
+                            <div className="flex flex-wrap gap-2 text-xs text-gray-600">
+                              {item.variant.size && (
+                                <span className="bg-gray-100 px-2 py-0.5 rounded">
+                                  Size: {item.variant.size}
+                                </span>
+                              )}
+                              {item.variant.color && (
+                                <span className="bg-gray-100 px-2 py-0.5 rounded">
+                                  {item.variant.color}
+                                </span>
+                              )}
+                              {item.variant.fabric && (
+                                <span className="bg-gray-100 px-2 py-0.5 rounded">
+                                  {item.variant.fabric}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* custom */}
+                            {normalizeAttributes(item.variant.attributes)
+                              .length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {normalizeAttributes(
+                                  item.variant.attributes,
+                                ).map((attr) => (
+                                  <span
+                                    key={attr.key}
+                                    className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-lg border border-blue-100"
+                                  >
+                                    {attr.key}:{" "}
+                                    <span className="font-semibold">
+                                      {attr.value}
+                                    </span>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Qty + Price */}
+                        <div className="flex items-center justify-between mt-3">
+                          {/* ✅ Qty Controls */}
+                          <div className="flex items-center gap-2 bg-white border rounded-full px-2 py-1">
+                            <button
+                              disabled={isBuyNowItem || item.quantity <= 1}
+                              onClick={() => {
+                                const newQty = item.quantity - 1;
+                                if (newQty < 1) return;
+
+                                if (user?.id) {
+                                  updateQtyMutation.mutate({
+                                    itemId: item.id,
+                                    quantity: newQty,
+                                  });
+                                } else {
+                                  // zustand update
+                                  // updateQuantity(item.id, newQty)
+                                }
+                              }}
+                              className="w-7 h-7 flex items-center justify-center disabled:opacity-50"
+                            >
+                              -
+                            </button>
+
+                            <span className="w-6 text-center text-sm font-semibold">
+                              {item.quantity}
+                            </span>
+
+                            <button
+                              disabled={
+                                isBuyNowItem || item.quantity >= stockQty
+                              }
+                              onClick={() => {
+                                const newQty = item.quantity + 1;
+
+                                if (user?.id) {
+                                  updateQtyMutation.mutate({
+                                    itemId: item.id,
+                                    quantity: newQty,
+                                  });
+                                } else {
+                                  // zustand update
+                                  // updateQuantity(item.id, newQty)
+                                }
+                              }}
+                              className="w-7 h-7 flex items-center justify-center bg-black text-white rounded-full disabled:opacity-50"
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          {/* ✅ Price */}
+                          <p className="font-semibold text-sm">
+                            ₹
+                            {(unitPrice * item.quantity).toLocaleString(
+                              "en-IN",
+                            )}
+                          </p>
                         </div>
-                      )}
-                    </div>
 
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 text-sm line-clamp-1">
-                        {item.productName || item.name}
-                      </p>
-
-                      {item.variant && (
-                        <p className="text-xs text-gray-500">
-                          {[
-                            item.variant.size,
-                            item.variant.color,
-                            item.variant.fabric,
-                          ]
-                            .filter(Boolean)
-                            .join(" • ")}
-                        </p>
-                      )}
-
-                      <div className="flex items-center justify-between mt-1">
-                        <p className="text-xs text-gray-500">
-                          Qty: {item.quantity}
-                        </p>
-                        <p className="font-semibold text-sm">
-                          ₹{(item.price * item.quantity).toLocaleString()}
+                        {/* ✅ Stock info */}
+                        <p className="text-xs text-gray-500 mt-1">
+                          Stock: {stockQty}
                         </p>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </motion.div>
 
@@ -1047,8 +1259,8 @@ export default function CheckoutPage() {
               <div className="space-y-3 pb-4 border-b border-gray-200">
                 <div className="flex justify-between text-gray-600">
                   <span>
-                    Subtotal ({items.length}{" "}
-                    {items.length === 1 ? "item" : "items"})
+                    Subtotal ({displayItems.length}{" "}
+                    {displayItems.length === 1 ? "item" : "items"})
                   </span>
                   {isLoadingPreview ? (
                     <div className="h-5 w-20 bg-gray-200 animate-pulse rounded" />
@@ -1105,7 +1317,11 @@ export default function CheckoutPage() {
                       <div className="h-5 w-16 bg-gray-200 animate-pulse rounded" />
                     ) : (
                       <span className="font-semibold text-sm text-gray-900">
-                        ₹{gstAmount.toFixed(2)}
+                        {/* ₹{gstAmount.toFixed(2)}.  */}
+                        ₹ {gstAmount.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </span>
                     )}
                   </div>
@@ -1169,10 +1385,10 @@ export default function CheckoutPage() {
               </motion.button>
 
               <div className="mt-4 space-y-2">
-                <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                {/* <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
                   <Truck className="w-4 h-4" />
                   <span>Free delivery on orders above ₹1000</span>
-                </div>
+                </div> */}
                 <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
                   <Lock className="w-4 h-4" />
                   <span>100% secure payments</span>

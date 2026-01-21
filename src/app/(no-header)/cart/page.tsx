@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Trash2,
@@ -24,9 +24,45 @@ import { useRouter } from "next/navigation";
 import { toast } from "@/store/useToastStore";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { couponApi, type Coupon } from "@/lib/api/coupon.api";
+import { cartApi } from "@/lib/api/cart.api";
+import { useAuthModal } from "@/store/useAuthModalStore";
+
+const normalizeAttributes = (attrs: any) => {
+  if (!attrs) return [];
+
+  if (typeof attrs === "object" && !Array.isArray(attrs)) {
+    return Object.entries(attrs).map(([key, value]) => ({
+      key: String(key),
+      value: String(value),
+    }));
+  }
+
+  if (Array.isArray(attrs)) {
+    return attrs
+      .filter((a) => a?.key && a?.value)
+      .map((a) => ({
+        key: String(a.key),
+        value: String(a.value),
+      }));
+  }
+
+  if (typeof attrs === "string") {
+    try {
+      const parsed = JSON.parse(attrs);
+      return normalizeAttributes(parsed);
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+};
+
 
 export default function CartPage() {
   const router = useRouter();
+  const { user } = useAuthModal();
+
   const {
     items,
     appliedCoupon,
@@ -47,26 +83,62 @@ export default function CartPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const subtotal = getSubtotal();
-  const discount = getDiscount();
-  const total = getTotal();
-  const totalItems = getTotalItems();
+    const {
+      data: cartData,
+      isLoading: isLoadingCartApi,
+      refetch: refetchCartApi,
+    } = useQuery({
+      queryKey: ["cartApi", user?.id],
+      queryFn: async () => {
+        const res = await cartApi.getCart();
+        return res.data; // ✅ Cart object
+      },
+      enabled: !!user,
+      staleTime: 0,
+    });
+  const apiItems = cartData?.items ?? [];
+  const displayItems = user?.id ? apiItems : items; // items from zustand store
+  console.log("apiItems", JSON.stringify(apiItems));
+  
 
-  // Fetch applicable coupons from API
+const totalItems = useMemo(() => {
+  return displayItems.reduce((sum: number, i: any) => sum + i.quantity, 0);
+}, [displayItems]);
+
+const subtotal = useMemo(() => {
+  return displayItems.reduce((sum: number, i: any) => {
+    const unitPrice =
+      i.variant?.price ??
+      i.product?.sellingPrice ??
+      i.product?.basePrice ??
+      i.price ??
+      0;
+
+    return sum + unitPrice * i.quantity;
+  }, 0);
+}, [displayItems]);
+
+const discount = appliedCoupon?.discountAmount
+  ? Number(appliedCoupon.discountAmount)
+  : 0;
+
+const total = Math.max(subtotal - discount, 0); 
+
   const {
     data: applicableCouponsData,
     isLoading: isLoadingCoupons,
     refetch: refetchCoupons,
   } = useQuery({
-    queryKey: ["applicableCoupons", subtotal, items.length],
+    queryKey: ["applicableCoupons", subtotal, displayItems.length],
     queryFn: async () => {
-      if (items.length === 0) return { data: [] };
+      if (displayItems.length === 0) return { data: [] };
 
-      const cartItems = items.map((item) => ({
-        productId: item.productId,
+      const cartItems = displayItems.map((item: any) => ({
+        productId: item.productId ?? item.product?.id,
         categoryId: item.categoryId,
         quantity: item.quantity,
-        price: item.price,
+        price:
+          item.variant?.price ?? item.product?.sellingPrice ?? item.price ?? 0,
       }));
 
       return await couponApi.getApplicableCoupons({
@@ -74,32 +146,23 @@ export default function CartPage() {
         cartItems,
       });
     },
-    enabled: items.length > 0,
+    enabled: displayItems.length > 0,
     staleTime: 30000, // 30 seconds
   });
 
-  const availableCoupons = applicableCouponsData?.data || [];
-  const [filteredCoupons, setFilteredCoupons] =
-    useState<Coupon[]>(availableCoupons);
+  const availableCoupons = applicableCouponsData?.data ?? [];
 
-  // Update filtered coupons when available coupons change
-  useEffect(() => {
-    setFilteredCoupons(availableCoupons);
-  }, [availableCoupons]);
+  const filteredCoupons = useMemo(() => {
+    if (!couponCode) return availableCoupons;
 
-  // Filter coupons based on input
-  useEffect(() => {
-    if (couponCode) {
-      const filtered = availableCoupons.filter((coupon) =>
-        coupon.code.toLowerCase().includes(couponCode.toLowerCase()),
-      );
-      setFilteredCoupons(filtered);
-      setShowAutocomplete(true);
-    } else {
-      setFilteredCoupons(availableCoupons);
-      setShowAutocomplete(false);
-    }
+    return availableCoupons.filter((coupon) =>
+      coupon.code.toLowerCase().includes(couponCode.toLowerCase()),
+    );
   }, [couponCode, availableCoupons]);
+
+  useEffect(() => {
+    setShowAutocomplete(!!couponCode && filteredCoupons.length > 0);
+  }, [couponCode, filteredCoupons.length]);
 
   // Close autocomplete when clicking outside
   useEffect(() => {
@@ -119,14 +182,16 @@ export default function CartPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  
   // Validate and apply coupon mutation
   const validateCouponMutation = useMutation({
     mutationFn: async (code: string) => {
-      const cartItems = items.map((item) => ({
-        productId: item.productId,
+      const cartItems = displayItems.map((item: any) => ({
+        productId: item.productId ?? item.product?.id,
         categoryId: item.categoryId,
         quantity: item.quantity,
-        price: item.price,
+        price:
+          item.variant?.price ?? item.product?.sellingPrice ?? item.price ?? 0,
       }));
 
       return await couponApi.validateCoupon({
@@ -136,33 +201,64 @@ export default function CartPage() {
       });
     },
     onSuccess: (response, code) => {
-      if (response.valid && response.coupon && response.discount) {
-        // Apply coupon to cart store
-        const couponData = {
-          code: response.coupon.code,
-          discountType: response.coupon.discountType,
-          discountValue: response.coupon.discountValue,
-          minOrderValue: response.coupon.minOrderValue,
-          maxDiscountAmount: response.coupon.maxDiscountAmount,
-          validFrom: response.coupon.validFrom,
-          validUntil: response.coupon.validUntil,
-          isActive: response.coupon.isActive,
+if (response.valid && response.coupon && response.discount !== undefined) {
+  // Apply coupon to cart store
+  const couponData = {
+    code: response.coupon.code,
+    discountType: response.coupon.discountType,
+    discountValue: response.coupon.discountValue,
+    minOrderValue: response.coupon.minOrderValue,
+    maxDiscountAmount: response.coupon.maxDiscountAmount,
+    validFrom: response.coupon.validFrom,
+    validUntil: response.coupon.validUntil,
+    isActive: response.coupon.isActive,
 
-          discountAmount: response.discount,
-          finalAmount: response.finalAmount,
-        };
-        applyCoupon(couponData);
-        toast.success(`Coupon "${code}" applied successfully!`);
-        setCouponCode("");
-        setShowCouponDropdown(false);
-        setShowAutocomplete(false);
-        refetchCoupons(); // Refresh available coupons
-      } else {
-        toast.error(response.error || "Invalid coupon code");
-      }
+    discountAmount: response.discount,
+    finalAmount: response.finalAmount,
+  };
+  applyCoupon(couponData);
+  toast.success(`Coupon "${code}" applied successfully!`);
+  setCouponCode("");
+  setShowCouponDropdown(false);
+  setShowAutocomplete(false);
+  refetchCoupons(); // Refresh available coupons
+} else {
+  toast.error(response.error || "Invalid coupon code");
+}
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to apply coupon");
+    },
+  });
+
+  const updateQtyMutation = useMutation({
+    mutationFn: async ({
+      itemId,
+      quantity,
+    }: {
+      itemId: string;
+      quantity: number;
+    }) => {
+      return await cartApi.updateCartItem(itemId, { quantity });
+    },
+    onSuccess: async () => {
+      await refetchCartApi();
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Failed to update quantity");
+    },
+  });
+
+  const removeItemMutation = useMutation({
+    mutationFn: async (itemId: string) => {
+      return await cartApi.removeFromCart(itemId);
+    },
+    onSuccess: async () => {
+      toast.success("Item removed");
+      await refetchCartApi();
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Failed to remove item");
     },
   });
 
@@ -181,7 +277,7 @@ export default function CartPage() {
   };
 
   const handleCheckout = () => {
-    if (items.length === 0) {
+    if (displayItems.length === 0) {
       toast.error("Your cart is empty");
       return;
     }
@@ -194,7 +290,9 @@ export default function CartPage() {
     handleApplyCoupon(coupon.code);
   };
 
-  if (items.length === 0) {
+
+
+  if (displayItems.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 flex items-center justify-center p-4">
         <motion.div
@@ -273,7 +371,10 @@ export default function CartPage() {
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4 mb-6 lg:mb-0">
             <AnimatePresence mode="popLayout">
-              {items.map((item, index) => (
+              {displayItems.map((item: any, index: number) => {
+                console.log("item",item);
+                
+              return (
                 <motion.div
                   key={item.id}
                   layout
@@ -285,16 +386,16 @@ export default function CartPage() {
                 >
                   <div className="flex gap-4">
                     {/* Product Image */}
-                    <Link href={`/products/${item.slug}`}>
+                    <Link href={`/products/${item?.product?.slug}`}>
                       <motion.div
                         whileHover={{ scale: 1.05 }}
                         className="relative flex-shrink-0 cursor-pointer"
                       >
                         <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-xl overflow-hidden bg-gray-100">
-                          {item.image ? (
+                          {item?.product?.media ? (
                             <Image
-                              src={item.image}
-                              alt={item.name}
+                              src={item?.product?.media?.[0].url}
+                              alt={item.product?.name}
                               width={96}
                               height={96}
                               className="w-full h-full object-cover"
@@ -312,40 +413,70 @@ export default function CartPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="flex-1">
-                          <Link href={`/products/${item.slug}`}>
+                          <Link href={`/products/${item?.product?.slug}`}>
                             <h3 className="font-bold text-gray-900 text-base lg:text-lg mb-1 hover:text-amber-600 transition cursor-pointer">
-                              {item.name}
+                              {item.product?.name}
                             </h3>
                           </Link>
-                          {item.variant && (
-                            <div className="flex flex-wrap gap-2 text-sm text-gray-600">
-                              {item.variant.color && (
-                                <span className="bg-gray-100 px-2 py-0.5 rounded">
-                                  {item.variant.color}
-                                </span>
-                              )}
-                              {item.variant.size && (
-                                <span className="bg-gray-100 px-2 py-0.5 rounded">
-                                  Size: {item.variant.size}
-                                </span>
-                              )}
-                              {item.variant.fabric && (
-                                <span className="bg-gray-100 px-2 py-0.5 rounded">
-                                  {item.variant.fabric}
-                                </span>
+                          {item?.variant && (
+                            <div className="mt-2 space-y-2">
+                              {/* ✅ Standard Variant fields */}
+                              <div className="flex flex-wrap gap-2 text-sm text-gray-600">
+                                {item.variant.color && (
+                                  <span className="bg-gray-100 px-2 py-0.5 rounded">
+                                    {item.variant.color}
+                                  </span>
+                                )}
+                                {item.variant.size && (
+                                  <span className="bg-gray-100 px-2 py-0.5 rounded">
+                                    Size: {item.variant.size}
+                                  </span>
+                                )}
+                                {item.variant.fabric && (
+                                  <span className="bg-gray-100 px-2 py-0.5 rounded">
+                                    {item.variant.fabric}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* ✅ Custom Attributes (dynamic key/value) */}
+                              {normalizeAttributes(item.variant.attributes)
+                                .length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                  {normalizeAttributes(
+                                    item.variant.attributes,
+                                  ).map((attr) => (
+                                    <span
+                                      key={attr.key}
+                                      className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-lg border border-blue-100"
+                                    >
+                                      {attr.key}:{" "}
+                                      <span className="font-semibold">
+                                        {attr.value}
+                                      </span>
+                                    </span>
+                                  ))}
+                                </div>
                               )}
                             </div>
                           )}
-                          {item.stock < 5 && item.stock > 0 && (
+
+                          {item?.stock < 5 && item?.stock > 0 && (
                             <p className="text-xs text-orange-600 mt-1">
-                              Only {item.stock} left in stock
+                              Only {item?.stock?.[0].quantity} left in stock
                             </p>
                           )}
                         </div>
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          onClick={() => removeItem(item.id)}
+                          onClick={() => {
+                            if (user?.id) {
+                              removeItemMutation.mutate(item.id);
+                            } else {
+                              removeItem(item.id);
+                            }
+                          }}
                           className="text-gray-400 hover:text-red-500 transition p-1"
                         >
                           <Trash2 className="w-5 h-5" />
@@ -355,11 +486,11 @@ export default function CartPage() {
                       <div className="flex items-center justify-between mt-4">
                         <div>
                           <p className="text-xl lg:text-2xl font-bold text-gray-900">
-                            ₹{Number(item.price).toFixed(2)}
+                            ₹{Number(item?.product?.sellingPrice).toFixed(2)}
                           </p>
                           {item.basePrice > item.price && (
                             <p className="text-sm text-gray-400 line-through">
-                              ₹{Number(item.basePrice).toFixed(2)}
+                              ₹{Number(item?.product?.basePrice).toFixed(2)}
                             </p>
                           )}
                         </div>
@@ -368,9 +499,19 @@ export default function CartPage() {
                         <div className="flex items-center gap-2 lg:gap-3 bg-gray-100 rounded-full px-2 py-1">
                           <motion.button
                             whileTap={{ scale: 0.9 }}
-                            onClick={() =>
-                              updateQuantity(item.id, item.quantity - 1)
-                            }
+                            onClick={() => {
+                              const newQty = item.quantity - 1;
+                              if (newQty < 1) return;
+
+                              if (user) {
+                                updateQtyMutation.mutate({
+                                  itemId: item.id,
+                                  quantity: newQty,
+                                });
+                              } else {
+                                updateQuantity(item.id, newQty);
+                              }
+                            }}
                             disabled={item.quantity <= 1}
                             className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
                           >
@@ -383,9 +524,18 @@ export default function CartPage() {
 
                           <motion.button
                             whileTap={{ scale: 0.9 }}
-                            onClick={() =>
-                              updateQuantity(item.id, item.quantity + 1)
-                            }
+                            onClick={() => {
+                              const newQty = item.quantity + 1;
+
+                              if (user) {
+                                updateQtyMutation.mutate({
+                                  itemId: item.id,
+                                  quantity: newQty,
+                                });
+                              } else {
+                                updateQuantity(item.id, newQty);
+                              }
+                            }}
                             disabled={item.quantity >= item.stock}
                             className="w-8 h-8 flex items-center justify-center text-white bg-black rounded-full hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
                           >
@@ -396,7 +546,8 @@ export default function CartPage() {
                     </div>
                   </div>
                 </motion.div>
-              ))}
+              );}
+              )}
             </AnimatePresence>
           </div>
 
@@ -428,8 +579,8 @@ export default function CartPage() {
                         </p>
                         <p className="text-xs text-green-700">
                           {appliedCoupon.discountType === "PERCENTAGE"
-                            ? `${appliedCoupon.discountType}% off`
-                            : `₹${appliedCoupon.discountType} off`}
+                            ? `${appliedCoupon.discountValue}% OFF`
+                            : `₹${appliedCoupon.discountValue} OFF`}
                         </p>
                       </div>
                     </div>
