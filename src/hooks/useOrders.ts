@@ -6,6 +6,7 @@ import {
   type CancelOrderDTO,
   type QueryOrderParams,
   type UpdateOrderStatusDTO,
+  InitiatePaymentDTO,
 } from "@/lib/api/order.api";
 import { toast } from "@/store/useToastStore";
 
@@ -21,6 +22,33 @@ export const orderKeys = {
 };
 
 // ==================== USER QUERIES ====================
+
+// ✅ NEW: Initiate payment hook (Step 1: Create Razorpay session)
+export const useInitiatePayment = () => {
+  return useMutation({
+    mutationFn: (data: InitiatePaymentDTO) => orderApi.initiatePayment(data),
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to initiate payment");
+    },
+  });
+};
+
+// ✅ UPDATED: Verify payment hook (Step 2: Verify payment AND create order)
+export const useVerifyPayment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: VerifyPaymentDTO) => orderApi.verifyPayment(data),
+    onSuccess: () => {
+      // Invalidate orders cache so orders list refreshes
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["ordersList"] });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Payment verification failed");
+    },
+  });
+};
 
 /**
  * Get user's orders with pagination and filters
@@ -57,17 +85,36 @@ export function useOrderByNumber(orderNumber: string) {
   });
 }
 
-/**
- * Check if order can be cancelled
- */
-export function useCanCancelOrder(orderId: string) {
-  return useQuery({
-    queryKey: orderKeys.canCancel(orderId),
-    queryFn: () => orderApi.canCancelOrder(orderId),
-    enabled: !!orderId,
-    staleTime: 10000, // 10 seconds
+// Cancel order
+export const useCancelOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ orderId, reason }: { orderId: string; reason?: string }) =>
+      orderApi.cancelOrder(orderId, { reason }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["ordersList"] });
+      toast.success("Order cancelled successfully");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to cancel order");
+    },
   });
-}
+};
+
+// Check if can cancel
+export const useCanCancelOrder = (orderId?: string) => {
+  return useQuery({
+    queryKey: ["orders", "can-cancel", orderId],
+    queryFn: async () => {
+      if (!orderId) throw new Error("Order ID required");
+      const response = await orderApi.canCancelOrder(orderId);
+      return response.data;
+    },
+    enabled: !!orderId,
+  });
+};
 
 // ==================== USER MUTATIONS ====================
 
@@ -93,66 +140,6 @@ export function useCreateOrder() {
   });
 }
 
-/**
- * Verify Razorpay payment
- */
-export function useVerifyPayment() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: VerifyPaymentDTO) => orderApi.verifyPayment(data),
-    onSuccess: (response) => {
-      // Invalidate orders
-      queryClient.invalidateQueries({ queryKey: orderKeys.all });
-      
-      // Update specific order if we have the ID
-      if (response.data?.id) {
-        queryClient.setQueryData(
-          orderKeys.detail(response.data.id),
-          response
-        );
-      }
-      
-      toast.success("Payment verified successfully");
-    },
-    onError: (error: any) => {
-      const message = error.response?.data?.message || "Payment verification failed";
-      toast.error(message);
-    },
-  });
-}
-
-/**
- * Cancel order
- */
-export function useCancelOrder() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ orderId, data }: { orderId: string; data?: CancelOrderDTO }) =>
-      orderApi.cancelOrder(orderId, data),
-    onSuccess: (response, variables) => {
-      // Invalidate orders list
-      queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
-      
-      // Invalidate specific order
-      queryClient.invalidateQueries({ 
-        queryKey: orderKeys.detail(variables.orderId) 
-      });
-      
-      // Invalidate can-cancel check
-      queryClient.invalidateQueries({ 
-        queryKey: orderKeys.canCancel(variables.orderId) 
-      });
-      
-      toast.success(response.message || "Order cancelled successfully");
-    },
-    onError: (error: any) => {
-      const message = error.response?.data?.message || "Failed to cancel order";
-      toast.error(message);
-    },
-  });
-}
 
 // ==================== ADMIN QUERIES ====================
 
@@ -163,7 +150,6 @@ export function useAdminOrders(params?: QueryOrderParams) {
   return useQuery({
     queryKey: [...orderKeys.all, "admin", params || {}],
     queryFn: () => orderApi.getAllOrders(params),
-    staleTime: 30000,
   });
 }
 
@@ -208,7 +194,6 @@ export function usePrefetchOrder() {
     queryClient.prefetchQuery({
       queryKey: orderKeys.detail(orderId),
       queryFn: () => orderApi.getOrder(orderId),
-      staleTime: 30000,
     });
   };
 }

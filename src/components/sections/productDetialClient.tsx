@@ -34,6 +34,8 @@ import { useRouter } from "next/navigation";
 import ProductRequestModal from "@/components/productRequestModal";
 import { formatMaskedPrice } from "@/lib/utils/priceMasked";
 import VideoConsultationModal from "../video-consultationModal";
+import WishlistButton from "../ui/WishlistButton";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface ProductDetailsClientProps {
   initialProduct: Product;
@@ -84,14 +86,13 @@ const normalizeVariantAttributesToRecord = (
   return {};
 };
 
-
-
 export default function ProductDetailsClient({
   initialProduct,
 }: ProductDetailsClientProps) {
   const { user, openModal } = useAuthModal();
   const { addItem: addToLocalCart } = useCartStore();
   const router = useRouter();
+  const queryClient = useQueryClient()
 
   // State
   const [product] = useState<Product>(initialProduct);
@@ -179,49 +180,44 @@ export default function ProductDetailsClient({
       ? Math.round(((basePrice - displayPrice) / basePrice) * 100)
       : 0;
 
-const attributeOptions = useMemo(() => {
-  if (!hasVariants || !product.variants?.length) return [];
+  const attributeOptions = useMemo(() => {
+    if (!hasVariants || !product.variants?.length) return [];
 
-  const map = new Map<string, Set<string>>();
+    const map = new Map<string, Set<string>>();
 
-  for (const variant of product.variants) {
-    const record = normalizeVariantAttributesToRecord(variant.attributes);
+    for (const variant of product.variants) {
+      const record = normalizeVariantAttributesToRecord(variant.attributes);
 
-    for (const [key, value] of Object.entries(record)) {
-      if (!key || !value) continue;
+      for (const [key, value] of Object.entries(record)) {
+        if (!key || !value) continue;
 
-      if (!map.has(key)) map.set(key, new Set());
-      map.get(key)!.add(value);
+        if (!map.has(key)) map.set(key, new Set());
+        map.get(key)!.add(value);
+      }
     }
-  }
 
-  return Array.from(map.entries()).map(([key, valuesSet]) => ({
-    key,
-    values: Array.from(valuesSet),
-  }));
-}, [hasVariants, product.variants]);
-
-
+    return Array.from(map.entries()).map(([key, valuesSet]) => ({
+      key,
+      values: Array.from(valuesSet),
+    }));
+  }, [hasVariants, product.variants]);
 
   // ✅ Variant attributes render
- const selectedVariantAttributes = useMemo(() => {
-   return normalizeVariantAttributesToRecord(selectedVariant?.attributes);
- }, [selectedVariant?.attributes]);
+  const selectedVariantAttributes = useMemo(() => {
+    return normalizeVariantAttributesToRecord(selectedVariant?.attributes);
+  }, [selectedVariant?.attributes]);
 
- const productSpecificationsAsAttrs = useMemo(() => {
-   return (product.specifications ?? []).map((s) => ({
-     key: s.key,
-     value: String(s.value),
-   }));
- }, [product.specifications]);
+  const productSpecificationsAsAttrs = useMemo(() => {
+    return (product.specifications ?? []).map((s) => ({
+      key: s.key,
+      value: String(s.value),
+    }));
+  }, [product.specifications]);
 
- const finalAttributesToShow =
-   attributeOptions.length > 0
-     ? selectedVariantAttributes
-     : productSpecificationsAsAttrs;
-
-
-
+  const finalAttributesToShow =
+    attributeOptions.length > 0
+      ? selectedVariantAttributes
+      : productSpecificationsAsAttrs;
 
   useEffect(() => {
     if (user) {
@@ -323,21 +319,20 @@ const attributeOptions = useMemo(() => {
     }
   };
 
-const handleSelectCustomAttribute = (attrKey: string, attrValue: string) => {
-  if (!product.variants?.length) return;
+  const handleSelectCustomAttribute = (attrKey: string, attrValue: string) => {
+    if (!product.variants?.length) return;
 
-  const matched = product.variants.find((v) => {
-    const vVal = getVariantAttrValue(v, attrKey);
-    return String(vVal) === String(attrValue);
-  });
+    const matched = product.variants.find((v) => {
+      const vVal = getVariantAttrValue(v, attrKey);
+      return String(vVal) === String(attrValue);
+    });
 
-  if (matched) {
-    setSelectedVariant(matched);
-  } else {
-    toast.error("Variant not found for selected option");
-  }
-};
-
+    if (matched) {
+      setSelectedVariant(matched);
+    } else {
+      toast.error("Variant not found for selected option");
+    }
+  };
 
   const handleCheckDelivery = () => {
     checkDeliveryAvailability(pincode);
@@ -392,82 +387,87 @@ const handleSelectCustomAttribute = (attrKey: string, attrValue: string) => {
 
     setIsRequestModalOpen(true);
   };
+  const addToCartMutation = useMutation({
+    mutationFn: async (product: Product) => {
+      // ✅ Create cart item matching API structure
+      const availableStock = product.stock?.[0]?.quantity ?? 0;
 
-  const handleAddToCart = async () => {
-    if (quantity > availableStock) {
-      toast.error(`Only ${availableStock} items available`);
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      // ✅ Local cart item should match API structure
       const cartItem = {
         id: crypto.randomUUID(),
-        cartId: "local", // optional (for UI/debug)
+        cartId: "local",
         productId: product.id,
-        variantId: selectedVariant?.id ?? null,
-        quantity,
-
+        variantId: null,
+        quantity: 1,
         product: {
           id: product.id,
           name: product.name,
           slug: product.slug,
           categoryId: product.categoryId,
-
-          sellingPrice: Number(displayPrice),
-          basePrice: Number(basePrice),
-
+          sellingPrice: Number(product.sellingPrice),
+          basePrice: Number(product.basePrice),
           media: [
             {
-              url: images?.[0]?.url ?? "/placeholder.jpg",
+              url: product.media?.[0]?.url ?? "/placeholder.jpg",
               altText: product.name,
               isActive: true,
             },
           ],
-
           stock: [
             {
               quantity: availableStock,
             },
           ],
         },
-
-        variant: selectedVariant
-          ? {
-              id: selectedVariant.id,
-              size: selectedVariant.size ?? undefined,
-              color: selectedVariant.color ?? undefined,
-              fabric: selectedVariant.fabric ?? undefined,
-              price: Number(displayPrice),
-            }
-          : null,
+        variant: null,
       };
 
-      // ✅ Store in localStorage (zustand)
+      // ✅ Add to local cart first (always)
       addToLocalCart(cartItem);
-      toast.success("Added to cart");
 
-      // ✅ If logged in, also add to server
+      // ✅ If user is logged in, sync with server
       if (user) {
-        try {
-          await cartApi.addToCart({
-            productId: product.id,
-            variantId: selectedVariant?.id,
-            quantity,
-          });
-        } catch (error) {
-          console.error("Failed to sync with server:", error);
-        }
+        await cartApi.addToCart({ productId: product.id, quantity: 1 });
       }
-    } catch (error: any) {
-      toast.error(error.message || "Failed to add to cart");
-    } finally {
-      setLoading(false);
+    },
+    onSuccess: () => {
+      if (user) {
+        queryClient.invalidateQueries({ queryKey: ["cartApi"] });
+      }
+      toast.success("Added to cart");
+    },
+    onError: () => toast.error("Failed to add to cart"),
+  });
+    const canAddToCart = (product: Product) => {
+      const availableStock = product.stock?.[0]?.quantity ?? 0;
+      const lowStockThreshold = product.stock?.[0]?.lowStockThreshold ?? 0;
+      const allowOutOfStockOrders = product.allowOutOfStockOrders ?? false;
+  
+      // ✅ Rule 1: If stock is 0, always block Add to Cart
+      if (availableStock === 0) {
+        return false;
+      }
+  
+      // ✅ Rule 2: If out-of-stock orders allowed, ignore threshold
+      if (allowOutOfStockOrders) {
+        return true;
+      }
+  
+      // ✅ Rule 3: If stock <= threshold and out-of-stock orders NOT allowed
+      if (availableStock <= lowStockThreshold) {
+        return false;
+      }
+  
+      return true;
+    };
+  const handleAddToCart =  (product: Product) => {
+    if (!canAddToCart(product)) {
+      toast.error("This product is currently unavailable");
+      return;
     }
-  };
 
+    addToCartMutation.mutate(product);
+
+  };
 
   const handleBuyNow = async () => {
     if (availableStock === 0) {
@@ -532,7 +532,6 @@ const handleSelectCustomAttribute = (attrKey: string, attrValue: string) => {
       prev === 0 ? images.length - 1 : prev - 1,
     );
   };
-;
   console.log("finalAttributesToShow", finalAttributesToShow);
 
   return (
@@ -971,7 +970,7 @@ const handleSelectCustomAttribute = (attrKey: string, attrValue: string) => {
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={handleAddToCart}
+                      onClick={()=>handleAddToCart(product)}
                       disabled={availableStock === 0 || loading}
                       className="flex-1 bg-black text-white py-4 rounded-full font-semibold shadow-lg hover:shadow-xl transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -992,7 +991,13 @@ const handleSelectCustomAttribute = (attrKey: string, attrValue: string) => {
                   </>
                 )}
 
-                <motion.button
+                <WishlistButton
+                  productId={product.id}
+                  variant="icon"
+                  size="md"
+                  className="bg-white hover:bg-gray-100 shadow-lg"
+                />
+                {/* <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={toggleWishlist}
@@ -1005,7 +1010,7 @@ const handleSelectCustomAttribute = (attrKey: string, attrValue: string) => {
                         : "text-gray-600"
                     }`}
                   />
-                </motion.button>
+                </motion.button> */}
               </div>
 
               {/* Features */}

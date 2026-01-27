@@ -9,13 +9,14 @@ export default function Providers({ children }: { children: ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 60_000, // 1 min cache
-            gcTime: 5 * 60_000, // 5 min in memory
+            staleTime: 1000 * 60 * 30, // 30 mins
+            gcTime: 1000 * 60 * 60,
+            refetchOnMount: false,
             refetchOnWindowFocus: false,
-            retry: 1, // avoids hammering backend
+            retry: false, // avoids hammering backend
           },
         },
-      })
+      }),
   );
 
   return (

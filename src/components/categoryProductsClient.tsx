@@ -9,6 +9,7 @@
 //   Search,
 //   X,
 //   ShoppingCart,
+//   Video,
 // } from "lucide-react";
 // import Image from "next/image";
 // import Link from "next/link";
@@ -37,6 +38,7 @@
 //   const searchParams = useSearchParams();
 //   const queryClient = useQueryClient();
 //   const { addItem: addToLocalCart } = useCartStore();
+// console.log("category", category);
 
 //   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
@@ -60,27 +62,27 @@
 //   });
 
 //   const [searchQuery, setSearchQuery] = useState(
-//     searchParams.get("search") || ""
+//     searchParams.get("search") || "",
 //   );
 
 //   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(
-//     searchParams.get("subcategory") || null
+//     searchParams.get("subcategory") || null,
 //   );
 
 //   const [selectedColor, setSelectedColor] = useState(
-//     searchParams.get("color") || ""
+//     searchParams.get("color") || "",
 //   );
 
 //   const [selectedFabric, setSelectedFabric] = useState(
-//     searchParams.get("fabric") || ""
+//     searchParams.get("fabric") || "",
 //   );
 
 //   const [selectedSize, setSelectedSize] = useState(
-//     searchParams.get("size") || ""
+//     searchParams.get("size") || "",
 //   );
 
 //   const [inStockOnly, setInStockOnly] = useState(
-//     searchParams.get("inStock") === "true"
+//     searchParams.get("inStock") === "true",
 //   );
 
 //   const limit = 12;
@@ -115,7 +117,7 @@
 
 //       router.push(`?${params.toString()}`, { scroll: false });
 //     },
-//     [searchParams, router]
+//     [searchParams, router],
 //   );
 
 //   /* ------------------ BUILD QUERY PARAMS ------------------ */
@@ -196,19 +198,20 @@
 
 //   /* ------------------ WISHLIST QUERY ------------------ */
 
-//   const { data: wishlistData } = useQuery({
+//   const { data: wishlistData=[] } = useQuery({
 //     queryKey: ["wishlist", user?.id],
 //     enabled: !!user,
 //     queryFn: async () => {
-//       const res = await wishlistApi.getWishlist();
-//       return res.data.items?.map((i: any) => i.productId) ?? [];
+//           const res = await wishlistApi.getWishlist();
+
+//           const items = res?.data?.items ?? [];
+//           return items.map((i: any) => i.productId);
 //     },
 //   });
 
-//   const likedProducts = useMemo(
-//     () => new Set(wishlistData ?? []),
-//     [wishlistData]
-//   );
+// const likedProducts = useMemo(() => {
+//   return new Set(Array.isArray(wishlistData) ? wishlistData : []);
+// }, [wishlistData]);
 
 //   /* ------------------ MUTATIONS ------------------ */
 
@@ -216,7 +219,7 @@
 //     mutationFn: async (productId: string) => {
 //       const wishlist = await wishlistApi.getWishlist();
 //       const item = wishlist.data.items?.find(
-//         (i: any) => i.productId === productId
+//         (i: any) => i.productId === productId,
 //       );
 
 //       if (item) {
@@ -230,7 +233,7 @@
 //     onSuccess: (data) => {
 //       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
 //       toast.success(
-//         data.action === "added" ? "Added to wishlist" : "Removed from wishlist"
+//         data.action === "added" ? "Added to wishlist" : "Removed from wishlist",
 //       );
 //     },
 //     onError: () => {
@@ -248,39 +251,12 @@
 
 //   const addToCartMutation = useMutation({
 //     mutationFn: async (product: Product) => {
-//       // Build cart item
-//       //  const cartItem = {
-//       //    id: crypto.randomUUID(),
-//       //    productId: product.id,
-//       //    variantId: selectedVariant?.id,
-//       //    name: product.name,
-//       //    slug: product.slug,
-//       //    price: Number(displayPrice),
-//       //    basePrice: Number(basePrice),
-//       //    quantity,
-//       //    image: images?.[0]?.url ?? "/placeholder.jpg",
-//       //    stock: availableStock,
-
-//       //    variant: selectedVariant
-//       //      ? {
-//       //          size: selectedVariant.size ?? undefined,
-//       //          color: selectedVariant.color ?? undefined,
-//       //          fabric: selectedVariant.fabric ?? undefined,
-//       //          attributes: selectedVariant.attributes ?? undefined,
-//       //        }
-//       //      : undefined,
-//       //  };
-
-//       // Always add to local cart first
-//       // addToLocalCart(cartItem);
 //       router.push("/cart");
 
 //       // If user is logged in, sync with server
 //       if (user) {
 //         await cartApi.addToCart({ productId: product.id, quantity: 1 });
 //       }
-
-//       // return cartItem;
 //     },
 //     onSuccess: () => {
 //       if (user) {
@@ -294,6 +270,20 @@
 
 //   const handleAddToCart = (product: Product) => {
 //     addToCartMutation.mutate(product);
+//   };
+
+//   // ✅ NEW: Handle Video Consultation Click
+//   const handleVideoConsultation = (e: React.MouseEvent, product: Product) => {
+//     e.preventDefault(); // Prevent navigation to product page
+//     e.stopPropagation();
+
+//     if (!user) {
+//       openModal("login");
+//       toast.info("Please login to book a consultation");
+//       return;
+//     }
+
+//     router.push("/my-account/consultation");
 //   };
 
 //   /* ------------------ HANDLERS ------------------ */
@@ -755,6 +745,22 @@
 //                           />
 //                         </motion.div>
 
+//                         {/* ✅ Video Consultation Icon - Show only if enabled */}
+//                         {product.hasVideoConsultation &&
+//                           product.videoPurchasingEnabled && (
+//                             <motion.button
+//                               whileHover={{ scale: 1.1 }}
+//                               whileTap={{ scale: 0.9 }}
+//                               onClick={(e) =>
+//                                 handleVideoConsultation(e, product)
+//                               }
+//                               className="absolute top-2 left-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full p-2 shadow-lg z-10"
+//                               title="Video Consultation Available"
+//                             >
+//                               <Video className="w-4 h-4" />
+//                             </motion.button>
+//                           )}
+
 //                         <motion.button
 //                           whileHover={{ scale: 1.1 }}
 //                           whileTap={{ scale: 0.9 }}
@@ -798,7 +804,7 @@
 //                                 ((parseInt(product.basePrice) -
 //                                   parseInt(product.sellingPrice)) /
 //                                   parseInt(product.basePrice)) *
-//                                   100
+//                                   100,
 //                               )}
 //                               % OFF
 //                             </span>
@@ -949,6 +955,7 @@ import {
   X,
   ShoppingCart,
   Video,
+  AlertCircle,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -964,6 +971,7 @@ import { toast } from "@/store/useToastStore";
 import { Category } from "@/lib/api/category.api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCartStore } from "@/store/useCartStore";
+import { formatMaskedPrice } from "@/lib/utils/priceMasked";
 
 interface CategoryProductsClientProps {
   category: Category;
@@ -1136,19 +1144,19 @@ export default function CategoryProductsClient({
 
   /* ------------------ WISHLIST QUERY ------------------ */
 
-  const { data: wishlistData } = useQuery({
+  const { data: wishlistData = [] } = useQuery({
     queryKey: ["wishlist", user?.id],
     enabled: !!user,
     queryFn: async () => {
       const res = await wishlistApi.getWishlist();
-      return res.data.items?.map((i: any) => i.productId) ?? [];
+      const items = res?.data?.items ?? [];
+      return items.map((i: any) => i.productId);
     },
   });
 
-  const likedProducts = useMemo(
-    () => new Set(wishlistData ?? []),
-    [wishlistData],
-  );
+  const likedProducts = useMemo(() => {
+    return new Set(Array.isArray(wishlistData) ? wishlistData : []);
+  }, [wishlistData]);
 
   /* ------------------ MUTATIONS ------------------ */
 
@@ -1186,32 +1194,101 @@ export default function CategoryProductsClient({
     toggleWishlistMutation.mutate(productId);
   };
 
+  // ✅ FIXED: Add to cart mutation with proper local cart integration
   const addToCartMutation = useMutation({
     mutationFn: async (product: Product) => {
-      router.push("/cart");
+      // ✅ Create cart item matching API structure
+      const availableStock = product.stock?.[0]?.quantity ?? 0;
 
-      // If user is logged in, sync with server
+      const cartItem = {
+        id: crypto.randomUUID(),
+        cartId: "local",
+        productId: product.id,
+        variantId: null,
+        quantity: 1,
+        product: {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          categoryId: product.categoryId,
+          sellingPrice: Number(product.sellingPrice),
+          basePrice: Number(product.basePrice),
+          media: [
+            {
+              url: product.media?.[0]?.url ?? "/placeholder.jpg",
+              altText: product.name,
+              isActive: true,
+            },
+          ],
+          stock: [
+            {
+              quantity: availableStock,
+            },
+          ],
+        },
+        variant: null,
+      };
+
+      // ✅ Add to local cart first (always)
+      addToLocalCart(cartItem);
+
+      // ✅ If user is logged in, sync with server
       if (user) {
         await cartApi.addToCart({ productId: product.id, quantity: 1 });
       }
     },
     onSuccess: () => {
       if (user) {
-        queryClient.invalidateQueries({ queryKey: ["cart"] });
+        queryClient.invalidateQueries({ queryKey: ["cartApi"] });
       }
-      router.push("/cart");
       toast.success("Added to cart");
     },
     onError: () => toast.error("Failed to add to cart"),
   });
 
+  // ✅ Helper function to check if product can be added to cart
+  const canAddToCart = (product: Product) => {
+    const availableStock = product.stock?.[0]?.quantity ?? 0;
+    const lowStockThreshold = product.stock?.[0]?.lowStockThreshold ?? 0;
+    const allowOutOfStockOrders = product.allowOutOfStockOrders ?? false;
+
+    // ✅ Rule 1: If stock is 0, always block Add to Cart
+    if (availableStock === 0) {
+      return false;
+    }
+
+    // ✅ Rule 2: If out-of-stock orders allowed, ignore threshold
+    if (allowOutOfStockOrders) {
+      return true;
+    }
+
+    // ✅ Rule 3: If stock <= threshold and out-of-stock orders NOT allowed
+    if (availableStock <= lowStockThreshold) {
+      return false;
+    }
+
+    return true;
+  };
+
+
+  // ✅ Helper function to check if product is out of stock
+  const isProductOutOfStock = (product: Product) => {
+    const availableStock = product.stock?.[0]?.quantity ?? 0;
+    return availableStock === 0;
+  };
+
   const handleAddToCart = (product: Product) => {
+    if (!canAddToCart(product)) {
+      toast.error("This product is currently unavailable");
+      return;
+    }
+
     addToCartMutation.mutate(product);
   };
 
-  // ✅ NEW: Handle Video Consultation Click
+  // ✅ Handle Video Consultation Click
   const handleVideoConsultation = (e: React.MouseEvent, product: Product) => {
-    e.preventDefault(); // Prevent navigation to product page
+    e.preventDefault();
     e.stopPropagation();
 
     if (!user) {
@@ -1220,7 +1297,7 @@ export default function CategoryProductsClient({
       return;
     }
 
-    router.push("/my-account/consultation");
+    router.push(`/my-account/consultation?productId=${product.id}`);
   };
 
   /* ------------------ HANDLERS ------------------ */
@@ -1656,112 +1733,175 @@ export default function CategoryProductsClient({
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-                {products.map((product, index) => (
-                  <motion.div
-                    key={product.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                    whileHover={{ y: -4 }}
-                    className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                  >
-                    <Link href={`/products/${product.slug}`}>
-                      <div className="relative aspect-square overflow-hidden">
-                        <motion.div
-                          className="absolute inset-0"
-                          initial={{ scale: 1 }}
-                          whileHover={{ scale: 1.15 }}
-                          transition={{ duration: 0.3, ease: "easeOut" }}
-                        >
-                          <Image
-                            src={product.media?.[0]?.url || "/placeholder.jpg"}
-                            alt={product.media?.[0]?.altText || product.name}
-                            fill
-                            sizes="(max-width: 768px) 50vw, 33vw"
-                            className="object-cover"
-                          />
-                        </motion.div>
+                {products.map((product, index) => {
+                  const availableStock = product.stock?.[0]?.quantity ?? 0;
+                  const isOutOfStock = isProductOutOfStock(product);
+                  const showAddToCart = canAddToCart(product);
+                  const displayPrice = Number(product.sellingPrice);
+                  const basePrice = Number(product.basePrice);
+                  const discount =
+                    basePrice > displayPrice
+                      ? Math.round(
+                          ((basePrice - displayPrice) / basePrice) * 100,
+                        )
+                      : 0;
+                      console.log("PRODUCT:", product.name, {
+  qty: product.stock?.[0]?.quantity,
+  low: product.stock?.[0]?.lowStockThreshold,
+  allowOut: product.allowOutOfStockOrders,
+  showAddToCart: canAddToCart(product),
+});
 
-                        {/* ✅ Video Consultation Icon - Show only if enabled */}
-                        {product.hasVideoConsultation &&
-                          product.videoPurchasingEnabled && (
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={(e) =>
-                                handleVideoConsultation(e, product)
+                  return (
+                    <motion.div
+                      key={product.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                      whileHover={{ y: -4 }}
+                      className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <Link href={`/products/${product.slug}`}>
+                        <div className="relative aspect-square overflow-hidden">
+                          <motion.div
+                            className="absolute inset-0"
+                            initial={{ scale: 1 }}
+                            whileHover={{ scale: 1.15 }}
+                            transition={{ duration: 0.3, ease: "easeOut" }}
+                          >
+                            <Image
+                              src={
+                                product.media?.[0]?.url || "/placeholder.jpg"
                               }
-                              className="absolute top-2 left-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full p-2 shadow-lg z-10"
-                              title="Video Consultation Available"
-                            >
-                              <Video className="w-4 h-4" />
-                            </motion.button>
+                              alt={product.media?.[0]?.altText || product.name}
+                              fill
+                              sizes="(max-width: 768px) 50vw, 33vw"
+                              className="object-cover"
+                            />
+                          </motion.div>
+
+                          {/* ✅ Out of Stock Badge */}
+                          {isOutOfStock && (
+                            <div className="absolute top-2 left-2 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-semibold z-10">
+                              Out of Stock
+                            </div>
                           )}
 
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            toggleWishlist(product.id);
-                          }}
-                          className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md z-10"
-                        >
-                          <Heart
-                            className={`w-4 h-4 transition-colors ${
-                              likedProducts.has(product.id)
-                                ? "fill-red-500 text-red-500"
-                                : "text-gray-600"
-                            }`}
-                          />
-                        </motion.button>
-                      </div>
-                    </Link>
+                          {/* ✅ Discount Badge - Only show if in stock */}
+                          {!isOutOfStock && discount > 0 && (
+                            <div className="absolute top-2 left-2 bg-green-600 text-white px-3 py-1 rounded-full text-xs font-semibold z-10">
+                              {discount}% OFF
+                            </div>
+                          )}
 
-                    <div className="p-3 md:p-4">
-                      <Link href={`/products/${product.slug}`}>
-                        <h3 className="font-semibold text-gray-900 text-sm md:text-base mb-1 line-clamp-2">
-                          {product.name}
-                        </h3>
+                          {/* ✅ Video Consultation Icon - Show only if enabled and in stock */}
+                          {!isOutOfStock &&
+                            product.hasVideoConsultation &&
+                            product.videoPurchasingEnabled && (
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={(e) =>
+                                  handleVideoConsultation(e, product)
+                                }
+                                className="absolute top-2 right-12 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full p-2 shadow-lg z-10"
+                                title="Video Consultation Available"
+                              >
+                                <Video className="w-4 h-4" />
+                              </motion.button>
+                            )}
+
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              toggleWishlist(product.id);
+                            }}
+                            className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md z-10"
+                          >
+                            <Heart
+                              className={`w-4 h-4 transition-colors ${
+                                likedProducts.has(product.id)
+                                  ? "fill-red-500 text-red-500"
+                                  : "text-gray-600"
+                              }`}
+                            />
+                          </motion.button>
+                        </div>
                       </Link>
-                      <p className="text-xs md:text-sm text-gray-500 mb-2">
-                        {product.category?.name}
-                      </p>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-yellow-600 font-bold">
-                          ₹{Number(product.sellingPrice).toLocaleString()}
-                        </span>
-                        {product.basePrice > product.sellingPrice && (
-                          <>
-                            <span className="text-gray-400 line-through text-sm">
-                              ₹{Number(product.basePrice).toLocaleString()}
-                            </span>
-                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                              {Math.round(
-                                ((parseInt(product.basePrice) -
-                                  parseInt(product.sellingPrice)) /
-                                  parseInt(product.basePrice)) *
-                                  100,
+
+                      <div className="p-3 md:p-4">
+                        <Link href={`/products/${product.slug}`}>
+                          <h3 className="font-semibold text-gray-900 text-sm md:text-base mb-1 line-clamp-2">
+                            {product.name}
+                          </h3>
+                        </Link>
+                        <p className="text-xs md:text-sm text-gray-500 mb-2">
+                          {product.category?.name}
+                        </p>
+
+                        {/* ✅ FIXED: Price Display - Show masked price when out of stock */}
+                        <div className="flex items-center gap-2 mb-2">
+                          {isOutOfStock ? (
+                            /* OUT OF STOCK: Show masked prices */
+                            <>
+                              <span className="text-yellow-600 font-bold">
+                                {formatMaskedPrice(displayPrice)}
+                              </span>
+                              {discount > 0 && (
+                                <>
+                                  <span className="text-gray-400 line-through text-sm">
+                                    {formatMaskedPrice(basePrice)}
+                                  </span>
+                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                                    {discount}% OFF
+                                  </span>
+                                </>
                               )}
-                              % OFF
-                            </span>
-                          </>
+                            </>
+                          ) : (
+                            /* IN STOCK: Show formatted prices */
+                            <>
+                              <span className="text-yellow-600 font-bold">
+                                ₹{displayPrice.toLocaleString()}
+                              </span>
+                              {discount > 0 && (
+                                <>
+                                  <span className="text-gray-400 line-through text-sm">
+                                    ₹{basePrice.toLocaleString()}
+                                  </span>
+                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                                    {discount}% OFF
+                                  </span>
+                                </>
+                              )}
+                            </>
+                          )}
+                        </div>
+
+                        {/* ✅ FIXED: Conditional Button Rendering */}
+                        {showAddToCart ? (
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => handleAddToCart(product)}
+                            disabled={addToCartMutation.isPending}
+                            className="w-full bg-black text-white py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            <ShoppingCart className="w-4 h-4" />
+                            Add to Cart
+                          </motion.button>
+                        ) : (
+                          <div className="w-full bg-gray-100 text-gray-500 py-2 rounded-lg text-sm font-medium text-center flex items-center justify-center gap-2">
+                            <AlertCircle className="w-4 h-4" />
+                            {isOutOfStock ? "Out of Stock" : "Unavailable"}
+                          </div>
                         )}
                       </div>
-
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => handleAddToCart(product)}
-                        disabled={addToCartMutation.isPending}
-                        className="w-full bg-black text-white py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
-                      >
-                        <ShoppingCart className="w-4 h-4" />
-                        Add to Cart
-                      </motion.button>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
 

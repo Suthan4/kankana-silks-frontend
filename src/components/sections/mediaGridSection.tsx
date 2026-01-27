@@ -115,8 +115,8 @@ function MediaGridSection({ section }: { section: HomeSection }) {
                         btn.style === "PRIMARY"
                           ? "bg-white text-gray-900 hover:bg-gray-100 shadow-lg"
                           : btn.style === "SECONDARY"
-                          ? "bg-gray-900 text-white hover:bg-gray-800 shadow-lg"
-                          : "border-2 border-white text-white hover:bg-white hover:text-gray-900"
+                            ? "bg-gray-900 text-white hover:bg-gray-800 shadow-lg"
+                            : "border-2 border-white text-white hover:bg-white hover:text-gray-900"
                       }
                     `}
                     onClick={(e) => e.stopPropagation()}
@@ -131,7 +131,7 @@ function MediaGridSection({ section }: { section: HomeSection }) {
         )}
 
         {/* Shine effect on hover */}
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
         </div>
       </div>
@@ -141,7 +141,7 @@ function MediaGridSection({ section }: { section: HomeSection }) {
   const visibleMedia = showNavigation
     ? section.media.slice(
         currentIndex * itemsPerView,
-        (currentIndex + 1) * itemsPerView
+        (currentIndex + 1) * itemsPerView,
       )
     : section.media;
 

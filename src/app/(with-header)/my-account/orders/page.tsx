@@ -323,11 +323,11 @@ export default function OrdersPage() {
 
   // Filter by search query (client-side)
   const filteredOrders = orders.filter(
-    (order) =>
+    (order: any) =>
       order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.items.some((item) =>
-        item.productName.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      order.items.some((item: any) =>
+        item.product?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
   );
 
   return (
@@ -420,124 +420,144 @@ export default function OrdersPage() {
           </div>
         ) : (
           <>
-            {filteredOrders.map((order) => (
-              <motion.div
-                key={order.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{ scale: 1.01 }}
-                className="bg-white rounded-2xl border-2 border-gray-100 overflow-hidden hover:shadow-xl transition-all cursor-pointer"
-                onClick={() => router.push(`/my-account/orders/${order.id}`)}
-              >
-                <div className="p-5 lg:p-6">
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <div className="font-bold text-base lg:text-lg mb-1">
-                        Order #{order.orderNumber}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Placed on{" "}
-                        {new Date(order.createdAt).toLocaleDateString("en-IN", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </div>
-                    </div>
-                    <span
-                      className={`px-4 py-2 rounded-xl text-xs font-bold ${orderApi.getStatusColor(
-                        order.status
-                      )}`}
-                    >
-                      {orderApi.formatStatus(order.status)}
-                    </span>
-                  </div>
-
-                  {/* Product Info */}
-                  <div className="flex gap-4 mb-4 p-4 bg-gray-50 rounded-xl">
-                    {order.items[0]?.image && (
-                      <img
-                        src={order.items[0].image}
-                        alt={order.items[0].productName}
-                        className="w-20 h-20 lg:w-24 lg:h-24 rounded-lg object-cover ring-2 ring-gray-200"
-                      />
-                    )}
-                    <div className="flex-1">
-                      <div className="font-semibold text-sm lg:text-base mb-2">
-                        {order.items[0]?.productName}
-                        {order.items.length > 1 &&
-                          ` +${order.items.length - 1} more`}
-                      </div>
-                      <div className="text-xs text-gray-500 mb-1">
-                        {order.items.length} item(s)
-                      </div>
-                      {order.shipment?.estimatedDelivery &&
-                        order.status !== "DELIVERED" && (
-                          <div className="text-xs text-gray-600 mt-2 flex items-center gap-1">
-                            <Truck className="w-3 h-3" />
-                            Est. Delivery:{" "}
-                            {new Date(
-                              order.shipment.estimatedDelivery
-                            ).toLocaleDateString("en-IN")}
-                          </div>
-                        )}
-                      {order.shipment?.deliveredAt && (
-                        <div className="text-xs text-green-600 mt-2 flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" />
-                          Delivered on{" "}
-                          {new Date(
-                            order.shipment.deliveredAt
-                          ).toLocaleDateString("en-IN")}
+            {filteredOrders.map((order: any) => {
+              const firstItem = order.items?.[0];
+              const productName = firstItem?.product?.name ?? "Product";
+              const productImage =
+                firstItem?.product?.media?.[0]?.thumbnailUrl ||
+                firstItem?.product?.media?.[0]?.url ||
+                "/images/placeholder.png";
+              return (
+                <motion.div
+                  key={order.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  whileHover={{ scale: 1.01 }}
+                  className="bg-white rounded-2xl border-2 border-gray-100 overflow-hidden hover:shadow-xl transition-all cursor-pointer"
+                  onClick={() => router.push(`/my-account/orders/${order.id}`)}
+                >
+                  <div className="p-5 lg:p-6">
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <div className="font-bold text-base lg:text-lg mb-1">
+                          Order #{order.orderNumber}
                         </div>
-                      )}
+                        <div className="text-xs text-gray-500">
+                          Placed on{" "}
+                          {new Date(order.createdAt).toLocaleDateString(
+                            "en-IN",
+                            {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            },
+                          )}
+                        </div>
+                      </div>
+                      <span
+                        className={`px-4 py-2 rounded-xl text-xs font-bold ${orderApi.getStatusColor(
+                          order.status,
+                        )}`}
+                      >
+                        {orderApi.formatStatus(order.status)}
+                      </span>
                     </div>
-                  </div>
 
-                  {/* Footer */}
-                  <div className="flex items-center justify-between pt-4 border-t-2">
-                    <div>
-                      <div className="text-xs text-gray-500 mb-1">
-                        Total Amount
-                      </div>
-                      <div className="font-bold text-xl lg:text-2xl">
-                        ₹{Number(order.total).toFixed(2)}
+                    {/* Product Info */}
+                    <div className="flex gap-4 mb-4 p-4 bg-gray-50 rounded-xl">
+                      <img
+                        src={productImage}
+                        alt={productName}
+                        className="w-20 h-20 lg:w-24 lg:h-24 rounded-lg object-cover ring-2 ring-gray-200"
+                        onError={(e) => {
+                          e.currentTarget.src = "/images/placeholder.png";
+                        }}
+                      />
+
+                      <div className="flex-1">
+                        <div className="font-semibold text-sm lg:text-base mb-1">
+                          {productName}
+                          {order.items.length > 1
+                            ? ` +${order.items.length - 1} more`
+                            : ""}
+                        </div>
+
+                        {/* ✅ Variant Chips */}
+                        {firstItem?.variant?.attributes &&
+                          Object.keys(firstItem.variant.attributes).length >
+                            0 && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {Object.entries(firstItem.variant.attributes).map(
+                                ([key, value]) => (
+                                  <span
+                                    key={key}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium
+                       bg-white border border-gray-200 text-gray-700 shadow-sm"
+                                  >
+                                    <span className="text-gray-500">
+                                      {key}:
+                                    </span>
+                                    <span className="text-gray-900 font-semibold">
+                                      {String(value)}
+                                    </span>
+                                  </span>
+                                ),
+                              )}
+                            </div>
+                          )}
+
+                        <div className="text-xs text-gray-500 mt-2">
+                          {order.items.length} item(s)
+                        </div>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      {order.shipment?.trackingNumber && (
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between pt-4 border-t-2">
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1">
+                          Total Amount
+                        </div>
+                        <div className="font-bold text-xl lg:text-2xl">
+                          ₹{Number(order.total).toFixed(2)}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        {order.shipment?.trackingNumber && (
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(
+                                `/my-account/order-tracking/${order.id}`,
+                              );
+                            }}
+                            className="px-5 py-2.5 bg-black text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-all flex items-center gap-2"
+                          >
+                            Track Order
+                            <ArrowRight className="w-4 h-4" />
+                          </motion.button>
+                        )}
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            router.push(
-                              `/my-account/order-tracking/${order.id}`
-                            );
+                            router.push(`/my-account/orders/${order.id}`);
                           }}
-                          className="px-5 py-2.5 bg-black text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-all flex items-center gap-2"
+                          className="px-5 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-all flex items-center gap-2"
                         >
-                          Track Order
+                          View Details
                           <ArrowRight className="w-4 h-4" />
                         </motion.button>
-                      )}
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/my-account/orders/${order.id}`);
-                        }}
-                        className="px-5 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-all flex items-center gap-2"
-                      >
-                        View Details
-                        <ArrowRight className="w-4 h-4" />
-                      </motion.button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
 
             {/* Pagination */}
             {pagination && pagination.totalPages > 1 && (

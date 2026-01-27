@@ -16,6 +16,7 @@ import {
   Percent,
   ChevronDown,
   Loader2,
+  Truck,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -26,6 +27,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { couponApi, type Coupon } from "@/lib/api/coupon.api";
 import { cartApi } from "@/lib/api/cart.api";
 import { useAuthModal } from "@/store/useAuthModalStore";
+import { shippingApi } from "@/lib/api/shipping.api";
+import { addressApi } from "@/lib/api/addresses.api";
 
 const normalizeAttributes = (attrs: any) => {
   if (!attrs) return [];
@@ -58,7 +61,6 @@ const normalizeAttributes = (attrs: any) => {
   return [];
 };
 
-
 export default function CartPage() {
   const router = useRouter();
   const { user } = useAuthModal();
@@ -80,50 +82,93 @@ export default function CartPage() {
   const [couponCode, setCouponCode] = useState("");
   const [showCouponDropdown, setShowCouponDropdown] = useState(false);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [deliveryPincode, setDeliveryPincode] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [selectedCourier, setSelectedCourier] = useState<any>(null);
+  const [showCourierDropdown, setShowCourierDropdown] = useState(false);
+  const courierDropdownRef = useRef<HTMLDivElement>(null);
 
-    const {
-      data: cartData,
-      isLoading: isLoadingCartApi,
-      refetch: refetchCartApi,
-    } = useQuery({
-      queryKey: ["cartApi", user?.id],
-      queryFn: async () => {
-        const res = await cartApi.getCart();
-        return res.data; // ✅ Cart object
-      },
-      enabled: !!user,
-      staleTime: 0,
-    });
+  const {
+    data: addressData,
+    isLoading: isLoadingAddress,
+    refetch: refetchAddress,
+  } = useQuery({
+    queryKey: ["address-defualt"],
+    queryFn: async () => {
+      const response = await addressApi.getDefaultAddress();
+      return response.data;
+    },
+    enabled: !!user,
+  });
+
+  const {
+    data: cartData,
+    isLoading: isLoadingCartApi,
+    refetch: refetchCartApi,
+  } = useQuery({
+    queryKey: ["cartApi", user?.id],
+    queryFn: async () => {
+      const res = await cartApi.getCart();
+      return res.data; // ✅ Cart object
+    },
+    enabled: !!user,
+    staleTime: 0,
+  });
+  console.log("addressData", addressData);
+
   const apiItems = cartData?.items ?? [];
   const displayItems = user?.id ? apiItems : items; // items from zustand store
+  const deliveryPin = user?.id ? addressData?.pincode : deliveryPincode;
   console.log("apiItems", JSON.stringify(apiItems));
-  
 
-const totalItems = useMemo(() => {
-  return displayItems.reduce((sum: number, i: any) => sum + i.quantity, 0);
-}, [displayItems]);
+  const totalItems = useMemo(() => {
+    return displayItems.reduce((sum: number, i: any) => sum + i.quantity, 0);
+  }, [displayItems]);
 
-const subtotal = useMemo(() => {
-  return displayItems.reduce((sum: number, i: any) => {
-    const unitPrice =
-      i.variant?.price ??
-      i.product?.sellingPrice ??
-      i.product?.basePrice ??
-      i.price ??
-      0;
+  const subtotal = useMemo(() => {
+    return displayItems.reduce((sum: number, i: any) => {
+      const unitPrice =
+        i.variant?.price ??
+        i.product?.sellingPrice ??
+        i.product?.basePrice ??
+        i.price ??
+        0;
 
-    return sum + unitPrice * i.quantity;
-  }, 0);
-}, [displayItems]);
+      return sum + unitPrice * i.quantity;
+    }, 0);
+  }, [displayItems]);
 
-const discount = appliedCoupon?.discountAmount
-  ? Number(appliedCoupon.discountAmount)
-  : 0;
+  const discount = appliedCoupon?.discountAmount
+    ? Number(appliedCoupon.discountAmount)
+    : 0;
 
-const total = Math.max(subtotal - discount, 0); 
+  // Fetch shipping rates when pincode is entered
+  const {
+    data: shippingData,
+    isLoading: isLoadingShipping,
+    refetch: refetchShipping,
+  } = useQuery({
+    queryKey: ["cartShipping", deliveryPin, displayItems.length, subtotal],
+    queryFn: async () => {
+      if (!deliveryPin || displayItems.length === 0) return null;
 
+      const response = await shippingApi.getCartShippingRates({
+        deliveryPincode: deliveryPin,
+      });
+      return response.data;
+    },
+    enabled: !!deliveryPin && displayItems.length > 0,
+  });
+  useEffect(() => {
+    if (
+      shippingData &&
+      shippingData.availableCouriers?.length > 0 &&
+      !selectedCourier
+    ) {
+      setSelectedCourier(shippingData.cheapestCourier);
+    }
+  }, [shippingData, selectedCourier]);
   const {
     data: applicableCouponsData,
     isLoading: isLoadingCoupons,
@@ -164,6 +209,25 @@ const total = Math.max(subtotal - discount, 0);
     setShowAutocomplete(!!couponCode && filteredCoupons.length > 0);
   }, [couponCode, filteredCoupons.length]);
 
+  // ✅ Calculate shipping cost based on selected courier (frontend)
+  const shippingCost = useMemo(() => {
+    if (!shippingData) return 0;
+    if (shippingData.isFreeShipping) return 0;
+    if (!selectedCourier) return Number(shippingData.shippingCost ?? 0);
+    return Number(selectedCourier.freight_charge ?? 0);
+  }, [shippingData, selectedCourier]);
+
+  // ✅ Recalculate GST and total based on selected courier
+  const gstAmount = useMemo(() => {
+    const taxableAmount = subtotal - discount + shippingCost;
+    return taxableAmount * 0.18; // 18% GST
+  }, [subtotal, discount, shippingCost]);
+
+  const total = useMemo(() => {
+    const taxableAmount = subtotal - discount + shippingCost;
+    return taxableAmount + gstAmount;
+  }, [subtotal, discount, shippingCost, gstAmount]);
+
   // Close autocomplete when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -182,7 +246,6 @@ const total = Math.max(subtotal - discount, 0);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  
   // Validate and apply coupon mutation
   const validateCouponMutation = useMutation({
     mutationFn: async (code: string) => {
@@ -201,30 +264,34 @@ const total = Math.max(subtotal - discount, 0);
       });
     },
     onSuccess: (response, code) => {
-if (response.valid && response.coupon && response.discount !== undefined) {
-  // Apply coupon to cart store
-  const couponData = {
-    code: response.coupon.code,
-    discountType: response.coupon.discountType,
-    discountValue: response.coupon.discountValue,
-    minOrderValue: response.coupon.minOrderValue,
-    maxDiscountAmount: response.coupon.maxDiscountAmount,
-    validFrom: response.coupon.validFrom,
-    validUntil: response.coupon.validUntil,
-    isActive: response.coupon.isActive,
+      if (
+        response.valid &&
+        response.coupon &&
+        response.discount !== undefined
+      ) {
+        // Apply coupon to cart store
+        const couponData = {
+          code: response.coupon.code,
+          discountType: response.coupon.discountType,
+          discountValue: response.coupon.discountValue,
+          minOrderValue: response.coupon.minOrderValue,
+          maxDiscountAmount: response.coupon.maxDiscountAmount,
+          validFrom: response.coupon.validFrom,
+          validUntil: response.coupon.validUntil,
+          isActive: response.coupon.isActive,
 
-    discountAmount: response.discount,
-    finalAmount: response.finalAmount,
-  };
-  applyCoupon(couponData);
-  toast.success(`Coupon "${code}" applied successfully!`);
-  setCouponCode("");
-  setShowCouponDropdown(false);
-  setShowAutocomplete(false);
-  refetchCoupons(); // Refresh available coupons
-} else {
-  toast.error(response.error || "Invalid coupon code");
-}
+          discountAmount: response.discount,
+          finalAmount: response.finalAmount,
+        };
+        applyCoupon(couponData);
+        toast.success(`Coupon "${code}" applied successfully!`);
+        setCouponCode("");
+        setShowCouponDropdown(false);
+        setShowAutocomplete(false);
+        refetchCoupons(); // Refresh available coupons
+      } else {
+        toast.error(response.error || "Invalid coupon code");
+      }
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to apply coupon");
@@ -290,7 +357,21 @@ if (response.valid && response.coupon && response.discount !== undefined) {
     handleApplyCoupon(coupon.code);
   };
 
+  const formatMoney = (value: number) => `₹${Number(value || 0).toFixed(2)}`;
 
+  const getCourierLabel = (courier: any) => {
+    if (!courier) return null;
+    return `${courier.courier_name} • ${courier.estimated_delivery_days} days • ${formatMoney(courier.freight_charge)}`;
+  };
+
+
+  if (isLoadingCartApi) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+      </div>
+    );
+  }
 
   if (displayItems.length === 0) {
     return (
@@ -372,182 +453,182 @@ if (response.valid && response.coupon && response.discount !== undefined) {
           <div className="lg:col-span-2 space-y-4 mb-6 lg:mb-0">
             <AnimatePresence mode="popLayout">
               {displayItems.map((item: any, index: number) => {
-                console.log("item",item);
-                
-              return (
-                <motion.div
-                  key={item.id}
-                  layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -100 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="bg-white rounded-2xl p-4 lg:p-6 shadow-sm hover:shadow-md transition"
-                >
-                  <div className="flex gap-4">
-                    {/* Product Image */}
-                    <Link href={`/products/${item?.product?.slug}`}>
-                      <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        className="relative flex-shrink-0 cursor-pointer"
-                      >
-                        <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-xl overflow-hidden bg-gray-100">
-                          {item?.product?.media ? (
-                            <Image
-                              src={item?.product?.media?.[0].url}
-                              alt={item.product?.name}
-                              width={96}
-                              height={96}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                              <ShoppingBag className="w-8 h-8 text-gray-400" />
-                            </div>
-                          )}
-                        </div>
-                      </motion.div>
-                    </Link>
+                console.log("item", item);
 
-                    {/* Product Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="flex-1">
-                          <Link href={`/products/${item?.product?.slug}`}>
-                            <h3 className="font-bold text-gray-900 text-base lg:text-lg mb-1 hover:text-amber-600 transition cursor-pointer">
-                              {item.product?.name}
-                            </h3>
-                          </Link>
-                          {item?.variant && (
-                            <div className="mt-2 space-y-2">
-                              {/* ✅ Standard Variant fields */}
-                              <div className="flex flex-wrap gap-2 text-sm text-gray-600">
-                                {item.variant.color && (
-                                  <span className="bg-gray-100 px-2 py-0.5 rounded">
-                                    {item.variant.color}
-                                  </span>
-                                )}
-                                {item.variant.size && (
-                                  <span className="bg-gray-100 px-2 py-0.5 rounded">
-                                    Size: {item.variant.size}
-                                  </span>
-                                )}
-                                {item.variant.fabric && (
-                                  <span className="bg-gray-100 px-2 py-0.5 rounded">
-                                    {item.variant.fabric}
-                                  </span>
+                return (
+                  <motion.div
+                    key={item.id}
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: -100 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="bg-white rounded-2xl p-4 lg:p-6 shadow-sm hover:shadow-md transition"
+                  >
+                    <div className="flex gap-4">
+                      {/* Product Image */}
+                      <Link href={`/products/${item?.product?.slug}`}>
+                        <motion.div
+                          whileHover={{ scale: 1.05 }}
+                          className="relative flex-shrink-0 cursor-pointer"
+                        >
+                          <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-xl overflow-hidden bg-gray-100">
+                            {item?.product?.media ? (
+                              <Image
+                                src={item?.product?.media?.[0].url}
+                                alt={item.product?.name}
+                                width={96}
+                                height={96}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                                <ShoppingBag className="w-8 h-8 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      </Link>
+
+                      {/* Product Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="flex-1">
+                            <Link href={`/products/${item?.product?.slug}`}>
+                              <h3 className="font-bold text-gray-900 text-base lg:text-lg mb-1 hover:text-amber-600 transition cursor-pointer">
+                                {item.product?.name}
+                              </h3>
+                            </Link>
+                            {item?.variant && (
+                              <div className="mt-2 space-y-2">
+                                {/* ✅ Standard Variant fields */}
+                                <div className="flex flex-wrap gap-2 text-sm text-gray-600">
+                                  {item.variant.color && (
+                                    <span className="bg-gray-100 px-2 py-0.5 rounded">
+                                      {item.variant.color}
+                                    </span>
+                                  )}
+                                  {item.variant.size && (
+                                    <span className="bg-gray-100 px-2 py-0.5 rounded">
+                                      Size: {item.variant.size}
+                                    </span>
+                                  )}
+                                  {item.variant.fabric && (
+                                    <span className="bg-gray-100 px-2 py-0.5 rounded">
+                                      {item.variant.fabric}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* ✅ Custom Attributes (dynamic key/value) */}
+                                {normalizeAttributes(item.variant.attributes)
+                                  .length > 0 && (
+                                  <div className="flex flex-wrap gap-2">
+                                    {normalizeAttributes(
+                                      item.variant.attributes,
+                                    ).map((attr) => (
+                                      <span
+                                        key={attr.key}
+                                        className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-lg border border-blue-100"
+                                      >
+                                        {attr.key}:{" "}
+                                        <span className="font-semibold">
+                                          {attr.value}
+                                        </span>
+                                      </span>
+                                    ))}
+                                  </div>
                                 )}
                               </div>
+                            )}
 
-                              {/* ✅ Custom Attributes (dynamic key/value) */}
-                              {normalizeAttributes(item.variant.attributes)
-                                .length > 0 && (
-                                <div className="flex flex-wrap gap-2">
-                                  {normalizeAttributes(
-                                    item.variant.attributes,
-                                  ).map((attr) => (
-                                    <span
-                                      key={attr.key}
-                                      className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-lg border border-blue-100"
-                                    >
-                                      {attr.key}:{" "}
-                                      <span className="font-semibold">
-                                        {attr.value}
-                                      </span>
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {item?.stock < 5 && item?.stock > 0 && (
-                            <p className="text-xs text-orange-600 mt-1">
-                              Only {item?.stock?.[0].quantity} left in stock
-                            </p>
-                          )}
-                        </div>
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => {
-                            if (user?.id) {
-                              removeItemMutation.mutate(item.id);
-                            } else {
-                              removeItem(item.id);
-                            }
-                          }}
-                          className="text-gray-400 hover:text-red-500 transition p-1"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </motion.button>
-                      </div>
-
-                      <div className="flex items-center justify-between mt-4">
-                        <div>
-                          <p className="text-xl lg:text-2xl font-bold text-gray-900">
-                            ₹{Number(item?.product?.sellingPrice).toFixed(2)}
-                          </p>
-                          {item.basePrice > item.price && (
-                            <p className="text-sm text-gray-400 line-through">
-                              ₹{Number(item?.product?.basePrice).toFixed(2)}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Quantity Controls */}
-                        <div className="flex items-center gap-2 lg:gap-3 bg-gray-100 rounded-full px-2 py-1">
+                            {item?.stock < 5 && item?.stock > 0 && (
+                              <p className="text-xs text-orange-600 mt-1">
+                                Only {item?.stock?.[0].quantity} left in stock
+                              </p>
+                            )}
+                          </div>
                           <motion.button
+                            whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             onClick={() => {
-                              const newQty = item.quantity - 1;
-                              if (newQty < 1) return;
-
-                              if (user) {
-                                updateQtyMutation.mutate({
-                                  itemId: item.id,
-                                  quantity: newQty,
-                                });
+                              if (user?.id) {
+                                removeItemMutation.mutate(item.id);
                               } else {
-                                updateQuantity(item.id, newQty);
+                                removeItem(item.id);
                               }
                             }}
-                            disabled={item.quantity <= 1}
-                            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="text-gray-400 hover:text-red-500 transition p-1"
                           >
-                            <Minus className="w-4 h-4" />
+                            <Trash2 className="w-5 h-5" />
                           </motion.button>
+                        </div>
 
-                          <span className="w-8 text-center font-semibold text-gray-900">
-                            {item.quantity}
-                          </span>
+                        <div className="flex items-center justify-between mt-4">
+                          <div>
+                            <p className="text-xl lg:text-2xl font-bold text-gray-900">
+                              ₹{Number(item?.product?.sellingPrice).toFixed(2)}
+                            </p>
+                            {item.basePrice > item.price && (
+                              <p className="text-sm text-gray-400 line-through">
+                                ₹{Number(item?.product?.basePrice).toFixed(2)}
+                              </p>
+                            )}
+                          </div>
 
-                          <motion.button
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => {
-                              const newQty = item.quantity + 1;
+                          {/* Quantity Controls */}
+                          <div className="flex items-center gap-2 lg:gap-3 bg-gray-100 rounded-full px-2 py-1">
+                            <motion.button
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => {
+                                const newQty = item.quantity - 1;
+                                if (newQty < 1) return;
 
-                              if (user) {
-                                updateQtyMutation.mutate({
-                                  itemId: item.id,
-                                  quantity: newQty,
-                                });
-                              } else {
-                                updateQuantity(item.id, newQty);
-                              }
-                            }}
-                            disabled={item.quantity >= item.stock}
-                            className="w-8 h-8 flex items-center justify-center text-white bg-black rounded-full hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </motion.button>
+                                if (user) {
+                                  updateQtyMutation.mutate({
+                                    itemId: item.id,
+                                    quantity: newQty,
+                                  });
+                                } else {
+                                  updateQuantity(item.id, newQty);
+                                }
+                              }}
+                              disabled={item.quantity <= 1}
+                              className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <Minus className="w-4 h-4" />
+                            </motion.button>
+
+                            <span className="w-8 text-center font-semibold text-gray-900">
+                              {item.quantity}
+                            </span>
+
+                            <motion.button
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => {
+                                const newQty = item.quantity + 1;
+
+                                if (user) {
+                                  updateQtyMutation.mutate({
+                                    itemId: item.id,
+                                    quantity: newQty,
+                                  });
+                                } else {
+                                  updateQuantity(item.id, newQty);
+                                }
+                              }}
+                              disabled={item.quantity >= item.stock}
+                              className="w-8 h-8 flex items-center justify-center text-white bg-black rounded-full hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </motion.button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              );}
-              )}
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           </div>
 
@@ -746,26 +827,241 @@ if (response.valid && response.coupon && response.discount !== undefined) {
                 )}
               </div>
 
+              {/* ✅ Shipping Info Section */}
+              {/* ✅ NEW: Courier Selection Section */}
+              {shippingData && shippingData.serviceable && (
+                <div className="border-t pt-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Truck className="w-5 h-5 text-blue-600" />
+                      <h3 className="font-semibold text-gray-900">
+                        Select Courier
+                      </h3>
+                    </div>
+                    {isLoadingShipping && (
+                      <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                    )}
+                  </div>
+
+                  <div className="relative" ref={courierDropdownRef}>
+                    <button
+                      onClick={() =>
+                        setShowCourierDropdown(!showCourierDropdown)
+                      }
+                      className="w-full p-3 border-2 border-gray-200 rounded-xl hover:border-gray-400 transition text-left flex items-center justify-between"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                          {selectedCourier?.courier_name || "Select Courier"}
+                        </p>
+                        {selectedCourier && (
+                          <p className="text-xs text-gray-500">
+                            {selectedCourier.estimated_delivery_days} days •{" "}
+                            {formatMoney(selectedCourier.freight_charge)}
+                          </p>
+                        )}
+                      </div>
+                      <ChevronDown
+                        className={`w-5 h-5 text-gray-400 transition-transform ${showCourierDropdown ? "rotate-180" : ""}`}
+                      />
+                    </button>
+
+                    <AnimatePresence>
+                      {showCourierDropdown && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl overflow-hidden max-h-80 overflow-y-auto"
+                        >
+                          {/* Cheapest */}
+                          {shippingData.cheapestCourier && (
+                            <button
+                              onClick={() => {
+                                setSelectedCourier(
+                                  shippingData.cheapestCourier,
+                                );
+                                setShowCourierDropdown(false);
+                              }}
+                              className={`w-full p-4 text-left border-b hover:bg-green-50 transition ${
+                                selectedCourier?.courier_company_id ===
+                                shippingData.cheapestCourier.courier_company_id
+                                  ? "bg-green-50"
+                                  : ""
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">
+                                  CHEAPEST
+                                </span>
+                                {selectedCourier?.courier_company_id ===
+                                  shippingData.cheapestCourier
+                                    .courier_company_id && (
+                                  <Check className="w-4 h-4 text-green-600" />
+                                )}
+                              </div>
+                              <p className="font-semibold text-gray-900 text-sm">
+                                {shippingData.cheapestCourier.courier_name}
+                              </p>
+                              <p className="text-xs text-gray-600">
+                                {
+                                  shippingData.cheapestCourier
+                                    .estimated_delivery_days
+                                }{" "}
+                                days •{" "}
+                                {formatMoney(
+                                  shippingData.cheapestCourier.freight_charge,
+                                )}
+                              </p>
+                            </button>
+                          )}
+
+                          {/* Fastest */}
+                          {shippingData.fastestCourier &&
+                            shippingData.fastestCourier.courier_company_id !==
+                              shippingData.cheapestCourier
+                                ?.courier_company_id && (
+                              <button
+                                onClick={() => {
+                                  setSelectedCourier(
+                                    shippingData.fastestCourier,
+                                  );
+                                  setShowCourierDropdown(false);
+                                }}
+                                className={`w-full p-4 text-left border-b hover:bg-blue-50 transition ${
+                                  selectedCourier?.courier_company_id ===
+                                  shippingData.fastestCourier.courier_company_id
+                                    ? "bg-blue-50"
+                                    : ""
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">
+                                    FASTEST
+                                  </span>
+                                  {selectedCourier?.courier_company_id ===
+                                    shippingData.fastestCourier
+                                      .courier_company_id && (
+                                    <Check className="w-4 h-4 text-blue-600" />
+                                  )}
+                                </div>
+                                <p className="font-semibold text-gray-900 text-sm">
+                                  {shippingData.fastestCourier.courier_name}
+                                </p>
+                                <p className="text-xs text-gray-600">
+                                  {
+                                    shippingData.fastestCourier
+                                      .estimated_delivery_days
+                                  }{" "}
+                                  days •{" "}
+                                  {formatMoney(
+                                    shippingData.fastestCourier.freight_charge,
+                                  )}
+                                </p>
+                              </button>
+                            )}
+
+                          {/* Other couriers */}
+                          {shippingData.availableCouriers
+                            ?.filter(
+                              (c: any) =>
+                                c.courier_company_id !==
+                                  shippingData.cheapestCourier
+                                    ?.courier_company_id &&
+                                c.courier_company_id !==
+                                  shippingData.fastestCourier
+                                    ?.courier_company_id,
+                            )
+                            .slice(0, 8)
+                            .map((courier: any) => (
+                              <button
+                                key={courier.id}
+                                onClick={() => {
+                                  setSelectedCourier(courier);
+                                  setShowCourierDropdown(false);
+                                }}
+                                className={`w-full p-4 text-left border-b last:border-b-0 hover:bg-gray-50 transition ${
+                                  selectedCourier?.courier_company_id ===
+                                  courier.courier_company_id
+                                    ? "bg-gray-50"
+                                    : ""
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-gray-900 text-sm truncate">
+                                      {courier.courier_name}
+                                    </p>
+                                    <p className="text-xs text-gray-600">
+                                      {courier.estimated_delivery_days} days •
+                                      Rating {courier.rating}
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-bold text-gray-900">
+                                      {formatMoney(courier.freight_charge)}
+                                    </p>
+                                    {selectedCourier?.courier_company_id ===
+                                      courier.courier_company_id && (
+                                      <Check className="w-4 h-4 text-gray-600" />
+                                    )}
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              )}
+
               {/* Price Breakdown */}
               <div className="space-y-4 pb-6 border-b border-gray-200">
                 <div className="flex justify-between text-gray-700">
                   <span>Subtotal ({totalItems} items)</span>
-                  <span className="font-semibold">₹{subtotal.toFixed(2)}</span>
+                  <span className="font-semibold">{formatMoney(subtotal)}</span>
                 </div>
 
                 {discount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Discount</span>
                     <span className="font-semibold">
-                      -₹{Number(discount).toFixed(2)}
+                      -{formatMoney(discount)}
                     </span>
                   </div>
                 )}
 
                 <div className="flex justify-between text-gray-700">
-                  <span>Shipping</span>
-                  <span className="font-semibold text-green-600">Free</span>
+                  <div className="flex flex-col">
+                    <span>Shipping</span>
+                    {selectedCourier && (
+                      <span className="text-xs text-blue-600">
+                        {selectedCourier.courier_name}
+                      </span>
+                    )}
+                  </div>
+                  <span className="font-semibold">
+                    {!shippingData
+                      ? "—"
+                      : shippingData.isFreeShipping
+                        ? "Free"
+                        : formatMoney(shippingCost)}
+                  </span>
                 </div>
+
+                {/* ✅ GST Line */}
+                {gstAmount > 0 && (
+                  <div className="flex justify-between text-gray-700">
+                    <span className="text-sm">
+                      GST (18%)
+                      <span className="text-xs ml-1 text-gray-400">incl.</span>
+                    </span>
+                    <span className="font-semibold text-sm">
+                      {formatMoney(gstAmount)}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Total */}
@@ -774,14 +1070,14 @@ if (response.valid && response.coupon && response.discount !== undefined) {
                   <span className="text-lg font-bold text-gray-900">Total</span>
                   <div className="text-right">
                     <span className="text-3xl font-bold text-gray-900">
-                      ₹{Number(total).toFixed(2)}
+                      {formatMoney(total)}
                     </span>
                     <p className="text-sm text-gray-500">incl. all taxes</p>
                   </div>
                 </div>
                 {discount > 0 && (
                   <p className="text-sm text-green-600 text-right">
-                    You saved ₹{Number(discount).toFixed(2)}
+                    You saved {formatMoney(discount)}
                   </p>
                 )}
               </div>

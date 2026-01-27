@@ -2,10 +2,20 @@
 
 import { HomeSection } from "@/lib/api/home-section.api";
 import { useState } from "react";
+import { Heart, ShoppingCart } from "lucide-react";
+import { useAuthModal } from "@/store/useAuthModalStore";
+import { useCartStore } from "@/store/useCartStore";
+import { cartApi } from "@/lib/api/cart.api";
+import { toast } from "sonner";
+import WishlistButton from "@/components/ui/WishlistButton";
 
 function ProductGrid({ section }: { section: HomeSection }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
+  const [loadingProduct, setLoadingProduct] = useState<string | null>(null);
+
+  const { user, openModal } = useAuthModal();
+  const { addItem: addToLocalCart } = useCartStore();
 
   if (!section.products || section.products.length === 0) return null;
 
@@ -36,10 +46,61 @@ function ProductGrid({ section }: { section: HomeSection }) {
     return colMap[cols] || "grid-cols-1 md:grid-cols-4";
   };
 
+  const handleAddToCart = async (e: React.MouseEvent, product: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const availableStock = product.stock?.[0]?.quantity ?? 0;
+    if (availableStock === 0) {
+      toast.error("Product is out of stock");
+      return;
+    }
+
+    setLoadingProduct(product.id);
+
+    try {
+      const cartItem = {
+        id: crypto.randomUUID(),
+        cartId: "local",
+        productId: product.id,
+        variantId: null,
+        quantity: 1,
+        product: {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          categoryId: product.categoryId,
+          sellingPrice: Number(product.sellingPrice),
+          basePrice: Number(product.basePrice),
+          media: [
+            {
+              url: product.media?.[0]?.url ?? "/placeholder.jpg",
+              altText: product.name,
+              isActive: true,
+            },
+          ],
+          stock: [{ quantity: availableStock }],
+        },
+        variant: null,
+      };
+
+      addToLocalCart(cartItem);
+      toast.success("Added to cart");
+
+      if (user) {
+        await cartApi.addToCart({ productId: product.id, quantity: 1 });
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to add to cart");
+    } finally {
+      setLoadingProduct(null);
+    }
+  };
+
   const visibleProducts = showNavigation
     ? products.slice(
         currentIndex * itemsPerView,
-        (currentIndex + 1) * itemsPerView
+        (currentIndex + 1) * itemsPerView,
       )
     : products;
 
@@ -83,7 +144,7 @@ function ProductGrid({ section }: { section: HomeSection }) {
         )}
 
         <div className="relative">
-          {/* Navigation buttons - only if more products than columns */}
+          {/* Navigation buttons */}
           {showNavigation && (
             <>
               <button
@@ -152,9 +213,10 @@ function ProductGrid({ section }: { section: HomeSection }) {
                   ? Math.round(
                       ((product.basePrice - product.sellingPrice) /
                         product.basePrice) *
-                        100
+                        100,
                     )
                   : 0;
+              const isLoading = loadingProduct === product.id;
 
               return (
                 <a
@@ -204,35 +266,20 @@ function ProductGrid({ section }: { section: HomeSection }) {
                       {/* Quick action buttons */}
                       <div className="absolute bottom-3 left-3 right-3 flex gap-2 transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
                         <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            // Add to cart logic
-                          }}
-                          className="flex-1 bg-white text-black py-2.5 rounded-full text-sm font-semibold hover:bg-gray-100 transition-all duration-300 shadow-lg"
+                          onClick={(e) => handleAddToCart(e, product)}
+                          disabled={!inStock || isLoading}
+                          className="flex-1 bg-white text-black py-2.5 rounded-full text-sm font-semibold hover:bg-gray-100 transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
-                          Quick Add
+                          <ShoppingCart className="w-4 h-4" />
+                          {isLoading ? "Adding..." : "Quick Add"}
                         </button>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            // Add to wishlist logic
-                          }}
-                          className="w-10 h-10 bg-white rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-300 shadow-lg"
-                        >
-                          <svg
-                            className="w-5 h-5 text-black"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                            />
-                          </svg>
-                        </button>
+
+                        <WishlistButton
+                          productId={product.id}
+                          variant="icon"
+                          size="md"
+                          className="bg-white hover:bg-gray-100 shadow-lg"
+                        />
                       </div>
                     </div>
 
