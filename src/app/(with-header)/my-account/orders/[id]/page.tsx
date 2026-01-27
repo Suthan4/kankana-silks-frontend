@@ -6,7 +6,6 @@ import {
   Package,
   MapPin,
   CreditCard,
-  Download,
   Phone,
   Loader2,
   XCircle,
@@ -14,42 +13,92 @@ import {
   CheckCircle2,
   Truck,
   Calendar,
+  Info,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useOrder, useCancelOrder, useCanCancelOrder } from "@/hooks/useOrders";
 import { orderApi } from "@/lib/api/order.api";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { toast } from "@/store/useToastStore";
 
-export default function OrderDetailsPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function OrderDetailsPage() {
   const router = useRouter();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
 
-  const { data, isLoading, error } = useOrder(params.id);
-  const { data: canCancelData } = useCanCancelOrder(params.id);
+  const { data, isLoading, error } = useOrder(id);
+  const { data: canCancelData } = useCanCancelOrder(id);
   const cancelMutation = useCancelOrder();
 
   const order = data?.data;
-  const canCancel = canCancelData?.data?.canCancel;
-  const cancelRestrictionReason = canCancelData?.data?.reason;
+  const canCancel = canCancelData?.canCancel;
+  const cancelRestrictionReason = canCancelData?.reason;
+  console.log("canCancelData", canCancel);
+  
 
   const handleCancelOrder = async () => {
-    if (!order) return;
+    if (!order || !canCancel) {
+      toast.error(cancelRestrictionReason || "Cannot cancel this order");
+      return;
+    }
 
     try {
+      // ✅ UPDATED: Fixed mutation signature
       await cancelMutation.mutateAsync({
         orderId: order.id,
-        data: { reason: cancelReason },
+        reason: cancelReason || "Customer requested cancellation",
       });
       setShowCancelModal(false);
       setCancelReason("");
-    } catch (error) {
+      toast.success("Order cancelled successfully. Refund will be processed in 5-7 business days.");
+    } catch (error: any) {
       console.error("Failed to cancel order:", error);
+      toast.error(error.message || "Failed to cancel order");
+    }
+  };
+
+  // ✅ NEW: Helper to display payment method with icon and details
+  const getPaymentMethodDisplay = (method: string, payment: any) => {
+    switch (method) {
+      case "CARD":
+        return {
+          icon: "💳",
+          label: "Card Payment",
+          details: payment.cardNetwork && payment.cardLast4
+            ? `${payment.cardNetwork} •••• ${payment.cardLast4}${payment.cardType ? ` (${payment.cardType})` : ""}`
+            : "Card",
+        };
+      case "UPI":
+        return {
+          icon: "📱",
+          label: "UPI Payment",
+          details: payment.upiId || "UPI",
+        };
+      case "NETBANKING":
+        return {
+          icon: "🏦",
+          label: "Net Banking",
+          details: payment.bankName || "Net Banking",
+        };
+      case "WALLET":
+        return {
+          icon: "👛",
+          label: "Wallet",
+          details: payment.walletName
+            ? payment.walletName.charAt(0).toUpperCase() + payment.walletName.slice(1)
+            : "Wallet",
+        };
+      case "EMI":
+        return { icon: "💰", label: "EMI", details: "EMI" };
+      case "PAYLATER":
+        return { icon: "🔄", label: "Pay Later", details: "Pay Later" };
+      case "COD":
+        return { icon: "💵", label: "Cash on Delivery", details: "Pay on delivery" };
+      default:
+        return { icon: "💳", label: method, details: method };
     }
   };
 
@@ -82,6 +131,10 @@ export default function OrderDetailsPage({
     );
   }
 
+  const paymentDisplay = order.payment
+    ? getPaymentMethodDisplay(order.payment.method, order.payment)
+    : null;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -110,9 +163,7 @@ export default function OrderDetailsPage({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`bg-gradient-to-br ${orderApi.getStatusGradient(
-            order.status
-          )} text-white rounded-2xl p-6`}
+          className={`bg-gradient-to-br ${orderApi.getStatusGradient(order.status)} text-white rounded-2xl p-6`}
         >
           <div className="flex items-start justify-between mb-4">
             <div>
@@ -126,6 +177,8 @@ export default function OrderDetailsPage({
                 <CheckCircle2 className="w-6 h-6" />
               ) : order.status === "SHIPPED" ? (
                 <Truck className="w-6 h-6" />
+              ) : order.status === "CANCELLED" ? (
+                <XCircle className="w-6 h-6" />
               ) : (
                 <Package className="w-6 h-6" />
               )}
@@ -161,33 +214,75 @@ export default function OrderDetailsPage({
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setShowCancelModal(true)}
                 disabled={cancelMutation.isPending}
-                className="flex-1 bg-white/20 text-white py-3 rounded-lg font-medium hover:bg-white/30 transition disabled:opacity-50"
+                className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold 
+               hover:bg-red-700 transition disabled:opacity-50"
               >
-                Cancel Order
+                {cancelMutation.isPending ? "Cancelling..." : "Cancel Order"}
               </motion.button>
             )}
           </div>
         </motion.div>
 
-        {/* Payment Status Alert */}
-        {order.payment && order.payment.status !== "SUCCESS" && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4 flex items-start gap-3"
-          >
-            <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold text-yellow-900">Payment Pending</p>
-              <p className="text-sm text-yellow-700">
-                Your payment is {order.payment.status.toLowerCase()}. Please
-                complete the payment to process your order.
-              </p>
-            </div>
-          </motion.div>
-        )}
+        {/* ✅ Refund Status Alert */}
+        {order.status === "CANCELLED" &&
+          order.payment?.status === "REFUNDED" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 flex items-start gap-3"
+            >
+              <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-blue-900">Refund Processed</p>
+                <p className="text-sm text-blue-700 mt-1">
+                  ₹
+                  {Number(order.payment.refundAmount || order.total).toFixed(2)}{" "}
+                  will be credited to your {paymentDisplay?.label.toLowerCase()}{" "}
+                  in 5-7 business days.
+                </p>
+              </div>
+            </motion.div>
+          )}
 
-        {/* Shipping Info (if available) */}
+        {/* ✅ Cannot Cancel Alert */}
+        {!canCancel &&
+          cancelRestrictionReason &&
+          order.status !== "CANCELLED" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4 flex items-start gap-3"
+            >
+              <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-yellow-900">Cannot Cancel</p>
+                <p className="text-sm text-yellow-700">
+                  {cancelRestrictionReason}
+                </p>
+              </div>
+            </motion.div>
+          )}
+
+        {/* Payment Status Alert */}
+        {order.payment &&
+          order.payment.status !== "SUCCESS" &&
+          order.payment.status !== "REFUNDED" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4 flex items-start gap-3"
+            >
+              <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-yellow-900">Payment Pending</p>
+                <p className="text-sm text-yellow-700">
+                  Payment status: {order.payment.status.toLowerCase()}
+                </p>
+              </div>
+            </motion.div>
+          )}
+
+        {/* Shipping Info */}
         {order.shippingInfo && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -198,7 +293,7 @@ export default function OrderDetailsPage({
               <Package className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <p className="font-semibold text-blue-900 mb-2">
-                  Shipping Information
+                  Shipping Info
                 </p>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
@@ -211,19 +306,6 @@ export default function OrderDetailsPage({
                     <span className="text-blue-700">Weight:</span>
                     <span className="ml-2 text-blue-900 font-medium">
                       {order.shippingInfo.chargeableWeight}kg
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-blue-700">Dimensions:</span>
-                    <span className="ml-2 text-blue-900 font-medium">
-                      {order.shippingInfo.length} × {order.shippingInfo.breadth}{" "}
-                      × {order.shippingInfo.height} cm
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-blue-700">From:</span>
-                    <span className="ml-2 text-blue-900 font-medium">
-                      {order.shippingInfo.pickupCity}
                     </span>
                   </div>
                 </div>
@@ -240,55 +322,66 @@ export default function OrderDetailsPage({
         >
           <h3 className="font-semibold mb-4">Order Items</h3>
           <div className="space-y-4">
-            {order.items.map((item) => (
-              <div
-                key={item.id}
-                className="flex gap-4 p-4 bg-gray-50 rounded-xl"
-              >
-                {item.image && (
-                  <div className="relative w-20 h-20 lg:w-24 lg:h-24 rounded-lg overflow-hidden ring-2 ring-gray-200">
+            {order.items.map((item: any) => {
+              const productName = item?.product?.name ?? "Product";
+              const productImage =
+                item?.product?.media?.[0]?.thumbnailUrl ||
+                item?.product?.media?.[0]?.url ||
+                "/images/placeholder.png";
+              const qty = Number(item?.quantity ?? 0);
+              const unitPrice = Number(item?.price ?? 0);
+
+              return (
+                <div
+                  key={item.id}
+                  className="flex gap-4 p-4 bg-gray-50 rounded-xl"
+                >
+                  <div className="relative w-20 h-20 lg:w-24 lg:h-24 rounded-lg overflow-hidden ring-2 ring-gray-200 flex-shrink-0">
                     <Image
-                      src={item.image}
-                      alt={item.productName}
+                      src={productImage}
+                      alt={productName}
                       fill
                       className="object-cover"
                     />
                   </div>
-                )}
-                <div className="flex-1">
-                  <h4 className="font-semibold mb-1">{item.productName}</h4>
-                  {item.variant && (
-                    <p className="text-sm text-gray-500 mb-2">
-                      {[
-                        item.variant.size && `Size: ${item.variant.size}`,
-                        item.variant.color && `Color: ${item.variant.color}`,
-                        item.variant.fabric && `Fabric: ${item.variant.fabric}`,
-                      ]
-                        .filter(Boolean)
-                        .join(" • ")}
-                    </p>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">
-                      Qty: {item.quantity}
-                    </span>
-                    <div className="text-right">
-                      <div className="text-xs text-gray-500">
-                        ₹{Number(item.price).toFixed(2)} × {item.quantity}
+                  <div className="flex-1">
+                    <h4 className="font-semibold mb-1">{productName}</h4>
+                    {item?.variant?.attributes && (
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {Object.entries(item.variant.attributes).map(
+                          ([k, v]) => (
+                            <span
+                              key={k}
+                              className="text-xs bg-white px-2 py-1 rounded-full border"
+                            >
+                              {k}:{" "}
+                              <span className="font-semibold">{String(v)}</span>
+                            </span>
+                          ),
+                        )}
                       </div>
-                      <div className="font-semibold">
-                        ₹{Number(item.total).toFixed(2)}
+                    )}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Qty: {qty}</span>
+                      <div className="text-right">
+                        <div className="text-xs text-gray-500">
+                          ₹{unitPrice.toFixed(2)} × {qty}
+                        </div>
+                        <div className="font-semibold">
+                          ₹{(unitPrice * qty).toFixed(2)}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </motion.div>
 
         {/* Shipping & Payment */}
         <div className="grid lg:grid-cols-2 gap-4">
+          {/* Shipping Address */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -312,7 +405,7 @@ export default function OrderDetailsPage({
                 {order.shippingAddress.city}, {order.shippingAddress.state} -{" "}
                 {order.shippingAddress.pincode}
               </p>
-              <div className="pt-3 border-t space-y-1">
+              <div className="pt-3 border-t">
                 <p className="text-gray-600 flex items-center gap-2">
                   <Phone className="w-4 h-4" />
                   {order.shippingAddress.phone}
@@ -321,6 +414,7 @@ export default function OrderDetailsPage({
             </div>
           </motion.div>
 
+          {/* ✅ ENHANCED Payment Details */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -328,9 +422,77 @@ export default function OrderDetailsPage({
           >
             <h3 className="font-semibold mb-4 flex items-center gap-2">
               <CreditCard className="w-5 h-5" />
-              Payment Summary
+              Payment Details
             </h3>
             <div className="space-y-3 text-sm">
+              {order.payment && paymentDisplay && (
+                <>
+                  {/* Payment Method Card */}
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 mb-3">
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-3xl">{paymentDisplay.icon}</span>
+                      <div>
+                        <p className="font-semibold text-gray-900">
+                          {paymentDisplay.label}
+                        </p>
+                        <p className="text-xs text-gray-600 font-mono">
+                          {paymentDisplay.details}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Bank Name (if available for cards) */}
+                    {order.payment.bankName &&
+                      order.payment.method === "CARD" && (
+                        <p className="text-xs text-gray-600 mt-2">
+                          Bank:{" "}
+                          <span className="font-medium">
+                            {order.payment.bankName}
+                          </span>
+                        </p>
+                      )}
+
+                    {/* Payment Status */}
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-300">
+                      <span className="text-gray-600">Status</span>
+                      <span
+                        className={`font-bold px-3 py-1 rounded-full text-xs ${
+                          order.payment.status === "SUCCESS"
+                            ? "bg-green-100 text-green-700"
+                            : order.payment.status === "REFUNDED"
+                              ? "bg-blue-100 text-blue-700"
+                              : order.payment.status === "FAILED"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-yellow-100 text-yellow-700"
+                        }`}
+                      >
+                        {order.payment.status}
+                      </span>
+                    </div>
+
+                    {/* Refund Amount */}
+                    {order.payment.refundAmount && (
+                      <div className="flex justify-between mt-2 pt-2 border-t border-blue-200 bg-blue-50 -mx-4 px-4 py-2">
+                        <span className="text-blue-700 font-medium">
+                          Refunded
+                        </span>
+                        <span className="font-bold text-blue-700">
+                          ₹{Number(order.payment.refundAmount).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Payment ID */}
+                    {order.payment.razorpayPaymentId && (
+                      <p className="text-xs text-gray-500 mt-2">
+                        ID: {order.payment.razorpayPaymentId}
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* Price Summary */}
               <div className="flex justify-between">
                 <span className="text-gray-600">Subtotal</span>
                 <span className="font-medium">
@@ -355,67 +517,30 @@ export default function OrderDetailsPage({
               <div className="flex justify-between">
                 <span className="text-gray-600">Shipping</span>
                 <span
-                  className={`font-medium ${
-                    Number(order.shippingCost) === 0
-                      ? "text-green-600"
-                      : "text-gray-900"
-                  }`}
+                  className={`font-medium ${Number(order.shippingCost) === 0 ? "text-green-600" : "text-gray-900"}`}
                 >
                   {Number(order.shippingCost) === 0
                     ? "Free"
                     : `₹${Number(order.shippingCost).toFixed(2)}`}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Tax (GST 18%)</span>
-                <span className="font-medium">
-                  ₹
-                  {(
-                    (Number(order.subtotal) -
-                      Number(order.discount) +
-                      Number(order.shippingCost)) *
-                    0.18
-                  ).toFixed(2)}
-                </span>
-              </div>
+              {/* {order.gstAmount && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">GST (18%)</span>
+                  <span className="font-medium">₹{Number(order.gstAmount).toFixed(2)}</span>
+                </div>
+              )} */}
               <div className="pt-3 border-t flex justify-between">
                 <span className="font-semibold">Total</span>
                 <span className="font-bold text-xl">
                   ₹{Number(order.total).toFixed(2)}
                 </span>
               </div>
-              {order.payment && (
-                <div className="pt-3 border-t">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-gray-600">Payment Method</span>
-                    <span className="font-medium">{order.payment.method}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Payment Status</span>
-                    <span
-                      className={`font-medium ${
-                        order.payment.status === "SUCCESS"
-                          ? "text-green-600"
-                          : order.payment.status === "FAILED"
-                          ? "text-red-600"
-                          : "text-orange-600"
-                      }`}
-                    >
-                      {order.payment.status}
-                    </span>
-                  </div>
-                  {order.payment.razorpayPaymentId && (
-                    <p className="text-xs text-gray-500 mt-2">
-                      Payment ID: {order.payment.razorpayPaymentId}
-                    </p>
-                  )}
-                </div>
-              )}
             </div>
           </motion.div>
         </div>
 
-        {/* Shipment Info */}
+        {/* Shipment Details */}
         {order.shipment && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -435,33 +560,9 @@ export default function OrderDetailsPage({
               {order.shipment.courierName && (
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">
-                    Courier Service
+                    Courier
                   </label>
                   <p className="font-medium">{order.shipment.courierName}</p>
-                </div>
-              )}
-              {order.shipment.shippedAt && (
-                <div>
-                  <label className="text-xs text-gray-500 block mb-1">
-                    Shipped On
-                  </label>
-                  <p className="font-medium">
-                    {new Date(order.shipment.shippedAt).toLocaleDateString(
-                      "en-IN"
-                    )}
-                  </p>
-                </div>
-              )}
-              {order.shipment.estimatedDelivery && (
-                <div>
-                  <label className="text-xs text-gray-500 block mb-1">
-                    Estimated Delivery
-                  </label>
-                  <p className="font-medium">
-                    {new Date(
-                      order.shipment.estimatedDelivery
-                    ).toLocaleDateString("en-IN")}
-                  </p>
                 </div>
               )}
             </div>
@@ -469,7 +570,7 @@ export default function OrderDetailsPage({
         )}
       </div>
 
-      {/* Cancel Order Modal */}
+      {/* ✅ UPDATED Cancel Modal */}
       {showCancelModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <motion.div
@@ -484,9 +585,7 @@ export default function OrderDetailsPage({
                 </div>
                 <div>
                   <h3 className="font-bold text-lg">Cancel Order</h3>
-                  <p className="text-sm text-gray-500">
-                    Are you sure you want to cancel?
-                  </p>
+                  <p className="text-sm text-gray-500">Are you sure?</p>
                 </div>
               </div>
 
@@ -498,37 +597,61 @@ export default function OrderDetailsPage({
                 </div>
               )}
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">
-                  Reason for cancellation (optional)
-                </label>
-                <textarea
-                  value={cancelReason}
-                  onChange={(e) => setCancelReason(e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none resize-none"
-                  placeholder="Please let us know why you're cancelling..."
-                />
-              </div>
+              {canCancel && (
+                <>
+                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex gap-2">
+                    <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-blue-700">
+                      Refund will be processed in 5-7 days to your{" "}
+                      {paymentDisplay?.label.toLowerCase()}.
+                    </p>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-2">
+                      Reason (optional)
+                    </label>
+                    <textarea
+                      value={cancelReason}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                      rows={3}
+                      className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none resize-none"
+                      placeholder="Why are you cancelling?"
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="flex gap-3">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => setShowCancelModal(false)}
+                  onClick={() => {
+                    setShowCancelModal(false);
+                    setCancelReason("");
+                  }}
                   className="flex-1 py-3 border-2 border-gray-200 rounded-lg font-medium hover:bg-gray-50"
                 >
-                  Keep Order
+                  {canCancel ? "Keep Order" : "Close"}
                 </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleCancelOrder}
-                  disabled={cancelMutation.isPending}
-                  className="flex-1 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50"
-                >
-                  {cancelMutation.isPending ? "Cancelling..." : "Cancel Order"}
-                </motion.button>
+                {canCancel && (
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleCancelOrder}
+                    disabled={cancelMutation.isPending}
+                    className="flex-1 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {cancelMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Cancelling...
+                      </>
+                    ) : (
+                      "Cancel Order"
+                    )}
+                  </motion.button>
+                )}
               </div>
             </div>
           </motion.div>

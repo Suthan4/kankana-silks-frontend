@@ -54,7 +54,7 @@ class CartApiService {
   /**
    * Get user's cart
    */
-  async getCart(): Promise<CartResponse> {
+  async getCart() {
     const response = await clientApiService.api.get("/cart");
     return response.data;
   }

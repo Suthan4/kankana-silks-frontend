@@ -1,7 +1,7 @@
 "use client";
 
 import { Category } from "@/lib/api/home-section.api";
-import { useState, useRef } from "react";
+import { useState } from "react";
 
 function CategoryShowcase({
   title,
@@ -59,7 +59,7 @@ function CategoryShowcase({
   const visibleCategories = showNavigation
     ? categories.slice(
         currentIndex * itemsPerView,
-        (currentIndex + 1) * itemsPerView
+        (currentIndex + 1) * itemsPerView,
       )
     : categories;
 
@@ -168,7 +168,7 @@ function CategoryShowcase({
               <a
                 key={category.id}
                 href={`/category/${category.slug}`}
-                className="group relative overflow-hidden rounded-2xl aspect-[3/4] transform transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl"
+                className="group relative overflow-hidden rounded-2xl aspect-[3/4] transform transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl block"
                 style={{ animationDelay: `${index * 0.1}s` }}
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex(null)}

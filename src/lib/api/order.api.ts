@@ -2,6 +2,9 @@ import { authService } from "./api.base.service";
 
 // ==================== TYPES ====================
 
+export type PaymentMethodType = "CARD"|"UPI"|"NETBANKING"|"WALLET"|"EMI"|"COD"|"PAYLATER";
+export type CourierPreference = "CHEAPEST" | "FASTEST" | "CUSTOM";
+
 export interface OrderItem {
   id: string;
   productId: string;
@@ -81,6 +84,7 @@ export interface Order {
     method: "COD" | "CARD" | "UPI" | "WALLET" | "NET_BANKING" | "RAZORPAY";
     status: "PENDING" | "SUCCESS" | "FAILED" | "REFUNDED";
     amount: number;
+    bankName:string;
     razorpayOrderId?: string;
     razorpayPaymentId?: string;
     refundAmount?: number;
@@ -116,6 +120,7 @@ export interface OrderPreviewDTO {
     variantId?: string;
     quantity: number;
   }[];
+  selectedCourierCompanyId:number
 }
 export interface ShippingDimensions {
   totalWeight: number;
@@ -179,12 +184,15 @@ export interface CreateOrderDTO {
   shippingAddressId: string;
   billingAddressId: string;
   couponCode?: string;  // ✅ NEW
-  paymentMethod: "COD" | "CARD" | "UPI" | "WALLET" | "NET_BANKING";
+  paymentMethod: "CARD"|"UPI"|"NETBANKING"|"WALLET"|
+  "EMI"|"COD"|"PAYLATER";
   items?: {
     productId: string;
     variantId?: string;
     quantity: number;
   }[];
+  courierPreference?: CourierPreference;
+  selectedCourierCompanyId?: number;
 }
 
 export interface CreateOrderResponse {
@@ -288,6 +296,23 @@ export interface CanCancelResponse {
   };
 }
 
+export interface InitiatePaymentDTO {
+  shippingAddressId: string;
+  billingAddressId: string;
+  couponCode?: string;
+  paymentMethod: "CARD"|"UPI"|"NETBANKING"|"WALLET"|"EMI"|"COD"|"PAYLATER";
+  items?: Array<{
+    productId: string;
+    variantId?: string;
+    quantity: number;
+  }>;
+}
+export interface VerifyPaymentDTO {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
 // ==================== API SERVICE ====================
 
 class OrderApiService {
@@ -296,8 +321,14 @@ class OrderApiService {
    * ✅ NEW: Get order preview with accurate totals
    * POST /api/orders/preview
    */
-  async getOrderPreview(data: OrderPreviewDTO): Promise<OrderPreviewResponse> {
+  async getOrderPreview(data: OrderPreviewDTO) {
     const response = await authService.api.post("/orders/preview", data);
+    return response.data;
+  }
+  
+  // ✅ NEW: Initiate payment (creates Razorpay session, NO DB order)
+  async initiatePayment(data: InitiatePaymentDTO) {
+    const response = await authService.api.post("/orders/initiate-payment", data);
     return response.data;
   }
 
@@ -314,7 +345,7 @@ class OrderApiService {
    * Verify Razorpay payment
    * POST /api/orders/verify-payment
    */
-  async verifyPayment(data: VerifyPaymentDTO): Promise<VerifyPaymentResponse> {
+  async verifyPayment(data: VerifyPaymentDTO) {
     const response = await authService.api.post("/orders/verify-payment", data);
     return response.data;
   }
@@ -323,7 +354,7 @@ class OrderApiService {
    * Get user's orders with pagination and filters
    * GET /api/orders/my-orders
    */
-  async getUserOrders(params?: QueryOrderParams): Promise<OrdersResponse> {
+  async getUserOrders(params?: QueryOrderParams) {
     const response = await authService.api.get("/orders/my-orders", {
       params,
     });
@@ -343,7 +374,7 @@ class OrderApiService {
    * Get order by order number
    * GET /api/orders/number/:orderNumber
    */
-  async getOrderByNumber(orderNumber: string): Promise<OrderResponse> {
+  async getOrderByNumber(orderNumber: string) {
     const response = await authService.api.get(`/orders/number/${orderNumber}`);
     return response.data;
   }
@@ -352,7 +383,7 @@ class OrderApiService {
    * Check if order can be cancelled
    * GET /api/orders/:id/can-cancel
    */
-  async canCancelOrder(orderId: string): Promise<CanCancelResponse> {
+  async canCancelOrder(orderId: string) {
     const response = await authService.api.get(`/orders/${orderId}/can-cancel`);
     return response.data;
   }

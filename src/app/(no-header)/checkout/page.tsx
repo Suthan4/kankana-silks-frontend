@@ -18,6 +18,7 @@ import {
   Percent,
   ChevronDown,
   Loader2,
+  Info,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -28,11 +29,20 @@ import { toast } from "@/store/useToastStore";
 import AddressModal from "@/components/addressModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { addressApi, type Address } from "@/lib/api/addresses.api";
-import { CreateOrderDTO, orderApi } from "@/lib/api/order.api";
-import { useCreateOrder, useVerifyPayment } from "@/hooks/useOrders";
+import {
+  CreateOrderDTO,
+  orderApi,
+  type PaymentMethodType,
+  type CourierPreference,
+} from "@/lib/api/order.api";
+import {
+  useCreateOrder,
+  useInitiatePayment,
+  useVerifyPayment,
+} from "@/hooks/useOrders";
 import { couponApi, type Coupon } from "@/lib/api/coupon.api";
-
-type PaymentMethod = "RAZORPAY" | "COD";
+import { cartApi } from "@/lib/api/cart.api";
+import { shippingApi } from "@/lib/api/shipping.api";
 
 // Razorpay types
 declare global {
@@ -40,6 +50,37 @@ declare global {
     Razorpay: any;
   }
 }
+
+const normalizeAttributes = (attrs: any) => {
+  if (!attrs) return [];
+
+  if (typeof attrs === "object" && !Array.isArray(attrs)) {
+    return Object.entries(attrs).map(([key, value]) => ({
+      key: String(key),
+      value: String(value),
+    }));
+  }
+
+  if (Array.isArray(attrs)) {
+    return attrs
+      .filter((a) => a?.key && a?.value)
+      .map((a) => ({
+        key: String(a.key),
+        value: String(a.value),
+      }));
+  }
+
+  if (typeof attrs === "string") {
+    try {
+      const parsed = JSON.parse(attrs);
+      return normalizeAttributes(parsed);
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+};
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -60,9 +101,15 @@ export default function CheckoutPage() {
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("RAZORPAY");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>("CARD");
   const [isProcessing, setIsProcessing] = useState(false);
   const [buyNowItem, setBuyNowItem] = useState<any>(null);
+
+  // ✅ NEW: Courier selection state
+  const [selectedCourier, setSelectedCourier] = useState<any>(null);
+  const [courierPreference, setCourierPreference] =
+    useState<CourierPreference>("CHEAPEST");
+  const [showAllCouriers, setShowAllCouriers] = useState(false);
 
   // Coupon states
   const [couponCode, setCouponCode] = useState("");
@@ -73,6 +120,46 @@ export default function CheckoutPage() {
 
   const createOrderMutation = useCreateOrder();
   const verifyPaymentMutation = useVerifyPayment();
+  const initiatePaymentMutation = useInitiatePayment();
+
+  // ✅ Payment method options with COD
+  const paymentMethods = [
+    {
+      id: "CARD" as PaymentMethodType,
+      name: "Card Payment",
+      description: "Credit/Debit Card",
+      emoji: "💳",
+      requiresRazorpay: true,
+    },
+    {
+      id: "UPI" as PaymentMethodType,
+      name: "UPI",
+      description: "Google Pay, PhonePe, Paytm",
+      emoji: "📱",
+      requiresRazorpay: true,
+    },
+    {
+      id: "NETBANKING" as PaymentMethodType,
+      name: "Net Banking",
+      description: "All major banks",
+      emoji: "🏦",
+      requiresRazorpay: true,
+    },
+    {
+      id: "WALLET" as PaymentMethodType,
+      name: "Wallet",
+      description: "Paytm, PhonePe, Amazon Pay",
+      emoji: "👛",
+      requiresRazorpay: true,
+    },
+    {
+      id: "COD" as PaymentMethodType,
+      name: "Cash on Delivery",
+      description: "Pay when you receive",
+      emoji: "💵",
+      requiresRazorpay: false,
+    },
+  ];
 
   // Load items based on mode
   useEffect(() => {
@@ -114,7 +201,40 @@ export default function CheckoutPage() {
     enabled: !!user,
   });
 
+  const {
+    data: cartData,
+    isLoading: isLoadingCartApi,
+    refetch: refetchCartApi,
+  } = useQuery({
+    queryKey: ["cartApi", user?.id],
+    queryFn: async () => {
+      const res = await cartApi.getCart();
+      return res.data;
+    },
+    enabled: !!user,
+    staleTime: 0,
+  });
+
+  const apiItems = cartData?.items ?? [];
+  const displayItems =
+    isBuyNowMode && buyNowItem ? [buyNowItem] : user ? apiItems : cartItems;
   const addresses = addressesData || [];
+    const {
+      data: shippingData,
+      isLoading: isLoadingShipping,
+      refetch: refetchShipping,
+    } = useQuery({
+      queryKey: ["cartShipping", selectedAddress?.pincode],
+      queryFn: async () => {
+        if (!selectedAddress?.pincode || displayItems.length === 0) return null;
+
+        const response = await shippingApi.getCartShippingRates({
+          deliveryPincode: selectedAddress?.pincode,
+        });
+        return response.data;
+      },
+      enabled: !!selectedAddress,
+    });
 
   // Auto-select default address
   useEffect(() => {
@@ -124,21 +244,24 @@ export default function CheckoutPage() {
     }
   }, [addresses, selectedAddress]);
 
-  const items = isBuyNowMode && buyNowItem ? [buyNowItem] : cartItems;
-
-  // Fetch order preview - THIS IS THE KEY FIX
+  // Fetch order preview
   const {
     data: orderPreview,
     isLoading: isLoadingPreview,
     refetch: refetchPreview,
+    isError: isErrorOrderPreview,
   } = useQuery({
     queryKey: [
       "orderPreview",
       selectedAddress?.id,
-      appliedCoupon?.code, // When this changes, query auto-refetches
+      selectedCourier?.courier_company_id,
+      appliedCoupon?.code,
       buyNowItem?.productId,
       buyNowItem?.variantId,
       buyNowItem?.quantity,
+      displayItems
+        .map((item: any) => `${item.productId}-${item.quantity}`)
+        .join(","),
     ],
     queryFn: async () => {
       if (!selectedAddress) return null;
@@ -154,55 +277,111 @@ export default function CheckoutPage() {
             ]
           : undefined;
 
-      console.log(
-        "🔄 Fetching order preview with coupon:",
-        appliedCoupon?.code,
-      );
-
       const response = await orderApi.getOrderPreview({
         shippingAddressId: selectedAddress.id,
-        couponCode: appliedCoupon?.code, // ✅ Pass coupon to backend
+        couponCode: appliedCoupon?.code,
         items: orderItems,
+        selectedCourierCompanyId: selectedCourier?.courier_company_id,
       });
-
-      console.log("✅ Order preview response:", response.data);
 
       return response.data;
     },
-    enabled: !!selectedAddress,
-    staleTime: 0, // ✅ Always fetch fresh data
-    gcTime: 0, // ✅ Don't cache (formerly cacheTime)
+    enabled: !!selectedAddress && !!selectedCourier,
+    staleTime: 0,
+    gcTime: 0,
   });
+  console.log("selectedCourier?.courier_company_id", selectedCourier);
 
   const subtotal = orderPreview?.breakdown.subtotal || 0;
   const discount = orderPreview?.breakdown.discount || 0;
   const couponDiscount = orderPreview?.breakdown.couponDiscount || 0;
   const shippingCost = orderPreview?.breakdown.shippingCost || 0;
   const gstAmount = orderPreview?.breakdown.gstAmount || 0;
+  const shippingInfo = shippingData; // ✅ couriers source
+  const availableCouriers = shippingData?.availableCouriers ?? [];
+  const cheapestCourier = shippingData?.cheapestCourier;
+  const fastestCourier = shippingData?.fastestCourier;
+  const chargeableWeight = shippingData?.chargeableWeight || 0;
+  const isServiceable = shippingData?.serviceable ?? true;
+  const isFreeShipping = shippingData?.isFreeShipping ?? shippingCost === 0;
   const total = orderPreview?.breakdown.total || 0;
   const estimatedDelivery = orderPreview?.estimatedDelivery || "3-5 days";
   const couponError = orderPreview?.couponError;
 
-  console.log("💰 Current totals:", {
-    subtotal,
-    couponDiscount,
-    shippingCost,
-    gstAmount,
-    total,
-    appliedCoupon: appliedCoupon?.code,
-  });
+  // ✅ COD availability check
+  const isCODAvailable = total > 0 && total <= 2000;
 
-  // Fetch applicable coupons
+  // ✅ Filter couriers by weight capacity
+  const eligibleCouriers = useMemo(() => {
+    if (!availableCouriers || availableCouriers.length === 0) return [];
+
+    return availableCouriers.filter((courier: any) => {
+      // If courier name contains weight info, check it
+      const courierName = courier.courier_name?.toLowerCase() || "";
+
+      // Amazon Shipping Surface 1kg - only for orders ≤ 1kg
+      if (courierName.includes("amazon") && courierName.includes("1kg")) {
+        return chargeableWeight <= 1;
+      }
+
+      // Add more weight-based filters if needed
+      // Example: if (courierName.includes("2kg")) return chargeableWeight <= 2;
+
+      return true; // Allow all other couriers
+    });
+  }, [availableCouriers, chargeableWeight]);
+
+  // ✅ Auto-select courier on load
+  useEffect(() => {
+    if (!selectedAddress?.pincode) return;
+
+    if (eligibleCouriers.length > 0 && !selectedCourier) {
+      const cheapest = eligibleCouriers.reduce((min: any, curr: any) =>
+        curr.freight_charge < min.freight_charge ? curr : min,
+      );
+
+      setSelectedCourier(cheapest);
+      setCourierPreference("CHEAPEST");
+    }
+  }, [eligibleCouriers, selectedCourier, selectedAddress?.pincode]);
+
+  const getStockQty = (item: any) => {
+    return (
+      item?.variant?.stock?.[0]?.quantity ??
+      item?.product?.stock?.find((s: any) => s.variantId === item?.variantId)
+        ?.quantity ??
+      0
+    );
+  };
+
+  const getUnitPrice = (item: any) => {
+    return Number(
+      item?.variant?.sellingPrice ??
+        item?.variant?.price ??
+        item?.product?.sellingPrice ??
+        item?.price ??
+        0,
+    );
+  };
+
+  // Fetch applicable coupons (existing code...)
   const {
     data: applicableCouponsData,
     isLoading: isLoadingCoupons,
     refetch: refetchCoupons,
   } = useQuery({
-    queryKey: ["applicableCoupons", subtotal, items.length],
+    queryKey: ["applicableCoupons", subtotal, displayItems.length],
     queryFn: async () => {
-      if (items.length === 0 || !user) return { data: [] };
+      if (
+        !user ||
+        displayItems.length === 0 ||
+        !orderPreview ||
+        subtotal <= 0
+      ) {
+        return { data: [] };
+      }
 
-      const cartItems = items.map((item: any) => ({
+      const cartItems = displayItems.map((item: any) => ({
         productId: item.productId,
         categoryId: item.categoryId,
         quantity: item.quantity,
@@ -214,7 +393,8 @@ export default function CheckoutPage() {
         cartItems,
       });
     },
-    enabled: !!user && items.length > 0 && !!orderPreview && subtotal > 0,
+    enabled:
+      !!user && displayItems.length > 0 && !!orderPreview && subtotal > 0,
     staleTime: 30000,
   });
 
@@ -249,11 +429,50 @@ export default function CheckoutPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ✅ REPLACE ONLY THE validateCouponMutation IN YOUR CHECKOUT PAGE
+  // Update quantity mutation (existing code...)
+  const updateQtyMutation = useMutation({
+    mutationFn: async ({
+      itemId,
+      quantity,
+    }: {
+      itemId: string;
+      quantity: number;
+    }) => {
+      return await cartApi.updateCartItem(itemId, { quantity });
+    },
+    onSuccess: async () => {
+      await refetchCartApi();
+      await queryClient.invalidateQueries({
+        queryKey: ["orderPreview"],
+      });
+      await refetchPreview();
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Failed to update quantity");
+    },
+  });
+
+  const removeItemMutation = useMutation({
+    mutationFn: async (itemId: string) => {
+      return await cartApi.removeFromCart(itemId);
+    },
+    onSuccess: async () => {
+      toast.success("Item removed");
+      await refetchCartApi();
+      await queryClient.invalidateQueries({
+        queryKey: ["orderPreview"],
+      });
+      await refetchPreview();
+      await refetchCoupons();
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Failed to remove item");
+    },
+  });
 
   const validateCouponMutation = useMutation({
     mutationFn: async (code: string) => {
-      const cartItemsForValidation = items.map((item: any) => ({
+      const cartItemsForValidation = displayItems.map((item: any) => ({
         productId: item.productId,
         categoryId: item.categoryId,
         quantity: item.quantity,
@@ -267,7 +486,6 @@ export default function CheckoutPage() {
       });
     },
     onSuccess: async (response, code) => {
-      console.log("🎟️ Validation response:", response);
       const payload = response?.data;
       if (payload.valid && payload.coupon && payload.discount !== undefined) {
         const couponData = {
@@ -283,39 +501,28 @@ export default function CheckoutPage() {
           finalAmount: payload.finalAmount || 0,
         };
 
-        console.log("✅ Applying coupon:", couponData);
-
-        // 1. Apply to store
         applyCoupon(couponData);
-
-        // 2. Clear UI
         setCouponCode("");
         setShowCouponDropdown(false);
         setShowAutocomplete(false);
 
-        // 3. ✅ THE FIX: Manually refetch with the NEW coupon code immediately
-        //    Don't wait for the query key to detect the change
         await queryClient.invalidateQueries({
           queryKey: ["orderPreview"],
-          exact: false, // Invalidate all matching queries
+          exact: false,
         });
 
-        // 4. Force an immediate refetch to see the result
         await refetchPreview();
 
-        // 5. Show success
         toast.success(
           `Coupon "${code}" applied! You save ₹${Number(response.discount).toFixed(2)}`,
         );
 
-        // 6. Refetch available coupons
         refetchCoupons();
       } else {
         toast.error(response.error || "Invalid coupon code");
       }
     },
     onError: (error: any) => {
-      console.error("❌ Coupon error:", error);
       toast.error(error.message || "Failed to apply coupon");
     },
   });
@@ -325,15 +532,12 @@ export default function CheckoutPage() {
       toast.error("Please enter a coupon code");
       return;
     }
-    console.log("🎟️ Applying coupon:", code);
     validateCouponMutation.mutate(code);
   };
 
   const handleRemoveCoupon = async () => {
-    console.log("🗑️ Removing coupon");
     removeCoupon();
 
-    // ✅ Refetch preview without coupon
     await queryClient.invalidateQueries({
       queryKey: ["orderPreview"],
     });
@@ -384,6 +588,27 @@ export default function CheckoutPage() {
     deleteAddressMutation.mutate(addressId);
   };
 
+  // ✅ Handle courier selection
+  const handleCourierSelect = (courier: any, preference: CourierPreference) => {
+    setSelectedCourier(courier);
+    setCourierPreference(preference);
+    // ✅ update pricing based on courier
+    refetchPreview();
+  };;
+const getRazorpayBlock = (paymentMethod: string) => {
+  switch (paymentMethod) {
+    case "UPI":
+      return "block.upi";
+    case "CARD":
+      return "block.card";
+    case "NETBANKING":
+      return "block.netbanking";
+    case "WALLET":
+      return "block.wallet";
+    default:
+      return "block.upi";
+  }
+};
   const handleRazorpayPayment = async (orderData: any) => {
     try {
       const options = {
@@ -401,11 +626,31 @@ export default function CheckoutPage() {
         notes: {
           address: `${selectedAddress?.addressLine1}, ${selectedAddress?.city}`,
         },
-        method: {
-          card: true,
-          netbanking: true,
-          wallet: true,
-          upi: true,
+        config: {
+          display: {
+            blocks: {
+              upi: {
+                name: "Pay via UPI",
+                instruments: [{ method: "upi" }],
+              },
+              card: {
+                name: "Pay via Card",
+                instruments: [{ method: "card" }],
+              },
+              netbanking: {
+                name: "Net Banking",
+                instruments: [{ method: "netbanking" }],
+              },
+              wallet: {
+                name: "Wallets",
+                instruments: [{ method: "wallet" }],
+              },
+            },
+            sequence: [getRazorpayBlock(paymentMethod)],
+            preferences: {
+              show_default_blocks: false, // 🚫 hides Pay Later
+            },
+          },
         },
         theme: {
           color: "#000000",
@@ -461,17 +706,28 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (!selectedCourier) {
+      toast.error("Please select a courier");
+      return;
+    }
+
+    // ✅ COD validation
+    if (paymentMethod === "COD" && !isCODAvailable) {
+      toast.error("COD is only available for orders up to ₹2,000");
+      return;
+    }
+
     try {
       setIsProcessing(true);
-
-      const backendPaymentMethod =
-        paymentMethod === "RAZORPAY" ? "CARD" : "COD";
 
       const orderDTO: CreateOrderDTO = {
         shippingAddressId: selectedAddress.id,
         billingAddressId: selectedAddress.id,
         couponCode: appliedCoupon?.code,
-        paymentMethod: backendPaymentMethod,
+        paymentMethod: paymentMethod,
+        // ✅ Pass courier selection
+        courierPreference: courierPreference,
+        selectedCourierCompanyId: selectedCourier.courier_company_id,
         ...(isBuyNowMode && buyNowItem
           ? {
               items: [
@@ -485,9 +741,7 @@ export default function CheckoutPage() {
           : {}),
       };
 
-      console.log("📦 Creating order with DTO:", orderDTO);
-
-      const response = await createOrderMutation.mutateAsync(orderDTO);
+      const response = await initiatePaymentMutation.mutateAsync(orderDTO);
 
       if (paymentMethod === "COD") {
         if (!isBuyNowMode) {
@@ -511,7 +765,17 @@ export default function CheckoutPage() {
     }
   };
 
-  if (items.length === 0) {
+  const formatMoney = (value: number) => `₹${Number(value || 0).toFixed(2)}`;
+
+  const getCourierLabel = (courier: any) => {
+    if (!courier) return null;
+    return `${courier.courier_name} • ${courier.estimated_delivery_days} days • ${formatMoney(courier.freight_charge)}`;
+  };
+
+  console.log("shippingInfo", JSON.stringify(shippingInfo));
+  console.log("orderPreview?.breakdown.shippingCost", orderPreview?.breakdown);
+
+  if (displayItems.length === 0) {
     return null;
   }
 
@@ -560,60 +824,174 @@ export default function CheckoutPage() {
                   <ShoppingBag className="w-5 h-5 text-white" />
                 </div>
                 <h2 className="text-xl font-bold text-gray-900">
-                  Order Items ({items.length})
+                  Order Items ({displayItems.length})
                 </h2>
               </div>
 
               <div className="space-y-3 max-h-64 overflow-y-auto">
-                {items.map((item: any, index: number) => (
-                  <div
-                    key={`${item.productId}-${item.variantId}-${index}`}
-                    className="flex gap-3 p-3 bg-gray-50 rounded-xl"
-                  >
-                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                      {item.image ? (
-                        <Image
-                          src={item.image}
-                          alt={item.productName || item.name || "Product"}
-                          width={64}
-                          height={64}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <ShoppingBag className="w-6 h-6 text-gray-400" />
+                {displayItems?.map((item: any, index: number) => {
+                  const stockQty = getStockQty(item);
+                  const unitPrice = getUnitPrice(item);
+
+                  const isBuyNowItem = isBuyNowMode;
+
+                  return (
+                    <div
+                      key={`${item.productId}-${item.variantId}-${index}`}
+                      className="flex gap-3 p-3 bg-gray-50 rounded-xl relative"
+                    >
+                      {/* ✅ Delete Button */}
+                      {!isBuyNowItem && (
+                        <button
+                          onClick={() => {
+                            if (user?.id) {
+                              removeItemMutation.mutate(item.id);
+                            } else {
+                              clearCart(); // OR remove item from zustand if you have removeItem
+                            }
+                          }}
+                          className="absolute top-2 right-2 p-2 hover:bg-red-50 rounded-lg transition"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </button>
+                      )}
+
+                      {/* Image */}
+                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                        {item?.product?.media?.[0]?.url ? (
+                          <Image
+                            src={item.product.media[0].url}
+                            alt={item.product?.name}
+                            width={64}
+                            height={64}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <ShoppingBag className="w-6 h-6 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 text-sm line-clamp-1">
+                          {item.product?.name || item.name}
+                        </p>
+
+                        {/* ✅ Variant + Custom attrs */}
+                        {item?.variant && (
+                          <div className="mt-2 space-y-2">
+                            {/* normal */}
+                            <div className="flex flex-wrap gap-2 text-xs text-gray-600">
+                              {item.variant.size && (
+                                <span className="bg-gray-100 px-2 py-0.5 rounded">
+                                  Size: {item.variant.size}
+                                </span>
+                              )}
+                              {item.variant.color && (
+                                <span className="bg-gray-100 px-2 py-0.5 rounded">
+                                  {item.variant.color}
+                                </span>
+                              )}
+                              {item.variant.fabric && (
+                                <span className="bg-gray-100 px-2 py-0.5 rounded">
+                                  {item.variant.fabric}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* custom */}
+                            {normalizeAttributes(item.variant.attributes)
+                              .length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {normalizeAttributes(
+                                  item.variant.attributes,
+                                ).map((attr) => (
+                                  <span
+                                    key={attr.key}
+                                    className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-lg border border-blue-100"
+                                  >
+                                    {attr.key}:{" "}
+                                    <span className="font-semibold">
+                                      {attr.value}
+                                    </span>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Qty + Price */}
+                        <div className="flex items-center justify-between mt-3">
+                          {/* ✅ Qty Controls */}
+                          <div className="flex items-center gap-2 bg-white border rounded-full px-2 py-1">
+                            <button
+                              disabled={isBuyNowItem || item.quantity <= 1}
+                              onClick={() => {
+                                const newQty = item.quantity - 1;
+                                if (newQty < 1) return;
+
+                                if (user?.id) {
+                                  updateQtyMutation.mutate({
+                                    itemId: item.id,
+                                    quantity: newQty,
+                                  });
+                                } else {
+                                  // zustand update
+                                  // updateQuantity(item.id, newQty)
+                                }
+                              }}
+                              className="w-7 h-7 flex items-center justify-center disabled:opacity-50"
+                            >
+                              -
+                            </button>
+
+                            <span className="w-6 text-center text-sm font-semibold">
+                              {item.quantity}
+                            </span>
+
+                            <button
+                              disabled={
+                                isBuyNowItem || item.quantity >= stockQty
+                              }
+                              onClick={() => {
+                                const newQty = item.quantity + 1;
+
+                                if (user?.id) {
+                                  updateQtyMutation.mutate({
+                                    itemId: item.id,
+                                    quantity: newQty,
+                                  });
+                                } else {
+                                  // zustand update
+                                  // updateQuantity(item.id, newQty)
+                                }
+                              }}
+                              className="w-7 h-7 flex items-center justify-center bg-black text-white rounded-full disabled:opacity-50"
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          {/* ✅ Price */}
+                          <p className="font-semibold text-sm">
+                            ₹
+                            {(unitPrice * item.quantity).toLocaleString(
+                              "en-IN",
+                            )}
+                          </p>
                         </div>
-                      )}
-                    </div>
 
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 text-sm line-clamp-1">
-                        {item.productName || item.name}
-                      </p>
-
-                      {item.variant && (
-                        <p className="text-xs text-gray-500">
-                          {[
-                            item.variant.size,
-                            item.variant.color,
-                            item.variant.fabric,
-                          ]
-                            .filter(Boolean)
-                            .join(" • ")}
-                        </p>
-                      )}
-
-                      <div className="flex items-center justify-between mt-1">
-                        <p className="text-xs text-gray-500">
-                          Qty: {item.quantity}
-                        </p>
-                        <p className="font-semibold text-sm">
-                          ₹{(item.price * item.quantity).toLocaleString()}
+                        {/* ✅ Stock info */}
+                        <p className="text-xs text-gray-500 mt-1">
+                          Stock: {stockQty}
                         </p>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </motion.div>
 
@@ -768,7 +1146,7 @@ export default function CheckoutPage() {
               )}
             </motion.div>
 
-            {/* Payment Method */}
+            {/* Payment Method with COD restriction */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -785,44 +1163,67 @@ export default function CheckoutPage() {
               </div>
 
               <div className="space-y-3">
-                <motion.div
-                  whileHover={{ scale: 1.01 }}
-                  onClick={() => setPaymentMethod("RAZORPAY")}
-                  className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                    paymentMethod === "RAZORPAY"
-                      ? "border-black bg-gray-50"
-                      : "border-gray-200 hover:border-gray-400"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                        paymentMethod === "RAZORPAY"
-                          ? "border-black bg-black"
-                          : "border-gray-300"
-                      }`}
+                {paymentMethods.map((method) => {
+                  const isCOD = method.id === "COD";
+                  const isDisabled = isCOD && !isCODAvailable;
+
+                  return (
+                    <motion.div
+                      key={method.id}
+                      whileHover={!isDisabled ? { scale: 1.01 } : {}}
+                      onClick={() => !isDisabled && setPaymentMethod(method.id)}
+                      className={`p-4 border-2 rounded-xl transition-all ${
+                        paymentMethod === method.id
+                          ? "border-black bg-gray-50"
+                          : "border-gray-200 hover:border-gray-400"
+                      } ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                     >
-                      {paymentMethod === "RAZORPAY" && (
-                        <Check className="w-3 h-3 text-white" />
-                      )}
-                    </div>
-                    <CreditCard className="w-6 h-6 text-gray-700" />
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-900">
-                        Online Payment
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Card, UPI, Wallet & More
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs text-gray-400">Powered by</span>
-                      <span className="text-sm font-bold text-blue-600">
-                        Razorpay
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                            paymentMethod === method.id
+                              ? "border-black bg-black"
+                              : "border-gray-300"
+                          }`}
+                        >
+                          {paymentMethod === method.id && (
+                            <Check className="w-3 h-3 text-white" />
+                          )}
+                        </div>
+                        <span className="text-2xl">{method.emoji}</span>
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-900">
+                            {method.name}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {method.description}
+                          </p>
+                          {isCOD && (
+                            <p
+                              className={`text-xs mt-1 font-medium ${
+                                isCODAvailable
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              {isCODAvailable
+                                ? "✅ Available for this order"
+                                : "❌ Available only for orders up to ₹2,000"}
+                            </p>
+                          )}
+                        </div>
+                        {method.requiresRazorpay && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-gray-400">via</span>
+                            <span className="text-xs font-bold text-blue-600">
+                              Razorpay
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             </motion.div>
           </div>
@@ -1043,139 +1444,373 @@ export default function CheckoutPage() {
                 )}
               </div>
 
-              {/* Price Breakdown */}
-              <div className="space-y-3 pb-4 border-b border-gray-200">
-                <div className="flex justify-between text-gray-600">
-                  <span>
-                    Subtotal ({items.length}{" "}
-                    {items.length === 1 ? "item" : "items"})
-                  </span>
-                  {isLoadingPreview ? (
-                    <div className="h-5 w-20 bg-gray-200 animate-pulse rounded" />
-                  ) : (
-                    <span className="font-semibold text-gray-900">
-                      ₹{subtotal.toLocaleString()}
-                    </span>
+              {/* ✅ NEW: Courier Selection Section */}
+              <div className="mb-6 pb-6 border-b border-gray-200">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Truck className="w-5 h-5 text-blue-600" />
+                    <h3 className="font-semibold text-gray-900">
+                      Select Courier
+                    </h3>
+                  </div>
+                  {isLoadingPreview && (
+                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
                   )}
                 </div>
 
-                {couponDiscount > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex justify-between text-green-600 font-semibold bg-green-50 -mx-2 px-2 py-1.5 rounded"
-                  >
-                    <span className="flex items-center gap-1">
-                      <Gift className="w-4 h-4" />
-                      Coupon ({appliedCoupon?.code})
-                    </span>
-                    <span>-₹{couponDiscount.toLocaleString()}</span>
-                  </motion.div>
+                {!orderPreview ? (
+                  <p className="text-sm text-gray-500">
+                    Select an address to see courier options
+                  </p>
+                ) : eligibleCouriers.length === 0 ? (
+                  <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">
+                    No courier available for this order
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {/* Weight info */}
+                    <div className="text-xs bg-blue-50 border border-blue-200 rounded-xl px-3 py-2">
+                      <Info className="w-4 h-4 inline mr-1" />
+                      Chargeable Weight:{" "}
+                      <span className="font-bold">
+                        {chargeableWeight.toFixed(2)} kg
+                      </span>
+                    </div>
+
+                    {/* Cheapest Courier */}
+                    {cheapestCourier && (
+                      <motion.div
+                        whileHover={{ scale: 1.01 }}
+                        onClick={() =>
+                          handleCourierSelect(cheapestCourier, "CHEAPEST")
+                        }
+                        className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                          selectedCourier?.courier_company_id ===
+                          cheapestCourier.courier_company_id
+                            ? "border-green-500 bg-green-50"
+                            : "border-gray-200 hover:border-green-300"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                              selectedCourier?.courier_company_id ===
+                              cheapestCourier.courier_company_id
+                                ? "border-green-500 bg-green-500"
+                                : "border-gray-300"
+                            }`}
+                          >
+                            {selectedCourier?.courier_company_id ===
+                              cheapestCourier.courier_company_id && (
+                              <Check className="w-3 h-3 text-white" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">
+                                CHEAPEST
+                              </span>
+                            </div>
+                            <p className="font-semibold text-gray-900 text-sm">
+                              {cheapestCourier.courier_name}
+                            </p>
+                            <div className="flex items-center justify-between mt-2">
+                              <p className="text-xs text-gray-600">
+                                {cheapestCourier.estimated_delivery_days} days •
+                                Rating {cheapestCourier.rating}
+                              </p>
+                              <p className="font-bold text-green-600">
+                                {formatMoney(cheapestCourier.freight_charge)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Fastest Courier */}
+                    {fastestCourier &&
+                      fastestCourier.courier_company_id !==
+                        cheapestCourier?.courier_company_id && (
+                        <motion.div
+                          whileHover={{ scale: 1.01 }}
+                          onClick={() =>
+                            handleCourierSelect(fastestCourier, "FASTEST")
+                          }
+                          className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                            selectedCourier?.courier_company_id ===
+                            fastestCourier.courier_company_id
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-200 hover:border-blue-300"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div
+                              className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                selectedCourier?.courier_company_id ===
+                                fastestCourier.courier_company_id
+                                  ? "border-blue-500 bg-blue-500"
+                                  : "border-gray-300"
+                              }`}
+                            >
+                              {selectedCourier?.courier_company_id ===
+                                fastestCourier.courier_company_id && (
+                                <Check className="w-3 h-3 text-white" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">
+                                  FASTEST
+                                </span>
+                              </div>
+                              <p className="font-semibold text-gray-900 text-sm">
+                                {fastestCourier.courier_name}
+                              </p>
+                              <div className="flex items-center justify-between mt-2">
+                                <p className="text-xs text-gray-600">
+                                  {fastestCourier.estimated_delivery_days} days
+                                  • Rating {fastestCourier.rating}
+                                </p>
+                                <p className="font-bold text-blue-600">
+                                  {formatMoney(fastestCourier.freight_charge)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+
+                    {/* Show more couriers */}
+                    {eligibleCouriers.length > 2 && (
+                      <button
+                        onClick={() => setShowAllCouriers(!showAllCouriers)}
+                        className="text-sm text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1.5 transition-colors w-full justify-center"
+                      >
+                        <ChevronDown
+                          className={`w-4 h-4 transition-transform ${showAllCouriers ? "rotate-180" : ""}`}
+                        />
+                        {showAllCouriers
+                          ? "Hide other couriers"
+                          : `View ${eligibleCouriers.length - 2} more courier${eligibleCouriers.length - 2 !== 1 ? "s" : ""}`}
+                      </button>
+                    )}
+
+                    {/* All couriers list */}
+                    <AnimatePresence>
+                      {showAllCouriers && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="space-y-2 max-h-60 overflow-y-auto"
+                        >
+                          {eligibleCouriers
+                            .filter(
+                              (c: any) =>
+                                c.courier_company_id !==
+                                  cheapestCourier?.courier_company_id &&
+                                c.courier_company_id !==
+                                  fastestCourier?.courier_company_id,
+                            )
+                            .map((courier: any) => (
+                              <motion.div
+                                key={courier.id}
+                                whileHover={{ scale: 1.01 }}
+                                onClick={() =>
+                                  handleCourierSelect(courier, "CUSTOM")
+                                }
+                                className={`p-3 border-2 rounded-xl cursor-pointer transition-all ${
+                                  selectedCourier?.courier_company_id ===
+                                  courier.courier_company_id
+                                    ? "border-black bg-gray-50"
+                                    : "border-gray-200 hover:border-gray-400"
+                                }`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div
+                                    className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                      selectedCourier?.courier_company_id ===
+                                      courier.courier_company_id
+                                        ? "border-black bg-black"
+                                        : "border-gray-300"
+                                    }`}
+                                  >
+                                    {selectedCourier?.courier_company_id ===
+                                      courier.courier_company_id && (
+                                      <Check className="w-3 h-3 text-white" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-gray-900 text-sm truncate">
+                                      {courier.courier_name}
+                                    </p>
+                                    <div className="flex items-center justify-between mt-1">
+                                      <p className="text-xs text-gray-600">
+                                        {courier.estimated_delivery_days} days •
+                                        Rating {courier.rating}
+                                      </p>
+                                      <p className="font-bold text-gray-900">
+                                        {formatMoney(courier.freight_charge)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 )}
 
-                <div className="flex justify-between text-gray-600">
-                  <div className="flex flex-col">
-                    <span>Shipping</span>
-                    <span className="text-xs text-gray-500">
-                      {estimatedDelivery}
-                    </span>
-                  </div>
-                  {isLoadingPreview ? (
-                    <div className="h-5 w-16 bg-gray-200 animate-pulse rounded" />
-                  ) : (
-                    <span
-                      className={`font-semibold ${
-                        shippingCost === 0 ? "text-green-600" : "text-gray-900"
-                      }`}
-                    >
-                      {shippingCost === 0
-                        ? "FREE"
-                        : `₹${shippingCost.toFixed(2)}`}
-                    </span>
-                  )}
-                </div>
-
-                {gstAmount > 0 && (
+                {/* Price Breakdown */}
+                <div className="space-y-3 pb-4 border-b border-gray-200">
                   <div className="flex justify-between text-gray-600">
-                    <span className="text-sm">
-                      GST (18%)
-                      <span className="text-xs ml-1 text-gray-400">incl.</span>
+                    <span>
+                      Subtotal ({displayItems.length}{" "}
+                      {displayItems.length === 1 ? "item" : "items"})
                     </span>
                     {isLoadingPreview ? (
-                      <div className="h-5 w-16 bg-gray-200 animate-pulse rounded" />
+                      <div className="h-5 w-20 bg-gray-200 animate-pulse rounded" />
                     ) : (
-                      <span className="font-semibold text-sm text-gray-900">
-                        ₹{gstAmount.toFixed(2)}
+                      <span className="font-semibold text-gray-900">
+                        ₹{subtotal.toLocaleString()}
                       </span>
                     )}
                   </div>
-                )}
-              </div>
 
-              {/* Total */}
-              <div className="py-4 border-b border-gray-200">
-                <div className="flex justify-between items-baseline mb-1">
-                  <span className="text-lg font-bold text-gray-900">Total</span>
-                  {isLoadingPreview ? (
-                    <div className="h-10 w-32 bg-gray-200 animate-pulse rounded" />
-                  ) : (
-                    <span className="text-3xl font-bold text-gray-900">
-                      ₹
-                      {total.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
+                  {couponDiscount > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="flex justify-between text-green-600 font-semibold bg-green-50 -mx-2 px-2 py-1.5 rounded"
+                    >
+                      <span className="flex items-center gap-1">
+                        <Gift className="w-4 h-4" />
+                        Coupon ({appliedCoupon?.code})
+                      </span>
+                      <span>-₹{couponDiscount.toLocaleString()}</span>
+                    </motion.div>
                   )}
-                </div>
-                {!isLoadingPreview && (
-                  <div className="space-y-1">
-                    <p className="text-sm text-gray-500 text-right">
-                      Including GST of ₹{gstAmount.toFixed(2)}
-                    </p>
-                    {couponDiscount > 0 && (
-                      <p className="text-sm text-green-600 text-right font-bold flex items-center justify-end gap-1">
-                        <span>🎉</span>
-                        You saved ₹{couponDiscount.toLocaleString()}!
-                      </p>
-                    )}
-                    {subtotal >= 1000 && shippingCost === 0 && (
-                      <p className="text-sm text-green-600 text-right font-semibold flex items-center justify-end gap-1">
-                        <Truck className="w-4 h-4" />
-                        Free shipping applied!
-                      </p>
+
+                  <div className="flex justify-between text-gray-600">
+                    <div className="flex flex-col">
+                      <span>Shipping</span>
+                      <span className="text-xs text-gray-500">
+                        {estimatedDelivery}
+                      </span>
+                    </div>
+                    {isLoadingPreview ? (
+                      <div className="h-5 w-16 bg-gray-200 animate-pulse rounded" />
+                    ) : (
+                      <span
+                        className={`font-semibold ${
+                          shippingCost === 0
+                            ? "text-green-600"
+                            : "text-gray-900"
+                        }`}
+                      >
+                        {isFreeShipping
+                          ? "FREE"
+                          : `₹${shippingCost.toFixed(2)}`}
+                      </span>
                     )}
                   </div>
-                )}
-              </div>
 
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handlePlaceOrder}
-                disabled={
-                  !selectedAddress || isProcessing || !user || isLoadingPreview
-                }
-                className="w-full mt-6 bg-gradient-to-r from-gray-900 to-black text-white font-bold py-4 rounded-full shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <Lock className="w-5 h-5" />
-                {isProcessing
-                  ? "Processing..."
-                  : !user
-                    ? "Login to Place Order"
-                    : isLoadingPreview
-                      ? "Calculating..."
-                      : `Place Order - ₹${total.toLocaleString()}`}
-              </motion.button>
-
-              <div className="mt-4 space-y-2">
-                <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-                  <Truck className="w-4 h-4" />
-                  <span>Free delivery on orders above ₹1000</span>
+                  {gstAmount > 0 && (
+                    <div className="flex justify-between text-gray-600">
+                      <span className="text-sm">
+                        GST (18%)
+                        <span className="text-xs ml-1 text-gray-400">
+                          incl.
+                        </span>
+                      </span>
+                      {isLoadingPreview ? (
+                        <div className="h-5 w-16 bg-gray-200 animate-pulse rounded" />
+                      ) : (
+                        <span className="font-semibold text-sm text-gray-900">
+                          {/* ₹{gstAmount.toFixed(2)}.  */}₹{" "}
+                          {gstAmount.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-                  <Lock className="w-4 h-4" />
-                  <span>100% secure payments</span>
+
+                {/* Total */}
+                <div className="py-4 border-b border-gray-200">
+                  <div className="flex justify-between items-baseline mb-1">
+                    <span className="text-lg font-bold text-gray-900">
+                      Total
+                    </span>
+                    {isLoadingPreview ? (
+                      <div className="h-10 w-32 bg-gray-200 animate-pulse rounded" />
+                    ) : (
+                      <span className="text-3xl font-bold text-gray-900">
+                        ₹
+                        {total.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                    )}
+                  </div>
+                  {!isLoadingPreview && (
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-500 text-right">
+                        Including GST of ₹{gstAmount.toFixed(2)}
+                      </p>
+                      {couponDiscount > 0 && (
+                        <p className="text-sm text-green-600 text-right font-bold flex items-center justify-end gap-1">
+                          <span>🎉</span>
+                          You saved ₹{couponDiscount.toLocaleString()}!
+                        </p>
+                      )}
+                      {isFreeShipping && (
+                        <p className="text-sm text-green-600 text-right font-semibold flex items-center justify-end gap-1">
+                          <Truck className="w-4 h-4" />
+                          Free shipping applied!
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handlePlaceOrder}
+                  disabled={
+                    !selectedAddress ||
+                    isProcessing ||
+                    !user ||
+                    isLoadingPreview ||
+                    !isServiceable ||
+                    isErrorOrderPreview
+                  }
+                  className="w-full mt-6 bg-gradient-to-r from-gray-900 to-black text-white font-bold py-4 rounded-full shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  <Lock className="w-5 h-5" />
+                  {!isServiceable
+                    ? "Delivery Not Available"
+                    : isProcessing
+                      ? "Processing..."
+                      : !user
+                        ? "Login to Place Order"
+                        : isLoadingPreview
+                          ? "Calculating..."
+                          : `Place Order - ₹${total.toLocaleString()}`}
+                </motion.button>
+
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                    <Lock className="w-4 h-4" />
+                    <span>100% secure payments</span>
+                  </div>
                 </div>
               </div>
             </div>

@@ -34,10 +34,57 @@ import { useRouter } from "next/navigation";
 import ProductRequestModal from "@/components/productRequestModal";
 import { formatMaskedPrice } from "@/lib/utils/priceMasked";
 import VideoConsultationModal from "../video-consultationModal";
+import WishlistButton from "../ui/WishlistButton";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface ProductDetailsClientProps {
   initialProduct: Product;
 }
+const getVariantAttrValue = (variant: any, attrKey: string) => {
+  const attrs = variant?.attributes;
+  if (!attrs) return null;
+
+  // ✅ Record format: { "Saree length": "6.5m" }
+  if (typeof attrs === "object" && !Array.isArray(attrs)) {
+    return attrs[attrKey] ?? null;
+  }
+
+  // ✅ Array format: [{key,value}]
+  if (Array.isArray(attrs)) {
+    const found = attrs.find((a) => a?.key === attrKey);
+    return found?.value ?? null;
+  }
+
+  return null;
+};
+
+const normalizeVariantAttributesToRecord = (
+  attrs: any,
+): Record<string, string> => {
+  if (!attrs) return {};
+
+  // ✅ Record format
+  if (typeof attrs === "object" && !Array.isArray(attrs)) {
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(attrs)) {
+      if (String(k).trim() && String(v).trim()) out[String(k)] = String(v);
+    }
+    return out;
+  }
+
+  // ✅ Array format
+  if (Array.isArray(attrs)) {
+    const out: Record<string, string> = {};
+    for (const row of attrs) {
+      const k = String(row?.key ?? "").trim();
+      const v = String(row?.value ?? "").trim();
+      if (k && v) out[k] = v;
+    }
+    return out;
+  }
+
+  return {};
+};
 
 export default function ProductDetailsClient({
   initialProduct,
@@ -45,6 +92,7 @@ export default function ProductDetailsClient({
   const { user, openModal } = useAuthModal();
   const { addItem: addToLocalCart } = useCartStore();
   const router = useRouter();
+  const queryClient = useQueryClient()
 
   // State
   const [product] = useState<Product>(initialProduct);
@@ -132,16 +180,44 @@ export default function ProductDetailsClient({
       ? Math.round(((basePrice - displayPrice) / basePrice) * 100)
       : 0;
 
+  const attributeOptions = useMemo(() => {
+    if (!hasVariants || !product.variants?.length) return [];
+
+    const map = new Map<string, Set<string>>();
+
+    for (const variant of product.variants) {
+      const record = normalizeVariantAttributesToRecord(variant.attributes);
+
+      for (const [key, value] of Object.entries(record)) {
+        if (!key || !value) continue;
+
+        if (!map.has(key)) map.set(key, new Set());
+        map.get(key)!.add(value);
+      }
+    }
+
+    return Array.from(map.entries()).map(([key, valuesSet]) => ({
+      key,
+      values: Array.from(valuesSet),
+    }));
+  }, [hasVariants, product.variants]);
+
   // ✅ Variant attributes render
   const selectedVariantAttributes = useMemo(() => {
-    const attrs = selectedVariant?.attributes;
-    if (!attrs) return [];
-
-    return Object.entries(attrs).map(([key, value]) => ({
-      key,
-      value: String(value),
-    }));
+    return normalizeVariantAttributesToRecord(selectedVariant?.attributes);
   }, [selectedVariant?.attributes]);
+
+  const productSpecificationsAsAttrs = useMemo(() => {
+    return (product.specifications ?? []).map((s) => ({
+      key: s.key,
+      value: String(s.value),
+    }));
+  }, [product.specifications]);
+
+  const finalAttributesToShow =
+    attributeOptions.length > 0
+      ? selectedVariantAttributes
+      : productSpecificationsAsAttrs;
 
   useEffect(() => {
     if (user) {
@@ -243,6 +319,21 @@ export default function ProductDetailsClient({
     }
   };
 
+  const handleSelectCustomAttribute = (attrKey: string, attrValue: string) => {
+    if (!product.variants?.length) return;
+
+    const matched = product.variants.find((v) => {
+      const vVal = getVariantAttrValue(v, attrKey);
+      return String(vVal) === String(attrValue);
+    });
+
+    if (matched) {
+      setSelectedVariant(matched);
+    } else {
+      toast.error("Variant not found for selected option");
+    }
+  };
+
   const handleCheckDelivery = () => {
     checkDeliveryAvailability(pincode);
   };
@@ -296,57 +387,86 @@ export default function ProductDetailsClient({
 
     setIsRequestModalOpen(true);
   };
-
-  const handleAddToCart = async () => {
-    if (quantity > availableStock) {
-      toast.error(`Only ${availableStock} items available`);
-      return;
-    }
-
-    try {
-      setLoading(true);
+  const addToCartMutation = useMutation({
+    mutationFn: async (product: Product) => {
+      // ✅ Create cart item matching API structure
+      const availableStock = product.stock?.[0]?.quantity ?? 0;
 
       const cartItem = {
         id: crypto.randomUUID(),
+        cartId: "local",
         productId: product.id,
-        variantId: selectedVariant?.id,
-        name: product.name,
-        slug: product.slug,
-        price: Number(displayPrice),
-        basePrice: Number(basePrice),
-        quantity,
-        image: images?.[0]?.url ?? "/placeholder.jpg",
-        stock: availableStock,
-
-        variant: selectedVariant
-          ? {
-              size: selectedVariant.size ?? undefined,
-              color: selectedVariant.color ?? undefined,
-              fabric: selectedVariant.fabric ?? undefined,
-              attributes: selectedVariant.attributes ?? undefined,
-            }
-          : undefined,
+        variantId: null,
+        quantity: 1,
+        product: {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          categoryId: product.categoryId,
+          sellingPrice: Number(product.sellingPrice),
+          basePrice: Number(product.basePrice),
+          media: [
+            {
+              url: product.media?.[0]?.url ?? "/placeholder.jpg",
+              altText: product.name,
+              isActive: true,
+            },
+          ],
+          stock: [
+            {
+              quantity: availableStock,
+            },
+          ],
+        },
+        variant: null,
       };
 
+      // ✅ Add to local cart first (always)
       addToLocalCart(cartItem);
-      toast.success("Added to cart");
 
+      // ✅ If user is logged in, sync with server
       if (user) {
-        try {
-          await cartApi.addToCart({
-            productId: product.id,
-            variantId: selectedVariant?.id,
-            quantity,
-          });
-        } catch (error) {
-          console.error("Failed to sync with server:", error);
-        }
+        await cartApi.addToCart({ productId: product.id, quantity: 1 });
       }
-    } catch (error: any) {
-      toast.error(error.message || "Failed to add to cart");
-    } finally {
-      setLoading(false);
+    },
+    onSuccess: () => {
+      if (user) {
+        queryClient.invalidateQueries({ queryKey: ["cartApi"] });
+      }
+      toast.success("Added to cart");
+    },
+    onError: () => toast.error("Failed to add to cart"),
+  });
+    const canAddToCart = (product: Product) => {
+      const availableStock = product.stock?.[0]?.quantity ?? 0;
+      const lowStockThreshold = product.stock?.[0]?.lowStockThreshold ?? 0;
+      const allowOutOfStockOrders = product.allowOutOfStockOrders ?? false;
+  
+      // ✅ Rule 1: If stock is 0, always block Add to Cart
+      if (availableStock === 0) {
+        return false;
+      }
+  
+      // ✅ Rule 2: If out-of-stock orders allowed, ignore threshold
+      if (allowOutOfStockOrders) {
+        return true;
+      }
+  
+      // ✅ Rule 3: If stock <= threshold and out-of-stock orders NOT allowed
+      if (availableStock <= lowStockThreshold) {
+        return false;
+      }
+  
+      return true;
+    };
+  const handleAddToCart =  (product: Product) => {
+    if (!canAddToCart(product)) {
+      toast.error("This product is currently unavailable");
+      return;
     }
+
+    addToCartMutation.mutate(product);
+
   };
 
   const handleBuyNow = async () => {
@@ -412,8 +532,7 @@ export default function ProductDetailsClient({
       prev === 0 ? images.length - 1 : prev - 1,
     );
   };
-
-  console.log("allowOutOfStockOrders", allowOutOfStockOrders);
+  console.log("finalAttributesToShow", finalAttributesToShow);
 
   return (
     <>
@@ -617,20 +736,48 @@ export default function ProductDetailsClient({
                 )}
 
               {/* Variant Attributes */}
-              {hasVariants && selectedVariantAttributes.length > 0 && (
+              {hasVariants && attributeOptions.length > 0 && (
                 <div className="bg-white rounded-xl border border-gray-200 p-4">
-                  <div className="space-y-2">
-                    {selectedVariantAttributes?.map((attr) => (
-                      <div
-                        key={attr.key}
-                        className="flex items-center justify-between text-sm"
-                      >
-                        <span className="text-gray-600">{attr.key}</span>
-                        <span className="font-medium text-gray-900">
-                          {attr?.value}
-                        </span>
-                      </div>
-                    ))}
+                  <div className="space-y-4">
+                    {attributeOptions.map((attr) => {
+                      return (
+                        <div key={attr.key} className="space-y-2">
+                          <p className="text-sm font-semibold text-gray-700">
+                            {attr.key}
+                          </p>
+
+                          <div className="flex gap-2 flex-wrap">
+                            {attr.values.map((val) => {
+                              const isSelected =
+                                String(
+                                  getVariantAttrValue(
+                                    selectedVariant,
+                                    attr.key,
+                                  ),
+                                ) === String(val);
+
+                              return (
+                                <motion.button
+                                  key={val}
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() =>
+                                    handleSelectCustomAttribute(attr.key, val)
+                                  }
+                                  className={`px-4 py-2 border-2 rounded-lg font-medium transition text-sm ${
+                                    isSelected
+                                      ? "border-yellow-500 bg-yellow-50 text-yellow-700"
+                                      : "border-gray-300 hover:border-gray-400"
+                                  }`}
+                                >
+                                  {val}
+                                </motion.button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -823,7 +970,7 @@ export default function ProductDetailsClient({
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={handleAddToCart}
+                      onClick={()=>handleAddToCart(product)}
                       disabled={availableStock === 0 || loading}
                       className="flex-1 bg-black text-white py-4 rounded-full font-semibold shadow-lg hover:shadow-xl transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -844,7 +991,13 @@ export default function ProductDetailsClient({
                   </>
                 )}
 
-                <motion.button
+                <WishlistButton
+                  productId={product.id}
+                  variant="icon"
+                  size="md"
+                  className="bg-white hover:bg-gray-100 shadow-lg"
+                />
+                {/* <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={toggleWishlist}
@@ -857,7 +1010,7 @@ export default function ProductDetailsClient({
                         : "text-gray-600"
                     }`}
                   />
-                </motion.button>
+                </motion.button> */}
               </div>
 
               {/* Features */}

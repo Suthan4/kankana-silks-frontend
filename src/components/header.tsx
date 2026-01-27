@@ -29,6 +29,8 @@ import { shipmentApi } from "@/lib/api/shipment.api";
 import VideoConsultationModal from "./video-consultationModal";
 import { useRouter } from "next/navigation";
 import UnifiedSearchModal from "./unifiedSearchModal";
+import { cartApi } from "@/lib/api/cart.api";
+import { wishlistApi } from "@/lib/api/wishlist.api";
 
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -36,12 +38,12 @@ function Header() {
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const openModal = useAuthModal((state) => state.openModal);
   const [showNav, setShowNav] = useState(true);
-  const [wishlistCount, setWishlistCount] = useState(0);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [pincode, setPincode] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false); // ✅ Search modal state
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const localCartItemsCount = useCartStore((s) => s.getTotalItems());
   const router = useRouter();
 
   const [location, setLocation] = useState<{
@@ -53,7 +55,6 @@ function Header() {
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const locationRef = useRef<HTMLDivElement | null>(null);
-  const cartItemsCount = useCartStore((s) => s.getTotalItems());
   const pathname = usePathname();
 
   const { user } = useAuthModal();
@@ -63,12 +64,42 @@ function Header() {
   // Check if we're on my-account page
   const isMyAccountPage = pathname?.startsWith("/my-account");
 
+  /* -------------------- CART API QUERY -------------------- */
+  const { data: cartData, isLoading: isLoadingCartApi } = useQuery({
+    queryKey: ["cartApi", user?.id],
+    queryFn: async () => {
+      const res = await cartApi.getCart();
+      return res.data;
+    },
+    enabled: !!user,
+    staleTime: 0,
+  });
+
+  /* -------------------- WISHLIST API QUERY -------------------- */
+  const { data: wishlistData, isLoading: isLoadingWishlist } = useQuery({
+    queryKey: ["wishlist", user?.id],
+    queryFn: async () => {
+      const res = await wishlistApi.getWishlist();
+      return res.data;
+    },
+    enabled: !!user,
+    staleTime: 30000, // 30 seconds
+  });
+
+  /* -------------------- CALCULATE COUNTS -------------------- */
+  // Cart count: Use API data if logged in, otherwise use local cart
+  const apiCartItems = cartData?.items ?? [];
+  const cartItemsCount = user ? apiCartItems.length : localCartItemsCount;
+
+  // Wishlist count: Use API data if logged in, otherwise show 0
+  const wishlistCount = user ? (wishlistData?.totalItems ?? 0) : 0;
+
   /* -------------------- GET DEFAULT ADDRESS -------------------- */
   const { data: addressesData } = useQuery({
     queryKey: ["addresses", user?.id],
     queryFn: async () => {
       const response = await import("@/lib/api/addresses.api").then((mod) =>
-        mod.addressApi.getAddresses()
+        mod.addressApi.getAddresses(),
       );
       return response.data;
     },
@@ -163,7 +194,7 @@ function Header() {
               headers: {
                 "User-Agent": "KankanaSilks/1.0",
               },
-            }
+            },
           );
 
           const data = await response.json();
@@ -171,9 +202,8 @@ function Header() {
 
           if (detectedPincode) {
             setPincode(detectedPincode);
-            const isServiceable = await checkPincodeServiceability(
-              detectedPincode
-            );
+            const isServiceable =
+              await checkPincodeServiceability(detectedPincode);
 
             const locationData = {
               city: data.address?.city || data.address?.town || "Your Area",
@@ -186,11 +216,11 @@ function Header() {
 
             if (isServiceable) {
               toast.success(
-                `Location detected: ${detectedPincode}. Delivery available!`
+                `Location detected: ${detectedPincode}. Delivery available!`,
               );
             } else {
               toast.error(
-                `Location detected: ${detectedPincode}. Not serviceable yet.`
+                `Location detected: ${detectedPincode}. Not serviceable yet.`,
               );
             }
           } else {
@@ -225,7 +255,7 @@ function Header() {
         enableHighAccuracy: true,
         timeout: 10000,
         maximumAge: 0,
-      }
+      },
     );
   };
 
@@ -431,11 +461,11 @@ function Header() {
                                   setLocation(locationData);
                                   localStorage.setItem(
                                     "userLocation",
-                                    JSON.stringify(locationData)
+                                    JSON.stringify(locationData),
                                   );
                                   setLocationModalOpen(false);
                                   toast.success(
-                                    `Delivering to ${address.city}, ${address.pincode}`
+                                    `Delivering to ${address.city}, ${address.pincode}`,
                                   );
                                 }}
                                 className="w-full text-left p-3 border-2 border-gray-200 rounded-lg hover:border-black transition-colors"
@@ -567,17 +597,14 @@ function Header() {
             </div>
           </div>
 
-          {/* ✅ Center - Updated Search Bar */}
+          {/* Center - Search Bar */}
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.3 }}
             className="flex-1 max-w-xl mx-8"
           >
-            <button
-              onClick={() => setIsSearchOpen(true)}
-              className="w-full"
-            >
+            <button onClick={() => setIsSearchOpen(true)} className="w-full">
               <div className="relative group">
                 <input
                   type="text"
@@ -612,7 +639,7 @@ function Header() {
 
                   {"badgeCount" in item && item.badgeCount! > 0 && (
                     <span className="absolute -top-2 -right-2 bg-black text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
-                      {item.badgeCount ?? 0}
+                      {item.badgeCount}
                     </span>
                   )}
                 </motion.button>
@@ -840,12 +867,12 @@ function Header() {
                             <Image
                               src={
                                 categories.find(
-                                  (cat) => cat.id === hoveredCategory
+                                  (cat) => cat.id === hoveredCategory,
                                 )?.image || ""
                               }
                               alt={
                                 categories.find(
-                                  (cat) => cat.id === hoveredCategory
+                                  (cat) => cat.id === hoveredCategory,
                                 )?.name || ""
                               }
                               fill
@@ -857,7 +884,7 @@ function Header() {
                           <h3 className="text-xl font-bold text-gray-900 mb-2">
                             {
                               categories.find(
-                                (cat) => cat.id === hoveredCategory
+                                (cat) => cat.id === hoveredCategory,
                               )?.name
                             }
                           </h3>
@@ -866,7 +893,7 @@ function Header() {
                             <p className="text-sm text-gray-600 leading-relaxed">
                               {
                                 categories.find(
-                                  (cat) => cat.id === hoveredCategory
+                                  (cat) => cat.id === hoveredCategory,
                                 )?.description
                               }
                             </p>
@@ -874,8 +901,8 @@ function Header() {
                           <Link
                             href={getCategoryUrl(
                               categories.find(
-                                (cat) => cat.id === hoveredCategory
-                              )?.slug || ""
+                                (cat) => cat.id === hoveredCategory,
+                              )?.slug || "",
                             )}
                             className="inline-block mt-4 text-sm font-medium text-black hover:underline"
                           >
@@ -920,7 +947,6 @@ function Header() {
             />
           </Link>
 
-          {/* ✅ Mobile Search Button */}
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => setIsSearchOpen(true)}
@@ -1000,11 +1026,11 @@ function Header() {
                             setLocation(locationData);
                             localStorage.setItem(
                               "userLocation",
-                              JSON.stringify(locationData)
+                              JSON.stringify(locationData),
                             );
                             setLocationModalOpen(false);
                             toast.success(
-                              `Delivering to ${address.city}, ${address.pincode}`
+                              `Delivering to ${address.city}, ${address.pincode}`,
                             );
                           }}
                           className="w-full text-left p-4 border-2 border-gray-200 rounded-xl hover:border-black transition-colors"
@@ -1231,7 +1257,9 @@ function Header() {
                           <button
                             onClick={() =>
                               setActiveNav(
-                                activeNav === category.name ? "" : category.name
+                                activeNav === category.name
+                                  ? ""
+                                  : category.name,
                               )
                             }
                           >
@@ -1368,7 +1396,7 @@ function Header() {
         </motion.nav>
       )}
 
-      {/* ✅ Unified Search Modal */}
+      {/* Unified Search Modal */}
       <UnifiedSearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
@@ -1378,7 +1406,6 @@ function Header() {
       <VideoConsultationModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        // onConfirm={() => console.log("Confirmed")}
       />
     </>
   );

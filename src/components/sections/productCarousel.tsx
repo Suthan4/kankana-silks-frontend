@@ -2,6 +2,14 @@
 
 import { Product } from "@/lib/api/home-section.api";
 import { useState, useEffect } from "react";
+import { Heart, ShoppingCart } from "lucide-react";
+import { useAuthModal } from "@/store/useAuthModalStore";
+import { useCartStore } from "@/store/useCartStore";
+import { cartApi } from "@/lib/api/cart.api";
+import { wishlistApi } from "@/lib/api/wishlist.api";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import WishlistButton from "../ui/WishlistButton";
 
 function ProductCarousel({
   title,
@@ -22,6 +30,14 @@ function ProductCarousel({
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [wishlistedProducts, setWishlistedProducts] = useState<Set<string>>(
+    new Set(),
+  );
+  const [loadingAction, setLoadingAction] = useState<string | null>(null);
+
+  const { user, openModal } = useAuthModal();
+  const { addItem: addToLocalCart } = useCartStore();
+  const router = useRouter();
 
   if (!products || products.length === 0) return null;
 
@@ -29,14 +45,16 @@ function ProductCarousel({
   const currentProduct = products[currentIndex];
   const firstImage = currentProduct.media?.[0]?.url;
   const inStock = currentProduct.stock?.some((s) => s.quantity > 0);
+  const availableStock = currentProduct.stock?.[0]?.quantity ?? 0;
   const discount =
     currentProduct.basePrice !== currentProduct.sellingPrice
       ? Math.round(
           ((currentProduct.basePrice - currentProduct.sellingPrice) /
             currentProduct.basePrice) *
-            100
+            100,
         )
       : 0;
+  const isWishlisted = wishlistedProducts.has(currentProduct.id);
 
   const handlePrev = () => {
     if (isAnimating) return;
@@ -50,6 +68,109 @@ function ProductCarousel({
     setIsAnimating(true);
     setCurrentIndex((prev) => (prev < products.length - 1 ? prev + 1 : 0));
     setTimeout(() => setIsAnimating(false), 500);
+  };
+
+  const handleAddToCart = async () => {
+    if (!inStock || availableStock === 0) {
+      toast.error("Product is out of stock");
+      return;
+    }
+
+    setLoadingAction("cart");
+
+    try {
+      const cartItem = {
+        id: crypto.randomUUID(),
+        cartId: "local",
+        productId: currentProduct.id,
+        variantId: null,
+        quantity: 1,
+        product: {
+          id: currentProduct.id,
+          name: currentProduct.name,
+          slug: currentProduct.slug,
+          categoryId: currentProduct.category.id,
+          sellingPrice: Number(currentProduct.sellingPrice),
+          basePrice: Number(currentProduct.basePrice),
+          media: [
+            {
+              url: currentProduct.media?.[0]?.url ?? "/placeholder.jpg",
+              altText: currentProduct.name,
+              isActive: true,
+            },
+          ],
+          stock: [
+            {
+              quantity: availableStock,
+            },
+          ],
+        },
+        variant: null,
+      };
+
+      // Add to local cart
+      addToLocalCart(cartItem);
+      toast.success("Added to cart");
+
+      // Sync with server if logged in
+      if (user) {
+        try {
+          await cartApi.addToCart({
+            productId: currentProduct.id,
+            quantity: 1,
+          });
+        } catch (error) {
+          console.error("Failed to sync with server:", error);
+        }
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to add to cart");
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
+  const handleToggleWishlist = async () => {
+    if (!user) {
+      openModal("login");
+      toast.info("Please login to add to wishlist");
+      return;
+    }
+
+    setLoadingAction("wishlist");
+
+    try {
+      if (isWishlisted) {
+        // Remove from wishlist
+        const wishlist = await wishlistApi.getWishlist();
+        const item = wishlist.data.items?.find(
+          (i: any) => i.productId === currentProduct.id,
+        );
+
+        if (item) {
+          await wishlistApi.removeFromWishlist(item.id);
+          setWishlistedProducts((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(currentProduct.id);
+            return newSet;
+          });
+          toast.success("Removed from wishlist");
+        }
+      } else {
+        // Add to wishlist
+        await wishlistApi.addToWishlist({ productId: currentProduct.id });
+        setWishlistedProducts((prev) => new Set(prev).add(currentProduct.id));
+        toast.success("Added to wishlist");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update wishlist");
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
+  const handleViewDetails = () => {
+    router.push(`/products/${currentProduct.slug}`);
   };
 
   // Auto-advance carousel
@@ -123,14 +244,14 @@ function ProductCarousel({
               {products.map((product) => {
                 const productImage = product.media?.[0]?.url;
                 const productInStock = product.stock?.some(
-                  (s) => s.quantity > 0
+                  (s) => s.quantity > 0,
                 );
                 const productDiscount =
                   product.basePrice !== product.sellingPrice
                     ? Math.round(
                         ((product.basePrice - product.sellingPrice) /
                           product.basePrice) *
-                          100
+                          100,
                       )
                     : 0;
 
@@ -227,34 +348,63 @@ function ProductCarousel({
                           </span>
                         </div>
 
-                        {/* CTA Buttons */}
-                        <div className="flex flex-wrap gap-4 pt-4">
-                          <a
-                            href={`/products/${product.slug}`}
-                            className="inline-flex items-center gap-2 bg-white text-black px-8 py-4 rounded-full font-semibold hover:bg-gray-100 transition-all duration-300 hover:gap-4 shadow-lg group"
-                          >
-                            <span>View Details</span>
-                            <svg
-                              className="w-5 h-5 transition-transform group-hover:translate-x-1"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
+                        {/* CTA Buttons - Only show for current product */}
+                        {product.id === currentProduct.id && (
+                          <div className="flex flex-wrap gap-4 pt-4">
+                            <button
+                              onClick={handleViewDetails}
+                              className="inline-flex items-center gap-2 bg-white text-black px-8 py-4 rounded-full font-semibold hover:bg-gray-100 transition-all duration-300 hover:gap-4 shadow-lg group"
                             >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 5l7 7-7 7"
-                              />
-                            </svg>
-                          </a>
-
-                          {productInStock && (
-                            <button className="inline-flex items-center gap-2 border-2 border-white/30 text-white px-8 py-4 rounded-full font-semibold hover:bg-white/10 transition-all duration-300">
-                              Add to Cart
+                              <span>View Details</span>
+                              <svg
+                                className="w-5 h-5 transition-transform group-hover:translate-x-1"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9 5l7 7-7 7"
+                                />
+                              </svg>
                             </button>
-                          )}
-                        </div>
+
+                            {productInStock && (
+                              <button
+                                onClick={handleAddToCart}
+                                disabled={loadingAction === "cart"}
+                                className="inline-flex items-center gap-2 border-2 border-white/30 text-white px-8 py-4 rounded-full font-semibold hover:bg-white/10 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <ShoppingCart className="w-5 h-5" />
+                                {loadingAction === "cart"
+                                  ? "Adding..."
+                                  : "Add to Cart"}
+                              </button>
+                            )}
+
+                            <WishlistButton
+                              productId={product.id}
+                              variant="icon"
+                              size="md"
+                              className="bg-white hover:bg-gray-100 shadow-lg"
+                            />
+                            {/* <button
+                              onClick={handleToggleWishlist}
+                              disabled={loadingAction === "wishlist"}
+                              className="inline-flex items-center justify-center w-14 h-14 border-2 border-white/30 rounded-full hover:bg-white/10 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <Heart
+                                className={`w-6 h-6 ${
+                                  isWishlisted
+                                    ? "fill-red-500 text-red-500"
+                                    : "text-white"
+                                }`}
+                              />
+                            </button> */}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
