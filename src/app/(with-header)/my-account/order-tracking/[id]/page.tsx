@@ -10,18 +10,16 @@ import {
   Loader2,
   Clock,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useOrder } from "@/hooks/useOrders";
 import { shipmentApi } from "@/lib/api/shipment.api";
 
-export default function OrderTrackingPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function OrderTrackingPage() {
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
   const router = useRouter();
 
-  const { data: orderData, isLoading: orderLoading } = useOrder(params.id);
+  const { data: orderData, isLoading: orderLoading } = useOrder(id);
   const { data: trackingData, isLoading: trackingLoading } =
     useTrackOrderShipment(
       params.id,

@@ -403,6 +403,16 @@ class OrderApiService {
     return response.data;
   }
 
+   /**
+   * ✅ NEW: Download invoice PDF
+   */
+   async downloadInvoice(orderId: string): Promise<ArrayBuffer> {
+    const response = await authService.api.get(`/orders/${orderId}/invoice`, {
+      responseType: "arraybuffer",
+    });
+    return response.data;
+  }
+
   // ==================== ADMIN ENDPOINTS ====================
 
   /**
