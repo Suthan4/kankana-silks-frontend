@@ -14,6 +14,8 @@ import {
   Truck,
   Calendar,
   Info,
+  Download,
+  FileText,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useOrder, useCancelOrder, useCanCancelOrder } from "@/hooks/useOrders";
@@ -26,6 +28,8 @@ export default function OrderDetailsPage() {
   const router = useRouter();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
+
   const params = useParams<{ id: string }>();
   const id = params?.id;
 
@@ -37,7 +41,6 @@ export default function OrderDetailsPage() {
   const canCancel = canCancelData?.canCancel;
   const cancelRestrictionReason = canCancelData?.reason;
   console.log("canCancelData", canCancel);
-  
 
   const handleCancelOrder = async () => {
     if (!order || !canCancel) {
@@ -53,12 +56,50 @@ export default function OrderDetailsPage() {
       });
       setShowCancelModal(false);
       setCancelReason("");
-      toast.success("Order cancelled successfully. Refund will be processed in 5-7 business days.");
+      toast.success(
+        "Order cancelled successfully. Refund will be processed in 5-7 business days.",
+      );
     } catch (error: any) {
       console.error("Failed to cancel order:", error);
       toast.error(error.message || "Failed to cancel order");
     }
   };
+
+  // ✅ NEW: Download Invoice Handler
+  const handleDownloadInvoice = async () => {
+    if (!order) return;
+
+    try {
+      setIsDownloadingInvoice(true);
+      const response = await orderApi.downloadInvoice(order.id);
+
+      // Create blob from response
+      const blob = new Blob([response], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+
+      // Create download link and trigger download
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `invoice-${order.orderNumber}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Invoice downloaded successfully");
+    } catch (error: any) {
+      console.error("Failed to download invoice:", error);
+      toast.error(error.message || "Failed to download invoice");
+    } finally {
+      setIsDownloadingInvoice(false);
+    }
+  };
+
+  // ✅ Check if invoice is available (only for shipped/delivered orders)\
+  const isInvoiceAvailable =
+    order && ["SHIPPED", "DELIVERED", "COMPLETED"].includes(order.status);
 
   // ✅ NEW: Helper to display payment method with icon and details
   const getPaymentMethodDisplay = (method: string, payment: any) => {
@@ -67,9 +108,10 @@ export default function OrderDetailsPage() {
         return {
           icon: "💳",
           label: "Card Payment",
-          details: payment.cardNetwork && payment.cardLast4
-            ? `${payment.cardNetwork} •••• ${payment.cardLast4}${payment.cardType ? ` (${payment.cardType})` : ""}`
-            : "Card",
+          details:
+            payment.cardNetwork && payment.cardLast4
+              ? `${payment.cardNetwork} •••• ${payment.cardLast4}${payment.cardType ? ` (${payment.cardType})` : ""}`
+              : "Card",
         };
       case "UPI":
         return {
@@ -88,7 +130,8 @@ export default function OrderDetailsPage() {
           icon: "👛",
           label: "Wallet",
           details: payment.walletName
-            ? payment.walletName.charAt(0).toUpperCase() + payment.walletName.slice(1)
+            ? payment.walletName.charAt(0).toUpperCase() +
+              payment.walletName.slice(1)
             : "Wallet",
         };
       case "EMI":
@@ -96,7 +139,11 @@ export default function OrderDetailsPage() {
       case "PAYLATER":
         return { icon: "🔄", label: "Pay Later", details: "Pay Later" };
       case "COD":
-        return { icon: "💵", label: "Cash on Delivery", details: "Pay on delivery" };
+        return {
+          icon: "💵",
+          label: "Cash on Delivery",
+          details: "Pay on delivery",
+        };
       default:
         return { icon: "💳", label: method, details: method };
     }
@@ -154,6 +201,28 @@ export default function OrderDetailsPage() {
               </h1>
               <p className="text-sm text-gray-500">{order.orderNumber}</p>
             </div>
+            {/* ✅ NEW: Invoice Download Button */}
+            {isInvoiceAvailable && (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleDownloadInvoice}
+                disabled={isDownloadingInvoice}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 shadow-lg"
+              >
+                {isDownloadingInvoice ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="hidden md:inline">Downloading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <span className="hidden md:inline">Invoice</span>
+                  </>
+                )}
+              </motion.button>
+            )}
           </div>
         </div>
       </div>
@@ -222,6 +291,33 @@ export default function OrderDetailsPage() {
             )}
           </div>
         </motion.div>
+
+        {/* ✅ Invoice Available Notice */}
+        {isInvoiceAvailable && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-4 flex items-start gap-3"
+          >
+            <FileText className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold text-green-900">Invoice Available</p>
+              <p className="text-sm text-green-700 mt-1">
+                Your tax invoice is ready to download.
+              </p>
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleDownloadInvoice}
+              disabled={isDownloadingInvoice}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-all disabled:opacity-50 flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Download
+            </motion.button>
+          </motion.div>
+        )}
 
         {/* ✅ Refund Status Alert */}
         {order.status === "CANCELLED" &&

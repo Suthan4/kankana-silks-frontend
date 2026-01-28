@@ -16,6 +16,7 @@ import {
   Zap,
   Video,
   AlertCircle,
+  Palette,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -36,6 +37,7 @@ import { formatMaskedPrice } from "@/lib/utils/priceMasked";
 import VideoConsultationModal from "../video-consultationModal";
 import WishlistButton from "../ui/WishlistButton";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { getColorHex } from "@/lib/utils/colorValidation";
 
 interface ProductDetailsClientProps {
   initialProduct: Product;
@@ -86,13 +88,14 @@ const normalizeVariantAttributesToRecord = (
   return {};
 };
 
+
 export default function ProductDetailsClient({
   initialProduct,
 }: ProductDetailsClientProps) {
   const { user, openModal } = useAuthModal();
   const { addItem: addToLocalCart } = useCartStore();
   const router = useRouter();
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   // State
   const [product] = useState<Product>(initialProduct);
@@ -213,6 +216,79 @@ export default function ProductDetailsClient({
       value: String(s.value),
     }));
   }, [product.specifications]);
+
+  // Add this helper function at the top of the component (after the existing helpers)
+  const getAllVariantOptions = useMemo(() => {
+    if (!hasVariants || !product.variants?.length) return [];
+
+    const optionsMap = new Map<string, Set<string>>();
+
+    for (const variant of product.variants) {
+      // ✅ LEGACY FIELDS - Add Size, Color, Fabric
+      if (variant.size) {
+        if (!optionsMap.has("Size")) optionsMap.set("Size", new Set());
+        optionsMap.get("Size")!.add(variant.size);
+      }
+
+      if (variant.color) {
+        if (!optionsMap.has("Color")) optionsMap.set("Color", new Set());
+        optionsMap.get("Color")!.add(variant.color);
+      }
+
+      if (variant.fabric) {
+        if (!optionsMap.has("Fabric")) optionsMap.set("Fabric", new Set());
+        optionsMap.get("Fabric")!.add(variant.fabric);
+      }
+
+      // ✅ CUSTOM ATTRIBUTES - Add dynamic attributes
+      const record = normalizeVariantAttributesToRecord(variant.attributes);
+      for (const [key, value] of Object.entries(record)) {
+        if (!key || !value) continue;
+        if (!optionsMap.has(key)) optionsMap.set(key, new Set());
+        optionsMap.get(key)!.add(value);
+      }
+    }
+
+    return Array.from(optionsMap.entries()).map(([key, valuesSet]) => ({
+      key,
+      values: Array.from(valuesSet),
+    }));
+  }, [hasVariants, product.variants]);
+
+  // Add this helper to get the current selected value for any attribute
+  const getSelectedAttributeValue = (attrKey: string): string | null => {
+    if (!selectedVariant) return null;
+
+    // Check legacy fields first
+    if (attrKey === "Size") return selectedVariant.size || null;
+    if (attrKey === "Color") return selectedVariant.color || null;
+    if (attrKey === "Fabric") return selectedVariant.fabric || null;
+
+    // Check custom attributes
+    return getVariantAttrValue(selectedVariant, attrKey);
+  };
+
+  // Add this helper to find variant by any attribute
+  const handleSelectAnyAttribute = (attrKey: string, attrValue: string) => {
+    if (!product.variants?.length) return;
+
+    const matched = product.variants.find((v) => {
+      // Check legacy fields
+      if (attrKey === "Size" && v.size === attrValue) return true;
+      if (attrKey === "Color" && v.color === attrValue) return true;
+      if (attrKey === "Fabric" && v.fabric === attrValue) return true;
+
+      // Check custom attributes
+      const vVal = getVariantAttrValue(v, attrKey);
+      return String(vVal) === String(attrValue);
+    });
+
+    if (matched) {
+      setSelectedVariant(matched);
+    } else {
+      toast.error("Variant not found for selected option");
+    }
+  };
 
   const finalAttributesToShow =
     attributeOptions.length > 0
@@ -437,36 +513,35 @@ export default function ProductDetailsClient({
     },
     onError: () => toast.error("Failed to add to cart"),
   });
-    const canAddToCart = (product: Product) => {
-      const availableStock = product.stock?.[0]?.quantity ?? 0;
-      const lowStockThreshold = product.stock?.[0]?.lowStockThreshold ?? 0;
-      const allowOutOfStockOrders = product.allowOutOfStockOrders ?? false;
-  
-      // ✅ Rule 1: If stock is 0, always block Add to Cart
-      if (availableStock === 0) {
-        return false;
-      }
-  
-      // ✅ Rule 2: If out-of-stock orders allowed, ignore threshold
-      if (allowOutOfStockOrders) {
-        return true;
-      }
-  
-      // ✅ Rule 3: If stock <= threshold and out-of-stock orders NOT allowed
-      if (availableStock <= lowStockThreshold) {
-        return false;
-      }
-  
+  const canAddToCart = (product: Product) => {
+    const availableStock = product.stock?.[0]?.quantity ?? 0;
+    const lowStockThreshold = product.stock?.[0]?.lowStockThreshold ?? 0;
+    const allowOutOfStockOrders = product.allowOutOfStockOrders ?? false;
+
+    // ✅ Rule 1: If stock is 0, always block Add to Cart
+    if (availableStock === 0) {
+      return false;
+    }
+
+    // ✅ Rule 2: If out-of-stock orders allowed, ignore threshold
+    if (allowOutOfStockOrders) {
       return true;
-    };
-  const handleAddToCart =  (product: Product) => {
+    }
+
+    // ✅ Rule 3: If stock <= threshold and out-of-stock orders NOT allowed
+    if (availableStock <= lowStockThreshold) {
+      return false;
+    }
+
+    return true;
+  };
+  const handleAddToCart = (product: Product) => {
     if (!canAddToCart(product)) {
       toast.error("This product is currently unavailable");
       return;
     }
 
     addToCartMutation.mutate(product);
-
   };
 
   const handleBuyNow = async () => {
@@ -533,6 +608,7 @@ export default function ProductDetailsClient({
     );
   };
   console.log("finalAttributesToShow", finalAttributesToShow);
+  console.log("product", product);
 
   return (
     <>
@@ -735,34 +811,81 @@ export default function ProductDetailsClient({
                   </motion.div>
                 )}
 
-              {/* Variant Attributes */}
-              {hasVariants && attributeOptions.length > 0 && (
+              {/* ✅ UNIFIED VARIANT SELECTOR - Shows both Legacy and Custom Attributes */}
+              {hasVariants && getAllVariantOptions.length > 0 && (
                 <div className="bg-white rounded-xl border border-gray-200 p-4">
+                  <h3 className="font-semibold text-gray-900 mb-4">
+                    Select Options
+                  </h3>
+
                   <div className="space-y-4">
-                    {attributeOptions.map((attr) => {
+                    {getAllVariantOptions.map((attr) => {
+                      const currentValue = getSelectedAttributeValue(attr.key);
+
                       return (
                         <div key={attr.key} className="space-y-2">
-                          <p className="text-sm font-semibold text-gray-700">
+                          <p className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                             {attr.key}
+                            {attr.key === "Color" && (
+                              <Palette className="h-4 w-4 text-purple-500" />
+                            )}
                           </p>
 
                           <div className="flex gap-2 flex-wrap">
                             {attr.values.map((val) => {
                               const isSelected =
-                                String(
-                                  getVariantAttrValue(
-                                    selectedVariant,
-                                    attr.key,
-                                  ),
-                                ) === String(val);
+                                String(currentValue) === String(val);
 
+                              // ✅ Special rendering for Color with color swatch
+                              if (attr.key === "Color") {
+                                return (
+                                  <motion.button
+                                    key={val}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() =>
+                                      handleSelectAnyAttribute(attr.key, val)
+                                    }
+                                    className={`group relative px-4 py-2 border-2 rounded-lg font-medium transition text-sm flex items-center gap-2 ${
+                                      isSelected
+                                        ? "border-yellow-500 bg-yellow-50 text-yellow-700"
+                                        : "border-gray-300 hover:border-gray-400"
+                                    }`}
+                                  >
+                                    {/* Color Swatch Preview */}
+                                    <div
+                                      className="w-5 h-5 rounded-full border-2 border-gray-300 shadow-sm"
+                                      style={{
+                                        backgroundColor: val.toLowerCase(),
+                                      }}
+                                      title={val}
+                                    />
+                                    <span className="capitalize">{val}</span>
+
+                                    {/* Hex tooltip on hover */}
+                                    {(() => {
+                                      const hex = getColorHex(val);
+                                      if (hex) {
+                                        return (
+                                          <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+                                            {hex}
+                                          </div>
+                                        );
+                                      }
+                                      return null;
+                                    })()}
+                                  </motion.button>
+                                );
+                              }
+
+                              // ✅ Standard rendering for other attributes
                               return (
                                 <motion.button
                                   key={val}
                                   whileHover={{ scale: 1.05 }}
                                   whileTap={{ scale: 0.95 }}
                                   onClick={() =>
-                                    handleSelectCustomAttribute(attr.key, val)
+                                    handleSelectAnyAttribute(attr.key, val)
                                   }
                                   className={`px-4 py-2 border-2 rounded-lg font-medium transition text-sm ${
                                     isSelected
@@ -779,50 +902,6 @@ export default function ProductDetailsClient({
                       );
                     })}
                   </div>
-                </div>
-              )}
-
-              {/* Variants */}
-              {hasVariants && (
-                <div className="space-y-4">
-                  {product.variants?.some((v) => v.size) && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">
-                        Select Size
-                      </h3>
-
-                      <div className="flex gap-2 flex-wrap">
-                        {Array.from(
-                          new Set(
-                            product.variants.map((v) => v.size).filter(Boolean),
-                          ),
-                        ).map((size) => {
-                          const variant = product.variants!.find(
-                            (v) => v.size === size,
-                          );
-                          const isSelected = selectedVariant?.size === size;
-
-                          return (
-                            <motion.button
-                              key={String(size)}
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() =>
-                                variant && setSelectedVariant(variant)
-                              }
-                              className={`px-4 py-2 border-2 rounded-lg font-medium transition ${
-                                isSelected
-                                  ? "border-yellow-500 bg-yellow-50 text-yellow-700"
-                                  : "border-gray-300 hover:border-gray-400"
-                              }`}
-                            >
-                              {size}
-                            </motion.button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -970,7 +1049,7 @@ export default function ProductDetailsClient({
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={()=>handleAddToCart(product)}
+                      onClick={() => handleAddToCart(product)}
                       disabled={availableStock === 0 || loading}
                       className="flex-1 bg-black text-white py-4 rounded-full font-semibold shadow-lg hover:shadow-xl transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
