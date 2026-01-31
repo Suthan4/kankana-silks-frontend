@@ -20,7 +20,7 @@ export interface CTAButton {
   sectionId: string;
   text: string;
   url: string;
-  style: "PRIMARY" | "SECONDARY" | "OUTLINE";
+  style: "PRIMARY" | "SECONDARY" | "OUTLINE" | "TEXT";
   icon?: string | null;
   openNewTab: boolean;
   order: number;
@@ -84,7 +84,7 @@ export interface HomeSection {
   isActive: boolean;
   order: number;
   limit: number;
-  layout: "grid" | "carousel" | "masonry" | "slider";
+  layout: "grid" | "carousel" | "masonry" | "slider" | "aesthetic-fullscreen";
   columns: number;
   backgroundColor: string;
   textColor: string;

@@ -62,7 +62,7 @@ export interface Order {
   id: string;
   orderNumber: string;
   userId: string;
-  status: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "COMPLETED";
+  status: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "COMPLETED" |"OUT_FOR_DELIVERY";
   subtotal: number;
   discount: number;
   shippingCost: number;
@@ -244,7 +244,7 @@ export interface CancelOrderDTO {
 export interface QueryOrderParams {
   page?: number;
   limit?: number;
-  status?: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "COMPLETED";
+  status?: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "COMPLETED" | "OUT_FOR_DELIVERY";
   startDate?: string;
   endDate?: string;
   sortBy?: "createdAt" | "total" | "orderNumber";

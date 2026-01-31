@@ -13,6 +13,7 @@ import {
   Video,
   MapPin,
   Check,
+  Home,
 } from "lucide-react";
 import Image from "next/image";
 import { authModalStore, useAuthModal } from "@/store/useAuthModalStore";
@@ -327,6 +328,13 @@ function Header() {
 
   const icons = [
     {
+      name: "Home",
+      icon: Home, // You'll need to import this from lucide-react
+      type: "link",
+      url: "/",
+      requiresAuth: false,
+    },
+    {
       name: "Consultation",
       icon: Video,
       type: "action",
@@ -619,51 +627,57 @@ function Header() {
 
           {/* Right - Icons */}
           <div className="flex items-center gap-6">
-            {icons.map((item) => {
-              const Icon = item.icon;
+            {icons
+              .filter((item) =>
+                ["Consultation", "Whatsapp", "Cart", "Wishlist"].includes(
+                  item.name,
+                ),
+              )
+              .map((item) => {
+                const Icon = item.icon;
 
-              const Button = (
-                <motion.button
-                  whileHover={{ scale: 0.9 }}
-                  whileTap={{ scale: 0.85 }}
-                  onClick={() => {
-                    if (item.requiresAuth) {
-                      authGuard(item.onClick);
-                    } else {
-                      item.onClick?.();
-                    }
-                  }}
-                  className="relative text-gray-600 hover:text-black"
-                >
-                  <Icon className="w-5 h-5" />
-
-                  {"badgeCount" in item && item.badgeCount! > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-black text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
-                      {item.badgeCount}
-                    </span>
-                  )}
-                </motion.button>
-              );
-
-              if (item.type === "link") {
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.url!}
-                    onClick={(e) => {
-                      if (item.requiresAuth && !user) {
-                        e.preventDefault();
-                        openModal("login");
+                const Button = (
+                  <motion.button
+                    whileHover={{ scale: 0.9 }}
+                    whileTap={{ scale: 0.85 }}
+                    onClick={() => {
+                      if (item.requiresAuth) {
+                        authGuard(item.onClick);
+                      } else {
+                        item.onClick?.();
                       }
                     }}
+                    className="relative text-gray-600 hover:text-black"
                   >
-                    {Button}
-                  </Link>
-                );
-              }
+                    <Icon className="w-5 h-5" />
 
-              return <div key={item.name}>{Button}</div>;
-            })}
+                    {"badgeCount" in item && item.badgeCount! > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-black text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+                        {item.badgeCount}
+                      </span>
+                    )}
+                  </motion.button>
+                );
+
+                if (item.type === "link") {
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.url!}
+                      onClick={(e) => {
+                        if (item.requiresAuth && !user) {
+                          e.preventDefault();
+                          openModal("login");
+                        }
+                      }}
+                    >
+                      {Button}
+                    </Link>
+                  );
+                }
+
+                return <div key={item.name}>{Button}</div>;
+              })}
 
             {/* User Menu Icon */}
             <div className="relative">
@@ -1308,84 +1322,118 @@ function Header() {
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="md:hidden fixed bottom-0 left-0 right-0 bg-white z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.08)] border-t"
+          className="md:hidden fixed bottom-0 left-0 right-0 bg-white z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.08)]"
         >
           <ul className="flex justify-around items-center py-3">
-            {icons.map((item, index) => {
-              const IconComponent = item.icon;
-              const isActive =
-                pathname === item.url || pathname?.startsWith(item.url + "/");
+            {/* Filter icons to show only Home, Consultation, Cart, Wishlist, Account */}
+            {icons
+              .filter((item) =>
+                ["Home", "Consultation", "Cart", "Wishlist"].includes(
+                  item.name,
+                ),
+              )
+              .map((item, index) => {
+                const IconComponent = item.icon;
+                const isActive =
+                  item.url === "/"
+                    ? pathname === "/"
+                    : pathname === item.url ||
+                      pathname?.startsWith(item.url + "/");
 
-              return (
-                <li key={index} className="relative">
-                  {item.type === "link" ? (
-                    <Link
-                      href={item.url!}
-                      onClick={(e) => {
-                        if (item.requiresAuth && !user) {
-                          e.preventDefault();
-                          openModal("login");
-                        }
-                      }}
-                      className="flex flex-col items-center gap-1 p-2"
-                    >
-                      <IconComponent
-                        className={`w-5 h-5 ${
-                          isActive ? "text-black" : "text-gray-600"
-                        }`}
-                      />
-                      <span
-                        className={`text-[10px] font-medium ${
-                          isActive ? "text-black" : "text-gray-600"
-                        }`}
+                return (
+                  <li key={index} className="relative flex-1">
+                    {item.type === "link" ? (
+                      <Link
+                        href={item.url!}
+                        onClick={(e) => {
+                          if (item.requiresAuth && !user) {
+                            e.preventDefault();
+                            openModal("login");
+                          }
+                        }}
+                        className="flex flex-col items-center gap-1 py-2 relative"
                       >
-                        {item.name}
-                      </span>
-                      {"badgeCount" in item && item.badgeCount! > 0 && (
-                        <span className="absolute top-0 right-0 bg-black text-white text-[8px] rounded-full w-4 h-4 flex items-center justify-center">
-                          {item.badgeCount}
+                        {/* Active indicator line at top */}
+                        {isActive && (
+                          <motion.div
+                            layoutId="activeTab"
+                            className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-1 bg-black rounded-full"
+                            transition={{
+                              type: "spring",
+                              stiffness: 380,
+                              damping: 30,
+                            }}
+                          />
+                        )}
+                        <IconComponent
+                          className={`w-5 h-5 transition-colors ${
+                            isActive ? "text-black" : "text-gray-500"
+                          }`}
+                        />
+                        <span
+                          className={`text-[10px] font-medium transition-colors ${
+                            isActive ? "text-black" : "text-gray-500"
+                          }`}
+                        >
+                          {item.name}
                         </span>
-                      )}
-                    </Link>
-                  ) : (
-                    <button
-                      onClick={() => item.onClick?.()}
-                      className="flex flex-col items-center gap-1 p-2"
-                    >
-                      <IconComponent className="w-5 h-5 text-gray-600" />
-                      <span className="text-[10px] text-gray-600">
-                        {item.name}
-                      </span>
-                    </button>
-                  )}
-                </li>
-              );
-            })}
+                        {"badgeCount" in item && item.badgeCount! > 0 && (
+                          <span className="absolute top-1 right-1/4 bg-black text-white text-[8px] rounded-full w-4 h-4 flex items-center justify-center font-medium">
+                            {item.badgeCount}
+                          </span>
+                        )}
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() => item.onClick?.()}
+                        className="flex flex-col items-center gap-1 py-2 w-full"
+                      >
+                        <IconComponent className="w-5 h-5 text-gray-500" />
+                        <span className="text-[10px] text-gray-500">
+                          {item.name}
+                        </span>
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
 
-            {/* User Icon in Mobile Bottom Nav */}
-            <li className="relative">
+            {/* User/Account Icon */}
+            <li className="relative flex-1">
               <button
                 onClick={() => {
                   if (!user) {
                     openModal("login");
                   } else {
-                    window.location.href = "/my-account";
+                    router.push("/my-account");
                   }
                 }}
-                className="flex flex-col items-center gap-1 p-2"
+                className="flex flex-col items-center gap-1 py-2 w-full relative"
               >
+                {/* Active indicator line at top */}
+                {pathname?.startsWith("/my-account") && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-1 bg-black rounded-full"
+                    transition={{
+                      type: "spring",
+                      stiffness: 380,
+                      damping: 30,
+                    }}
+                  />
+                )}
                 <User
-                  className={`w-5 h-5 ${
+                  className={`w-5 h-5 transition-colors ${
                     pathname?.startsWith("/my-account")
                       ? "text-black"
-                      : "text-gray-600"
+                      : "text-gray-500"
                   }`}
                 />
                 <span
-                  className={`text-[10px] font-medium ${
+                  className={`text-[10px] font-medium transition-colors ${
                     pathname?.startsWith("/my-account")
                       ? "text-black"
-                      : "text-gray-600"
+                      : "text-gray-500"
                   }`}
                 >
                   {user ? "Account" : "Login"}
@@ -1395,7 +1443,6 @@ function Header() {
           </ul>
         </motion.nav>
       )}
-
       {/* Unified Search Modal */}
       <UnifiedSearchModal
         isOpen={isSearchOpen}
