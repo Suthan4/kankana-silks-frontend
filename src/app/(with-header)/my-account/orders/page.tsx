@@ -56,9 +56,26 @@ export default function OrdersPage() {
       ),
   );
 
+  // ✅ Check if order can be tracked (has shipment with AWB)
+  const canTrackOrder = (order: any): boolean => {
+    return !!(order.shipment?.awbCode || order.shipment?.trackingNumber);
+  };
+
+  // ✅ Check if invoice is available (shipped or delivered)
+  const isInvoiceAvailable = (order: any): boolean => {
+    return ["SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED", "COMPLETED"].includes(
+      order.status,
+    );
+  };
+
   // ✅ Invoice download handler
   const handleDownloadInvoice = async (e: React.MouseEvent, order: any) => {
     e.stopPropagation();
+
+    if (!isInvoiceAvailable(order)) {
+      toast.error("Invoice not available yet. Please wait for shipment.");
+      return;
+    }
 
     if (downloadingInvoices.has(order.id)) return;
 
@@ -192,13 +209,11 @@ export default function OrdersPage() {
                 firstItem?.product?.media?.[0]?.thumbnailUrl ||
                 firstItem?.product?.media?.[0]?.url ||
                 "/images/placeholder.png";
-              // ✅ Check if invoice is available
-              const isInvoiceAvailable = [
-                "SHIPPED",
-                "DELIVERED",
-                "COMPLETED",
-              ].includes(order.status);
+
+              const canTrack = canTrackOrder(order);
+              const hasInvoice = isInvoiceAvailable(order);
               const isDownloading = downloadingInvoices.has(order.id);
+
               return (
                 <motion.div
                   key={order.id}
@@ -255,7 +270,7 @@ export default function OrdersPage() {
                             : ""}
                         </div>
 
-                        {/* ✅ Variant Chips */}
+                        {/* Variant Chips */}
                         {firstItem?.variant?.attributes &&
                           Object.keys(firstItem.variant.attributes).length >
                             0 && (
@@ -264,8 +279,7 @@ export default function OrdersPage() {
                                 ([key, value]) => (
                                   <span
                                     key={key}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium
-                       bg-white border border-gray-200 text-gray-700 shadow-sm"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-white border border-gray-200 text-gray-700 shadow-sm"
                                   >
                                     <span className="text-gray-500">
                                       {key}:
@@ -296,8 +310,8 @@ export default function OrdersPage() {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                                                {/* ✅ Invoice Download Button */}
-                        {isInvoiceAvailable && (
+                        {/* ✅ Invoice Download Button - Only show if shipped/delivered */}
+                        {hasInvoice && (
                           <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
@@ -308,17 +322,23 @@ export default function OrdersPage() {
                             {isDownloading ? (
                               <>
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                <span className="hidden lg:inline">Downloading...</span>
+                                <span className="hidden lg:inline">
+                                  Downloading...
+                                </span>
                               </>
                             ) : (
                               <>
                                 <Download className="w-4 h-4" />
-                                <span className="hidden lg:inline">Invoice</span>
+                                <span className="hidden lg:inline">
+                                  Invoice
+                                </span>
                               </>
                             )}
                           </motion.button>
                         )}
-                        {order.shipment?.trackingNumber && (
+
+                        {/* ✅ Track Order Button - Only show if has AWB */}
+                        {canTrack && (
                           <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
@@ -334,6 +354,8 @@ export default function OrdersPage() {
                             <ArrowRight className="w-4 h-4" />
                           </motion.button>
                         )}
+
+                        {/* View Details - Always show */}
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}

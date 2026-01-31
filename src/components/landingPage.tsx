@@ -15,6 +15,7 @@ import ProductCarousel from "./sections/productCarousel";
 import CategoryShowcase from "./sections/Categoryshowcase";
 import MediaGridSection from "./sections/mediaGridSection";
 import { useQuery } from "@tanstack/react-query";
+import AestheticFullImage from "./sections/aestheticFullImage";
 
 export default function LandingPage() {
   const {
@@ -38,10 +39,8 @@ export default function LandingPage() {
    * SUPER SIMPLE: Just check what content exists and render it
    * NO type restrictions - just render based on data
    */
-  const renderSection = (section: HomeSection, index: number) => {
-    const hasProducts = section.products && section.products.length > 0;
-    const hasCategories = section.categories && section.categories.length > 0;
-    const hasMedia = section.media && section.media.length > 0;
+  const renderSection = (section: HomeSection) => {
+    const layout = section.layout?.trim().toLowerCase();
     const displayTitle = getDisplayTitle(section);
 
     const sectionWithTitle = {
@@ -49,14 +48,23 @@ export default function LandingPage() {
       title: displayTitle,
     };
 
-    console.log(
-      `✅ Rendering: ${section.type} | P:${hasProducts} C:${hasCategories} M:${hasMedia}`
-    );
+    // ✅ HARD OVERRIDE — aesthetic always wins
+    if (layout === "aesthetic-fullscreen") {
+      return (
+        <AestheticFullImage
+          key={`aesthetic-${section.id}`}
+          section={sectionWithTitle}
+        />
+      );
+    }
 
-    // PRIORITY 1: Has Products? → Render Products
-    if (hasProducts) {
-      if (section.layout === "carousel") {
-        console.log("   → ProductCarousel");
+    const hasProducts = section.products?.length > 0;
+    const hasCategories = section.categories?.length > 0;
+    const hasMedia = section.media?.length > 0;
+
+    // Products
+    if (hasProducts || layout != "aesthetic-fullscreen") {
+      if (layout === "carousel") {
         return (
           <ProductCarousel
             key={section.id}
@@ -70,13 +78,12 @@ export default function LandingPage() {
           />
         );
       }
-      console.log("   → ProductGrid");
+
       return <ProductGrid key={section.id} section={sectionWithTitle} />;
     }
 
-    // PRIORITY 2: Has Categories? → Render Categories
-    if (hasCategories) {
-      console.log("   → CategoryShowcase");
+    // Categories
+    if (hasCategories || layout != "aesthetic-fullscreen") {
       return (
         <CategoryShowcase
           key={section.id}
@@ -92,85 +99,26 @@ export default function LandingPage() {
       );
     }
 
-    // PRIORITY 3: Has Media? → Render Media
-    if (hasMedia) {
-      // Use HeroSlider if layout is slider
-      if (section.layout === "slider") {
-        console.log("   → HeroSlider");
+    // Media
+    if (hasMedia && layout != "aesthetic-fullscreen") {
+      if (layout === "slider") {
         return <HeroSlider key={section.id} section={sectionWithTitle} />;
       }
-      console.log("   → MediaGridSection");
+
       return <MediaGridSection key={section.id} section={sectionWithTitle} />;
     }
 
-    // PRIORITY 4: No content but has title/text? → Render text section
-    console.log("   → Text Only Section");
+    // Text fallback
     return (
-      <section
-        key={section.id}
-        className="py-12 md:py-20 lg:py-24"
-        style={{ backgroundColor: section.backgroundColor }}
-      >
-        <div className="max-w-7xl mx-auto px-4 md:px-8 text-center">
-          {section.showTitle && section.title && (
-            <h2
-              className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tight"
-              style={{ color: section.textColor }}
-            >
-              {displayTitle}
-            </h2>
-          )}
-          {section.showSubtitle && section.subtitle && (
-            <p
-              className="text-base md:text-xl opacity-80 max-w-3xl mx-auto"
-              style={{ color: section.textColor }}
-            >
-              {section.subtitle}
-            </p>
-          )}
-          {section.description && (
-            <p
-              className="text-sm md:text-base opacity-60 max-w-2xl mx-auto mt-4"
-              style={{ color: section.textColor }}
-            >
-              {section.description}
-            </p>
-          )}
-          {section.ctaButtons && section.ctaButtons.length > 0 && (
-            <div className="flex flex-wrap gap-4 justify-center mt-8">
-              {section.ctaButtons.map((btn) => (
-                <a
-                  key={btn.id}
-                  href={btn.url}
-                  target={btn.openNewTab ? "_blank" : "_self"}
-                  rel={btn.openNewTab ? "noopener noreferrer" : ""}
-                  className={`
-                    px-8 py-4 rounded-full font-semibold text-base transition-all duration-300 inline-flex items-center gap-3
-                    ${
-                      btn.style === "PRIMARY"
-                        ? "bg-black text-white hover:bg-gray-800"
-                        : btn.style === "SECONDARY"
-                        ? "bg-gray-200 text-black hover:bg-gray-300"
-                        : "border-2 hover:bg-current hover:text-white"
-                    }
-                  `}
-                  style={{
-                    borderColor:
-                      btn.style === "OUTLINE" ? section.textColor : undefined,
-                    color:
-                      btn.style === "OUTLINE" ? section.textColor : undefined,
-                  }}
-                >
-                  {btn.text}
-                  {btn.icon && <span>{btn.icon}</span>}
-                </a>
-              ))}
-            </div>
-          )}
-        </div>
+      <section key={section.id} className="py-12 text-center">
+        <h2>{displayTitle}</h2>
       </section>
     );
   };
+
+  const orderedSections = [...sections].sort(
+    (a, b) => (a.order ?? 0) - (b.order ?? 0),
+  );
 
   if (loading) {
     return (
@@ -225,7 +173,7 @@ export default function LandingPage() {
       <HeroSection />
 
       {/* Render ALL sections - just check what data exists */}
-      {sections.map((section, index) => renderSection(section, index))}
+      {orderedSections.map((section, index) => renderSection(section))}
 
       <CTASection />
     </main>

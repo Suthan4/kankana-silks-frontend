@@ -131,13 +131,13 @@ export default function CheckoutPage() {
       emoji: "💳",
       requiresRazorpay: true,
     },
-    {
-      id: "UPI" as PaymentMethodType,
-      name: "UPI",
-      description: "Google Pay, PhonePe, Paytm",
-      emoji: "📱",
-      requiresRazorpay: true,
-    },
+    // {
+    //   id: "UPI" as PaymentMethodType,
+    //   name: "UPI",
+    //   description: "Google Pay, PhonePe, Paytm",
+    //   emoji: "📱",
+    //   requiresRazorpay: true,
+    // },
     {
       id: "NETBANKING" as PaymentMethodType,
       name: "Net Banking",
@@ -597,8 +597,8 @@ export default function CheckoutPage() {
   };;
 const getRazorpayBlock = (paymentMethod: string) => {
   switch (paymentMethod) {
-    case "UPI":
-      return "block.upi";
+    // case "UPI":
+    //   return "block.upi";
     case "CARD":
       return "block.card";
     case "NETBANKING":
@@ -629,10 +629,10 @@ const getRazorpayBlock = (paymentMethod: string) => {
         config: {
           display: {
             blocks: {
-              upi: {
-                name: "Pay via UPI",
-                instruments: [{ method: "upi" }],
-              },
+              // upi: {
+              //   name: "Pay via UPI",
+              //   instruments: [{ method: "upi" }],
+              // },
               card: {
                 name: "Pay via Card",
                 instruments: [{ method: "card" }],

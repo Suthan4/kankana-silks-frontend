@@ -16,13 +16,16 @@ import {
   Info,
   Download,
   FileText,
+  RotateCcw,
+  Navigation,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useOrder, useCancelOrder, useCanCancelOrder } from "@/hooks/useOrders";
+import { useOrderActions } from "@/hooks/useOrderActions";
 import { orderApi } from "@/lib/api/order.api";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { toast } from "@/store/useToastStore";
+import { toast } from "sonner";
 
 export default function OrderDetailsPage() {
   const router = useRouter();
@@ -40,7 +43,29 @@ export default function OrderDetailsPage() {
   const order = data?.data;
   const canCancel = canCancelData?.canCancel;
   const cancelRestrictionReason = canCancelData?.reason;
-  console.log("canCancelData", canCancel);
+
+  // ✅ Get order actions (tracking, return, etc.)
+  const {
+    canTrack,
+    canReturn,
+    returnWindowClosed,
+    returnEligibility,
+    hoursRemaining,
+  } = useOrderActions(order);
+
+  // ✅ Helper functions for button visibility
+  const isInvoiceAvailable =
+    order &&
+    ["SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED", "COMPLETED"].includes(
+      order.status,
+    );
+
+  const isTrackingAvailable =
+    order && (order.shipment?.awbCode || order.shipment?.trackingNumber);
+
+  // ✅ Return button should only show if order is DELIVERED
+  const showReturnButton =
+    order && order.status === "DELIVERED" && canReturn && !returnWindowClosed;
 
   const handleCancelOrder = async () => {
     if (!order || !canCancel) {
@@ -49,7 +74,6 @@ export default function OrderDetailsPage() {
     }
 
     try {
-      // ✅ UPDATED: Fixed mutation signature
       await cancelMutation.mutateAsync({
         orderId: order.id,
         reason: cancelReason || "Customer requested cancellation",
@@ -65,7 +89,6 @@ export default function OrderDetailsPage() {
     }
   };
 
-  // ✅ NEW: Download Invoice Handler
   const handleDownloadInvoice = async () => {
     if (!order) return;
 
@@ -73,18 +96,15 @@ export default function OrderDetailsPage() {
       setIsDownloadingInvoice(true);
       const response = await orderApi.downloadInvoice(order.id);
 
-      // Create blob from response
       const blob = new Blob([response], { type: "application/pdf" });
       const url = window.URL.createObjectURL(blob);
 
-      // Create download link and trigger download
       const link = document.createElement("a");
       link.href = url;
       link.download = `invoice-${order.orderNumber}.pdf`;
       document.body.appendChild(link);
       link.click();
 
-      // Cleanup
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
@@ -97,11 +117,6 @@ export default function OrderDetailsPage() {
     }
   };
 
-  // ✅ Check if invoice is available (only for shipped/delivered orders)\
-  const isInvoiceAvailable =
-    order && ["SHIPPED", "DELIVERED", "COMPLETED"].includes(order.status);
-
-  // ✅ NEW: Helper to display payment method with icon and details
   const getPaymentMethodDisplay = (method: string, payment: any) => {
     switch (method) {
       case "CARD":
@@ -201,7 +216,7 @@ export default function OrderDetailsPage() {
               </h1>
               <p className="text-sm text-gray-500">{order.orderNumber}</p>
             </div>
-            {/* ✅ NEW: Invoice Download Button */}
+            {/* ✅ Invoice Download Button - Only show if shipped */}
             {isInvoiceAvailable && (
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -244,7 +259,8 @@ export default function OrderDetailsPage() {
             <div className="bg-white/20 p-3 rounded-full">
               {order.status === "DELIVERED" || order.status === "COMPLETED" ? (
                 <CheckCircle2 className="w-6 h-6" />
-              ) : order.status === "SHIPPED" ? (
+              ) : order.status === "SHIPPED" ||
+                order.status === "OUT_FOR_DELIVERY" ? (
                 <Truck className="w-6 h-6" />
               ) : order.status === "CANCELLED" ? (
                 <XCircle className="w-6 h-6" />
@@ -264,27 +280,47 @@ export default function OrderDetailsPage() {
               })}
             </span>
           </div>
-          <div className="flex gap-2">
-            {order.shipment?.trackingNumber && (
+
+          {/* ✅ Action Buttons - Conditionally shown */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            {/* ✅ Track Order Button - Only if has AWB */}
+            {isTrackingAvailable && (
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() =>
                   router.push(`/my-account/order-tracking/${order.id}`)
                 }
-                className="flex-1 bg-white text-black py-3 rounded-lg font-medium hover:bg-gray-100 transition"
+                className="flex-1 bg-white text-black py-3 rounded-lg font-medium hover:bg-gray-100 transition flex items-center justify-center gap-2"
               >
+                <Navigation className="w-4 h-4" />
                 Track Package
               </motion.button>
             )}
+
+            {/* ✅ Return Button - ONLY show if status is DELIVERED and within window */}
+            {showReturnButton && (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() =>
+                  router.push(`/my-account/returns/create?orderId=${order.id}`)
+                }
+                className="flex-1 bg-yellow-500 text-black py-3 rounded-lg font-semibold hover:bg-yellow-600 transition flex items-center justify-center gap-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Return ({Math.floor(hoursRemaining)}h left)
+              </motion.button>
+            )}
+
+            {/* ✅ Cancel Button - Only before shipped */}
             {canCancel && (
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setShowCancelModal(true)}
                 disabled={cancelMutation.isPending}
-                className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold 
-               hover:bg-red-700 transition disabled:opacity-50"
+                className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition disabled:opacity-50"
               >
                 {cancelMutation.isPending ? "Cancelling..." : "Cancel Order"}
               </motion.button>
@@ -292,7 +328,27 @@ export default function OrderDetailsPage() {
           </div>
         </motion.div>
 
-        {/* ✅ Invoice Available Notice */}
+        {/* ✅ Return Window Closed Alert - Only show if delivered but window closed */}
+        {order.status === "DELIVERED" && returnWindowClosed && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4 flex items-start gap-3"
+          >
+            <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-yellow-900">
+                Return Window Closed
+              </p>
+              <p className="text-sm text-yellow-700 mt-1">
+                {returnEligibility?.reason ||
+                  "The 24-hour return window has expired."}
+              </p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Invoice Available Notice - Only if shipped */}
         {isInvoiceAvailable && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -319,7 +375,7 @@ export default function OrderDetailsPage() {
           </motion.div>
         )}
 
-        {/* ✅ Refund Status Alert */}
+        {/* Refund Status Alert */}
         {order.status === "CANCELLED" &&
           order.payment?.status === "REFUNDED" && (
             <motion.div
@@ -340,7 +396,7 @@ export default function OrderDetailsPage() {
             </motion.div>
           )}
 
-        {/* ✅ Cannot Cancel Alert */}
+        {/* Cannot Cancel Alert */}
         {!canCancel &&
           cancelRestrictionReason &&
           order.status !== "CANCELLED" && (
@@ -510,7 +566,7 @@ export default function OrderDetailsPage() {
             </div>
           </motion.div>
 
-          {/* ✅ ENHANCED Payment Details */}
+          {/* Payment Details */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -523,7 +579,6 @@ export default function OrderDetailsPage() {
             <div className="space-y-3 text-sm">
               {order.payment && paymentDisplay && (
                 <>
-                  {/* Payment Method Card */}
                   <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 mb-3">
                     <div className="flex items-center gap-3 mb-2">
                       <span className="text-3xl">{paymentDisplay.icon}</span>
@@ -537,7 +592,6 @@ export default function OrderDetailsPage() {
                       </div>
                     </div>
 
-                    {/* Bank Name (if available for cards) */}
                     {order.payment.bankName &&
                       order.payment.method === "CARD" && (
                         <p className="text-xs text-gray-600 mt-2">
@@ -548,7 +602,6 @@ export default function OrderDetailsPage() {
                         </p>
                       )}
 
-                    {/* Payment Status */}
                     <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-300">
                       <span className="text-gray-600">Status</span>
                       <span
@@ -566,7 +619,6 @@ export default function OrderDetailsPage() {
                       </span>
                     </div>
 
-                    {/* Refund Amount */}
                     {order.payment.refundAmount && (
                       <div className="flex justify-between mt-2 pt-2 border-t border-blue-200 bg-blue-50 -mx-4 px-4 py-2">
                         <span className="text-blue-700 font-medium">
@@ -578,7 +630,6 @@ export default function OrderDetailsPage() {
                       </div>
                     )}
 
-                    {/* Payment ID */}
                     {order.payment.razorpayPaymentId && (
                       <p className="text-xs text-gray-500 mt-2">
                         ID: {order.payment.razorpayPaymentId}
@@ -588,7 +639,6 @@ export default function OrderDetailsPage() {
                 </>
               )}
 
-              {/* Price Summary */}
               <div className="flex justify-between">
                 <span className="text-gray-600">Subtotal</span>
                 <span className="font-medium">
@@ -620,12 +670,6 @@ export default function OrderDetailsPage() {
                     : `₹${Number(order.shippingCost).toFixed(2)}`}
                 </span>
               </div>
-              {/* {order.gstAmount && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600">GST (18%)</span>
-                  <span className="font-medium">₹{Number(order.gstAmount).toFixed(2)}</span>
-                </div>
-              )} */}
               <div className="pt-3 border-t flex justify-between">
                 <span className="font-semibold">Total</span>
                 <span className="font-bold text-xl">
@@ -645,12 +689,12 @@ export default function OrderDetailsPage() {
           >
             <h3 className="font-semibold mb-4">Shipment Details</h3>
             <div className="grid sm:grid-cols-2 gap-4 text-sm">
-              {order.shipment.trackingNumber && (
+              {order.shipment.awbCode && (
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">
-                    Tracking Number
+                    AWB Code
                   </label>
-                  <p className="font-medium">{order.shipment.trackingNumber}</p>
+                  <p className="font-medium">{order.shipment.awbCode}</p>
                 </div>
               )}
               {order.shipment.courierName && (
@@ -666,7 +710,7 @@ export default function OrderDetailsPage() {
         )}
       </div>
 
-      {/* ✅ UPDATED Cancel Modal */}
+      {/* Cancel Modal */}
       {showCancelModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <motion.div

@@ -13,6 +13,7 @@ import {
 import { useParams, useRouter } from "next/navigation";
 import { useOrder } from "@/hooks/useOrders";
 import { shipmentApi } from "@/lib/api/shipment.api";
+import { useTracking } from "@/hooks/useTracking";
 
 export default function OrderTrackingPage() {
   const params = useParams<{ id: string }>();
@@ -20,11 +21,10 @@ export default function OrderTrackingPage() {
   const router = useRouter();
 
   const { data: orderData, isLoading: orderLoading } = useOrder(id);
+  const trackingNumber = orderData?.data?.shipment?.trackingNumber;
+
   const { data: trackingData, isLoading: trackingLoading } =
-    useTrackOrderShipment(
-      params.id,
-      !!orderData?.data?.shipment?.trackingNumber,
-    );
+    useTracking(trackingNumber);
 
   const order = orderData?.data;
   const tracking = trackingData?.data;
@@ -33,8 +33,11 @@ export default function OrderTrackingPage() {
 
   // Build timeline from tracking activities or default statuses
   const buildTimeline = () => {
-    if (tracking?.tracking_data?.shipment_track_activities?.length > 0) {
-      return tracking.tracking_data.shipment_track_activities.map(
+    if (
+      tracking &&
+      tracking?.tracking_data?.shipment_track_activities?.length > 0
+    ) {
+      return tracking?.tracking_data.shipment_track_activities.map(
         (activity: any) => ({
           status: activity.status,
           date: new Date(activity.date).toLocaleString("en-IN", {
@@ -381,36 +384,38 @@ export default function OrderTrackingPage() {
         <div className="bg-white rounded-2xl p-6">
           <h3 className="font-semibold mb-4">Items in this Order</h3>
           <div className="space-y-3">
-            {order.items.map((item) => (
-              <div
-                key={item.id}
-                className="flex gap-3 p-3 bg-gray-50 rounded-lg"
-              >
-                {item.image && (
-                  <img
-                    src={item.image}
-                    alt={item.productName}
-                    className="w-16 h-16 rounded-lg object-cover"
-                  />
-                )}
-                <div className="flex-1">
-                  <p className="font-medium text-sm">{item.productName}</p>
-                  <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+            {order.items.map((item) => {
+              console.log("item", item);
+
+              return (
+                <div
+                  key={item.id}
+                  className="flex gap-3 p-3 bg-gray-50 rounded-lg"
+                >
+                  {item.image && (
+                    <img
+                      src={item.image}
+                      alt={item.productName}
+                      className="w-16 h-16 rounded-lg object-cover"
+                    />
+                  )}
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">{item.productName}</p>
+                    <p className="text-xs text-gray-500">
+                      Qty: {item.quantity}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold">
+                      ₹{Number(item.price).toFixed(2)}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold">₹{item.total.toFixed(2)}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
     </div>
   );
-}
-function useTrackOrderShipment(
-  id: string,
-  arg1: boolean,
-): { data: any; isLoading: any } {
-  throw new Error("Function not implemented.");
 }

@@ -13,10 +13,12 @@ import {
   Bell,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function ProfilePage() {
   const router = useRouter();
   const { user } = useAuthModal();
+const [showProfileModal, setShowProfileModal] = useState(false);
 
 
   const quickActions = [
@@ -153,7 +155,7 @@ export default function ProfilePage() {
             return (
               <button
                 key={i}
-                onClick={() => item.href && router.push(item.href)}
+                onClick={() => setShowProfileModal(true)}
                 className="w-full flex items-center gap-4 p-5 lg:p-6 hover:bg-gray-50 transition-all group"
               >
                 <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
@@ -181,6 +183,80 @@ export default function ProfilePage() {
           <span>Sign Out</span>
         </button>
       </div>
+
+      {showProfileModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl animate-in fade-in zoom-in duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-bold">Personal Details</h2>
+              <button
+                onClick={() => setShowProfileModal(false)}
+                className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-500"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-600">
+                  First Name
+                </label>
+                <input
+                  defaultValue={user?.firstName}
+                  className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-black/20 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-600">
+                  Last Name
+                </label>
+                <input
+                  defaultValue={user?.lastName}
+                  className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-black/20 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-600">
+                  Email
+                </label>
+                <input
+                  defaultValue={user?.email}
+                  disabled
+                  className="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-600">
+                  Phone
+                </label>
+                <input
+                  defaultValue={user?.phone}
+                  className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-black/20 outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t flex gap-3">
+              <button
+                onClick={() => setShowProfileModal(false)}
+                className="flex-1 border rounded-lg py-2 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button className="flex-1 bg-black text-white rounded-lg py-2 hover:bg-gray-800">
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
