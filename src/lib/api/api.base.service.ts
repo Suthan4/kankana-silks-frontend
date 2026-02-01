@@ -164,6 +164,22 @@ export class BaseApiService {
       password,
     });
   }
+    // NEW: Update Profile
+  async updateProfile(data: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    email?: string;
+  }) {
+    return this.api.put("/auth/profile", data);
+  }
+  // NEW: Change Password
+  async changePassword(data: {
+    currentPassword: string;
+    newPassword: string;
+  }) {
+    return this.api.put("/auth/change-password", data);
+  }
 }
 
 export const authService = new BaseApiService(() => {
