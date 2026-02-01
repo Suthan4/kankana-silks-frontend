@@ -14,6 +14,7 @@ export interface User {
 
 interface AuthModalState {
   isOpen: boolean;
+  showPasswordModal: boolean;
   mode: "login" | "register" | "forgot";
   user: User | null;
   accessToken: string | null;
@@ -22,14 +23,18 @@ interface AuthModalState {
   closeModal: () => void;
   setMode: (mode: "login" | "register" | "forgot") => void;
   setAuth: (token: string, user: User, refreshToken?: string) => void;
+  setUser: (user: User) => void;
   logout: () => void;
   handlePostLoginRedirect: () => void;
+  setShowPasswordModal: (value: boolean) => void;
+  togglePasswordModal: () => void;
 }
 
 export const authModalStore = create<AuthModalState>()(
   persist(
     (set, get) => ({
       isOpen: false,
+      showPasswordModal: false,
       mode: "login",
       user: null,
       accessToken: null,
@@ -38,6 +43,14 @@ export const authModalStore = create<AuthModalState>()(
       openModal: (mode = "login") => set({ isOpen: true, mode }),
 
       closeModal: () => set({ isOpen: false }),
+
+      setShowPasswordModal: (value) =>
+        set({showPasswordModal:value}),
+
+      togglePasswordModal: () => 
+        set((state)=>({
+          showPasswordModal:!state.showPasswordModal
+        })),
 
       setMode: (mode) => set({ mode }),
 
@@ -53,6 +66,8 @@ export const authModalStore = create<AuthModalState>()(
           get().handlePostLoginRedirect();
         }, 100);
       },
+
+      setUser: (user) => set({ user }),
 
       /**
        * Handle redirects after successful login

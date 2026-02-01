@@ -31,8 +31,8 @@ export default function MyAccountLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user } = useAuthModal();
-console.log("user", user);
+  const { user, togglePasswordModal, showPasswordModal } = useAuthModal();
+  console.log("user", user);
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Desktop Layout */}
@@ -51,9 +51,7 @@ console.log("user", user);
                     <h3 className="font-bold text-gray-900 text-lg">
                       {user?.firstName} {user?.lastName}
                     </h3>
-                    <h3 className="text-sm opacity-80">
-                      {user?.email}
-                    </h3>
+                    <h3 className="text-sm opacity-80">{user?.email}</h3>
                     {/* <p className="text-xs text-gray-500 mt-1">
                       Member since 2023
                     </p> */}
@@ -87,9 +85,9 @@ console.log("user", user);
                         }`}
                       >
                         {/* Top border for active */}
-                        {isActive && (
-                          <div className="absolute top-0 left-3 right-3 h-0.5 bg-black rounded-full" />
-                        )}
+                        {/* {isActive && (
+                          <div className="absolute bottom-0 left-3 right-3 h-0.5 bg-gray-400 rounded-full" />
+                        )} */}
                         <Icon className="w-5 h-5" />
                         <span className="font-medium text-sm">
                           {item.label}
@@ -120,42 +118,47 @@ console.log("user", user);
         <main className="pb-20">{children}</main>
 
         {/* Bottom Navigation */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg">
-          <div className="grid grid-cols-5 h-16">
-            {/* Home Button */}
-            <button
-              onClick={() => router.push("/")}
-              className="flex flex-col items-center justify-center gap-1 transition-all text-gray-900 hover:text-black"
-            >
-              <Home className="w-5 h-5" />
-              <span className="text-xs font-medium">Home</span>
-            </button>
+        {!showPasswordModal && (
+          <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg">
+            <div className="grid grid-cols-5 h-16">
+              {/* Home Button */}
+              <button
+                onClick={() => router.push("/")}
+                className="flex flex-col items-center justify-center gap-1 transition-all text-gray-900 hover:text-black"
+              >
+                <Home className="w-5 h-5" />
+                <span className="text-xs font-medium">Home</span>
+              </button>
 
-            {menuItems.slice(0, 4).map((item) => {
-              const Icon = item.icon;
-              const isActive =
-                pathname === item.href || pathname.startsWith(item.href + "/");
-              return (
-                <button
-                  key={item.href}
-                  onClick={() => router.push(item.href)}
-                  className={`flex flex-col items-center justify-center gap-1 transition-all relative ${
-                    isActive ? "text-black" : "text-gray-900"
-                  }`}
-                >
-                  {/* Top border for active */}
-                  {isActive && (
-                    <div className="absolute top-0 left-4 right-4 h-0.5 bg-black rounded-full" />
-                  )}
-                  <Icon className={`w-5 h-5 ${isActive ? "scale-110" : ""}`} />
-                  <span className="text-xs font-medium">
-                    {item.label.split(" ")[0]}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </nav>
+              {menuItems.slice(0, 4).map((item) => {
+                const Icon = item.icon;
+                const isActive =
+                  pathname === item.href ||
+                  pathname.startsWith(item.href + "/");
+                return (
+                  <button
+                    key={item.href}
+                    onClick={() => router.push(item.href)}
+                    className={`flex flex-col items-center justify-center gap-1 transition-all relative ${
+                      isActive ? "text-black" : "text-gray-900"
+                    }`}
+                  >
+                    {/* Top border for active */}
+                    {isActive && (
+                      <div className="absolute top-0 left-4 right-4 h-0.5 bg-black rounded-full" />
+                    )}
+                    <Icon
+                      className={`w-5 h-5 ${isActive ? "scale-110" : ""}`}
+                    />
+                    <span className="text-xs font-medium">
+                      {item.label.split(" ")[0]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+        )}
       </div>
     </div>
   );
