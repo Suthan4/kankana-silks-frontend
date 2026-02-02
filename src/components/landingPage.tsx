@@ -173,7 +173,9 @@ export default function LandingPage() {
       <HeroSection />
 
       {/* Render ALL sections - just check what data exists */}
-      {orderedSections.map((section, index) => renderSection(section))}
+      <section className="py-11">
+        {orderedSections.map((section, index) => renderSection(section))}
+      </section>
 
       <CTASection />
     </main>

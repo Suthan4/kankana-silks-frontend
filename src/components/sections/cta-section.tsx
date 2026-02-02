@@ -80,7 +80,7 @@ export default function CTASection() {
           </motion.button>
         </motion.div>
 
-        <motion.div
+        {/* <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.6 }}
@@ -89,7 +89,7 @@ export default function CTASection() {
         >
           <p>Free shipping on orders over ₹5,000</p>
           <p>30-day returns • Authentic craftsmanship • Certified silk</p>
-        </motion.div>
+        </motion.div> */}
       </motion.div>
     </section>
   );

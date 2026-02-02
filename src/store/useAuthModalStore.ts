@@ -77,6 +77,15 @@ export const authModalStore = create<AuthModalState>()(
         // Check if we're in a browser environment
         if (typeof window === "undefined") return;
 
+          // Check for redirect after login
+        const redirectAfterLogin = sessionStorage.getItem("redirectAfterLogin");
+        if (redirectAfterLogin) {
+          sessionStorage.removeItem("redirectAfterLogin");
+          set({ isOpen: false });
+          window.location.href = redirectAfterLogin;
+          return;
+        }
+
         const pendingAction = sessionStorage.getItem("pendingAction");
         const checkoutAfterLogin = sessionStorage.getItem("checkoutAfterLogin");
 

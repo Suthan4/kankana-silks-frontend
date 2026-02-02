@@ -629,9 +629,7 @@ function Header() {
           <div className="flex items-center gap-6">
             {icons
               .filter((item) =>
-                ["Consultation", "Whatsapp", "Cart", "Wishlist"].includes(
-                  item.name,
-                ),
+                ["Consultation", "Whatsapp", "Cart"].includes(item.name),
               )
               .map((item) => {
                 const Icon = item.icon;
@@ -680,10 +678,12 @@ function Header() {
               })}
 
             {/* User Menu Icon */}
-            <div className="relative">
+            <div
+              className="relative"
+              onMouseEnter={() => user && setUserMenuOpen(true)}
+              onMouseLeave={() => setUserMenuOpen(false)}
+            >
               <motion.button
-                whileHover={{ scale: 0.9 }}
-                whileTap={{ scale: 0.85 }}
                 onClick={() => {
                   if (!user) {
                     openModal("login");
@@ -695,9 +695,19 @@ function Header() {
               >
                 {!user && <User className="w-5 h-5" />}
                 {user && (
-                  <p className="text-sm font-semibold text-gray-900">
-                    Hello, {user.firstName}!
-                  </p>
+                  <>
+                    <p className="text-sm font-semibold text-gray-900">
+                      Hello, {user.firstName}!
+                    </p>
+                    {/* Arrow icon */}
+                    <motion.span
+                      animate={{ rotate: userMenuOpen ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex items-center"
+                    >
+                      <ChevronDown className="w-4 h-4 text-gray-500" />
+                    </motion.span>
+                  </>
                 )}
               </motion.button>
 

@@ -66,7 +66,7 @@ export default function AestheticFullImage({
       {/* Content Overlay - Centered */}
       <div className="relative z-10 h-full flex flex-col items-center justify-center px-4 md:px-8 text-center">
         {/* Main Title */}
-        {section.showTitle && section.title && (
+        {/* {section.showTitle && section.title && (
           <h1
             className={`text-4xl md:text-6xl lg:text-7xl xl:text-8xl 
                        font-light uppercase mb-6 md:mb-8
@@ -83,7 +83,7 @@ export default function AestheticFullImage({
           >
             {displayTitle}
           </h1>
-        )}
+        )} */}
 
         {/* Subtitle / Overlay Text */}
         {((section.showSubtitle && section.subtitle) ||
@@ -100,9 +100,9 @@ export default function AestheticFullImage({
               <p
                 className="text-xl md:text-3xl lg:text-4xl font-light"
                 style={{
-                  color: section.textColor || "#ffffff",
+                  color: "#ffffff",
                   textShadow: "0 2px 15px rgba(0,0,0,0.5)",
-                  letterSpacing: "0.05em",
+                  letterSpacing: "0.2em",
                 }}
               >
                 {section.title}
@@ -175,7 +175,8 @@ export default function AestheticFullImage({
                             ? "bg-black text-white hover:bg-white hover:text-black border-2 border-white"
                             : isOutline
                               ? "bg-transparent border-2 border-white text-white hover:bg-white hover:text-black"
-                              : "bg-black/20 backdrop-blur-sm text-white hover:bg-white/20"
+                              :isText
+                                ? "bg-black/20 backdrop-blur-sm text-white hover:bg-white/20" :""
                       }
                     `}
                     style={{

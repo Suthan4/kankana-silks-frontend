@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
 import Image from "next/image";
+import { ProtectedRoute } from "@/components/auth/protectedRoutes";
 
 export default function WishlistPage() {
   const router = useRouter();
@@ -314,181 +315,183 @@ export default function WishlistPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
-              My Wishlist
-            </h1>
-            <button
-              onClick={handleClearAll}
-              disabled={clearWishlistMutation.isPending}
-              className="text-red-600 hover:text-red-700 font-medium text-sm md:text-base disabled:opacity-50 flex items-center gap-2"
-            >
-              {clearWishlistMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Trash2 className="w-4 h-4" />
-              )}
-              Clear All
-            </button>
-          </div>
-          <p className="text-gray-600">
-            {items.length} {items.length === 1 ? "item" : "items"}
-          </p>
-        </motion.div>
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+                My Wishlist
+              </h1>
+              <button
+                onClick={handleClearAll}
+                disabled={clearWishlistMutation.isPending}
+                className="text-red-600 hover:text-red-700 font-medium text-sm md:text-base disabled:opacity-50 flex items-center gap-2"
+              >
+                {clearWishlistMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                Clear All
+              </button>
+            </div>
+            <p className="text-gray-600">
+              {items.length} {items.length === 1 ? "item" : "items"}
+            </p>
+          </motion.div>
 
-        {/* Wishlist Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          <AnimatePresence mode="popLayout">
-            {items.map((item, index) => {
-              const product = item.product;
-              const inStock = (product.stock?.[0]?.quantity ?? 0) > 0;
-              const discount =
-                product.basePrice !== product.sellingPrice
-                  ? Math.round(
-                      ((Number(product.basePrice) -
-                        Number(product.sellingPrice)) /
-                        Number(product.basePrice)) *
-                        100,
-                    )
-                  : 0;
-              const isRemoving = removingItemId === item.id;
-              const isAddingToCart = addingToCartId === item.id;
+          {/* Wishlist Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <AnimatePresence mode="popLayout">
+              {items.map((item, index) => {
+                const product = item.product;
+                const inStock = (product.stock?.[0]?.quantity ?? 0) > 0;
+                const discount =
+                  product.basePrice !== product.sellingPrice
+                    ? Math.round(
+                        ((Number(product.basePrice) -
+                          Number(product.sellingPrice)) /
+                          Number(product.basePrice)) *
+                          100,
+                      )
+                    : 0;
+                const isRemoving = removingItemId === item.id;
+                const isAddingToCart = addingToCartId === item.id;
 
-              return (
-                <motion.div
-                  key={item.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 relative group"
-                >
-                  {/* Remove Button */}
-                  <button
-                    onClick={() => removeItemMutation.mutate(item.id)}
-                    disabled={isRemoving}
-                    className="absolute top-3 right-3 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-lg"
+                return (
+                  <motion.div
+                    key={item.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 relative group"
                   >
-                    {isRemoving ? (
-                      <Loader2 className="w-5 h-5 animate-spin text-red-600" />
-                    ) : (
-                      <X className="w-5 h-5 text-red-600" />
-                    )}
-                  </button>
-
-                  {/* Product Link */}
-                  <Link href={`/products/${product.slug}`} className="block">
-                    {/* Image */}
-                    <div className="relative aspect-[3/4] overflow-hidden bg-gray-100">
-                      {product.media?.[0]?.url ? (
-                        <Image
-                          src={product.media[0].url}
-                          alt={product.name}
-                          fill
-                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                          className="object-cover transition-transform duration-500 group-hover:scale-110"
-                        />
+                    {/* Remove Button */}
+                    <button
+                      onClick={() => removeItemMutation.mutate(item.id)}
+                      disabled={isRemoving}
+                      className="absolute top-3 right-3 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-lg"
+                    >
+                      {isRemoving ? (
+                        <Loader2 className="w-5 h-5 animate-spin text-red-600" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package className="w-16 h-16 text-gray-300" />
+                        <X className="w-5 h-5 text-red-600" />
+                      )}
+                    </button>
+
+                    {/* Product Link */}
+                    <Link href={`/products/${product.slug}`} className="block">
+                      {/* Image */}
+                      <div className="relative aspect-[3/4] overflow-hidden bg-gray-100">
+                        {product.media?.[0]?.url ? (
+                          <Image
+                            src={product.media[0].url}
+                            alt={product.name}
+                            fill
+                            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                            className="object-cover transition-transform duration-500 group-hover:scale-110"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="w-16 h-16 text-gray-300" />
+                          </div>
+                        )}
+
+                        {/* Badges */}
+                        <div className="absolute top-3 left-3 flex flex-col gap-2">
+                          {!inStock && (
+                            <span className="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+                              Out of Stock
+                            </span>
+                          )}
+                          {discount > 0 && (
+                            <span className="bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+                              {discount}% OFF
+                            </span>
+                          )}
                         </div>
+                      </div>
+                    </Link>
+
+                    {/* Product Info */}
+                    <div className="p-4">
+                      {product.category?.name && (
+                        <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+                          {product.category.name}
+                        </p>
                       )}
 
-                      {/* Badges */}
-                      <div className="absolute top-3 left-3 flex flex-col gap-2">
-                        {!inStock && (
-                          <span className="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
-                            Out of Stock
-                          </span>
-                        )}
+                      <Link href={`/products/${product.slug}`}>
+                        <h3 className="font-bold text-lg mb-2 line-clamp-2 hover:text-gray-700 transition-colors">
+                          {product.name}
+                        </h3>
+                      </Link>
+
+                      {/* Price */}
+                      <div className="flex items-baseline gap-2 mb-4">
+                        <span className="text-xl font-bold text-gray-900">
+                          ₹{Number(product.sellingPrice).toLocaleString()}
+                        </span>
                         {discount > 0 && (
-                          <span className="bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
-                            {discount}% OFF
+                          <span className="text-sm text-gray-400 line-through">
+                            ₹{Number(product.basePrice).toLocaleString()}
                           </span>
                         )}
                       </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleMoveToCart(item)}
+                          disabled={!inStock || isAddingToCart}
+                          className="flex-1 bg-black text-white py-2.5 rounded-full font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          {isAddingToCart ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <ShoppingCart className="w-4 h-4" />
+                          )}
+                          {inStock ? "Move to Cart" : "Out of Stock"}
+                        </button>
+
+                        <Link
+                          href={`/products/${product.slug}`}
+                          className="px-4 py-2.5 border-2 border-gray-300 rounded-full font-medium hover:border-gray-400 transition-colors"
+                        >
+                          View
+                        </Link>
+                      </div>
                     </div>
-                  </Link>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </div>
 
-                  {/* Product Info */}
-                  <div className="p-4">
-                    {product.category?.name && (
-                      <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
-                        {product.category.name}
-                      </p>
-                    )}
-
-                    <Link href={`/products/${product.slug}`}>
-                      <h3 className="font-bold text-lg mb-2 line-clamp-2 hover:text-gray-700 transition-colors">
-                        {product.name}
-                      </h3>
-                    </Link>
-
-                    {/* Price */}
-                    <div className="flex items-baseline gap-2 mb-4">
-                      <span className="text-xl font-bold text-gray-900">
-                        ₹{Number(product.sellingPrice).toLocaleString()}
-                      </span>
-                      {discount > 0 && (
-                        <span className="text-sm text-gray-400 line-through">
-                          ₹{Number(product.basePrice).toLocaleString()}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleMoveToCart(item)}
-                        disabled={!inStock || isAddingToCart}
-                        className="flex-1 bg-black text-white py-2.5 rounded-full font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                      >
-                        {isAddingToCart ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <ShoppingCart className="w-4 h-4" />
-                        )}
-                        {inStock ? "Move to Cart" : "Out of Stock"}
-                      </button>
-
-                      <Link
-                        href={`/products/${product.slug}`}
-                        className="px-4 py-2.5 border-2 border-gray-300 rounded-full font-medium hover:border-gray-400 transition-colors"
-                      >
-                        View
-                      </Link>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-        </div>
-
-        {/* Continue Shopping */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mt-12 text-center"
-        >
-          <Link
-            href="/products"
-            className="inline-block bg-gray-200 text-gray-900 px-8 py-3 rounded-full font-semibold hover:bg-gray-300 transition-colors"
+          {/* Continue Shopping */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mt-12 text-center"
           >
-            Continue Shopping
-          </Link>
-        </motion.div>
+            <Link
+              href="/products"
+              className="inline-block bg-gray-200 text-gray-900 px-8 py-3 rounded-full font-semibold hover:bg-gray-300 transition-colors"
+            >
+              Continue Shopping
+            </Link>
+          </motion.div>
+        </div>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 }

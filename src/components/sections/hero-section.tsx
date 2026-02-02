@@ -151,7 +151,7 @@ export default function HeroSection() {
           <AnimatePresence mode="wait">
             <motion.div
               key={currentSlide}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 220 }}
               animate={{ opacity: 1, y: 250 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.5 }}
