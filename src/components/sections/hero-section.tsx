@@ -49,8 +49,18 @@ export default function HeroSection() {
   const y = enableScrollAnim ? yTransform : 0;
 
   useEffect(() => {
-    requestIdleCallback(() => setEnableScrollAnim(true));
+    const run = () => setEnableScrollAnim(true);
+
+    if (typeof window !== "undefined") {
+      if ("requestIdleCallback" in window) {
+        (window as any).requestIdleCallback(run);
+      } else {
+        // Safari fallback
+        setTimeout(run, 1);
+      }
+    }
   }, []);
+
 
   /* ------------------ AUTOPLAY ------------------ */
   useEffect(() => {
