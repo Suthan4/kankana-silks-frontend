@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "cross-env NEXT_PUBLIC_SITE_MODE=live next dev",
+    "test:safari": "npx playwright test --headed --browser=webkit",
     "build": "next build",
     "start": "cross-env NEXT_PUBLIC_SITE_MODE=coming-soon next start",
     "lint": "eslint"
@@ -34,6 +35,7 @@
     "zustand": "^5.0.9"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
