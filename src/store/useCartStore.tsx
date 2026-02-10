@@ -165,6 +165,16 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
+type VariantStock = {
+  id: string;
+  lowStockThreshold?: number;
+  productId: string;
+  quantity: number;
+  updatedAt?: string; // ✅ MAKE OPTIONAL
+  variantId?: string | null; // ✅ MAKE OPTIONAL
+  warehouseId: string;
+};
+
 export interface CartItemAPIShape {
   id: string;
   cartId?: string;
@@ -186,10 +196,13 @@ export interface CartItemAPIShape {
 
   variant?: {
     id: string;
+    sellingPrice: number;
+    basePrice: number;
     size?: string;
     color?: string;
     fabric?: string;
-    price?: number;
+    attributes?: Record<string, string>;
+    stock?: VariantStock[];
   } | null;
 }
 
@@ -308,7 +321,7 @@ export const useCartStore = create<CartState>()(
 
       getSubtotal: () =>
         get().items.reduce((sum, item) => {
-          const price = Number(item?.variant?.price ?? item.product?.sellingPrice ?? 0);
+          const price = Number(item?.variant?.sellingPrice ?? item.product?.sellingPrice ?? 0);
           return sum + price * item.quantity;
         }, 0),
 

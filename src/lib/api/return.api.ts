@@ -31,6 +31,20 @@ export enum RefundMethod {
   STORE_CREDIT = "STORE_CREDIT",
   BANK_TRANSFER = "BANK_TRANSFER",
 }
+// ✅ Media types
+export interface ReturnMedia {
+  type: "IMAGE" | "VIDEO";
+  url: string;
+  key: string;
+  thumbnailUrl?: string;
+  mimeType: string;
+  fileSize: number;
+  duration?: number;
+  width?: number;
+  height?: number;
+  order: number;
+  description?: string;
+}
 
 // Helper functions for display
 export const getReturnReasonLabel = (reason: ReturnReason): string => {
@@ -101,7 +115,8 @@ export interface CreateReturnRequest {
     reason: ReturnReason;
   }>;
   reasonDetails: string;
-  images?: string[];
+  images?: string[]; // Legacy support
+  media?: ReturnMedia[]; // ✅ NEW: Media with metadata
   refundMethod: RefundMethod;
   bankDetails?: {
     accountHolderName?: string;
@@ -109,6 +124,14 @@ export interface CreateReturnRequest {
     ifscCode?: string;
     bankName?: string;
   };
+}
+
+// ✅ Media request/response types
+export interface RequestMoreMediaDTO {
+  message: string;
+}
+export interface AddMediaToReturnDTO {
+  media: ReturnMedia[];
 }
 
 export class ReturnApiService {
@@ -158,6 +181,18 @@ export class ReturnApiService {
    */
   static async trackReturnShipment(returnId: string) {
     const response = await authService.api.get(`/returns/${returnId}/track`);
+    return response.data.data;
+  }
+
+   /**
+   * ✅ NEW: Customer adds more media to existing return
+   * POST /api/returns/:returnId/add-media
+   */
+  static async addMediaToReturn(returnId: string, data: AddMediaToReturnDTO) {
+    const response = await authService.api.post(
+      `/returns/${returnId}/add-media`,
+      data
+    );
     return response.data.data;
   }
 }

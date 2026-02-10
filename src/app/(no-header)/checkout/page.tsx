@@ -53,23 +53,17 @@ declare global {
 
 const normalizeAttributes = (attrs: any) => {
   if (!attrs) return [];
-
   if (typeof attrs === "object" && !Array.isArray(attrs)) {
     return Object.entries(attrs).map(([key, value]) => ({
       key: String(key),
       value: String(value),
     }));
   }
-
   if (Array.isArray(attrs)) {
     return attrs
       .filter((a) => a?.key && a?.value)
-      .map((a) => ({
-        key: String(a.key),
-        value: String(a.value),
-      }));
+      .map((a) => ({ key: String(a.key), value: String(a.value) }));
   }
-
   if (typeof attrs === "string") {
     try {
       const parsed = JSON.parse(attrs);
@@ -78,15 +72,21 @@ const normalizeAttributes = (attrs: any) => {
       return [];
     }
   }
-
   return [];
 };
+
+// ─── Step Indicator ──────────────────────────────────────────────────────────
+const steps = [
+  { id: 1, label: "Items", icon: ShoppingBag },
+  { id: 2, label: "Address", icon: MapPin },
+  { id: 3, label: "Payment", icon: CreditCard },
+  { id: 4, label: "Summary", icon: Truck },
+];
 
 export default function CheckoutPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
-
   const isBuyNowMode = searchParams.get("mode") === "buyNow";
 
   const { user, openModal } = useAuthModal();
@@ -98,20 +98,17 @@ export default function CheckoutPage() {
     removeCoupon,
   } = useCartStore();
 
+  const [activeStep, setActiveStep] = useState(1);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>("CARD");
   const [isProcessing, setIsProcessing] = useState(false);
   const [buyNowItem, setBuyNowItem] = useState<any>(null);
-
-  // ✅ NEW: Courier selection state
   const [selectedCourier, setSelectedCourier] = useState<any>(null);
   const [courierPreference, setCourierPreference] =
     useState<CourierPreference>("CHEAPEST");
   const [showAllCouriers, setShowAllCouriers] = useState(false);
-
-  // Coupon states
   const [couponCode, setCouponCode] = useState("");
   const [showCouponDropdown, setShowCouponDropdown] = useState(false);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
@@ -122,7 +119,6 @@ export default function CheckoutPage() {
   const verifyPaymentMutation = useVerifyPayment();
   const initiatePaymentMutation = useInitiatePayment();
 
-  // ✅ Payment method options with COD
   const paymentMethods = [
     {
       id: "CARD" as PaymentMethodType,
@@ -131,13 +127,6 @@ export default function CheckoutPage() {
       emoji: "💳",
       requiresRazorpay: true,
     },
-    // {
-    //   id: "UPI" as PaymentMethodType,
-    //   name: "UPI",
-    //   description: "Google Pay, PhonePe, Paytm",
-    //   emoji: "📱",
-    //   requiresRazorpay: true,
-    // },
     {
       id: "NETBANKING" as PaymentMethodType,
       name: "Net Banking",
@@ -161,16 +150,13 @@ export default function CheckoutPage() {
     },
   ];
 
-  // Load items based on mode
   useEffect(() => {
     if (isBuyNowMode) {
       const storedItem = sessionStorage.getItem("buyNowItem");
       if (storedItem) {
         try {
-          const item = JSON.parse(storedItem);
-          setBuyNowItem(item);
-        } catch (error) {
-          console.error("Error loading buy now item:", error);
+          setBuyNowItem(JSON.parse(storedItem));
+        } catch {
           router.push("/cart");
         }
       } else {
@@ -179,25 +165,19 @@ export default function CheckoutPage() {
     }
   }, [isBuyNowMode, router]);
 
-  // Load Razorpay script
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
     document.body.appendChild(script);
-
     return () => {
       document.body.removeChild(script);
     };
   }, []);
 
-  // Fetch addresses
   const { data: addressesData, isLoading: isLoadingAddresses } = useQuery({
     queryKey: ["addresses", user?.id],
-    queryFn: async () => {
-      const response = await addressApi.getAddresses();
-      return response.data;
-    },
+    queryFn: async () => (await addressApi.getAddresses()).data,
     enabled: !!user,
   });
 
@@ -207,10 +187,7 @@ export default function CheckoutPage() {
     refetch: refetchCartApi,
   } = useQuery({
     queryKey: ["cartApi", user?.id],
-    queryFn: async () => {
-      const res = await cartApi.getCart();
-      return res.data;
-    },
+    queryFn: async () => (await cartApi.getCart()).data,
     enabled: !!user,
     staleTime: 0,
   });
@@ -219,24 +196,23 @@ export default function CheckoutPage() {
   const displayItems =
     isBuyNowMode && buyNowItem ? [buyNowItem] : user ? apiItems : cartItems;
   const addresses = addressesData || [];
-    const {
-      data: shippingData,
-      isLoading: isLoadingShipping,
-      refetch: refetchShipping,
-    } = useQuery({
-      queryKey: ["cartShipping", selectedAddress?.pincode],
-      queryFn: async () => {
-        if (!selectedAddress?.pincode || displayItems.length === 0) return null;
 
-        const response = await shippingApi.getCartShippingRates({
-          deliveryPincode: selectedAddress?.pincode,
-        });
-        return response.data;
-      },
-      enabled: !!selectedAddress,
-    });
+  const {
+    data: shippingData,
+    isLoading: isLoadingShipping,
+    refetch: refetchShipping,
+  } = useQuery({
+    queryKey: ["cartShipping", selectedAddress?.pincode],
+    queryFn: async () => {
+      if (!selectedAddress?.pincode || displayItems.length === 0) return null;
+      const response = await shippingApi.getCartShippingRates({
+        deliveryPincode: selectedAddress?.pincode,
+      });
+      return response.data;
+    },
+    enabled: !!selectedAddress,
+  });
 
-  // Auto-select default address
   useEffect(() => {
     if (addresses.length > 0 && !selectedAddress) {
       const defaultAddr = addresses.find((addr) => addr.isDefault);
@@ -244,7 +220,6 @@ export default function CheckoutPage() {
     }
   }, [addresses, selectedAddress]);
 
-  // Fetch order preview
   const {
     data: orderPreview,
     isLoading: isLoadingPreview,
@@ -265,7 +240,6 @@ export default function CheckoutPage() {
     ],
     queryFn: async () => {
       if (!selectedAddress) return null;
-
       const orderItems =
         isBuyNowMode && buyNowItem
           ? [
@@ -276,28 +250,27 @@ export default function CheckoutPage() {
               },
             ]
           : undefined;
-
       const response = await orderApi.getOrderPreview({
         shippingAddressId: selectedAddress.id,
         couponCode: appliedCoupon?.code,
         items: orderItems,
         selectedCourierCompanyId: selectedCourier?.courier_company_id,
       });
-
       return response.data;
     },
     enabled: !!selectedAddress && !!selectedCourier,
     staleTime: 0,
     gcTime: 0,
   });
-  console.log("selectedCourier?.courier_company_id", selectedCourier);
 
   const subtotal = orderPreview?.breakdown.subtotal || 0;
   const discount = orderPreview?.breakdown.discount || 0;
   const couponDiscount = orderPreview?.breakdown.couponDiscount || 0;
   const shippingCost = orderPreview?.breakdown.shippingCost || 0;
+  const cgstAmount = orderPreview?.breakdown.cgstAmount || 0;
+  const sgstAmount = orderPreview?.breakdown.sgstAmount || 0;
   const gstAmount = orderPreview?.breakdown.gstAmount || 0;
-  const shippingInfo = shippingData; // ✅ couriers source
+  const shippingInfo = shippingData;
   const availableCouriers = shippingData?.availableCouriers ?? [];
   const cheapestCourier = shippingData?.cheapestCourier;
   const fastestCourier = shippingData?.fastestCourier;
@@ -307,64 +280,43 @@ export default function CheckoutPage() {
   const total = orderPreview?.breakdown.total || 0;
   const estimatedDelivery = orderPreview?.estimatedDelivery || "3-5 days";
   const couponError = orderPreview?.couponError;
-
-  // ✅ COD availability check
   const isCODAvailable = total > 0 && total <= 2000;
 
-  // ✅ Filter couriers by weight capacity
   const eligibleCouriers = useMemo(() => {
     if (!availableCouriers || availableCouriers.length === 0) return [];
-
     return availableCouriers.filter((courier: any) => {
-      // If courier name contains weight info, check it
       const courierName = courier.courier_name?.toLowerCase() || "";
-
-      // Amazon Shipping Surface 1kg - only for orders ≤ 1kg
-      if (courierName.includes("amazon") && courierName.includes("1kg")) {
+      if (courierName.includes("amazon") && courierName.includes("1kg"))
         return chargeableWeight <= 1;
-      }
-
-      // Add more weight-based filters if needed
-      // Example: if (courierName.includes("2kg")) return chargeableWeight <= 2;
-
-      return true; // Allow all other couriers
+      return true;
     });
   }, [availableCouriers, chargeableWeight]);
 
-  // ✅ Auto-select courier on load
   useEffect(() => {
     if (!selectedAddress?.pincode) return;
-
     if (eligibleCouriers.length > 0 && !selectedCourier) {
       const cheapest = eligibleCouriers.reduce((min: any, curr: any) =>
         curr.freight_charge < min.freight_charge ? curr : min,
       );
-
       setSelectedCourier(cheapest);
       setCourierPreference("CHEAPEST");
     }
   }, [eligibleCouriers, selectedCourier, selectedAddress?.pincode]);
 
-  const getStockQty = (item: any) => {
-    return (
-      item?.variant?.stock?.[0]?.quantity ??
-      item?.product?.stock?.find((s: any) => s.variantId === item?.variantId)
-        ?.quantity ??
-      0
-    );
-  };
-
-  const getUnitPrice = (item: any) => {
-    return Number(
+  const getStockQty = (item: any) =>
+    item?.variant?.stock?.[0]?.quantity ??
+    item?.product?.stock?.find((s: any) => s.variantId === item?.variantId)
+      ?.quantity ??
+    0;
+  const getUnitPrice = (item: any) =>
+    Number(
       item?.variant?.sellingPrice ??
         item?.variant?.price ??
         item?.product?.sellingPrice ??
         item?.price ??
         0,
     );
-  };
 
-  // Fetch applicable coupons (existing code...)
   const {
     data: applicableCouponsData,
     isLoading: isLoadingCoupons,
@@ -372,22 +324,14 @@ export default function CheckoutPage() {
   } = useQuery({
     queryKey: ["applicableCoupons", subtotal, displayItems.length],
     queryFn: async () => {
-      if (
-        !user ||
-        displayItems.length === 0 ||
-        !orderPreview ||
-        subtotal <= 0
-      ) {
+      if (!user || displayItems.length === 0 || !orderPreview || subtotal <= 0)
         return { data: [] };
-      }
-
       const cartItems = displayItems.map((item: any) => ({
         productId: item.productId,
         categoryId: item.categoryId,
         quantity: item.quantity,
         price: item.price,
       }));
-
       return await couponApi.getApplicableCoupons({
         orderAmount: subtotal,
         cartItems,
@@ -398,10 +342,10 @@ export default function CheckoutPage() {
     staleTime: 30000,
   });
 
-  const availableCoupons = useMemo(() => {
-    return applicableCouponsData?.data ?? [];
-  }, [applicableCouponsData?.data]);
-
+  const availableCoupons = useMemo(
+    () => applicableCouponsData?.data ?? [],
+    [applicableCouponsData?.data],
+  );
   const filteredCoupons = couponCode
     ? availableCoupons.filter((coupon) =>
         coupon.code.toLowerCase().includes(couponCode.toLowerCase()),
@@ -411,7 +355,6 @@ export default function CheckoutPage() {
   useEffect(() => {
     setShowAutocomplete(!!couponCode && filteredCoupons.length > 0);
   }, [couponCode, filteredCoupons.length]);
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -424,12 +367,10 @@ export default function CheckoutPage() {
         setShowCouponDropdown(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Update quantity mutation (existing code...)
   const updateQtyMutation = useMutation({
     mutationFn: async ({
       itemId,
@@ -437,37 +378,26 @@ export default function CheckoutPage() {
     }: {
       itemId: string;
       quantity: number;
-    }) => {
-      return await cartApi.updateCartItem(itemId, { quantity });
-    },
+    }) => await cartApi.updateCartItem(itemId, { quantity }),
     onSuccess: async () => {
       await refetchCartApi();
-      await queryClient.invalidateQueries({
-        queryKey: ["orderPreview"],
-      });
+      await queryClient.invalidateQueries({ queryKey: ["orderPreview"] });
       await refetchPreview();
     },
-    onError: (err: any) => {
-      toast.error(err?.message || "Failed to update quantity");
-    },
+    onError: (err: any) =>
+      toast.error(err?.message || "Failed to update quantity"),
   });
 
   const removeItemMutation = useMutation({
-    mutationFn: async (itemId: string) => {
-      return await cartApi.removeFromCart(itemId);
-    },
+    mutationFn: async (itemId: string) => await cartApi.removeFromCart(itemId),
     onSuccess: async () => {
       toast.success("Item removed");
       await refetchCartApi();
-      await queryClient.invalidateQueries({
-        queryKey: ["orderPreview"],
-      });
+      await queryClient.invalidateQueries({ queryKey: ["orderPreview"] });
       await refetchPreview();
       await refetchCoupons();
     },
-    onError: (err: any) => {
-      toast.error(err?.message || "Failed to remove item");
-    },
+    onError: (err: any) => toast.error(err?.message || "Failed to remove item"),
   });
 
   const validateCouponMutation = useMutation({
@@ -478,7 +408,6 @@ export default function CheckoutPage() {
         quantity: item.quantity,
         price: item.price,
       }));
-
       return await couponApi.validateCoupon({
         code: code.toUpperCase(),
         orderAmount: subtotal,
@@ -488,7 +417,7 @@ export default function CheckoutPage() {
     onSuccess: async (response, code) => {
       const payload = response?.data;
       if (payload.valid && payload.coupon && payload.discount !== undefined) {
-        const couponData = {
+        applyCoupon({
           code: payload.coupon.code,
           discountType: payload.coupon.discountType,
           discountValue: payload.coupon.discountValue,
@@ -499,32 +428,25 @@ export default function CheckoutPage() {
           isActive: payload.coupon.isActive,
           discountAmount: payload.discount,
           finalAmount: payload.finalAmount || 0,
-        };
-
-        applyCoupon(couponData);
+        });
         setCouponCode("");
         setShowCouponDropdown(false);
         setShowAutocomplete(false);
-
         await queryClient.invalidateQueries({
           queryKey: ["orderPreview"],
           exact: false,
         });
-
         await refetchPreview();
-
         toast.success(
           `Coupon "${code}" applied! You save ₹${Number(response.discount).toFixed(2)}`,
         );
-
         refetchCoupons();
       } else {
         toast.error(response.error || "Invalid coupon code");
       }
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to apply coupon");
-    },
+    onError: (error: any) =>
+      toast.error(error.message || "Failed to apply coupon"),
   });
 
   const handleApplyCoupon = (code: string) => {
@@ -534,18 +456,12 @@ export default function CheckoutPage() {
     }
     validateCouponMutation.mutate(code);
   };
-
   const handleRemoveCoupon = async () => {
     removeCoupon();
-
-    await queryClient.invalidateQueries({
-      queryKey: ["orderPreview"],
-    });
+    await queryClient.invalidateQueries({ queryKey: ["orderPreview"] });
     await refetchCoupons();
-
     toast.info("Coupon removed");
   };
-
   const handleCouponSelect = (coupon: Coupon) => {
     setCouponCode(coupon.code);
     setShowAutocomplete(false);
@@ -558,15 +474,10 @@ export default function CheckoutPage() {
       queryClient.invalidateQueries({ queryKey: ["addresses"] });
       toast.success("Address deleted");
     },
-    onError: () => {
-      toast.error("Failed to delete address");
-    },
+    onError: () => toast.error("Failed to delete address"),
   });
 
-  const handleAddressSelect = (address: Address) => {
-    setSelectedAddress(address);
-  };
-
+  const handleAddressSelect = (address: Address) => setSelectedAddress(address);
   const handleAddNewAddress = () => {
     if (!user) {
       openModal("login");
@@ -575,40 +486,34 @@ export default function CheckoutPage() {
     setEditingAddress(null);
     setIsAddressModalOpen(true);
   };
-
   const handleEditAddress = (address: Address) => {
     setEditingAddress(address);
     setIsAddressModalOpen(true);
   };
-
   const handleDeleteAddress = (addressId: string) => {
-    if (selectedAddress?.id === addressId) {
-      setSelectedAddress(null);
-    }
+    if (selectedAddress?.id === addressId) setSelectedAddress(null);
     deleteAddressMutation.mutate(addressId);
   };
 
-  // ✅ Handle courier selection
   const handleCourierSelect = (courier: any, preference: CourierPreference) => {
     setSelectedCourier(courier);
     setCourierPreference(preference);
-    // ✅ update pricing based on courier
     refetchPreview();
-  };;
-const getRazorpayBlock = (paymentMethod: string) => {
-  switch (paymentMethod) {
-    // case "UPI":
-    //   return "block.upi";
-    case "CARD":
-      return "block.card";
-    case "NETBANKING":
-      return "block.netbanking";
-    case "WALLET":
-      return "block.wallet";
-    default:
-      return "block.upi";
-  }
-};
+  };
+
+  const getRazorpayBlock = (paymentMethod: string) => {
+    switch (paymentMethod) {
+      case "CARD":
+        return "block.card";
+      case "NETBANKING":
+        return "block.netbanking";
+      case "WALLET":
+        return "block.wallet";
+      default:
+        return "block.upi";
+    }
+  };
+
   const handleRazorpayPayment = async (orderData: any) => {
     try {
       const options = {
@@ -629,32 +534,18 @@ const getRazorpayBlock = (paymentMethod: string) => {
         config: {
           display: {
             blocks: {
-              // upi: {
-              //   name: "Pay via UPI",
-              //   instruments: [{ method: "upi" }],
-              // },
-              card: {
-                name: "Pay via Card",
-                instruments: [{ method: "card" }],
-              },
+              card: { name: "Pay via Card", instruments: [{ method: "card" }] },
               netbanking: {
                 name: "Net Banking",
                 instruments: [{ method: "netbanking" }],
               },
-              wallet: {
-                name: "Wallets",
-                instruments: [{ method: "wallet" }],
-              },
+              wallet: { name: "Wallets", instruments: [{ method: "wallet" }] },
             },
             sequence: [getRazorpayBlock(paymentMethod)],
-            preferences: {
-              show_default_blocks: false, // 🚫 hides Pay Later
-            },
+            preferences: { show_default_blocks: false },
           },
         },
-        theme: {
-          color: "#000000",
-        },
+        theme: { color: "#000000" },
         handler: async function (response: any) {
           try {
             await verifyPaymentMutation.mutateAsync({
@@ -662,12 +553,8 @@ const getRazorpayBlock = (paymentMethod: string) => {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
             });
-
-            if (!isBuyNowMode) {
-              clearCart();
-            } else {
-              sessionStorage.removeItem("buyNowItem");
-            }
+            if (!isBuyNowMode) clearCart();
+            else sessionStorage.removeItem("buyNowItem");
             toast.success("Payment successful! Order placed.");
             router.push("/my-account/orders");
           } catch (error) {
@@ -684,7 +571,6 @@ const getRazorpayBlock = (paymentMethod: string) => {
           },
         },
       };
-
       const razorpay = new window.Razorpay(options);
       razorpay.open();
     } catch (error) {
@@ -700,32 +586,25 @@ const getRazorpayBlock = (paymentMethod: string) => {
       openModal("login");
       return;
     }
-
     if (!selectedAddress) {
       toast.error("Please select a delivery address");
       return;
     }
-
     if (!selectedCourier) {
       toast.error("Please select a courier");
       return;
     }
-
-    // ✅ COD validation
     if (paymentMethod === "COD" && !isCODAvailable) {
       toast.error("COD is only available for orders up to ₹2,000");
       return;
     }
-
     try {
       setIsProcessing(true);
-
       const orderDTO: CreateOrderDTO = {
         shippingAddressId: selectedAddress.id,
         billingAddressId: selectedAddress.id,
         couponCode: appliedCoupon?.code,
         paymentMethod: paymentMethod,
-        // ✅ Pass courier selection
         courierPreference: courierPreference,
         selectedCourierCompanyId: selectedCourier.courier_company_id,
         ...(isBuyNowMode && buyNowItem
@@ -740,15 +619,10 @@ const getRazorpayBlock = (paymentMethod: string) => {
             }
           : {}),
       };
-
       const response = await initiatePaymentMutation.mutateAsync(orderDTO);
-
       if (paymentMethod === "COD") {
-        if (!isBuyNowMode) {
-          clearCart();
-        } else {
-          sessionStorage.removeItem("buyNowItem");
-        }
+        if (!isBuyNowMode) clearCart();
+        else sessionStorage.removeItem("buyNowItem");
         toast.success("Order placed successfully!");
         router.push("/my-account/orders");
       } else {
@@ -767,1058 +641,888 @@ const getRazorpayBlock = (paymentMethod: string) => {
 
   const formatMoney = (value: number) => `₹${Number(value || 0).toFixed(2)}`;
 
-  const getCourierLabel = (courier: any) => {
-    if (!courier) return null;
-    return `${courier.courier_name} • ${courier.estimated_delivery_days} days • ${formatMoney(courier.freight_charge)}`;
-  };
-
-  console.log("shippingInfo", JSON.stringify(shippingInfo));
-  console.log("orderPreview?.breakdown.shippingCost", orderPreview?.breakdown);
-
-  if (displayItems.length === 0) {
-    return null;
-  }
+  if (displayItems.length === 0) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-6 lg:py-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
-        >
-          <Link href="/cart">
-            <motion.button
-              whileHover={{ x: -4 }}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              Back to Cart
-            </motion.button>
-          </Link>
-          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">
-            Checkout
-          </h1>
-          {isBuyNowMode && (
-            <p className="text-sm text-orange-600 flex items-center gap-2 mt-1">
-              <Zap className="w-4 h-4" />
-              Express Checkout - Buy Now
-            </p>
-          )}
-          <p className="text-gray-600 mt-2">Review and complete your order</p>
-        </motion.div>
+    <div className="h-screen overflow-auto bg-gray-50 flex flex-col">
+      {/* ─── Compact Header ───────────────────────────────────────────────── */}
+      <div className="flex-none bg-white border-b border-gray-200 px-4 py-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/cart">
+              <motion.button
+                whileHover={{ x: -3 }}
+                className="flex items-center gap-1.5 text-gray-500 hover:text-gray-900 text-sm transition"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Cart</span>
+              </motion.button>
+            </Link>
+            <div className="h-4 w-px bg-gray-300" />
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-gray-900">Checkout</h1>
+              {isBuyNowMode && (
+                <span className="text-xs bg-orange-50 text-orange-600 border border-orange-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <Zap className="w-3 h-3" /> Express
+                </span>
+              )}
+            </div>
+          </div>
+        
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Left Column */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Cart Items Summary */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white rounded-2xl p-5 lg:p-6 shadow-sm border border-gray-200"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center">
-                  <ShoppingBag className="w-5 h-5 text-white" />
+          <div className="flex items-center gap-1.5 text-xs text-gray-400">
+            <Lock className="w-3.5 h-3.5" />
+            <span>Secure Checkout</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Main Body ─────────────────────────────────────────────────────── */}
+      <div className="flex-1 overflow-auto">
+        <div className="max-w-7xl mx-auto h-full px-4 py-4">
+          <div className="grid lg:grid-cols-5 gap-4 h-full">
+            {/* ── Left Column (3/5 width) ─────────────────────────────────── */}
+            <div className="lg:col-span-3 flex flex-col gap-3 h-full overflow-auto">
+              {/* Cart Items — fixed compact */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-xl border border-gray-200 shadow-sm flex-none"
+              >
+                <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-100">
+                  <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center">
+                    <ShoppingBag className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <h2 className="font-bold text-gray-900 text-sm">
+                    Order Items ({displayItems.length})
+                  </h2>
                 </div>
-                <h2 className="text-xl font-bold text-gray-900">
-                  Order Items ({displayItems.length})
-                </h2>
-              </div>
 
-              <div className="space-y-3 max-h-64 overflow-y-auto">
-                {displayItems?.map((item: any, index: number) => {
-                  const stockQty = getStockQty(item);
-                  const unitPrice = getUnitPrice(item);
-
-                  const isBuyNowItem = isBuyNowMode;
-
-                  return (
-                    <div
-                      key={`${item.productId}-${item.variantId}-${index}`}
-                      className="flex gap-3 p-3 bg-gray-50 rounded-xl relative"
-                    >
-                      {/* ✅ Delete Button */}
-                      {!isBuyNowItem && (
-                        <button
-                          onClick={() => {
-                            if (user?.id) {
-                              removeItemMutation.mutate(item.id);
-                            } else {
-                              clearCart(); // OR remove item from zustand if you have removeItem
+                <div className="p-3 space-y-2 max-h-36 overflow-y-auto">
+                  {displayItems?.map((item: any, index: number) => {
+                    const stockQty = getStockQty(item);
+                    const unitPrice = getUnitPrice(item);
+                    const isBuyNowItem = isBuyNowMode;
+                    return (
+                      <div
+                        key={`${item.productId}-${item.variantId}-${index}`}
+                        className="flex gap-2.5 p-2.5 bg-gray-50 rounded-lg relative"
+                      >
+                        {!isBuyNowItem && (
+                          <button
+                            onClick={() =>
+                              user?.id
+                                ? removeItemMutation.mutate(item.id)
+                                : clearCart()
                             }
-                          }}
-                          className="absolute top-2 right-2 p-2 hover:bg-red-50 rounded-lg transition"
-                        >
-                          <Trash2 className="w-4 h-4 text-red-600" />
-                        </button>
-                      )}
-
-                      {/* Image */}
-                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                        {item?.product?.media?.[0]?.url ? (
-                          <Image
-                            src={item.product.media[0].url}
-                            alt={item.product?.name}
-                            width={64}
-                            height={64}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <ShoppingBag className="w-6 h-6 text-gray-400" />
-                          </div>
+                            className="absolute top-2 right-2 p-1 hover:bg-red-50 rounded transition"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                          </button>
                         )}
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 text-sm line-clamp-1">
-                          {item.product?.name || item.name}
-                        </p>
-
-                        {/* ✅ Variant + Custom attrs */}
-                        {item?.variant && (
-                          <div className="mt-2 space-y-2">
-                            {/* normal */}
-                            <div className="flex flex-wrap gap-2 text-xs text-gray-600">
+                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                          {item?.product?.media?.[0]?.url ? (
+                            <Image
+                              src={item.product.media[0].url}
+                              alt={item.product?.name}
+                              width={48}
+                              height={48}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ShoppingBag className="w-5 h-5 text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0 pr-6">
+                          <p className="font-semibold text-gray-900 text-xs line-clamp-1">
+                            {item.product?.name || item.name}
+                          </p>
+                          {item?.variant && (
+                            <div className="flex flex-wrap gap-1 mt-1">
                               {item.variant.size && (
-                                <span className="bg-gray-100 px-2 py-0.5 rounded">
+                                <span className="text-xs bg-white border border-gray-200 px-1.5 py-0.5 rounded text-gray-600">
                                   Size: {item.variant.size}
                                 </span>
                               )}
                               {item.variant.color && (
-                                <span className="bg-gray-100 px-2 py-0.5 rounded">
+                                <span className="text-xs bg-white border border-gray-200 px-1.5 py-0.5 rounded text-gray-600">
                                   {item.variant.color}
                                 </span>
                               )}
-                              {item.variant.fabric && (
-                                <span className="bg-gray-100 px-2 py-0.5 rounded">
-                                  {item.variant.fabric}
-                                </span>
-                              )}
-                            </div>
-
-                            {/* custom */}
-                            {normalizeAttributes(item.variant.attributes)
-                              .length > 0 && (
-                              <div className="flex flex-wrap gap-2">
-                                {normalizeAttributes(
-                                  item.variant.attributes,
-                                ).map((attr) => (
+                              {normalizeAttributes(item.variant.attributes).map(
+                                (attr) => (
                                   <span
                                     key={attr.key}
-                                    className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-lg border border-blue-100"
+                                    className="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100"
                                   >
-                                    {attr.key}:{" "}
-                                    <span className="font-semibold">
-                                      {attr.value}
-                                    </span>
+                                    {attr.key}: <b>{attr.value}</b>
                                   </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Qty + Price */}
-                        <div className="flex items-center justify-between mt-3">
-                          {/* ✅ Qty Controls */}
-                          <div className="flex items-center gap-2 bg-white border rounded-full px-2 py-1">
-                            <button
-                              disabled={isBuyNowItem || item.quantity <= 1}
-                              onClick={() => {
-                                const newQty = item.quantity - 1;
-                                if (newQty < 1) return;
-
-                                if (user?.id) {
+                                ),
+                              )}
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between mt-2">
+                            <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-full px-1.5 py-0.5">
+                              <button
+                                disabled={isBuyNowItem || item.quantity <= 1}
+                                onClick={() => {
+                                  if (item.quantity > 1 && user?.id)
+                                    updateQtyMutation.mutate({
+                                      itemId: item.id,
+                                      quantity: item.quantity - 1,
+                                    });
+                                }}
+                                className="w-5 h-5 flex items-center justify-center text-gray-600 disabled:opacity-40 text-sm"
+                              >
+                                −
+                              </button>
+                              <span className="w-5 text-center text-xs font-bold">
+                                {item.quantity}
+                              </span>
+                              <button
+                                disabled={
+                                  isBuyNowItem || item.quantity >= stockQty
+                                }
+                                onClick={() =>
+                                  user?.id &&
                                   updateQtyMutation.mutate({
                                     itemId: item.id,
-                                    quantity: newQty,
-                                  });
-                                } else {
-                                  // zustand update
-                                  // updateQuantity(item.id, newQty)
+                                    quantity: item.quantity + 1,
+                                  })
                                 }
-                              }}
-                              className="w-7 h-7 flex items-center justify-center disabled:opacity-50"
-                            >
-                              -
-                            </button>
-
-                            <span className="w-6 text-center text-sm font-semibold">
-                              {item.quantity}
-                            </span>
-
-                            <button
-                              disabled={
-                                isBuyNowItem || item.quantity >= stockQty
-                              }
-                              onClick={() => {
-                                const newQty = item.quantity + 1;
-
-                                if (user?.id) {
-                                  updateQtyMutation.mutate({
-                                    itemId: item.id,
-                                    quantity: newQty,
-                                  });
-                                } else {
-                                  // zustand update
-                                  // updateQuantity(item.id, newQty)
-                                }
-                              }}
-                              className="w-7 h-7 flex items-center justify-center bg-black text-white rounded-full disabled:opacity-50"
-                            >
-                              +
-                            </button>
+                                className="w-5 h-5 flex items-center justify-center bg-gray-900 text-white rounded-full disabled:opacity-40 text-sm"
+                              >
+                                +
+                              </button>
+                            </div>
+                            <p className="font-bold text-xs text-gray-900">
+                              ₹
+                              {(unitPrice * item.quantity).toLocaleString(
+                                "en-IN",
+                              )}
+                            </p>
                           </div>
-
-                          {/* ✅ Price */}
-                          <p className="font-semibold text-sm">
-                            ₹
-                            {(unitPrice * item.quantity).toLocaleString(
-                              "en-IN",
-                            )}
-                          </p>
                         </div>
-
-                        {/* ✅ Stock info */}
-                        <p className="text-xs text-gray-500 mt-1">
-                          Stock: {stockQty}
-                        </p>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </motion.div>
+                    );
+                  })}
+                </div>
+              </motion.div>
 
-            {/* Delivery Address */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-white rounded-2xl p-5 lg:p-6 shadow-sm border border-gray-200"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center">
-                  <MapPin className="w-5 h-5 text-white" />
+              {/* Address */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 }}
+                className="bg-white rounded-xl border border-gray-200 shadow-sm flex-none"
+              >
+                <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-100">
+                  <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center">
+                    <MapPin className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <h2 className="font-bold text-gray-900 text-sm">
+                    Delivery Address
+                  </h2>
                 </div>
-                <h2 className="text-xl font-bold text-gray-900">
-                  Delivery Address
-                </h2>
-              </div>
 
-              {!user ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-600 mb-4">
-                    Please login to add delivery address
-                  </p>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => openModal("login")}
-                    className="px-6 py-3 bg-black text-white rounded-full font-semibold"
-                  >
-                    Login to Continue
-                  </motion.button>
-                </div>
-              ) : isLoadingAddresses ? (
-                <div className="space-y-3">
-                  {[1, 2].map((i) => (
-                    <div
-                      key={i}
-                      className="p-4 border-2 border-gray-200 rounded-xl animate-pulse"
-                    >
-                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
-                      <div className="h-3 bg-gray-200 rounded w-full mb-1" />
-                      <div className="h-3 bg-gray-200 rounded w-2/3" />
-                    </div>
-                  ))}
-                </div>
-              ) : addresses.length === 0 ? (
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleAddNewAddress}
-                  className="w-full p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-black transition-colors"
-                >
-                  <Plus className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                  <p className="font-semibold text-gray-700">
-                    Add Delivery Address
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Click to add your first address
-                  </p>
-                </motion.button>
-              ) : (
-                <>
-                  <div className="space-y-3 mb-4">
-                    {addresses.map((address) => (
-                      <motion.div
-                        key={address.id}
-                        whileHover={{ scale: 1.01 }}
-                        onClick={() => handleAddressSelect(address)}
-                        className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                          selectedAddress?.id === address.id
-                            ? "border-black bg-gray-50"
-                            : "border-gray-200 hover:border-gray-400"
-                        }`}
+                <div className="p-3">
+                  {!user ? (
+                    <div className="flex items-center justify-between py-2">
+                      <p className="text-sm text-gray-500">
+                        Login to add delivery address
+                      </p>
+                      <button
+                        onClick={() => openModal("login")}
+                        className="px-4 py-1.5 bg-gray-900 text-white rounded-full text-xs font-semibold"
                       >
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-3 flex-1">
+                        Login
+                      </button>
+                    </div>
+                  ) : isLoadingAddresses ? (
+                    <div className="space-y-2">
+                      {[1, 2].map((i) => (
+                        <div
+                          key={i}
+                          className="p-3 border border-gray-200 rounded-lg animate-pulse"
+                        >
+                          <div className="h-3 bg-gray-200 rounded w-3/4 mb-1.5" />
+                          <div className="h-2.5 bg-gray-200 rounded w-full" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : addresses.length === 0 ? (
+                    <button
+                      onClick={handleAddNewAddress}
+                      className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-900 transition flex items-center justify-center gap-2 text-gray-500 text-sm"
+                    >
+                      <Plus className="w-4 h-4" /> Add Delivery Address
+                    </button>
+                  ) : (
+                    <div className="space-y-2">
+                      {/* Scrollable address list */}
+                      <div className="space-y-2 max-h-28 overflow-y-auto">
+                        {addresses.map((address) => (
+                          <div
+                            key={address.id}
+                            onClick={() => handleAddressSelect(address)}
+                            className={`p-2.5 border rounded-lg cursor-pointer transition-all flex items-start gap-2.5 ${selectedAddress?.id === address.id ? "border-gray-900 bg-gray-50" : "border-gray-200 hover:border-gray-400"}`}
+                          >
                             <div
-                              className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                                selectedAddress?.id === address.id
-                                  ? "border-black bg-black"
-                                  : "border-gray-300"
-                              }`}
+                              className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedAddress?.id === address.id ? "border-gray-900 bg-gray-900" : "border-gray-300"}`}
                             >
                               {selectedAddress?.id === address.id && (
-                                <Check className="w-3 h-3 text-white" />
+                                <Check className="w-2.5 h-2.5 text-white" />
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <p className="font-semibold text-gray-900">
+                              <div className="flex items-center gap-1.5">
+                                <p className="font-semibold text-gray-900 text-xs">
                                   {address.fullName}
                                 </p>
                                 {address.isDefault && (
-                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                                  <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0 rounded-full text-[10px]">
                                     Default
                                   </span>
                                 )}
                               </div>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-xs text-gray-500 line-clamp-1">
                                 {address.addressLine1}
                                 {address.addressLine2 &&
                                   `, ${address.addressLine2}`}
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                {address.city}, {address.state} -{" "}
+                                , {address.city}, {address.state} -{" "}
                                 {address.pincode}
                               </p>
-                              <p className="text-sm text-gray-600 mt-1">
-                                Phone: {address.phone}
+                              <p className="text-xs text-gray-500">
+                                📞 {address.phone}
+                              </p>
+                            </div>
+                            <div className="flex gap-1 flex-shrink-0">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditAddress(address);
+                                }}
+                                className="p-1 hover:bg-gray-100 rounded transition"
+                              >
+                                <Edit2 className="w-3 h-3 text-gray-500" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteAddress(address.id);
+                                }}
+                                className="p-1 hover:bg-red-50 rounded transition"
+                              >
+                                <Trash2 className="w-3 h-3 text-red-500" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        onClick={handleAddNewAddress}
+                        className="w-full py-2 border border-dashed border-gray-300 rounded-lg hover:border-gray-900 transition flex items-center justify-center gap-1.5 text-gray-500 text-xs font-medium"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Add New Address
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+
+              {/* Payment Method */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white rounded-xl border border-gray-200 shadow-sm flex-none"
+              >
+                <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-100">
+                  <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center">
+                    <CreditCard className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <h2 className="font-bold text-gray-900 text-sm">
+                    Payment Method
+                  </h2>
+                </div>
+
+                <div className="p-3 grid grid-cols-2 gap-2">
+                  {paymentMethods.map((method) => {
+                    const isCOD = method.id === "COD";
+                    const isDisabled = isCOD && !isCODAvailable;
+                    return (
+                      <div
+                        key={method.id}
+                        onClick={() =>
+                          !isDisabled && setPaymentMethod(method.id)
+                        }
+                        className={`p-2.5 border rounded-lg transition-all relative ${paymentMethod === method.id ? "border-gray-900 bg-gray-50" : "border-gray-200 hover:border-gray-400"} ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${paymentMethod === method.id ? "border-gray-900 bg-gray-900" : "border-gray-300"}`}
+                          >
+                            {paymentMethod === method.id && (
+                              <Check className="w-2.5 h-2.5 text-white" />
+                            )}
+                          </div>
+                          <span className="text-base">{method.emoji}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-900 text-xs leading-tight">
+                              {method.name}
+                            </p>
+                            <p className="text-gray-400 text-[10px] leading-tight truncate">
+                              {method.description}
+                            </p>
+                          </div>
+                        </div>
+                        {isCOD && (
+                          <p
+                            className={`text-[10px] mt-1 font-medium pl-6 ${isCODAvailable ? "text-green-600" : "text-red-500"}`}
+                          >
+                            {isCODAvailable
+                              ? "✅ Available"
+                              : "❌ Up to ₹2,000 only"}
+                          </p>
+                        )}
+                        {method.requiresRazorpay && (
+                          <p className="text-[9px] text-gray-400 pl-6 mt-0.5">
+                            via Razorpay
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            </div>
+
+            {/* ── Right Column (2/5 width) ────────────────────────────────── */}
+            <motion.div
+              initial={{ opacity: 0, x: 15 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.15 }}
+              className="lg:col-span-2 flex flex-col h-full overflow-hidden"
+            >
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col h-full overflow-hidden">
+                <div className="flex-none px-4 py-3 border-b border-gray-100">
+                  <h2 className="font-bold text-gray-900 text-sm">
+                    Order Summary
+                  </h2>
+                </div>
+
+                <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+                  {/* Coupon */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Gift className="w-4 h-4 text-amber-500" />
+                      <h3 className="font-semibold text-gray-900 text-xs">
+                        Apply Coupon
+                      </h3>
+                      {(isLoadingCoupons ||
+                        validateCouponMutation.isPending) && (
+                        <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
+                      )}
+                    </div>
+
+                    {appliedCoupon ? (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-2.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Check className="w-4 h-4 text-green-600" />
+                            <div>
+                              <p className="font-bold text-green-900 text-xs">
+                                {appliedCoupon.code}
+                              </p>
+                              <p className="text-[10px] text-green-700">
+                                {appliedCoupon.discountType === "PERCENTAGE"
+                                  ? `${appliedCoupon.discountValue}% OFF`
+                                  : `₹${appliedCoupon.discountValue} OFF`}
                               </p>
                             </div>
                           </div>
-                          <div className="flex gap-2 ml-2">
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditAddress(address);
-                              }}
-                              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                              <Edit2 className="w-4 h-4 text-gray-600" />
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteAddress(address.id);
-                              }}
-                              className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4 text-red-600" />
-                            </motion.button>
-                          </div>
+                          <button
+                            onClick={handleRemoveCoupon}
+                            disabled={validateCouponMutation.isPending}
+                            className="p-1 hover:bg-green-100 rounded transition"
+                          >
+                            <X className="w-4 h-4 text-green-600" />
+                          </button>
                         </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleAddNewAddress}
-                    className="w-full py-3 border-2 border-gray-300 rounded-xl hover:border-black transition-colors flex items-center justify-center gap-2 text-gray-700 font-medium"
-                  >
-                    <Plus className="w-5 h-5" />
-                    Add New Address
-                  </motion.button>
-                </>
-              )}
-            </motion.div>
-
-            {/* Payment Method with COD restriction */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="bg-white rounded-2xl p-5 lg:p-6 shadow-sm border border-gray-200"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center">
-                  <CreditCard className="w-5 h-5 text-white" />
-                </div>
-                <h2 className="text-xl font-bold text-gray-900">
-                  Payment Method
-                </h2>
-              </div>
-
-              <div className="space-y-3">
-                {paymentMethods.map((method) => {
-                  const isCOD = method.id === "COD";
-                  const isDisabled = isCOD && !isCODAvailable;
-
-                  return (
-                    <motion.div
-                      key={method.id}
-                      whileHover={!isDisabled ? { scale: 1.01 } : {}}
-                      onClick={() => !isDisabled && setPaymentMethod(method.id)}
-                      className={`p-4 border-2 rounded-xl transition-all ${
-                        paymentMethod === method.id
-                          ? "border-black bg-gray-50"
-                          : "border-gray-200 hover:border-gray-400"
-                      } ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                            paymentMethod === method.id
-                              ? "border-black bg-black"
-                              : "border-gray-300"
-                          }`}
-                        >
-                          {paymentMethod === method.id && (
-                            <Check className="w-3 h-3 text-white" />
-                          )}
-                        </div>
-                        <span className="text-2xl">{method.emoji}</span>
-                        <div className="flex-1">
-                          <p className="font-semibold text-gray-900">
-                            {method.name}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {method.description}
-                          </p>
-                          {isCOD && (
-                            <p
-                              className={`text-xs mt-1 font-medium ${
-                                isCODAvailable
-                                  ? "text-green-600"
-                                  : "text-red-600"
-                              }`}
-                            >
-                              {isCODAvailable
-                                ? "✅ Available for this order"
-                                : "❌ Available only for orders up to ₹2,000"}
-                            </p>
-                          )}
-                        </div>
-                        {method.requiresRazorpay && (
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs text-gray-400">via</span>
-                            <span className="text-xs font-bold text-blue-600">
-                              Razorpay
+                        {couponDiscount > 0 && (
+                          <div className="flex justify-between pt-1.5 mt-1.5 border-t border-green-200">
+                            <span className="text-[10px] text-green-700">
+                              Saving:
+                            </span>
+                            <span className="text-xs font-bold text-green-700">
+                              ₹{couponDiscount.toFixed(2)}
                             </span>
                           </div>
                         )}
                       </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Right Column - Order Summary */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 }}
-            className="lg:col-span-1"
-          >
-            <div className="bg-white rounded-2xl p-5 lg:p-6 shadow-sm border border-gray-200 sticky top-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">
-                Order Summary
-              </h2>
-
-              {/* Coupon Section */}
-              <div className="mb-6 pb-6 border-b border-gray-200">
-                <div className="flex items-center gap-2 mb-3">
-                  <Gift className="w-5 h-5 text-amber-600" />
-                  <h3 className="font-semibold text-gray-900">Apply Coupon</h3>
-                  {(isLoadingCoupons || validateCouponMutation.isPending) && (
-                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                  )}
-                </div>
-
-                {appliedCoupon ? (
-                  <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
-                        <div>
-                          <p className="font-bold text-green-900 text-sm">
-                            {appliedCoupon.code}
-                          </p>
-                          <p className="text-xs text-green-700">
-                            {appliedCoupon.discountType === "PERCENTAGE"
-                              ? `${appliedCoupon.discountValue}% OFF`
-                              : `₹${appliedCoupon.discountValue} OFF`}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={handleRemoveCoupon}
-                        className="p-1.5 hover:bg-green-100 rounded-lg transition-colors"
-                        disabled={validateCouponMutation.isPending}
-                      >
-                        <X className="w-5 h-5 text-green-600" />
-                      </button>
-                    </div>
-                    {couponDiscount > 0 && (
-                      <div className="flex items-center justify-between pt-2 border-t border-green-200">
-                        <span className="text-xs text-green-700 font-medium">
-                          You're saving:
-                        </span>
-                        <span className="text-sm font-bold text-green-700">
-                          ₹{couponDiscount.toFixed(2)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="relative" ref={dropdownRef}>
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <input
-                            ref={inputRef}
-                            type="text"
-                            value={couponCode}
-                            onChange={(e) =>
-                              setCouponCode(e.target.value.toUpperCase())
-                            }
-                            onFocus={() => {
-                              if (filteredCoupons.length > 0)
-                                setShowAutocomplete(true);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" && couponCode) {
-                                handleApplyCoupon(couponCode);
+                    ) : (
+                      <div className="space-y-2" ref={dropdownRef}>
+                        <div className="flex gap-1.5">
+                          <div className="relative flex-1">
+                            <input
+                              ref={inputRef}
+                              type="text"
+                              value={couponCode}
+                              onChange={(e) =>
+                                setCouponCode(e.target.value.toUpperCase())
                               }
-                            }}
-                            placeholder="Enter coupon code"
-                            className="w-full px-4 py-3 pr-10 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition uppercase text-sm font-medium"
-                            disabled={validateCouponMutation.isPending}
-                          />
-                          <button
-                            onClick={() => {
-                              setShowAutocomplete(!showAutocomplete);
-                              setShowCouponDropdown(!showCouponDropdown);
-                            }}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                          >
-                            <ChevronDown
-                              className={`w-5 h-5 transition-transform ${showCouponDropdown ? "rotate-180" : ""}`}
+                              onFocus={() => {
+                                if (filteredCoupons.length > 0)
+                                  setShowAutocomplete(true);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && couponCode)
+                                  handleApplyCoupon(couponCode);
+                              }}
+                              placeholder="ENTER COUPON CODE"
+                              className="w-full px-3 py-2 pr-7 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 text-xs font-medium uppercase placeholder:normal-case placeholder:text-gray-400 transition"
+                              disabled={validateCouponMutation.isPending}
                             />
+                            <button
+                              onClick={() => {
+                                setShowAutocomplete(!showAutocomplete);
+                                setShowCouponDropdown(!showCouponDropdown);
+                              }}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
+                            >
+                              <ChevronDown
+                                className={`w-3.5 h-3.5 transition-transform ${showCouponDropdown ? "rotate-180" : ""}`}
+                              />
+                            </button>
+                          </div>
+                          <button
+                            onClick={() => handleApplyCoupon(couponCode)}
+                            disabled={
+                              !couponCode || validateCouponMutation.isPending
+                            }
+                            className="px-3 py-2 bg-gray-900 text-white rounded-lg text-xs font-bold hover:bg-gray-800 transition disabled:opacity-50 whitespace-nowrap flex items-center gap-1"
+                          >
+                            {validateCouponMutation.isPending ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              "Apply"
+                            )}
                           </button>
                         </div>
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => handleApplyCoupon(couponCode)}
-                          disabled={
-                            !couponCode || validateCouponMutation.isPending
-                          }
-                          className="px-6 py-3 bg-gray-900 text-white rounded-xl font-semibold hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
-                        >
-                          {validateCouponMutation.isPending ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            "Apply"
-                          )}
-                        </motion.button>
+
+                        <AnimatePresence>
+                          {(showAutocomplete || showCouponDropdown) &&
+                            filteredCoupons.length > 0 && (
+                              <motion.div
+                                initial={{ opacity: 0, y: -5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -5 }}
+                                className="absolute z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden max-h-56 overflow-y-auto"
+                              >
+                                {filteredCoupons.map((coupon, index) => {
+                                  const canApply =
+                                    subtotal >= coupon.minOrderValue;
+                                  const savings = coupon.estimatedDiscount || 0;
+                                  return (
+                                    <button
+                                      key={coupon.code}
+                                      onClick={() =>
+                                        canApply && handleCouponSelect(coupon)
+                                      }
+                                      disabled={
+                                        !canApply ||
+                                        validateCouponMutation.isPending
+                                      }
+                                      className={`w-full text-left px-3 py-2.5 border-b last:border-b-0 transition text-xs ${canApply ? "hover:bg-amber-50 cursor-pointer" : "opacity-50 cursor-not-allowed bg-gray-50"}`}
+                                    >
+                                      <div className="flex items-center gap-2 mb-0.5">
+                                        <span className="font-bold text-gray-900">
+                                          {coupon.code}
+                                        </span>
+                                        <span className="text-[10px] bg-gradient-to-r from-amber-400 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-bold">
+                                          {coupon.discountType === "PERCENTAGE"
+                                            ? `${coupon.discountValue}% OFF`
+                                            : `₹${coupon.discountValue} OFF`}
+                                        </span>
+                                      </div>
+                                      {!canApply ? (
+                                        <p className="text-[10px] text-red-600 font-semibold">
+                                          ⚠️ Add ₹
+                                          {(
+                                            coupon.minOrderValue - subtotal
+                                          ).toFixed(2)}{" "}
+                                          more
+                                        </p>
+                                      ) : (
+                                        savings > 0 && (
+                                          <p className="text-[10px] text-green-600 font-semibold">
+                                            ✓ Save ₹{savings.toFixed(2)}
+                                          </p>
+                                        )
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {availableCoupons.length > 0 && (
+                          <button
+                            onClick={() => {
+                              setShowCouponDropdown(!showCouponDropdown);
+                              setShowAutocomplete(!showAutocomplete);
+                            }}
+                            className="text-xs text-amber-600 font-semibold flex items-center gap-1 transition hover:text-amber-700"
+                          >
+                            <Percent className="w-3 h-3" />
+                            {showCouponDropdown
+                              ? "Hide coupons"
+                              : `${availableCoupons.length} coupon${availableCoupons.length !== 1 ? "s" : ""} available`}
+                          </button>
+                        )}
+                        {availableCoupons.length === 0 && !isLoadingCoupons && (
+                          <p className="text-[10px] text-gray-400 text-center py-1.5 bg-gray-50 rounded">
+                            No coupons available
+                          </p>
+                        )}
                       </div>
+                    )}
 
-                      {/* Autocomplete Dropdown */}
-                      <AnimatePresence>
-                        {(showAutocomplete || showCouponDropdown) &&
-                          filteredCoupons.length > 0 && (
-                            <motion.div
-                              initial={{ opacity: 0, y: -10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl overflow-hidden max-h-72 overflow-y-auto"
+                    {couponError && (
+                      <div className="text-xs text-red-600 bg-red-50 border border-red-200 p-2 rounded-lg mt-2 flex gap-1.5">
+                        <span>⚠️</span>
+                        <span>{couponError}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Courier Selection */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Truck className="w-4 h-4 text-blue-500" />
+                        <h3 className="font-semibold text-gray-900 text-xs">
+                          Select Courier
+                        </h3>
+                      </div>
+                      {isLoadingShipping && (
+                        <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
+                      )}
+                    </div>
+
+                    {!selectedAddress ? (
+                      <p className="text-xs text-gray-400">
+                        Select an address first
+                      </p>
+                    ) : eligibleCouriers.length === 0 && !isLoadingShipping ? (
+                      <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">
+                        No courier available
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {chargeableWeight > 0 && (
+                          <div className="text-[10px] bg-blue-50 border border-blue-100 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 text-blue-700">
+                            <Info className="w-3 h-3 flex-shrink-0" />
+                            Chargeable Weight:{" "}
+                            <span className="font-bold">
+                              {chargeableWeight.toFixed(2)} kg
+                            </span>
+                          </div>
+                        )}
+
+                        {cheapestCourier && (
+                          <div
+                            onClick={() =>
+                              handleCourierSelect(cheapestCourier, "CHEAPEST")
+                            }
+                            className={`p-2.5 border rounded-lg cursor-pointer transition-all ${selectedCourier?.courier_company_id === cheapestCourier.courier_company_id ? "border-green-500 bg-green-50" : "border-gray-200 hover:border-green-300"}`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedCourier?.courier_company_id === cheapestCourier.courier_company_id ? "border-green-500 bg-green-500" : "border-gray-300"}`}
+                              >
+                                {selectedCourier?.courier_company_id ===
+                                  cheapestCourier.courier_company_id && (
+                                  <Check className="w-2.5 h-2.5 text-white" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0 rounded-full font-bold">
+                                      CHEAPEST
+                                    </span>
+                                    <p className="font-semibold text-gray-900 text-xs mt-0.5">
+                                      {cheapestCourier.courier_name}
+                                    </p>
+                                  </div>
+                                  <p className="font-bold text-green-600 text-sm">
+                                    {formatMoney(
+                                      cheapestCourier.freight_charge,
+                                    )}
+                                  </p>
+                                </div>
+                                <p className="text-[10px] text-gray-500">
+                                  {cheapestCourier.estimated_delivery_days} days
+                                  • ⭐ {cheapestCourier.rating}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {fastestCourier &&
+                          fastestCourier.courier_company_id !==
+                            cheapestCourier?.courier_company_id && (
+                            <div
+                              onClick={() =>
+                                handleCourierSelect(fastestCourier, "FASTEST")
+                              }
+                              className={`p-2.5 border rounded-lg cursor-pointer transition-all ${selectedCourier?.courier_company_id === fastestCourier.courier_company_id ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-blue-300"}`}
                             >
-                              {filteredCoupons.map((coupon, index) => {
-                                const canApply =
-                                  subtotal >= coupon.minOrderValue;
-                                const savings = coupon.estimatedDiscount || 0;
-
-                                return (
-                                  <motion.button
-                                    key={coupon.code}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: index * 0.05 }}
-                                    onClick={() =>
-                                      canApply && handleCouponSelect(coupon)
-                                    }
-                                    disabled={
-                                      !canApply ||
-                                      validateCouponMutation.isPending
-                                    }
-                                    className={`w-full text-left p-4 border-b last:border-b-0 transition ${
-                                      canApply
-                                        ? "hover:bg-amber-50 cursor-pointer"
-                                        : "opacity-50 cursor-not-allowed bg-gray-50"
-                                    }`}
-                                  >
-                                    <div className="flex items-center gap-2 mb-1.5">
-                                      <span className="font-bold text-gray-900 text-sm">
-                                        {coupon.code}
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedCourier?.courier_company_id === fastestCourier.courier_company_id ? "border-blue-500 bg-blue-500" : "border-gray-300"}`}
+                                >
+                                  {selectedCourier?.courier_company_id ===
+                                    fastestCourier.courier_company_id && (
+                                    <Check className="w-2.5 h-2.5 text-white" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0 rounded-full font-bold">
+                                        FASTEST
                                       </span>
-                                      <span className="text-xs bg-gradient-to-r from-amber-400 to-orange-500 text-white px-2.5 py-1 rounded-full font-bold">
-                                        {coupon.discountType === "PERCENTAGE"
-                                          ? `${coupon.discountValue}% OFF`
-                                          : `₹${coupon.discountValue} OFF`}
+                                      <p className="font-semibold text-gray-900 text-xs mt-0.5">
+                                        {fastestCourier.courier_name}
+                                      </p>
+                                    </div>
+                                    <p className="font-bold text-blue-600 text-sm">
+                                      {formatMoney(
+                                        fastestCourier.freight_charge,
+                                      )}
+                                    </p>
+                                  </div>
+                                  <p className="text-[10px] text-gray-500">
+                                    {fastestCourier.estimated_delivery_days}{" "}
+                                    days • ⭐ {fastestCourier.rating}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                        {eligibleCouriers.length > 2 && (
+                          <button
+                            onClick={() => setShowAllCouriers(!showAllCouriers)}
+                            className="text-xs text-blue-600 font-semibold flex items-center gap-1 w-full justify-center"
+                          >
+                            <ChevronDown
+                              className={`w-3 h-3 transition-transform ${showAllCouriers ? "rotate-180" : ""}`}
+                            />
+                            {showAllCouriers
+                              ? "Hide"
+                              : `+${eligibleCouriers.length - 2} more`}
+                          </button>
+                        )}
+
+                        <AnimatePresence>
+                          {showAllCouriers && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              className="space-y-1.5"
+                            >
+                              {eligibleCouriers
+                                .filter(
+                                  (c: any) =>
+                                    c.courier_company_id !==
+                                      cheapestCourier?.courier_company_id &&
+                                    c.courier_company_id !==
+                                      fastestCourier?.courier_company_id,
+                                )
+                                .map((courier: any) => (
+                                  <div
+                                    key={courier.id}
+                                    onClick={() =>
+                                      handleCourierSelect(courier, "CUSTOM")
+                                    }
+                                    className={`p-2 border rounded-lg cursor-pointer transition-all text-xs ${selectedCourier?.courier_company_id === courier.courier_company_id ? "border-gray-900 bg-gray-50" : "border-gray-200 hover:border-gray-400"}`}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-semibold text-gray-900 truncate">
+                                        {courier.courier_name}
+                                      </span>
+                                      <span className="font-bold text-gray-900 ml-2">
+                                        {formatMoney(courier.freight_charge)}
                                       </span>
                                     </div>
-                                    {coupon.description && (
-                                      <p className="text-xs text-gray-600 mb-2 line-clamp-1">
-                                        {coupon.description}
-                                      </p>
-                                    )}
-                                    {!canApply ? (
-                                      <p className="text-xs text-red-600 font-semibold flex items-center gap-1">
-                                        <span>⚠️</span>
-                                        Add ₹
-                                        {(
-                                          coupon.minOrderValue - subtotal
-                                        ).toFixed(2)}{" "}
-                                        more to apply
-                                      </p>
-                                    ) : (
-                                      savings > 0 && (
-                                        <p className="text-xs text-green-600 font-semibold flex items-center gap-1">
-                                          <span>✓</span>
-                                          Save ₹{savings.toFixed(2)}
-                                        </p>
-                                      )
-                                    )}
-                                  </motion.button>
-                                );
-                              })}
+                                    <p className="text-[10px] text-gray-500">
+                                      {courier.estimated_delivery_days} days •
+                                      ⭐ {courier.rating}
+                                    </p>
+                                  </div>
+                                ))}
                             </motion.div>
                           )}
-                      </AnimatePresence>
-                    </div>
-
-                    {availableCoupons.length > 0 && (
-                      <button
-                        onClick={() => {
-                          setShowCouponDropdown(!showCouponDropdown);
-                          setShowAutocomplete(!showAutocomplete);
-                        }}
-                        className="text-sm text-amber-600 hover:text-amber-700 font-semibold flex items-center gap-1.5 transition-colors"
-                      >
-                        <Percent className="w-4 h-4" />
-                        {showCouponDropdown
-                          ? "Hide coupons"
-                          : `View ${availableCoupons.length} available coupon${availableCoupons.length !== 1 ? "s" : ""}`}
-                      </button>
-                    )}
-
-                    {availableCoupons.length === 0 && !isLoadingCoupons && (
-                      <p className="text-xs text-gray-500 text-center py-3 bg-gray-50 rounded-lg">
-                        No coupons available for your cart
-                      </p>
+                        </AnimatePresence>
+                      </div>
                     )}
                   </div>
-                )}
 
-                {couponError && (
-                  <div className="text-xs text-red-600 bg-red-50 border border-red-200 p-3 rounded-lg mt-3 flex items-start gap-2">
-                    <span className="text-base">⚠️</span>
-                    <span>{couponError}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* ✅ NEW: Courier Selection Section */}
-              <div className="mb-6 pb-6 border-b border-gray-200">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Truck className="w-5 h-5 text-blue-600" />
-                    <h3 className="font-semibold text-gray-900">
-                      Select Courier
-                    </h3>
-                  </div>
-                  {isLoadingPreview && (
-                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                  )}
-                </div>
-
-                {!orderPreview ? (
-                  <p className="text-sm text-gray-500">
-                    Select an address to see courier options
-                  </p>
-                ) : eligibleCouriers.length === 0 ? (
-                  <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">
-                    No courier available for this order
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {/* Weight info */}
-                    <div className="text-xs bg-blue-50 border border-blue-200 rounded-xl px-3 py-2">
-                      <Info className="w-4 h-4 inline mr-1" />
-                      Chargeable Weight:{" "}
-                      <span className="font-bold">
-                        {chargeableWeight.toFixed(2)} kg
+                  {/* Price Breakdown */}
+                  <div className="space-y-2 pt-2 border-t border-gray-100">
+                    <div className="flex justify-between text-xs text-gray-600">
+                      <span>
+                        Subtotal ({displayItems.length} item
+                        {displayItems.length !== 1 ? "s" : ""})
                       </span>
+                      {isLoadingPreview ? (
+                        <div className="h-4 w-16 bg-gray-200 animate-pulse rounded" />
+                      ) : (
+                        <span className="font-semibold text-gray-900">
+                          ₹{subtotal.toLocaleString()}
+                        </span>
+                      )}
                     </div>
 
-                    {/* Cheapest Courier */}
-                    {cheapestCourier && (
+                    {couponDiscount > 0 && (
                       <motion.div
-                        whileHover={{ scale: 1.01 }}
-                        onClick={() =>
-                          handleCourierSelect(cheapestCourier, "CHEAPEST")
-                        }
-                        className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                          selectedCourier?.courier_company_id ===
-                          cheapestCourier.courier_company_id
-                            ? "border-green-500 bg-green-50"
-                            : "border-gray-200 hover:border-green-300"
-                        }`}
+                        initial={{ opacity: 0, x: -5 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="flex justify-between text-xs text-green-600 font-semibold bg-green-50 -mx-1 px-1 py-1 rounded"
                       >
-                        <div className="flex items-start gap-3">
-                          <div
-                            className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                              selectedCourier?.courier_company_id ===
-                              cheapestCourier.courier_company_id
-                                ? "border-green-500 bg-green-500"
-                                : "border-gray-300"
-                            }`}
-                          >
-                            {selectedCourier?.courier_company_id ===
-                              cheapestCourier.courier_company_id && (
-                              <Check className="w-3 h-3 text-white" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">
-                                CHEAPEST
-                              </span>
-                            </div>
-                            <p className="font-semibold text-gray-900 text-sm">
-                              {cheapestCourier.courier_name}
-                            </p>
-                            <div className="flex items-center justify-between mt-2">
-                              <p className="text-xs text-gray-600">
-                                {cheapestCourier.estimated_delivery_days} days •
-                                Rating {cheapestCourier.rating}
-                              </p>
-                              <p className="font-bold text-green-600">
-                                {formatMoney(cheapestCourier.freight_charge)}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                        <span className="flex items-center gap-1">
+                          <Gift className="w-3 h-3" />
+                          Coupon ({appliedCoupon?.code})
+                        </span>
+                        <span>-₹{couponDiscount.toLocaleString()}</span>
                       </motion.div>
                     )}
 
-                    {/* Fastest Courier */}
-                    {fastestCourier &&
-                      fastestCourier.courier_company_id !==
-                        cheapestCourier?.courier_company_id && (
-                        <motion.div
-                          whileHover={{ scale: 1.01 }}
-                          onClick={() =>
-                            handleCourierSelect(fastestCourier, "FASTEST")
-                          }
-                          className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                            selectedCourier?.courier_company_id ===
-                            fastestCourier.courier_company_id
-                              ? "border-blue-500 bg-blue-50"
-                              : "border-gray-200 hover:border-blue-300"
-                          }`}
+                    <div className="flex justify-between text-xs text-gray-600">
+                      <div>
+                        <span>Shipping</span>
+                        <span className="text-[10px] text-gray-400 block">
+                          {estimatedDelivery}
+                        </span>
+                      </div>
+                      {isLoadingPreview ? (
+                        <div className="h-4 w-12 bg-gray-200 animate-pulse rounded" />
+                      ) : (
+                        <span
+                          className={`font-semibold ${shippingCost === 0 ? "text-green-600" : "text-gray-900"}`}
                         >
-                          <div className="flex items-start gap-3">
-                            <div
-                              className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                                selectedCourier?.courier_company_id ===
-                                fastestCourier.courier_company_id
-                                  ? "border-blue-500 bg-blue-500"
-                                  : "border-gray-300"
-                              }`}
-                            >
-                              {selectedCourier?.courier_company_id ===
-                                fastestCourier.courier_company_id && (
-                                <Check className="w-3 h-3 text-white" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">
-                                  FASTEST
-                                </span>
-                              </div>
-                              <p className="font-semibold text-gray-900 text-sm">
-                                {fastestCourier.courier_name}
-                              </p>
-                              <div className="flex items-center justify-between mt-2">
-                                <p className="text-xs text-gray-600">
-                                  {fastestCourier.estimated_delivery_days} days
-                                  • Rating {fastestCourier.rating}
-                                </p>
-                                <p className="font-bold text-blue-600">
-                                  {formatMoney(fastestCourier.freight_charge)}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </motion.div>
+                          {isFreeShipping
+                            ? "FREE"
+                            : `₹${shippingCost.toFixed(2)}`}
+                        </span>
                       )}
+                    </div>
 
-                    {/* Show more couriers */}
-                    {eligibleCouriers.length > 2 && (
-                      <button
-                        onClick={() => setShowAllCouriers(!showAllCouriers)}
-                        className="text-sm text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1.5 transition-colors w-full justify-center"
-                      >
-                        <ChevronDown
-                          className={`w-4 h-4 transition-transform ${showAllCouriers ? "rotate-180" : ""}`}
-                        />
-                        {showAllCouriers
-                          ? "Hide other couriers"
-                          : `View ${eligibleCouriers.length - 2} more courier${eligibleCouriers.length - 2 !== 1 ? "s" : ""}`}
-                      </button>
+                    {gstAmount > 0 && (
+                      <>
+                        <div className="flex justify-between text-xs text-gray-500">
+                          <span>CGST (2.5%)</span>
+                          {isLoadingPreview ? (
+                            <div className="h-4 w-12 bg-gray-200 animate-pulse rounded" />
+                          ) : (
+                            <span>₹{cgstAmount.toFixed(2)}</span>
+                          )}
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-500">
+                          <span>SGST (2.5%)</span>
+                          {isLoadingPreview ? (
+                            <div className="h-4 w-12 bg-gray-200 animate-pulse rounded" />
+                          ) : (
+                            <span>₹{sgstAmount.toFixed(2)}</span>
+                          )}
+                        </div>
+                      </>
                     )}
-
-                    {/* All couriers list */}
-                    <AnimatePresence>
-                      {showAllCouriers && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="space-y-2 max-h-60 overflow-y-auto"
-                        >
-                          {eligibleCouriers
-                            .filter(
-                              (c: any) =>
-                                c.courier_company_id !==
-                                  cheapestCourier?.courier_company_id &&
-                                c.courier_company_id !==
-                                  fastestCourier?.courier_company_id,
-                            )
-                            .map((courier: any) => (
-                              <motion.div
-                                key={courier.id}
-                                whileHover={{ scale: 1.01 }}
-                                onClick={() =>
-                                  handleCourierSelect(courier, "CUSTOM")
-                                }
-                                className={`p-3 border-2 rounded-xl cursor-pointer transition-all ${
-                                  selectedCourier?.courier_company_id ===
-                                  courier.courier_company_id
-                                    ? "border-black bg-gray-50"
-                                    : "border-gray-200 hover:border-gray-400"
-                                }`}
-                              >
-                                <div className="flex items-start gap-3">
-                                  <div
-                                    className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                                      selectedCourier?.courier_company_id ===
-                                      courier.courier_company_id
-                                        ? "border-black bg-black"
-                                        : "border-gray-300"
-                                    }`}
-                                  >
-                                    {selectedCourier?.courier_company_id ===
-                                      courier.courier_company_id && (
-                                      <Check className="w-3 h-3 text-white" />
-                                    )}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-semibold text-gray-900 text-sm truncate">
-                                      {courier.courier_name}
-                                    </p>
-                                    <div className="flex items-center justify-between mt-1">
-                                      <p className="text-xs text-gray-600">
-                                        {courier.estimated_delivery_days} days •
-                                        Rating {courier.rating}
-                                      </p>
-                                      <p className="font-bold text-gray-900">
-                                        {formatMoney(courier.freight_charge)}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
-                              </motion.div>
-                            ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
                   </div>
-                )}
+                </div>
 
-                {/* Price Breakdown */}
-                <div className="space-y-3 pb-4 border-b border-gray-200">
-                  <div className="flex justify-between text-gray-600">
-                    <span>
-                      Subtotal ({displayItems.length}{" "}
-                      {displayItems.length === 1 ? "item" : "items"})
+                {/* ─── Sticky Total + CTA ───────────────────────────────── */}
+                <div className="flex-none border-t border-gray-200 px-4 py-3 bg-white">
+                  <div className="flex items-baseline justify-between mb-3">
+                    <span className="font-bold text-gray-900 text-sm">
+                      Total
                     </span>
                     {isLoadingPreview ? (
-                      <div className="h-5 w-20 bg-gray-200 animate-pulse rounded" />
+                      <div className="h-7 w-28 bg-gray-200 animate-pulse rounded" />
                     ) : (
-                      <span className="font-semibold text-gray-900">
-                        ₹{subtotal.toLocaleString()}
-                      </span>
-                    )}
-                  </div>
-
-                  {couponDiscount > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="flex justify-between text-green-600 font-semibold bg-green-50 -mx-2 px-2 py-1.5 rounded"
-                    >
-                      <span className="flex items-center gap-1">
-                        <Gift className="w-4 h-4" />
-                        Coupon ({appliedCoupon?.code})
-                      </span>
-                      <span>-₹{couponDiscount.toLocaleString()}</span>
-                    </motion.div>
-                  )}
-
-                  <div className="flex justify-between text-gray-600">
-                    <div className="flex flex-col">
-                      <span>Shipping</span>
-                      <span className="text-xs text-gray-500">
-                        {estimatedDelivery}
-                      </span>
-                    </div>
-                    {isLoadingPreview ? (
-                      <div className="h-5 w-16 bg-gray-200 animate-pulse rounded" />
-                    ) : (
-                      <span
-                        className={`font-semibold ${
-                          shippingCost === 0
-                            ? "text-green-600"
-                            : "text-gray-900"
-                        }`}
-                      >
-                        {isFreeShipping
-                          ? "FREE"
-                          : `₹${shippingCost.toFixed(2)}`}
-                      </span>
-                    )}
-                  </div>
-
-                  {gstAmount > 0 && (
-                    <div className="flex justify-between text-gray-600">
-                      <span className="text-sm">
-                        GST (18%)
-                        <span className="text-xs ml-1 text-gray-400">
-                          incl.
-                        </span>
-                      </span>
-                      {isLoadingPreview ? (
-                        <div className="h-5 w-16 bg-gray-200 animate-pulse rounded" />
-                      ) : (
-                        <span className="font-semibold text-sm text-gray-900">
-                          {/* ₹{gstAmount.toFixed(2)}.  */}₹{" "}
-                          {gstAmount.toLocaleString(undefined, {
+                      <div className="text-right">
+                        <span className="text-2xl font-bold text-gray-900">
+                          ₹
+                          {total.toLocaleString(undefined, {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}
                         </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Total */}
-                <div className="py-4 border-b border-gray-200">
-                  <div className="flex justify-between items-baseline mb-1">
-                    <span className="text-lg font-bold text-gray-900">
-                      Total
-                    </span>
-                    {isLoadingPreview ? (
-                      <div className="h-10 w-32 bg-gray-200 animate-pulse rounded" />
-                    ) : (
-                      <span className="text-3xl font-bold text-gray-900">
-                        ₹
-                        {total.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </span>
+                        {gstAmount > 0 && (
+                          <p className="text-[10px] text-gray-400">
+                            incl. GST ₹{gstAmount.toFixed(2)}
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
-                  {!isLoadingPreview && (
-                    <div className="space-y-1">
-                      <p className="text-sm text-gray-500 text-right">
-                        Including GST of ₹{gstAmount.toFixed(2)}
-                      </p>
-                      {couponDiscount > 0 && (
-                        <p className="text-sm text-green-600 text-right font-bold flex items-center justify-end gap-1">
-                          <span>🎉</span>
-                          You saved ₹{couponDiscount.toLocaleString()}!
-                        </p>
-                      )}
-                      {isFreeShipping && (
-                        <p className="text-sm text-green-600 text-right font-semibold flex items-center justify-end gap-1">
-                          <Truck className="w-4 h-4" />
-                          Free shipping applied!
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
 
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handlePlaceOrder}
-                  disabled={
-                    !selectedAddress ||
-                    isProcessing ||
-                    !user ||
-                    isLoadingPreview ||
-                    !isServiceable ||
-                    isErrorOrderPreview
-                  }
-                  className="w-full mt-6 bg-gradient-to-r from-gray-900 to-black text-white font-bold py-4 rounded-full shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  <Lock className="w-5 h-5" />
-                  {!isServiceable
-                    ? "Delivery Not Available"
-                    : isProcessing
-                      ? "Processing..."
-                      : !user
-                        ? "Login to Place Order"
-                        : isLoadingPreview
-                          ? "Calculating..."
-                          : `Place Order - ₹${total.toLocaleString()}`}
-                </motion.button>
+                  {!isLoadingPreview &&
+                    (couponDiscount > 0 || isFreeShipping) && (
+                      <div className="flex flex-wrap gap-1.5 mb-3">
+                        {couponDiscount > 0 && (
+                          <span className="text-[10px] text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full">
+                            🎉 Saved ₹{couponDiscount.toLocaleString()}
+                          </span>
+                        )}
+                        {isFreeShipping && (
+                          <span className="text-[10px] text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <Truck className="w-3 h-3" /> Free Shipping
+                          </span>
+                        )}
+                      </div>
+                    )}
 
-                <div className="mt-4 space-y-2">
-                  <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    onClick={handlePlaceOrder}
+                    disabled={
+                      !selectedAddress ||
+                      isProcessing ||
+                      !user ||
+                      isLoadingPreview ||
+                      !isServiceable ||
+                      isErrorOrderPreview
+                    }
+                    className="w-full bg-gray-900 text-white font-bold py-3 rounded-xl shadow hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+                  >
                     <Lock className="w-4 h-4" />
-                    <span>100% secure payments</span>
-                  </div>
+                    {!isServiceable
+                      ? "Delivery Not Available"
+                      : isProcessing
+                        ? "Processing..."
+                        : !user
+                          ? "Login to Place Order"
+                          : isLoadingPreview
+                            ? "Calculating..."
+                            : `Place Order — ₹${total.toLocaleString()}`}
+                  </motion.button>
                 </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       </div>
 
-      {/* Address Modal */}
       <AddressModal
         isOpen={isAddressModalOpen}
         onClose={() => {

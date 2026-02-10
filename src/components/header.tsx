@@ -41,6 +41,7 @@ function Header() {
   const [showNav, setShowNav] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
+  const [locationModalMOpen, setLocationModalMOpen] = useState(false);
   const [pincode, setPincode] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -64,6 +65,7 @@ function Header() {
 
   // Check if we're on my-account page
   const isMyAccountPage = pathname?.startsWith("/my-account");
+  const isHomePage = pathname?.startsWith("/");
 
   /* -------------------- CART API QUERY -------------------- */
   const { data: cartData, isLoading: isLoadingCartApi } = useQuery({
@@ -983,7 +985,7 @@ function Header() {
         {/* Location Bar Mobile */}
         <div className="px-4 py-2 border-t border-gray-100">
           <button
-            onClick={() => setLocationModalOpen(true)}
+            onClick={() => setLocationModalMOpen(true)}
             className="flex items-center gap-2 text-sm"
           >
             <MapPin className="w-4 h-4 text-gray-600" />
@@ -1001,7 +1003,7 @@ function Header() {
 
       {/* Mobile Location Bottom Sheet */}
       <AnimatePresence>
-        {locationModalOpen && (
+        {locationModalMOpen && (
           <motion.div
             className="md:hidden fixed inset-0 z-[100]"
             initial={{ opacity: 0 }}
@@ -1010,7 +1012,7 @@ function Header() {
           >
             <div
               className="absolute inset-0 bg-black/50"
-              onClick={() => setLocationModalOpen(false)}
+              onClick={() => setLocationModalMOpen(false)}
             />
 
             <motion.div
@@ -1019,14 +1021,13 @@ function Header() {
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
               className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6 pb-8">
                 <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6" />
 
                 <div className="flex justify-between mb-4">
                   <h3 className="text-xl font-bold">Choose your location</h3>
-                  <button onClick={() => setLocationModalOpen(false)}>
+                  <button onClick={() => setLocationModalMOpen(false)}>
                     <X />
                   </button>
                 </div>
@@ -1327,132 +1328,132 @@ function Header() {
       </AnimatePresence>
 
       {/* Mobile Bottom Navigation */}
-      {!isMyAccountPage && (
-        <motion.nav
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="md:hidden fixed bottom-0 left-0 right-0 bg-white z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.08)]"
-        >
-          <ul className="flex justify-around items-center py-3">
-            {/* Filter icons to show only Home, Consultation, Cart, Wishlist, Account */}
-            {icons
-              .filter((item) =>
-                ["Home", "Consultation", "Cart", "Wishlist"].includes(
-                  item.name,
-                ),
-              )
-              .map((item, index) => {
-                const IconComponent = item.icon;
-                const isActive =
-                  item.url === "/"
-                    ? pathname === "/"
-                    : pathname === item.url ||
-                      pathname?.startsWith(item.url + "/");
+      {!isMyAccountPage || !isHomePage && (
+          <motion.nav
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="md:hidden fixed bottom-0 left-0 right-0 bg-white z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.08)]"
+          >
+            <ul className="flex justify-around items-center py-3">
+              {/* Filter icons to show only Home, Consultation, Cart, Wishlist, Account */}
+              {icons
+                .filter((item) =>
+                  ["Home", "Consultation", "Cart", "Wishlist"].includes(
+                    item.name,
+                  ),
+                )
+                .map((item, index) => {
+                  const IconComponent = item.icon;
+                  const isActive =
+                    item.url === "/"
+                      ? pathname === "/"
+                      : pathname === item.url ||
+                        pathname?.startsWith(item.url + "/");
 
-                return (
-                  <li key={index} className="relative flex-1">
-                    {item.type === "link" ? (
-                      <Link
-                        href={item.url!}
-                        onClick={(e) => {
-                          if (item.requiresAuth && !user) {
-                            e.preventDefault();
-                            openModal("login");
-                          }
-                        }}
-                        className="flex flex-col items-center gap-1 py-2 relative"
-                      >
-                        {/* Active indicator line at top */}
-                        {isActive && (
-                          <motion.div
-                            layoutId="activeTab"
-                            className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-1 bg-black rounded-full"
-                            transition={{
-                              type: "spring",
-                              stiffness: 380,
-                              damping: 30,
-                            }}
-                          />
-                        )}
-                        <IconComponent
-                          className={`w-5 h-5 transition-colors ${
-                            isActive ? "text-black" : "text-gray-500"
-                          }`}
-                        />
-                        <span
-                          className={`text-[10px] font-medium transition-colors ${
-                            isActive ? "text-black" : "text-gray-500"
-                          }`}
+                  return (
+                    <li key={index} className="relative flex-1">
+                      {item.type === "link" ? (
+                        <Link
+                          href={item.url!}
+                          onClick={(e) => {
+                            if (item.requiresAuth && !user) {
+                              e.preventDefault();
+                              openModal("login");
+                            }
+                          }}
+                          className="flex flex-col items-center gap-1 py-2 relative"
                         >
-                          {item.name}
-                        </span>
-                        {"badgeCount" in item && item.badgeCount! > 0 && (
-                          <span className="absolute top-1 right-1/4 bg-black text-white text-[8px] rounded-full w-4 h-4 flex items-center justify-center font-medium">
-                            {item.badgeCount}
+                          {/* Active indicator line at top */}
+                          {isActive && (
+                            <motion.div
+                              layoutId="activeTab"
+                              className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-1 bg-black rounded-full"
+                              transition={{
+                                type: "spring",
+                                stiffness: 380,
+                                damping: 30,
+                              }}
+                            />
+                          )}
+                          <IconComponent
+                            className={`w-5 h-5 transition-colors ${
+                              isActive ? "text-black" : "text-gray-500"
+                            }`}
+                          />
+                          <span
+                            className={`text-[10px] font-medium transition-colors ${
+                              isActive ? "text-black" : "text-gray-500"
+                            }`}
+                          >
+                            {item.name}
                           </span>
-                        )}
-                      </Link>
-                    ) : (
-                      <button
-                        onClick={() => item.onClick?.()}
-                        className="flex flex-col items-center gap-1 py-2 w-full"
-                      >
-                        <IconComponent className="w-5 h-5 text-gray-500" />
-                        <span className="text-[10px] text-gray-500">
-                          {item.name}
-                        </span>
-                      </button>
-                    )}
-                  </li>
-                );
-              })}
+                          {"badgeCount" in item && item.badgeCount! > 0 && (
+                            <span className="absolute top-1 right-1/4 bg-black text-white text-[8px] rounded-full w-4 h-4 flex items-center justify-center font-medium">
+                              {item.badgeCount}
+                            </span>
+                          )}
+                        </Link>
+                      ) : (
+                        <button
+                          onClick={() => item.onClick?.()}
+                          className="flex flex-col items-center gap-1 py-2 w-full"
+                        >
+                          <IconComponent className="w-5 h-5 text-gray-500" />
+                          <span className="text-[10px] text-gray-500">
+                            {item.name}
+                          </span>
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
 
-            {/* User/Account Icon */}
-            <li className="relative flex-1">
-              <button
-                onClick={() => {
-                  if (!user) {
-                    openModal("login");
-                  } else {
-                    router.push("/my-account");
-                  }
-                }}
-                className="flex flex-col items-center gap-1 py-2 w-full relative"
-              >
-                {/* Active indicator line at top */}
-                {pathname?.startsWith("/my-account") && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-1 bg-black rounded-full"
-                    transition={{
-                      type: "spring",
-                      stiffness: 380,
-                      damping: 30,
-                    }}
-                  />
-                )}
-                <User
-                  className={`w-5 h-5 transition-colors ${
-                    pathname?.startsWith("/my-account")
-                      ? "text-black"
-                      : "text-gray-500"
-                  }`}
-                />
-                <span
-                  className={`text-[10px] font-medium transition-colors ${
-                    pathname?.startsWith("/my-account")
-                      ? "text-black"
-                      : "text-gray-500"
-                  }`}
+              {/* User/Account Icon */}
+              <li className="relative flex-1">
+                <button
+                  onClick={() => {
+                    if (!user) {
+                      openModal("login");
+                    } else {
+                      router.push("/my-account");
+                    }
+                  }}
+                  className="flex flex-col items-center gap-1 py-2 w-full relative"
                 >
-                  {user ? "Account" : "Login"}
-                </span>
-              </button>
-            </li>
-          </ul>
-        </motion.nav>
-      )}
+                  {/* Active indicator line at top */}
+                  {pathname?.startsWith("/my-account") && (
+                    <motion.div
+                      layoutId="activeTab"
+                      className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-1 bg-black rounded-full"
+                      transition={{
+                        type: "spring",
+                        stiffness: 380,
+                        damping: 30,
+                      }}
+                    />
+                  )}
+                  <User
+                    className={`w-5 h-5 transition-colors ${
+                      pathname?.startsWith("/my-account")
+                        ? "text-black"
+                        : "text-gray-500"
+                    }`}
+                  />
+                  <span
+                    className={`text-[10px] font-medium transition-colors ${
+                      pathname?.startsWith("/my-account")
+                        ? "text-black"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    {user ? "Account" : "Login"}
+                  </span>
+                </button>
+              </li>
+            </ul>
+          </motion.nav>
+        )}
       {/* Unified Search Modal */}
       <UnifiedSearchModal
         isOpen={isSearchOpen}
