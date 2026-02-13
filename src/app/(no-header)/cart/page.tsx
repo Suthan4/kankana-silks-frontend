@@ -615,7 +615,7 @@ export default function CartPage() {
                                   handleApplyCoupon(couponCode);
                               }}
                               placeholder="ENTER COUPON CODE"
-                              className="w-full px-3 py-2 pr-7 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 text-xs font-medium uppercase placeholder:normal-case placeholder:text-gray-400 transition"
+                              className="w-full px-3 py-2 pr-7 border border-gray-200 rounded-lg focus:outline-none text-xs font-medium uppercase placeholder:normal-case placeholder:text-gray-400 transition"
                               disabled={validateCouponMutation.isPending}
                             />
                             <button
