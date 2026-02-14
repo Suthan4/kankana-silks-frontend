@@ -71,6 +71,7 @@ export default function CTASection() {
               Shop Now
             </motion.button>
           </Link>
+          <Link href={`/about-us`}>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -78,6 +79,7 @@ export default function CTASection() {
           >
             Learn More
           </motion.button>
+          </Link>
         </motion.div>
 
         {/* <motion.div
