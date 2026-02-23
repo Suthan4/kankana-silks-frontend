@@ -1,7 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
 import {
   ArrowLeft,
   Package,
@@ -17,10 +18,19 @@ import {
   MapPin,
   Phone,
   CreditCard,
+  ImageIcon,
+  Video,
+  ExternalLink,
+  Download,
+  Upload,
 } from "lucide-react";
 import Image from "next/image";
 import { useReturn } from "@/hooks/useUserReturns";
-import { getReturnReasonLabel, getReturnStatusLabel, ReturnStatus } from "@/lib/api/return.api";
+import {
+  getReturnReasonLabel,
+  getReturnStatusLabel,
+  ReturnStatus,
+} from "@/lib/api/return.api";
 
 export default function ReturnDetailsPage() {
   const params = useParams<{ id: string }>();
@@ -28,6 +38,10 @@ export default function ReturnDetailsPage() {
   const { data, isLoading, error } = useReturn(params.id);
 
   const returnData = data?.data;
+
+  // Media viewer state
+  const [selectedMedia, setSelectedMedia] = useState<any>(null);
+  const [mediaModalOpen, setMediaModalOpen] = useState(false);
 
   const getStatusIcon = (status: ReturnStatus) => {
     switch (status) {
@@ -77,7 +91,6 @@ export default function ReturnDetailsPage() {
     }
   };
 
-  // Timeline data
   const getTimeline = () => {
     if (!returnData) return [];
 
@@ -123,6 +136,19 @@ export default function ReturnDetailsPage() {
     }
 
     return timeline;
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  };
+
+  const formatDuration = (seconds?: number) => {
+    if (!seconds) return "";
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   if (isLoading) {
@@ -210,7 +236,7 @@ export default function ReturnDetailsPage() {
           </div>
         </motion.div>
 
-        {/* Rejection Reason (if rejected) */}
+        {/* Rejection Reason */}
         {returnData.status === ReturnStatus.REJECTED &&
           returnData.rejectionReason && (
             <motion.div
@@ -230,6 +256,92 @@ export default function ReturnDetailsPage() {
             </motion.div>
           )}
 
+        {/* ✅ Uploaded Media Section */}
+        {returnData.media && returnData.media.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-2xl p-6"
+          >
+            <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <ImageIcon className="w-5 h-5" />
+              Uploaded Media ({returnData.media.length})
+            </h3>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {returnData.media
+                .sort((a: any, b: any) => a.order - b.order)
+                .map((media: any) => (
+                  <button
+                    key={media.id}
+                    onClick={() => {
+                      setSelectedMedia(media);
+                      setMediaModalOpen(true);
+                    }}
+                    className="relative group aspect-square rounded-lg overflow-hidden bg-gray-100 hover:ring-2 hover:ring-blue-600 transition-all"
+                  >
+                    {media.type === "IMAGE" ? (
+                      <Image
+                        src={media.url}
+                        alt={media.description || "Return media"}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="relative w-full h-full">
+                        <Image
+                          src={media.thumbnailUrl || "/placeholder-video.png"}
+                          alt={media.description || "Video thumbnail"}
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20">
+                          <Video className="w-12 h-12 text-white" />
+                        </div>
+                        {media.duration && (
+                          <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
+                            {formatDuration(media.duration)}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="absolute top-2 left-2">
+                      {media.type === "IMAGE" ? (
+                        <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                          IMAGE
+                        </span>
+                      ) : (
+                        <span className="bg-purple-500 text-white text-xs px-2 py-1 rounded">
+                          VIDEO
+                        </span>
+                      )}
+                    </div>
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all flex items-center justify-center">
+                      <ExternalLink className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </button>
+                ))}
+            </div>
+
+            {/* Upload More Media Button */}
+            {returnData.status === ReturnStatus.PENDING && (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() =>
+                  router.push(
+                    `/my-account/returns/${returnData.id}/upload-media`,
+                  )
+                }
+                className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors font-medium"
+              >
+                <Upload className="w-4 h-4" />
+                Upload Additional Media
+              </motion.button>
+            )}
+          </motion.div>
+        )}
+
         {/* Timeline */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -240,7 +352,6 @@ export default function ReturnDetailsPage() {
           <div className="space-y-4">
             {timeline.map((item, index) => (
               <div key={index} className="flex gap-4">
-                {/* Icon */}
                 <div className="flex flex-col items-center">
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center ${
@@ -264,7 +375,6 @@ export default function ReturnDetailsPage() {
                   )}
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 pb-8">
                   <p
                     className={`font-medium ${
@@ -397,7 +507,7 @@ export default function ReturnDetailsPage() {
           </motion.button>
         </motion.div>
 
-        {/* Refund Details (if applicable) */}
+        {/* Refund Details */}
         {returnData.refundMethod === "BANK_TRANSFER" &&
           returnData.bankDetails && (
             <motion.div
@@ -441,7 +551,7 @@ export default function ReturnDetailsPage() {
             </motion.div>
           )}
 
-        {/* Admin Notes (if any) */}
+        {/* Admin Notes */}
         {returnData.adminNotes && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -460,6 +570,99 @@ export default function ReturnDetailsPage() {
           </motion.div>
         )}
       </div>
+
+      {/* ✅ Media Viewer Modal */}
+      <AnimatePresence>
+        {mediaModalOpen && selectedMedia && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setMediaModalOpen(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative max-w-5xl w-full bg-white rounded-lg overflow-hidden"
+            >
+              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-gray-900">
+                    {selectedMedia.type} Preview
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {formatFileSize(selectedMedia.fileSize)}
+                    {selectedMedia.width &&
+                      selectedMedia.height &&
+                      ` • ${selectedMedia.width}x${selectedMedia.height}`}
+                    {selectedMedia.duration &&
+                      ` • ${formatDuration(selectedMedia.duration)}`}
+                  </p>
+                  {selectedMedia.description && (
+                    <p className="text-sm text-gray-700 mt-2">
+                      {selectedMedia.description}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => setMediaModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="p-4 bg-gray-50">
+                {selectedMedia.type === "IMAGE" ? (
+                  <div
+                    className="relative w-full"
+                    style={{ maxHeight: "70vh" }}
+                  >
+                    <Image
+                      src={selectedMedia.url}
+                      alt={selectedMedia.description || "Return media"}
+                      width={selectedMedia.width || 800}
+                      height={selectedMedia.height || 600}
+                      className="w-full h-auto object-contain"
+                    />
+                  </div>
+                ) : (
+                  <video
+                    src={selectedMedia.url}
+                    controls
+                    className="w-full max-h-[70vh] rounded-lg"
+                  >
+                    Your browser does not support video playback.
+                  </video>
+                )}
+              </div>
+
+              <div className="p-4 border-t border-gray-200 flex gap-2">
+                <a
+                  href={selectedMedia.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Open in New Tab
+                </a>
+                <a
+                  href={selectedMedia.url}
+                  download
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  Download
+                </a>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

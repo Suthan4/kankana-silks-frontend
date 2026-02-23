@@ -28,7 +28,8 @@ export default function ClientLayout({
   return (
     <>
       <SplashScreen show={showSplash} />
-      {!showSplash && children}
+      {/* Always render children - don't hide behind splash */}
+      <div className={showSplash ? "invisible" : "visible"}>{children}</div>
     </>
   );
 }

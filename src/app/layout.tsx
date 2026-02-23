@@ -2,10 +2,10 @@ import type React from "react";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/header";
 import AuthModalProvider from "@/components/authModalProvider";
 import ClientLayout from "@/components/clientLayout";
 import Providers from "@/components/provider/tanstackProvider";
+import { Toaster } from "sonner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -128,6 +128,7 @@ export default function RootLayout({
           <AuthModalProvider />
         </Providers>
         <div id="portal-root" />
+        <Toaster position="bottom-center" richColors />
       </body>
     </html>
   );

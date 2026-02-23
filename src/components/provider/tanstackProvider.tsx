@@ -13,7 +13,9 @@ export default function Providers({ children }: { children: ReactNode }) {
             gcTime: 1000 * 60 * 60,
             refetchOnMount: false,
             refetchOnWindowFocus: false,
-            retry: false, // avoids hammering backend
+            // Don't hammer the backend on failure
+            retry: 1,
+            retryDelay: 500,
           },
         },
       }),

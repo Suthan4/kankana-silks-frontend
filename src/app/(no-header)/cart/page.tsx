@@ -5,7 +5,6 @@ import {
   Trash2,
   Plus,
   Minus,
-  Tag,
   ArrowLeft,
   ArrowRight,
   Lock,
@@ -32,23 +31,17 @@ import { addressApi } from "@/lib/api/addresses.api";
 
 const normalizeAttributes = (attrs: any) => {
   if (!attrs) return [];
-
   if (typeof attrs === "object" && !Array.isArray(attrs)) {
     return Object.entries(attrs).map(([key, value]) => ({
       key: String(key),
       value: String(value),
     }));
   }
-
   if (Array.isArray(attrs)) {
     return attrs
       .filter((a) => a?.key && a?.value)
-      .map((a) => ({
-        key: String(a.key),
-        value: String(a.value),
-      }));
+      .map((a) => ({ key: String(a.key), value: String(a.value) }));
   }
-
   if (typeof attrs === "string") {
     try {
       const parsed = JSON.parse(attrs);
@@ -57,7 +50,6 @@ const normalizeAttributes = (attrs: any) => {
       return [];
     }
   }
-
   return [];
 };
 
@@ -88,6 +80,9 @@ export default function CartPage() {
   const [selectedCourier, setSelectedCourier] = useState<any>(null);
   const [showCourierDropdown, setShowCourierDropdown] = useState(false);
   const courierDropdownRef = useRef<HTMLDivElement>(null);
+  const CGST_RATE = 0.025;
+  const SGST_RATE = 0.025;
+  const TOTAL_GST_RATE = CGST_RATE + SGST_RATE;
 
   const {
     data: addressData,
@@ -95,10 +90,7 @@ export default function CartPage() {
     refetch: refetchAddress,
   } = useQuery({
     queryKey: ["address-defualt"],
-    queryFn: async () => {
-      const response = await addressApi.getDefaultAddress();
-      return response.data;
-    },
+    queryFn: async () => (await addressApi.getDefaultAddress()).data,
     enabled: !!user,
   });
 
@@ -108,42 +100,37 @@ export default function CartPage() {
     refetch: refetchCartApi,
   } = useQuery({
     queryKey: ["cartApi", user?.id],
-    queryFn: async () => {
-      const res = await cartApi.getCart();
-      return res.data; // ✅ Cart object
-    },
+    queryFn: async () => (await cartApi.getCart()).data,
     enabled: !!user,
     staleTime: 0,
   });
-  console.log("addressData", addressData);
 
   const apiItems = cartData?.items ?? [];
-  const displayItems = user?.id ? apiItems : items; // items from zustand store
+  const displayItems = user?.id ? apiItems : items;
   const deliveryPin = user?.id ? addressData?.pincode : deliveryPincode;
-  console.log("apiItems", JSON.stringify(apiItems));
 
-  const totalItems = useMemo(() => {
-    return displayItems.reduce((sum: number, i: any) => sum + i.quantity, 0);
-  }, [displayItems]);
+  const totalItems = useMemo(
+    () => displayItems.reduce((sum: number, i: any) => sum + i.quantity, 0),
+    [displayItems],
+  );
 
-  const subtotal = useMemo(() => {
-    return displayItems.reduce((sum: number, i: any) => {
-      const unitPrice =
-        i.variant?.price ??
-        i.product?.sellingPrice ??
-        i.product?.basePrice ??
-        i.price ??
-        0;
+  const getStrictItemPrice = (item: any) => {
+    if (item?.variant) return Number(item.variant.sellingPrice ?? 0);
+    return Number(item?.product?.sellingPrice ?? 0);
+  };
 
-      return sum + unitPrice * i.quantity;
-    }, 0);
-  }, [displayItems]);
-
+  const subtotal = useMemo(
+    () =>
+      displayItems.reduce(
+        (sum: number, i: any) => sum + getStrictItemPrice(i) * i.quantity,
+        0,
+      ),
+    [displayItems],
+  );
   const discount = appliedCoupon?.discountAmount
     ? Number(appliedCoupon.discountAmount)
     : 0;
 
-  // Fetch shipping rates when pincode is entered
   const {
     data: shippingData,
     isLoading: isLoadingShipping,
@@ -152,7 +139,6 @@ export default function CartPage() {
     queryKey: ["cartShipping", deliveryPin, displayItems.length, subtotal],
     queryFn: async () => {
       if (!deliveryPin || displayItems.length === 0) return null;
-
       const response = await shippingApi.getCartShippingRates({
         deliveryPincode: deliveryPin,
       });
@@ -160,6 +146,7 @@ export default function CartPage() {
     },
     enabled: !!deliveryPin && displayItems.length > 0,
   });
+
   useEffect(() => {
     if (
       shippingData &&
@@ -169,6 +156,7 @@ export default function CartPage() {
       setSelectedCourier(shippingData.cheapestCourier);
     }
   }, [shippingData, selectedCourier]);
+
   const {
     data: applicableCouponsData,
     isLoading: isLoadingCoupons,
@@ -177,29 +165,24 @@ export default function CartPage() {
     queryKey: ["applicableCoupons", subtotal, displayItems.length],
     queryFn: async () => {
       if (displayItems.length === 0) return { data: [] };
-
       const cartItems = displayItems.map((item: any) => ({
         productId: item.productId ?? item.product?.id,
         categoryId: item.categoryId,
         quantity: item.quantity,
-        price:
-          item.variant?.price ?? item.product?.sellingPrice ?? item.price ?? 0,
+        price: getStrictItemPrice(item),
       }));
-
       return await couponApi.getApplicableCoupons({
         orderAmount: subtotal,
         cartItems,
       });
     },
     enabled: displayItems.length > 0,
-    staleTime: 30000, // 30 seconds
+    staleTime: 30000,
   });
 
   const availableCoupons = applicableCouponsData?.data ?? [];
-
   const filteredCoupons = useMemo(() => {
     if (!couponCode) return availableCoupons;
-
     return availableCoupons.filter((coupon) =>
       coupon.code.toLowerCase().includes(couponCode.toLowerCase()),
     );
@@ -209,7 +192,6 @@ export default function CartPage() {
     setShowAutocomplete(!!couponCode && filteredCoupons.length > 0);
   }, [couponCode, filteredCoupons.length]);
 
-  // ✅ Calculate shipping cost based on selected courier (frontend)
   const shippingCost = useMemo(() => {
     if (!shippingData) return 0;
     if (shippingData.isFreeShipping) return 0;
@@ -217,10 +199,11 @@ export default function CartPage() {
     return Number(selectedCourier.freight_charge ?? 0);
   }, [shippingData, selectedCourier]);
 
-  // ✅ Recalculate GST and total based on selected courier
-  const gstAmount = useMemo(() => {
+  const { cgstAmount, sgstAmount, gstAmount } = useMemo(() => {
     const taxableAmount = subtotal - discount + shippingCost;
-    return taxableAmount * 0.18; // 18% GST
+    const cgst = taxableAmount * CGST_RATE;
+    const sgst = taxableAmount * SGST_RATE;
+    return { cgstAmount: cgst, sgstAmount: sgst, gstAmount: cgst + sgst };
   }, [subtotal, discount, shippingCost]);
 
   const total = useMemo(() => {
@@ -228,7 +211,6 @@ export default function CartPage() {
     return taxableAmount + gstAmount;
   }, [subtotal, discount, shippingCost, gstAmount]);
 
-  // Close autocomplete when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -241,12 +223,10 @@ export default function CartPage() {
         setShowCouponDropdown(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Validate and apply coupon mutation
   const validateCouponMutation = useMutation({
     mutationFn: async (code: string) => {
       const cartItems = displayItems.map((item: any) => ({
@@ -256,7 +236,6 @@ export default function CartPage() {
         price:
           item.variant?.price ?? item.product?.sellingPrice ?? item.price ?? 0,
       }));
-
       return await couponApi.validateCoupon({
         code: code.toUpperCase(),
         orderAmount: subtotal,
@@ -269,8 +248,7 @@ export default function CartPage() {
         response.coupon &&
         response.discount !== undefined
       ) {
-        // Apply coupon to cart store
-        const couponData = {
+        applyCoupon({
           code: response.coupon.code,
           discountType: response.coupon.discountType,
           discountValue: response.coupon.discountValue,
@@ -279,23 +257,20 @@ export default function CartPage() {
           validFrom: response.coupon.validFrom,
           validUntil: response.coupon.validUntil,
           isActive: response.coupon.isActive,
-
           discountAmount: response.discount,
           finalAmount: response.finalAmount,
-        };
-        applyCoupon(couponData);
+        });
         toast.success(`Coupon "${code}" applied successfully!`);
         setCouponCode("");
         setShowCouponDropdown(false);
         setShowAutocomplete(false);
-        refetchCoupons(); // Refresh available coupons
+        refetchCoupons();
       } else {
         toast.error(response.error || "Invalid coupon code");
       }
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to apply coupon");
-    },
+    onError: (error: any) =>
+      toast.error(error.message || "Failed to apply coupon"),
   });
 
   const updateQtyMutation = useMutation({
@@ -305,28 +280,19 @@ export default function CartPage() {
     }: {
       itemId: string;
       quantity: number;
-    }) => {
-      return await cartApi.updateCartItem(itemId, { quantity });
-    },
-    onSuccess: async () => {
-      await refetchCartApi();
-    },
-    onError: (err: any) => {
-      toast.error(err?.message || "Failed to update quantity");
-    },
+    }) => await cartApi.updateCartItem(itemId, { quantity }),
+    onSuccess: async () => await refetchCartApi(),
+    onError: (err: any) =>
+      toast.error(err?.message || "Failed to update quantity"),
   });
 
   const removeItemMutation = useMutation({
-    mutationFn: async (itemId: string) => {
-      return await cartApi.removeFromCart(itemId);
-    },
+    mutationFn: async (itemId: string) => await cartApi.removeFromCart(itemId),
     onSuccess: async () => {
       toast.success("Item removed");
       await refetchCartApi();
     },
-    onError: (err: any) => {
-      toast.error(err?.message || "Failed to remove item");
-    },
+    onError: (err: any) => toast.error(err?.message || "Failed to remove item"),
   });
 
   const handleApplyCoupon = (code: string) => {
@@ -336,13 +302,11 @@ export default function CartPage() {
     }
     validateCouponMutation.mutate(code);
   };
-
   const handleRemoveCoupon = () => {
     removeCoupon();
     toast.info("Coupon removed");
-    refetchCoupons(); // Refresh available coupons
+    refetchCoupons();
   };
-
   const handleCheckout = () => {
     if (displayItems.length === 0) {
       toast.error("Your cart is empty");
@@ -350,24 +314,16 @@ export default function CartPage() {
     }
     router.push("/checkout");
   };
-
   const handleCouponSelect = (coupon: Coupon) => {
     setCouponCode(coupon.code);
     setShowAutocomplete(false);
     handleApplyCoupon(coupon.code);
   };
-
   const formatMoney = (value: number) => `₹${Number(value || 0).toFixed(2)}`;
-
-  const getCourierLabel = (courier: any) => {
-    if (!courier) return null;
-    return `${courier.courier_name} • ${courier.estimated_delivery_days} days • ${formatMoney(courier.freight_charge)}`;
-  };
-
 
   if (isLoadingCartApi) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
       </div>
     );
@@ -375,27 +331,26 @@ export default function CartPage() {
 
   if (displayItems.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 flex items-center justify-center p-4">
+      <div className="h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center max-w-md"
         >
-          <div className="w-32 h-32 bg-gray-100 rounded-full mx-auto mb-6 flex items-center justify-center">
-            <ShoppingBag className="w-16 h-16 text-gray-400" />
+          <div className="w-24 h-24 bg-gray-100 rounded-full mx-auto mb-5 flex items-center justify-center">
+            <ShoppingBag className="w-12 h-12 text-gray-400" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">
             Your cart is empty
           </h2>
-          <p className="text-gray-600 mb-8">
-            Looks like you haven't added anything to your cart yet.
+          <p className="text-gray-500 mb-6">
+            Looks like you haven't added anything yet.
           </p>
           <Link
             href="/shop"
-            className="inline-flex items-center gap-2 bg-black text-white px-8 py-4 rounded-full font-semibold hover:bg-gray-800 transition"
+            className="inline-flex items-center gap-2 bg-black text-white px-7 py-3 rounded-full font-semibold hover:bg-gray-800 transition"
           >
-            Continue Shopping
-            <ArrowRight className="w-5 h-5" />
+            Continue Shopping <ArrowRight className="w-4 h-4" />
           </Link>
         </motion.div>
       </div>
@@ -403,737 +358,650 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50">
-      {/* Mobile Header */}
-      <motion.div
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="lg:hidden sticky top-0 z-50 bg-white shadow-sm px-4 py-4 flex items-center justify-between"
-      >
-        <Link href="/shop">
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-        </Link>
-        <h1 className="text-lg font-bold">My Cart ({totalItems})</h1>
-        <button
-          onClick={() => setShowCouponDropdown(!showCouponDropdown)}
-          className="text-sm text-amber-600 font-medium"
-        >
-          Coupons
-        </button>
-      </motion.div>
-
-      <div className="max-w-7xl mx-auto px-4 py-6 lg:py-12">
-        {/* Desktop Header */}
-        <motion.div
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="hidden lg:block mb-8"
-        >
-          <div className="flex items-center justify-between">
-            <h1 className="text-4xl font-bold text-gray-900">
+    <div className="h-screen overflow-hidden bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 flex flex-col">
+      {/* ─── Compact Header ──────────────────────────────────────────── */}
+      <div className="flex-none bg-white border-b border-gray-200 px-4 py-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link href="/shop">
+              <motion.button
+                whileHover={{ x: -3 }}
+                className="flex items-center gap-1.5 text-gray-500 hover:text-gray-900 text-sm transition"
+              >
+                <ArrowLeft className="w-4 h-4" /> Shop
+              </motion.button>
+            </Link>
+            <div className="h-4 w-px bg-gray-300" />
+            <h1 className="text-xl font-bold text-gray-900">
               Shopping Cart
-              <span className="text-2xl text-gray-500 font-normal ml-4">
-                ({totalItems} {totalItems === 1 ? "Item" : "Items"})
+              <span className="text-sm text-gray-400 font-normal ml-2">
+                ({totalItems} {totalItems === 1 ? "item" : "items"})
               </span>
             </h1>
-            <Link
-              href="/shop"
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              Continue Shopping
-            </Link>
           </div>
-        </motion.div>
+          <div className="flex items-center gap-1.5 text-xs text-gray-400">
+            <Lock className="w-3.5 h-3.5" />
+            <span>Secure Checkout</span>
+          </div>
+        </div>
+      </div>
 
-        <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-          {/* Cart Items */}
-          <div className="lg:col-span-2 space-y-4 mb-6 lg:mb-0">
-            <AnimatePresence mode="popLayout">
-              {displayItems.map((item: any, index: number) => {
-                console.log("item", item);
-
-                return (
-                  <motion.div
-                    key={item.id}
-                    layout
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, x: -100 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="bg-white rounded-2xl p-4 lg:p-6 shadow-sm hover:shadow-md transition"
-                  >
-                    <div className="flex gap-4">
-                      {/* Product Image */}
-                      <Link href={`/products/${item?.product?.slug}`}>
-                        <motion.div
-                          whileHover={{ scale: 1.05 }}
-                          className="relative flex-shrink-0 cursor-pointer"
-                        >
-                          <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-xl overflow-hidden bg-gray-100">
+      {/* ─── Main Body ───────────────────────────────────────────────── */}
+      <div className="flex-1 overflow-hidden">
+        <div className="max-w-7xl mx-auto h-full px-4 py-4">
+          <div className="grid lg:grid-cols-5 gap-4 h-full">
+            {/* ── Cart Items (3/5) ──────────────────────────────────── */}
+            <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
+              <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                <AnimatePresence mode="popLayout">
+                  {displayItems.map((item: any, index: number) => (
+                    <motion.div
+                      key={item.id}
+                      layout
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, x: -80 }}
+                      transition={{ delay: index * 0.04 }}
+                      className="bg-white rounded-xl p-3.5 shadow-sm border border-white/80 hover:shadow-md transition"
+                    >
+                      <div className="flex gap-3">
+                        {/* Image */}
+                        <Link href={`/products/${item?.product?.slug}`}>
+                          <motion.div
+                            whileHover={{ scale: 1.04 }}
+                            className="w-16 h-16 lg:w-20 lg:h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 cursor-pointer"
+                          >
                             {item?.product?.media ? (
                               <Image
                                 src={item?.product?.media?.[0].url}
                                 alt={item.product?.name}
-                                width={96}
-                                height={96}
+                                width={80}
+                                height={80}
                                 className="w-full h-full object-cover"
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                                <ShoppingBag className="w-8 h-8 text-gray-400" />
+                                <ShoppingBag className="w-6 h-6 text-gray-400" />
                               </div>
                             )}
-                          </div>
-                        </motion.div>
-                      </Link>
+                          </motion.div>
+                        </Link>
 
-                      {/* Product Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <div className="flex-1">
-                            <Link href={`/products/${item?.product?.slug}`}>
-                              <h3 className="font-bold text-gray-900 text-base lg:text-lg mb-1 hover:text-amber-600 transition cursor-pointer">
-                                {item.product?.name}
-                              </h3>
-                            </Link>
-                            {item?.variant && (
-                              <div className="mt-2 space-y-2">
-                                {/* ✅ Standard Variant fields */}
-                                <div className="flex flex-wrap gap-2 text-sm text-gray-600">
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <Link href={`/products/${item?.product?.slug}`}>
+                                <h3 className="font-bold text-gray-900 text-sm hover:text-amber-600 transition cursor-pointer line-clamp-1">
+                                  {item.product?.name}
+                                </h3>
+                              </Link>
+
+                              {item?.variant && (
+                                <div className="flex flex-wrap gap-1.5 mt-1">
                                   {item.variant.color && (
-                                    <span className="bg-gray-100 px-2 py-0.5 rounded">
+                                    <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600">
                                       {item.variant.color}
                                     </span>
                                   )}
                                   {item.variant.size && (
-                                    <span className="bg-gray-100 px-2 py-0.5 rounded">
+                                    <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600">
                                       Size: {item.variant.size}
                                     </span>
                                   )}
                                   {item.variant.fabric && (
-                                    <span className="bg-gray-100 px-2 py-0.5 rounded">
+                                    <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600">
                                       {item.variant.fabric}
                                     </span>
                                   )}
+                                  {normalizeAttributes(
+                                    item.variant.attributes,
+                                  ).map((attr) => (
+                                    <span
+                                      key={attr.key}
+                                      className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100"
+                                    >
+                                      {attr.key}: <b>{attr.value}</b>
+                                    </span>
+                                  ))}
                                 </div>
+                              )}
 
-                                {/* ✅ Custom Attributes (dynamic key/value) */}
-                                {normalizeAttributes(item.variant.attributes)
-                                  .length > 0 && (
-                                  <div className="flex flex-wrap gap-2">
-                                    {normalizeAttributes(
-                                      item.variant.attributes,
-                                    ).map((attr) => (
-                                      <span
-                                        key={attr.key}
-                                        className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-lg border border-blue-100"
-                                      >
-                                        {attr.key}:{" "}
-                                        <span className="font-semibold">
-                                          {attr.value}
-                                        </span>
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            )}
+                              {item?.stock < 5 && item?.stock > 0 && (
+                                <p className="text-xs text-orange-600 mt-1">
+                                  Only {item?.stock?.[0].quantity} left
+                                </p>
+                              )}
+                            </div>
 
-                            {item?.stock < 5 && item?.stock > 0 && (
-                              <p className="text-xs text-orange-600 mt-1">
-                                Only {item?.stock?.[0].quantity} left in stock
-                              </p>
-                            )}
-                          </div>
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => {
-                              if (user?.id) {
-                                removeItemMutation.mutate(item.id);
-                              } else {
-                                removeItem(item.id);
+                            <button
+                              onClick={() =>
+                                user?.id
+                                  ? removeItemMutation.mutate(item.id)
+                                  : removeItem(item.id)
                               }
-                            }}
-                            className="text-gray-400 hover:text-red-500 transition p-1"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </motion.button>
-                        </div>
-
-                        <div className="flex items-center justify-between mt-4">
-                          <div>
-                            <p className="text-xl lg:text-2xl font-bold text-gray-900">
-                              ₹{Number(item?.product?.sellingPrice).toFixed(2)}
-                            </p>
-                            {item.basePrice > item.price && (
-                              <p className="text-sm text-gray-400 line-through">
-                                ₹{Number(item?.product?.basePrice).toFixed(2)}
-                              </p>
-                            )}
+                              className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition flex-shrink-0"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
 
-                          {/* Quantity Controls */}
-                          <div className="flex items-center gap-2 lg:gap-3 bg-gray-100 rounded-full px-2 py-1">
-                            <motion.button
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => {
-                                const newQty = item.quantity - 1;
-                                if (newQty < 1) return;
+                          {/* Price + Qty */}
+                          <div className="flex items-center justify-between mt-2.5">
+                            <div>
+                              <p className="text-lg font-bold text-gray-900">
+                                ₹
+                                {getStrictItemPrice(item).toLocaleString(
+                                  "en-IN",
+                                )}
+                              </p>
+                              {item.basePrice > item.price && (
+                                <p className="text-xs text-gray-400 line-through">
+                                  ₹{getStrictItemPrice(item).toFixed(2)}
+                                </p>
+                              )}
+                            </div>
 
-                                if (user) {
-                                  updateQtyMutation.mutate({
-                                    itemId: item.id,
-                                    quantity: newQty,
-                                  });
-                                } else {
-                                  updateQuantity(item.id, newQty);
-                                }
-                              }}
-                              disabled={item.quantity <= 1}
-                              className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <Minus className="w-4 h-4" />
-                            </motion.button>
-
-                            <span className="w-8 text-center font-semibold text-gray-900">
-                              {item.quantity}
-                            </span>
-
-                            <motion.button
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => {
-                                const newQty = item.quantity + 1;
-
-                                if (user) {
-                                  updateQtyMutation.mutate({
-                                    itemId: item.id,
-                                    quantity: newQty,
-                                  });
-                                } else {
-                                  updateQuantity(item.id, newQty);
-                                }
-                              }}
-                              disabled={item.quantity >= item.stock}
-                              className="w-8 h-8 flex items-center justify-center text-white bg-black rounded-full hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </motion.button>
+                            <div className="flex items-center gap-1.5 bg-gray-100 rounded-full px-2 py-1">
+                              <button
+                                onClick={() => {
+                                  const n = item.quantity - 1;
+                                  if (n < 1) return;
+                                  user
+                                    ? updateQtyMutation.mutate({
+                                        itemId: item.id,
+                                        quantity: n,
+                                      })
+                                    : updateQuantity(item.id, n);
+                                }}
+                                disabled={item.quantity <= 1}
+                                className="w-7 h-7 flex items-center justify-center text-gray-600 hover:text-gray-900 transition disabled:opacity-40"
+                              >
+                                <Minus className="w-3.5 h-3.5" />
+                              </button>
+                              <span className="w-7 text-center font-bold text-gray-900 text-sm">
+                                {item.quantity}
+                              </span>
+                              <button
+                                onClick={() => {
+                                  const n = item.quantity + 1;
+                                  user
+                                    ? updateQtyMutation.mutate({
+                                        itemId: item.id,
+                                        quantity: n,
+                                      })
+                                    : updateQuantity(item.id, n);
+                                }}
+                                disabled={item.quantity >= item.stock}
+                                className="w-7 h-7 flex items-center justify-center text-white bg-gray-900 rounded-full hover:bg-gray-700 transition disabled:opacity-40"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            </div>
 
-          {/* Order Summary */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-            className="lg:col-span-1"
-          >
-            <div className="bg-white rounded-2xl p-6 shadow-sm sticky top-24 space-y-6">
-              {/* Coupon Section - API INTEGRATED */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Gift className="w-5 h-5 text-amber-600" />
-                  <h3 className="font-semibold text-gray-900">Apply Coupon</h3>
-                  {isLoadingCoupons && (
-                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                  )}
+            {/* ── Order Summary (2/5) ───────────────────────────────── */}
+            <motion.div
+              initial={{ opacity: 0, x: 15 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className="lg:col-span-2 flex flex-col h-full overflow-hidden"
+            >
+              <div className="bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col h-full overflow-hidden">
+                <div className="flex-none px-4 py-3 border-b border-gray-100">
+                  <h2 className="font-bold text-gray-900 text-sm">
+                    Order Summary
+                  </h2>
                 </div>
 
-                {appliedCoupon ? (
-                  <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Check className="w-5 h-5 text-green-600" />
-                      <div>
-                        <p className="font-semibold text-green-900">
-                          {appliedCoupon.code}
-                        </p>
-                        <p className="text-xs text-green-700">
-                          {appliedCoupon.discountType === "PERCENTAGE"
-                            ? `${appliedCoupon.discountValue}% OFF`
-                            : `₹${appliedCoupon.discountValue} OFF`}
-                        </p>
-                      </div>
+                <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+                  {/* ── Coupon ────────────────────────────────────────── */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Gift className="w-4 h-4 text-amber-500" />
+                      <h3 className="font-semibold text-gray-900 text-xs">
+                        Apply Coupon
+                      </h3>
+                      {isLoadingCoupons && (
+                        <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
+                      )}
                     </div>
-                    <button
-                      onClick={handleRemoveCoupon}
-                      className="text-green-600 hover:text-green-700"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {/* Input with Autocomplete */}
-                    <div className="relative" ref={dropdownRef}>
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <input
-                            ref={inputRef}
-                            type="text"
-                            value={couponCode}
-                            onChange={(e) =>
-                              setCouponCode(e.target.value.toUpperCase())
-                            }
-                            onFocus={() => {
-                              if (couponCode) setShowAutocomplete(true);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" && couponCode) {
-                                handleApplyCoupon(couponCode);
+
+                    {appliedCoupon ? (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-2.5 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-green-600" />
+                          <div>
+                            <p className="font-bold text-green-900 text-xs">
+                              {appliedCoupon.code}
+                            </p>
+                            <p className="text-[10px] text-green-700">
+                              {appliedCoupon.discountType === "PERCENTAGE"
+                                ? `${appliedCoupon.discountValue}% OFF`
+                                : `₹${appliedCoupon.discountValue} OFF`}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={handleRemoveCoupon}
+                          className="p-1 hover:bg-green-100 rounded transition"
+                        >
+                          <X className="w-4 h-4 text-green-600" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2" ref={dropdownRef}>
+                        <div className="flex gap-1.5">
+                          <div className="relative flex-1">
+                            <input
+                              ref={inputRef}
+                              type="text"
+                              value={couponCode}
+                              onChange={(e) =>
+                                setCouponCode(e.target.value.toUpperCase())
                               }
-                            }}
-                            placeholder="Enter coupon code"
-                            className="w-full px-4 py-3 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition uppercase"
-                            disabled={validateCouponMutation.isPending}
-                          />
+                              onFocus={() => {
+                                if (couponCode) setShowAutocomplete(true);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && couponCode)
+                                  handleApplyCoupon(couponCode);
+                              }}
+                              placeholder="ENTER COUPON CODE"
+                              className="w-full px-3 py-2 pr-7 border border-gray-200 rounded-lg focus:outline-none text-xs font-medium uppercase placeholder:normal-case placeholder:text-gray-400 transition"
+                              disabled={validateCouponMutation.isPending}
+                            />
+                            <button
+                              onClick={() => {
+                                setShowAutocomplete(!showAutocomplete);
+                                setShowCouponDropdown(!showCouponDropdown);
+                              }}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
+                            >
+                              <ChevronDown
+                                className={`w-3.5 h-3.5 transition-transform ${showCouponDropdown ? "rotate-180" : ""}`}
+                              />
+                            </button>
+                          </div>
                           <button
-                            onClick={() => {
-                              setShowAutocomplete(!showAutocomplete);
-                              setShowCouponDropdown(!showCouponDropdown);
-                            }}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            onClick={() => handleApplyCoupon(couponCode)}
+                            disabled={
+                              !couponCode || validateCouponMutation.isPending
+                            }
+                            className="px-3 py-2 bg-gray-900 text-white rounded-lg text-xs font-bold hover:bg-gray-800 transition disabled:opacity-50 flex items-center gap-1"
                           >
-                            <ChevronDown className="w-5 h-5" />
+                            {validateCouponMutation.isPending ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              "Apply"
+                            )}
                           </button>
                         </div>
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => handleApplyCoupon(couponCode)}
-                          disabled={
-                            !couponCode || validateCouponMutation.isPending
-                          }
-                          className="px-6 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                        >
-                          {validateCouponMutation.isPending ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              <span className="hidden sm:inline">Apply</span>
-                            </>
-                          ) : (
-                            "Apply"
-                          )}
-                        </motion.button>
-                      </div>
 
-                      {/* Autocomplete Dropdown */}
-                      <AnimatePresence>
-                        {(showAutocomplete || showCouponDropdown) &&
-                          filteredCoupons.length > 0 && (
-                            <motion.div
-                              initial={{ opacity: 0, y: -10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden max-h-96 overflow-y-auto"
-                            >
-                              {filteredCoupons.map((coupon, index) => {
-                                const canApply =
-                                  subtotal >= coupon.minOrderValue;
-                                const savings = coupon.estimatedDiscount || 0;
-
-                                return (
-                                  <motion.button
-                                    key={coupon.code}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: index * 0.05 }}
-                                    onClick={() =>
-                                      canApply && handleCouponSelect(coupon)
-                                    }
-                                    disabled={
-                                      !canApply ||
-                                      validateCouponMutation.isPending
-                                    }
-                                    className={`w-full text-left p-4 border-b last:border-b-0 transition ${
-                                      canApply
-                                        ? "hover:bg-amber-50 cursor-pointer"
-                                        : "opacity-50 cursor-not-allowed bg-gray-50"
-                                    }`}
-                                  >
-                                    <div className="flex items-start justify-between mb-2">
-                                      <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
-                                          <span className="font-bold text-gray-900 text-sm">
-                                            {coupon.code}
-                                          </span>
-                                          <span className="text-xs bg-amber-400 text-gray-900 px-2 py-1 rounded-full font-semibold">
-                                            {coupon.discountType ===
-                                            "PERCENTAGE"
-                                              ? `${coupon.discountValue}% OFF`
-                                              : `₹${coupon.discountValue} OFF`}
-                                          </span>
-                                        </div>
-                                        {coupon.description && (
-                                          <p className="text-xs text-gray-600 mb-1">
-                                            {coupon.description}
-                                          </p>
-                                        )}
+                        {/* Autocomplete */}
+                        <AnimatePresence>
+                          {(showAutocomplete || showCouponDropdown) &&
+                            filteredCoupons.length > 0 && (
+                              <motion.div
+                                initial={{ opacity: 0, y: -5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -5 }}
+                                className="absolute z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden max-h-56 overflow-y-auto"
+                              >
+                                {filteredCoupons.map((coupon, index) => {
+                                  const canApply =
+                                    subtotal >= coupon.minOrderValue;
+                                  const savings = coupon.estimatedDiscount || 0;
+                                  return (
+                                    <button
+                                      key={coupon.code}
+                                      onClick={() =>
+                                        canApply && handleCouponSelect(coupon)
+                                      }
+                                      disabled={
+                                        !canApply ||
+                                        validateCouponMutation.isPending
+                                      }
+                                      className={`w-full text-left px-3 py-2.5 border-b last:border-b-0 transition text-xs ${canApply ? "hover:bg-amber-50 cursor-pointer" : "opacity-50 cursor-not-allowed bg-gray-50"}`}
+                                    >
+                                      <div className="flex items-center gap-2 mb-0.5">
+                                        <span className="font-bold text-gray-900">
+                                          {coupon.code}
+                                        </span>
+                                        <span className="text-[10px] bg-amber-400 text-gray-900 px-1.5 py-0.5 rounded-full font-bold">
+                                          {coupon.discountType === "PERCENTAGE"
+                                            ? `${coupon.discountValue}% OFF`
+                                            : `₹${coupon.discountValue} OFF`}
+                                        </span>
                                       </div>
-                                    </div>
+                                      {coupon.description && (
+                                        <p className="text-[10px] text-gray-500 mb-0.5 line-clamp-1">
+                                          {coupon.description}
+                                        </p>
+                                      )}
+                                      {!canApply ? (
+                                        <p className="text-[10px] text-red-600 font-semibold">
+                                          ⚠️ Add ₹
+                                          {(
+                                            coupon.minOrderValue - subtotal
+                                          ).toFixed(2)}{" "}
+                                          more
+                                        </p>
+                                      ) : (
+                                        savings > 0 && (
+                                          <p className="text-[10px] text-green-600 font-semibold">
+                                            ✓ Save ₹{savings.toFixed(2)}
+                                          </p>
+                                        )
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </motion.div>
+                            )}
+                        </AnimatePresence>
 
-                                    {!canApply && (
-                                      <p className="text-xs text-red-600 font-medium">
-                                        Add ₹
-                                        {(
-                                          coupon.minOrderValue - subtotal
-                                        ).toFixed(2)}{" "}
-                                        more to apply
-                                      </p>
-                                    )}
-                                    {canApply && savings > 0 && (
-                                      <p className="text-xs text-green-600 font-medium mt-1">
-                                        ✓ Save ₹{savings.toFixed(2)} with this
-                                        coupon
-                                      </p>
-                                    )}
-                                  </motion.button>
-                                );
-                              })}
-                            </motion.div>
-                          )}
-                      </AnimatePresence>
-                    </div>
+                        <button
+                          onClick={() => {
+                            setShowCouponDropdown(!showCouponDropdown);
+                            setShowAutocomplete(!showAutocomplete);
+                          }}
+                          className="text-xs text-amber-600 hover:text-amber-700 font-semibold flex items-center gap-1 transition"
+                        >
+                          <Percent className="w-3 h-3" />
+                          {showCouponDropdown
+                            ? "Hide coupons"
+                            : `View ${availableCoupons.length} available coupon${availableCoupons.length !== 1 ? "s" : ""}`}
+                        </button>
 
-                    <button
-                      onClick={() => {
-                        setShowCouponDropdown(!showCouponDropdown);
-                        setShowAutocomplete(!showAutocomplete);
-                      }}
-                      className="text-sm text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1"
-                    >
-                      <Percent className="w-4 h-4" />
-                      {showCouponDropdown
-                        ? "Hide available coupons"
-                        : `View ${availableCoupons.length} available coupons`}
-                    </button>
-
-                    {availableCoupons.length === 0 && !isLoadingCoupons && (
-                      <p className="text-xs text-gray-500 text-center py-2">
-                        No coupons available for your cart
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* ✅ Shipping Info Section */}
-              {/* ✅ NEW: Courier Selection Section */}
-              {shippingData && shippingData.serviceable && (
-                <div className="border-t pt-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Truck className="w-5 h-5 text-blue-600" />
-                      <h3 className="font-semibold text-gray-900">
-                        Select Courier
-                      </h3>
-                    </div>
-                    {isLoadingShipping && (
-                      <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                    )}
-                  </div>
-
-                  <div className="relative" ref={courierDropdownRef}>
-                    <button
-                      onClick={() =>
-                        setShowCourierDropdown(!showCourierDropdown)
-                      }
-                      className="w-full p-3 border-2 border-gray-200 rounded-xl hover:border-gray-400 transition text-left flex items-center justify-between"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">
-                          {selectedCourier?.courier_name || "Select Courier"}
-                        </p>
-                        {selectedCourier && (
-                          <p className="text-xs text-gray-500">
-                            {selectedCourier.estimated_delivery_days} days •{" "}
-                            {formatMoney(selectedCourier.freight_charge)}
+                        {availableCoupons.length === 0 && !isLoadingCoupons && (
+                          <p className="text-[10px] text-gray-400 text-center py-1.5 bg-gray-50 rounded">
+                            No coupons available for your cart
                           </p>
                         )}
                       </div>
-                      <ChevronDown
-                        className={`w-5 h-5 text-gray-400 transition-transform ${showCourierDropdown ? "rotate-180" : ""}`}
-                      />
-                    </button>
-
-                    <AnimatePresence>
-                      {showCourierDropdown && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl overflow-hidden max-h-80 overflow-y-auto"
-                        >
-                          {/* Cheapest */}
-                          {shippingData.cheapestCourier && (
-                            <button
-                              onClick={() => {
-                                setSelectedCourier(
-                                  shippingData.cheapestCourier,
-                                );
-                                setShowCourierDropdown(false);
-                              }}
-                              className={`w-full p-4 text-left border-b hover:bg-green-50 transition ${
-                                selectedCourier?.courier_company_id ===
-                                shippingData.cheapestCourier.courier_company_id
-                                  ? "bg-green-50"
-                                  : ""
-                              }`}
-                            >
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">
-                                  CHEAPEST
-                                </span>
-                                {selectedCourier?.courier_company_id ===
-                                  shippingData.cheapestCourier
-                                    .courier_company_id && (
-                                  <Check className="w-4 h-4 text-green-600" />
-                                )}
-                              </div>
-                              <p className="font-semibold text-gray-900 text-sm">
-                                {shippingData.cheapestCourier.courier_name}
-                              </p>
-                              <p className="text-xs text-gray-600">
-                                {
-                                  shippingData.cheapestCourier
-                                    .estimated_delivery_days
-                                }{" "}
-                                days •{" "}
-                                {formatMoney(
-                                  shippingData.cheapestCourier.freight_charge,
-                                )}
-                              </p>
-                            </button>
-                          )}
-
-                          {/* Fastest */}
-                          {shippingData.fastestCourier &&
-                            shippingData.fastestCourier.courier_company_id !==
-                              shippingData.cheapestCourier
-                                ?.courier_company_id && (
-                              <button
-                                onClick={() => {
-                                  setSelectedCourier(
-                                    shippingData.fastestCourier,
-                                  );
-                                  setShowCourierDropdown(false);
-                                }}
-                                className={`w-full p-4 text-left border-b hover:bg-blue-50 transition ${
-                                  selectedCourier?.courier_company_id ===
-                                  shippingData.fastestCourier.courier_company_id
-                                    ? "bg-blue-50"
-                                    : ""
-                                }`}
-                              >
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">
-                                    FASTEST
-                                  </span>
-                                  {selectedCourier?.courier_company_id ===
-                                    shippingData.fastestCourier
-                                      .courier_company_id && (
-                                    <Check className="w-4 h-4 text-blue-600" />
-                                  )}
-                                </div>
-                                <p className="font-semibold text-gray-900 text-sm">
-                                  {shippingData.fastestCourier.courier_name}
-                                </p>
-                                <p className="text-xs text-gray-600">
-                                  {
-                                    shippingData.fastestCourier
-                                      .estimated_delivery_days
-                                  }{" "}
-                                  days •{" "}
-                                  {formatMoney(
-                                    shippingData.fastestCourier.freight_charge,
-                                  )}
-                                </p>
-                              </button>
-                            )}
-
-                          {/* Other couriers */}
-                          {shippingData.availableCouriers
-                            ?.filter(
-                              (c: any) =>
-                                c.courier_company_id !==
-                                  shippingData.cheapestCourier
-                                    ?.courier_company_id &&
-                                c.courier_company_id !==
-                                  shippingData.fastestCourier
-                                    ?.courier_company_id,
-                            )
-                            .slice(0, 8)
-                            .map((courier: any) => (
-                              <button
-                                key={courier.id}
-                                onClick={() => {
-                                  setSelectedCourier(courier);
-                                  setShowCourierDropdown(false);
-                                }}
-                                className={`w-full p-4 text-left border-b last:border-b-0 hover:bg-gray-50 transition ${
-                                  selectedCourier?.courier_company_id ===
-                                  courier.courier_company_id
-                                    ? "bg-gray-50"
-                                    : ""
-                                }`}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-semibold text-gray-900 text-sm truncate">
-                                      {courier.courier_name}
-                                    </p>
-                                    <p className="text-xs text-gray-600">
-                                      {courier.estimated_delivery_days} days •
-                                      Rating {courier.rating}
-                                    </p>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <p className="font-bold text-gray-900">
-                                      {formatMoney(courier.freight_charge)}
-                                    </p>
-                                    {selectedCourier?.courier_company_id ===
-                                      courier.courier_company_id && (
-                                      <Check className="w-4 h-4 text-gray-600" />
-                                    )}
-                                  </div>
-                                </div>
-                              </button>
-                            ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
-              )}
-
-              {/* Price Breakdown */}
-              <div className="space-y-4 pb-6 border-b border-gray-200">
-                <div className="flex justify-between text-gray-700">
-                  <span>Subtotal ({totalItems} items)</span>
-                  <span className="font-semibold">{formatMoney(subtotal)}</span>
-                </div>
-
-                {discount > 0 && (
-                  <div className="flex justify-between text-green-600">
-                    <span>Discount</span>
-                    <span className="font-semibold">
-                      -{formatMoney(discount)}
-                    </span>
-                  </div>
-                )}
-
-                <div className="flex justify-between text-gray-700">
-                  <div className="flex flex-col">
-                    <span>Shipping</span>
-                    {selectedCourier && (
-                      <span className="text-xs text-blue-600">
-                        {selectedCourier.courier_name}
-                      </span>
                     )}
                   </div>
-                  <span className="font-semibold">
-                    {!shippingData
-                      ? "—"
-                      : shippingData.isFreeShipping
-                        ? "Free"
-                        : formatMoney(shippingCost)}
-                  </span>
+
+                  {/* ── Courier Selection ─────────────────────────────── */}
+                  {shippingData && shippingData.serviceable && (
+                    <div className="pt-3 border-t border-gray-100">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Truck className="w-4 h-4 text-blue-500" />
+                          <h3 className="font-semibold text-gray-900 text-xs">
+                            Select Courier
+                          </h3>
+                        </div>
+                        {isLoadingShipping && (
+                          <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
+                        )}
+                      </div>
+
+                      <div className="relative" ref={courierDropdownRef}>
+                        <button
+                          onClick={() =>
+                            setShowCourierDropdown(!showCourierDropdown)
+                          }
+                          className="w-full p-2.5 border border-gray-200 rounded-lg hover:border-gray-400 transition text-left flex items-center justify-between"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-gray-900 truncate">
+                              {selectedCourier?.courier_name ||
+                                "Select Courier"}
+                            </p>
+                            {selectedCourier && (
+                              <p className="text-[10px] text-gray-500">
+                                {selectedCourier.estimated_delivery_days} days •{" "}
+                                {formatMoney(selectedCourier.freight_charge)}
+                              </p>
+                            )}
+                          </div>
+                          <ChevronDown
+                            className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${showCourierDropdown ? "rotate-180" : ""}`}
+                          />
+                        </button>
+
+                        <AnimatePresence>
+                          {showCourierDropdown && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -8 }}
+                              className="absolute z-50 w-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden max-h-64 overflow-y-auto"
+                            >
+                              {shippingData.cheapestCourier && (
+                                <button
+                                  onClick={() => {
+                                    setSelectedCourier(
+                                      shippingData.cheapestCourier,
+                                    );
+                                    setShowCourierDropdown(false);
+                                  }}
+                                  className={`w-full p-3 text-left border-b hover:bg-green-50 transition ${selectedCourier?.courier_company_id === shippingData.cheapestCourier.courier_company_id ? "bg-green-50" : ""}`}
+                                >
+                                  <div className="flex items-center gap-2 mb-0.5">
+                                    <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0 rounded-full font-bold">
+                                      CHEAPEST
+                                    </span>
+                                    {selectedCourier?.courier_company_id ===
+                                      shippingData.cheapestCourier
+                                        .courier_company_id && (
+                                      <Check className="w-3 h-3 text-green-600" />
+                                    )}
+                                  </div>
+                                  <p className="font-semibold text-gray-900 text-xs">
+                                    {shippingData.cheapestCourier.courier_name}
+                                  </p>
+                                  <p className="text-[10px] text-gray-500">
+                                    {
+                                      shippingData.cheapestCourier
+                                        .estimated_delivery_days
+                                    }{" "}
+                                    days •{" "}
+                                    {formatMoney(
+                                      shippingData.cheapestCourier
+                                        .freight_charge,
+                                    )}
+                                  </p>
+                                </button>
+                              )}
+
+                              {shippingData.fastestCourier &&
+                                shippingData.fastestCourier
+                                  .courier_company_id !==
+                                  shippingData.cheapestCourier
+                                    ?.courier_company_id && (
+                                  <button
+                                    onClick={() => {
+                                      setSelectedCourier(
+                                        shippingData.fastestCourier,
+                                      );
+                                      setShowCourierDropdown(false);
+                                    }}
+                                    className={`w-full p-3 text-left border-b hover:bg-blue-50 transition ${selectedCourier?.courier_company_id === shippingData.fastestCourier.courier_company_id ? "bg-blue-50" : ""}`}
+                                  >
+                                    <div className="flex items-center gap-2 mb-0.5">
+                                      <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0 rounded-full font-bold">
+                                        FASTEST
+                                      </span>
+                                      {selectedCourier?.courier_company_id ===
+                                        shippingData.fastestCourier
+                                          .courier_company_id && (
+                                        <Check className="w-3 h-3 text-blue-600" />
+                                      )}
+                                    </div>
+                                    <p className="font-semibold text-gray-900 text-xs">
+                                      {shippingData.fastestCourier.courier_name}
+                                    </p>
+                                    <p className="text-[10px] text-gray-500">
+                                      {
+                                        shippingData.fastestCourier
+                                          .estimated_delivery_days
+                                      }{" "}
+                                      days •{" "}
+                                      {formatMoney(
+                                        shippingData.fastestCourier
+                                          .freight_charge,
+                                      )}
+                                    </p>
+                                  </button>
+                                )}
+
+                              {shippingData.availableCouriers
+                                ?.filter(
+                                  (c: any) =>
+                                    c.courier_company_id !==
+                                      shippingData.cheapestCourier
+                                        ?.courier_company_id &&
+                                    c.courier_company_id !==
+                                      shippingData.fastestCourier
+                                        ?.courier_company_id,
+                                )
+                                .slice(0, 8)
+                                .map((courier: any) => (
+                                  <button
+                                    key={courier.id}
+                                    onClick={() => {
+                                      setSelectedCourier(courier);
+                                      setShowCourierDropdown(false);
+                                    }}
+                                    className={`w-full p-3 text-left border-b last:border-b-0 hover:bg-gray-50 transition ${selectedCourier?.courier_company_id === courier.courier_company_id ? "bg-gray-50" : ""}`}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-semibold text-gray-900 text-xs truncate">
+                                          {courier.courier_name}
+                                        </p>
+                                        <p className="text-[10px] text-gray-500">
+                                          {courier.estimated_delivery_days} days
+                                          • ⭐ {courier.rating}
+                                        </p>
+                                      </div>
+                                      <div className="flex items-center gap-1.5 ml-2">
+                                        <p className="font-bold text-gray-900 text-xs">
+                                          {formatMoney(courier.freight_charge)}
+                                        </p>
+                                        {selectedCourier?.courier_company_id ===
+                                          courier.courier_company_id && (
+                                          <Check className="w-3 h-3 text-gray-600" />
+                                        )}
+                                      </div>
+                                    </div>
+                                  </button>
+                                ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Price Breakdown ───────────────────────────────── */}
+                  <div className="space-y-2 pt-3 border-t border-gray-100">
+                    <div className="flex justify-between text-xs text-gray-600">
+                      <span>
+                        Subtotal ({totalItems} item{totalItems !== 1 ? "s" : ""}
+                        )
+                      </span>
+                      <span className="font-semibold text-gray-900">
+                        {formatMoney(subtotal)}
+                      </span>
+                    </div>
+
+                    {discount > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, x: -5 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="flex justify-between text-xs text-green-600 font-semibold bg-green-50 -mx-1 px-1 py-1 rounded"
+                      >
+                        <span className="flex items-center gap-1">
+                          <Gift className="w-3 h-3" />
+                          Coupon ({appliedCoupon?.code})
+                        </span>
+                        <span>-{formatMoney(discount)}</span>
+                      </motion.div>
+                    )}
+
+                    <div className="flex justify-between text-xs text-gray-600">
+                      <div>
+                        <span>Shipping</span>
+                        {selectedCourier && (
+                          <p className="text-[10px] text-blue-500">
+                            {selectedCourier.courier_name}
+                          </p>
+                        )}
+                      </div>
+                      <span
+                        className={`font-semibold ${shippingCost === 0 && shippingData ? "text-green-600" : "text-gray-900"}`}
+                      >
+                        {!shippingData
+                          ? "—"
+                          : shippingData.isFreeShipping
+                            ? "Free"
+                            : formatMoney(shippingCost)}
+                      </span>
+                    </div>
+
+                    {gstAmount > 0 && (
+                      <>
+                        <div className="flex justify-between text-xs text-gray-500">
+                          <span>CGST (2.5%)</span>
+                          <span>{formatMoney(cgstAmount)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-500">
+                          <span>SGST (2.5%)</span>
+                          <span>{formatMoney(sgstAmount)}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
 
-                {/* ✅ GST Line */}
-                {gstAmount > 0 && (
-                  <div className="flex justify-between text-gray-700">
-                    <span className="text-sm">
-                      GST (18%)
-                      <span className="text-xs ml-1 text-gray-400">incl.</span>
+                {/* ─── Sticky Total + CTA ───────────────────────────── */}
+                <div className="flex-none border-t border-gray-200 px-4 py-3 bg-white">
+                  <div className="flex items-baseline justify-between mb-1">
+                    <span className="font-bold text-gray-900 text-sm">
+                      Total
                     </span>
-                    <span className="font-semibold text-sm">
-                      {formatMoney(gstAmount)}
-                    </span>
+                    <div className="text-right">
+                      <span className="text-2xl font-bold text-gray-900">
+                        {formatMoney(total)}
+                      </span>
+                      <p className="text-[10px] text-gray-400">
+                        incl. all taxes
+                      </p>
+                    </div>
                   </div>
-                )}
-              </div>
 
-              {/* Total */}
-              <div className="mb-6">
-                <div className="flex justify-between items-baseline mb-1">
-                  <span className="text-lg font-bold text-gray-900">Total</span>
-                  <div className="text-right">
-                    <span className="text-3xl font-bold text-gray-900">
-                      {formatMoney(total)}
-                    </span>
-                    <p className="text-sm text-gray-500">incl. all taxes</p>
-                  </div>
+                  {discount > 0 && (
+                    <p className="text-xs text-green-600 font-semibold text-right mb-2">
+                      🎉 You saved {formatMoney(discount)}
+                    </p>
+                  )}
+
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    onClick={handleCheckout}
+                    className="w-full bg-gray-900 text-white py-3 rounded-xl font-bold shadow hover:shadow-md transition flex items-center justify-center gap-2 text-sm group"
+                  >
+                    Proceed to Checkout
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+                  </motion.button>
                 </div>
-                {discount > 0 && (
-                  <p className="text-sm text-green-600 text-right">
-                    You saved {formatMoney(discount)}
-                  </p>
-                )}
               </div>
-
-              {/* Checkout Button */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleCheckout}
-                className="w-full bg-black text-white py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-xl transition flex items-center justify-center gap-2 group"
-              >
-                Proceed to Checkout
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition" />
-              </motion.button>
-
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="text-center text-sm text-gray-500 mt-4 flex items-center justify-center gap-1"
-              >
-                <Lock className="w-4 h-4" />
-                Secure Checkout
-              </motion.p>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Mobile Bottom Bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white shadow-lg p-4 z-50 border-t">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <p className="text-sm text-gray-600">TOTAL</p>
-            <p className="text-2xl font-bold text-gray-900">
-              ₹{total.toFixed(2)}
-            </p>
-            {discount > 0 && (
-              <p className="text-xs text-green-600">
-                Saved ₹{Number(discount).toFixed(2)}
-              </p>
-            )}
+            </motion.div>
           </div>
-          <motion.button
-            whileTap={{ scale: 0.98 }}
-            onClick={handleCheckout}
-            className="bg-black text-white px-8 py-3 rounded-full font-bold shadow-lg flex items-center gap-2"
-          >
-            Checkout
-            <ArrowRight className="w-5 h-5" />
-          </motion.button>
         </div>
       </div>
-
-      {/* Spacer for mobile */}
-      <div className="h-24 lg:hidden" />
     </div>
   );
 }

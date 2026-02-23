@@ -44,6 +44,12 @@ function Header() {
   const [pincode, setPincode] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  // ✅ Prevents hydration mismatch: badge counts come from localStorage/API
+  // which the server doesn't have. Only render counts after first client paint.
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   const localCartItemsCount = useCartStore((s) => s.getTotalItems());
   const router = useRouter();
 
@@ -62,11 +68,10 @@ function Header() {
   useOnClickOutside(userMenuRef, () => setUserMenuOpen(false));
   useOnClickOutside(locationRef, () => setLocationModalOpen(false));
 
-  // Check if we're on my-account page
   const isMyAccountPage = pathname?.startsWith("/my-account");
 
   /* -------------------- CART API QUERY -------------------- */
-  const { data: cartData, isLoading: isLoadingCartApi } = useQuery({
+  const { data: cartData } = useQuery({
     queryKey: ["cartApi", user?.id],
     queryFn: async () => {
       const res = await cartApi.getCart();
@@ -74,26 +79,35 @@ function Header() {
     },
     enabled: !!user,
     staleTime: 0,
+    placeholderData: { items: [] }, // ✅ no undefined flash on mount
   });
 
   /* -------------------- WISHLIST API QUERY -------------------- */
-  const { data: wishlistData, isLoading: isLoadingWishlist } = useQuery({
+  const { data: wishlistData } = useQuery({
     queryKey: ["wishlist", user?.id],
     queryFn: async () => {
       const res = await wishlistApi.getWishlist();
       return res.data;
     },
     enabled: !!user,
-    staleTime: 30000, // 30 seconds
+    staleTime: 30000,
+    placeholderData: { id: "", userId: "", isPublic: false, items: [], totalItems: 0 },
   });
 
   /* -------------------- CALCULATE COUNTS -------------------- */
-  // Cart count: Use API data if logged in, otherwise use local cart
+  // isMounted guard: server renders 0 (no localStorage/API).
+  // Client reads real values after hydration — prevents SSR mismatch.
   const apiCartItems = cartData?.items ?? [];
-  const cartItemsCount = user ? apiCartItems.length : localCartItemsCount;
-
-  // Wishlist count: Use API data if logged in, otherwise show 0
-  const wishlistCount = user ? (wishlistData?.totalItems ?? 0) : 0;
+  const cartItemsCount = isMounted
+    ? user
+      ? apiCartItems.length
+      : localCartItemsCount
+    : 0;
+  const wishlistCount = isMounted
+    ? user
+      ? (wishlistData?.totalItems ?? 0)
+      : 0
+    : 0;
 
   /* -------------------- GET DEFAULT ADDRESS -------------------- */
   const { data: addressesData } = useQuery({
@@ -106,6 +120,7 @@ function Header() {
     },
     enabled: !!user,
     staleTime: 1000 * 60 * 5,
+    placeholderData: [], // ✅ avoids null guard issues
   });
 
   const addresses = addressesData || [];
@@ -119,18 +134,13 @@ function Header() {
         pincode: defaultAddress.pincode,
         isServiceable: true,
       };
-
       setLocation(locationData);
       localStorage.setItem("userLocation", JSON.stringify(locationData));
     } else if (!user) {
       const savedLocation = localStorage.getItem("userLocation");
       if (savedLocation) {
         const parsed = JSON.parse(savedLocation);
-
-        setLocation({
-          ...parsed,
-          city: parsed.city?.trim() || "Your Area",
-        });
+        setLocation({ ...parsed, city: parsed.city?.trim() || "Your Area" });
       }
     }
   }, [user, defaultAddress]);
@@ -156,19 +166,11 @@ function Header() {
       toast.error("Please enter a valid 6-digit pincode");
       return;
     }
-
     const isServiceable = await checkPincodeServiceability(pincode);
-
-    const locationData = {
-      city: "Your Area",
-      pincode,
-      isServiceable,
-    };
-
+    const locationData = { city: "Your Area", pincode, isServiceable };
     setLocation(locationData);
     localStorage.setItem("userLocation", JSON.stringify(locationData));
     setPincode("");
-
     if (isServiceable) {
       toast.success("Delivery available to your location!");
     } else {
@@ -181,40 +183,28 @@ function Header() {
       toast.error("Geolocation is not supported by your browser");
       return;
     }
-
     setIsGettingLocation(true);
-
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
-
         try {
           const response = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
-            {
-              headers: {
-                "User-Agent": "KankanaSilks/1.0",
-              },
-            },
+            { headers: { "User-Agent": "KankanaSilks/1.0" } },
           );
-
           const data = await response.json();
           const detectedPincode = data.address?.postcode;
-
           if (detectedPincode) {
             setPincode(detectedPincode);
             const isServiceable =
               await checkPincodeServiceability(detectedPincode);
-
             const locationData = {
               city: data.address?.city || data.address?.town || "Your Area",
               pincode: detectedPincode,
               isServiceable,
             };
-
             setLocation(locationData);
             localStorage.setItem("userLocation", JSON.stringify(locationData));
-
             if (isServiceable) {
               toast.success(
                 `Location detected: ${detectedPincode}. Delivery available!`,
@@ -228,7 +218,6 @@ function Header() {
             toast.error("Could not detect pincode from your location");
           }
         } catch (error) {
-          console.error("Error getting location details:", error);
           toast.error("Failed to get location details");
         } finally {
           setIsGettingLocation(false);
@@ -236,11 +225,9 @@ function Header() {
       },
       (error) => {
         setIsGettingLocation(false);
-        console.error("Geolocation error:", error);
-
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            toast.error("Location access denied. Please enable location.");
+            toast.error("Location access denied.");
             break;
           case error.POSITION_UNAVAILABLE:
             toast.error("Location information unavailable");
@@ -252,21 +239,20 @@ function Header() {
             toast.error("Failed to get your location");
         }
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
   };
 
   /* -------------------- FETCH CATEGORIES -------------------- */
+  // ✅ 1hr staleTime — categories don't change often, no refetch on every visit
   const { data: categories = [], isLoading: loading } = useQuery({
     queryKey: ["categories-tree"],
     queryFn: async () => {
       return await categoryService.getCategoryTree();
     },
-    staleTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 60, // 1 hour
+    gcTime: 1000 * 60 * 60 * 24, // 24 hours in cache
+    placeholderData: [], // ✅ render nav bar immediately
     retry: 1,
   });
 
@@ -288,26 +274,21 @@ function Header() {
       setLocation(null);
       toast.success("Logged out successfully");
     } catch (error) {
-      console.log("error", error);
       toast.error("Logout failed", 1000);
     }
   };
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
-
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-
       if (currentScrollY > lastScrollY && currentScrollY > 120) {
         setShowNav(false);
       } else {
         setShowNav(true);
       }
-
       lastScrollY = currentScrollY;
     };
-
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -316,20 +297,18 @@ function Header() {
   const getCategoryUrl = (slug: string) => {
     const queryParams = buildCategoryQuery(slug);
     const searchParams = new URLSearchParams();
-
     Object.entries(queryParams).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         searchParams.append(key, String(value));
       }
     });
-
     return `/shop/${slug}?${searchParams.toString()}`;
   };
 
   const icons = [
     {
       name: "Home",
-      icon: Home, // You'll need to import this from lucide-react
+      icon: Home,
       type: "link",
       url: "/",
       requiresAuth: false,
@@ -340,9 +319,7 @@ function Header() {
       type: "action",
       requiresAuth: false,
       onClick: () => {
-        if (!user?.email) {
-          setIsModalOpen(!isModalOpen);
-        }
+        if (!user?.email) setIsModalOpen(!isModalOpen);
       },
     },
     {
@@ -385,7 +362,6 @@ function Header() {
         <div className="flex items-center justify-between px-8 py-4 bg-white shadow-background">
           {/* Left Section - Logo + Location */}
           <div className="flex items-center gap-6 flex-1">
-            {/* Logo */}
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -398,9 +374,7 @@ function Header() {
                   width={200}
                   height={200}
                   priority
-                  className={`transition-all duration-300 ${
-                    showNav ? "lg:h-10" : "lg:h-14"
-                  } w-auto object-contain`}
+                  className={`transition-all duration-300 ${showNav ? "lg:h-10" : "lg:h-14"} w-auto object-contain`}
                 />
               </Link>
             </motion.div>
@@ -421,13 +395,10 @@ function Header() {
                   </span>
                 </div>
                 <ChevronDown
-                  className={`w-4 h-4 transition-transform duration-200 ${
-                    locationModalOpen ? "rotate-180" : "rotate-0"
-                  }`}
+                  className={`w-4 h-4 transition-transform duration-200 ${locationModalOpen ? "rotate-180" : "rotate-0"}`}
                 />
               </button>
 
-              {/* Location Modal - Desktop */}
               <AnimatePresence>
                 {locationModalOpen && (
                   <motion.div
@@ -450,7 +421,6 @@ function Header() {
                         </button>
                       </div>
 
-                      {/* User's Saved Addresses (if logged in) */}
                       {user && addresses.length > 0 && (
                         <div className="mb-4">
                           <h4 className="text-sm font-semibold text-gray-900 mb-3">
@@ -507,7 +477,6 @@ function Header() {
                         </div>
                       )}
 
-                      {/* Pincode Input */}
                       <div>
                         <h4 className="text-sm font-semibold text-gray-900 mb-3">
                           {user && addresses.length > 0
@@ -534,7 +503,6 @@ function Header() {
                             {isCheckingPincode ? "..." : "Check"}
                           </button>
                         </div>
-
                         <button
                           onClick={handleUseCurrentLocation}
                           disabled={isGettingLocation}
@@ -550,11 +518,7 @@ function Header() {
                           <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: "auto" }}
-                            className={`p-4 rounded-lg border-2 ${
-                              location.isServiceable
-                                ? "bg-green-50 border-green-200"
-                                : "bg-red-50 border-red-200"
-                            }`}
+                            className={`p-4 rounded-lg border-2 ${location.isServiceable ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}
                           >
                             <div className="flex items-start gap-3">
                               {location.isServiceable ? (
@@ -568,11 +532,7 @@ function Header() {
                               )}
                               <div className="flex-1">
                                 <p
-                                  className={`font-bold text-sm mb-1 ${
-                                    location.isServiceable
-                                      ? "text-green-900"
-                                      : "text-red-900"
-                                  }`}
+                                  className={`font-bold text-sm mb-1 ${location.isServiceable ? "text-green-900" : "text-red-900"}`}
                                 >
                                   {location.isServiceable
                                     ? "Delivery Available!"
@@ -633,7 +593,6 @@ function Header() {
               )
               .map((item) => {
                 const Icon = item.icon;
-
                 const Button = (
                   <motion.button
                     whileHover={{ scale: 0.9 }}
@@ -648,7 +607,6 @@ function Header() {
                     className="relative text-gray-600 hover:text-black"
                   >
                     <Icon className="w-5 h-5" />
-
                     {"badgeCount" in item && item.badgeCount! > 0 && (
                       <span className="absolute -top-2 -right-2 bg-black text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
                         {item.badgeCount}
@@ -673,11 +631,10 @@ function Header() {
                     </Link>
                   );
                 }
-
                 return <div key={item.name}>{Button}</div>;
               })}
 
-            {/* User Menu Icon */}
+            {/* User Menu */}
             <div
               className="relative"
               onMouseEnter={() => user && setUserMenuOpen(true)}
@@ -699,7 +656,6 @@ function Header() {
                     <p className="text-sm font-semibold text-gray-900">
                       Hello, {user.firstName}!
                     </p>
-                    {/* Arrow icon */}
                     <motion.span
                       animate={{ rotate: userMenuOpen ? 180 : 0 }}
                       transition={{ duration: 0.2 }}
@@ -711,7 +667,6 @@ function Header() {
                 )}
               </motion.button>
 
-              {/* User Dropdown Menu */}
               <AnimatePresence>
                 {user && userMenuOpen && (
                   <motion.div
@@ -769,10 +724,7 @@ function Header() {
             opacity: showNav ? 1 : 0,
             display: showNav ? "block" : "none",
           }}
-          transition={{
-            duration: 0.3,
-            ease: "easeInOut",
-          }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
           className="hidden md:block relative bg-white border-t border-gray-100"
         >
           <motion.ul
@@ -782,9 +734,20 @@ function Header() {
             className="flex justify-center items-center gap-8 py-4 px-8"
           >
             {loading ? (
-              <li className="text-xs text-gray-400 animate-pulse">
-                Loading categories...
-              </li>
+              // ✅ Skeleton shimmer — same height as real nav, no layout shift
+              <>
+                {[80, 100, 72, 88, 96, 76].map((w, i) => (
+                  <li key={i}>
+                    <div
+                      className="h-3 rounded-full bg-gray-200 animate-pulse"
+                      style={{
+                        width: `${w}px`,
+                        animationDelay: `${i * 0.05}s`,
+                      }}
+                    />
+                  </li>
+                ))}
+              </>
             ) : categories.length === 0 ? (
               <li className="text-xs text-gray-400">No categories available</li>
             ) : (
@@ -809,15 +772,10 @@ function Header() {
                     </span>
                     {category.children && category.children.length > 0 && (
                       <ChevronDown
-                        className={`w-3 h-3 transition-all duration-300 ${
-                          hoveredCategory === category.id
-                            ? "rotate-180 text-black"
-                            : "text-gray-500"
-                        }`}
+                        className={`w-3 h-3 transition-all duration-300 ${hoveredCategory === category.id ? "rotate-180 text-black" : "text-gray-500"}`}
                       />
                     )}
                   </Link>
-
                   {activeNav === category.name && (
                     <motion.div
                       layoutId="activeDesktopNav"
@@ -857,10 +815,7 @@ function Header() {
                               key={subCategory.id}
                               initial={{ opacity: 0, x: -20 }}
                               animate={{ opacity: 1, x: 0 }}
-                              transition={{
-                                duration: 0.3,
-                                delay: idx * 0.05,
-                              }}
+                              transition={{ duration: 0.3, delay: idx * 0.05 }}
                               whileHover={{ x: 5 }}
                               className="group cursor-pointer"
                             >
@@ -962,7 +917,6 @@ function Header() {
               <Menu className="w-6 h-6" />
             )}
           </motion.button>
-
           <Link href="/">
             <img
               src="/image-removebg-preview.png"
@@ -970,7 +924,6 @@ function Header() {
               alt="kankana_silks"
             />
           </Link>
-
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => setIsSearchOpen(true)}
@@ -980,7 +933,6 @@ function Header() {
           </motion.button>
         </div>
 
-        {/* Location Bar Mobile */}
         <div className="px-4 py-2 border-t border-gray-100">
           <button
             onClick={() => setLocationModalOpen(true)}
@@ -1012,7 +964,6 @@ function Header() {
               className="absolute inset-0 bg-black/50"
               onClick={() => setLocationModalOpen(false)}
             />
-
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
@@ -1023,7 +974,6 @@ function Header() {
             >
               <div className="p-6 pb-8">
                 <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6" />
-
                 <div className="flex justify-between mb-4">
                   <h3 className="text-xl font-bold">Choose your location</h3>
                   <button onClick={() => setLocationModalOpen(false)}>
@@ -1031,7 +981,6 @@ function Header() {
                   </button>
                 </div>
 
-                {/* User's Saved Addresses */}
                 {user && addresses.length > 0 && (
                   <div className="mb-6">
                     <h4 className="text-sm font-semibold text-gray-900 mb-3">
@@ -1088,7 +1037,6 @@ function Header() {
                   </div>
                 )}
 
-                {/* Pincode Input */}
                 <div>
                   <h4 className="text-sm font-semibold text-gray-900 mb-3">
                     {user && addresses.length > 0
@@ -1115,7 +1063,6 @@ function Header() {
                       {isCheckingPincode ? "..." : "Check"}
                     </button>
                   </div>
-
                   <button
                     onClick={handleUseCurrentLocation}
                     disabled={isGettingLocation}
@@ -1131,11 +1078,7 @@ function Header() {
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
-                      className={`p-4 rounded-xl border-2 ${
-                        location.isServiceable
-                          ? "bg-green-50 border-green-200"
-                          : "bg-red-50 border-red-200"
-                      }`}
+                      className={`p-4 rounded-xl border-2 ${location.isServiceable ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}
                     >
                       <div className="flex items-start gap-3">
                         {location.isServiceable ? (
@@ -1145,11 +1088,7 @@ function Header() {
                         )}
                         <div>
                           <p
-                            className={`font-bold ${
-                              location.isServiceable
-                                ? "text-green-900"
-                                : "text-red-900"
-                            }`}
+                            className={`font-bold ${location.isServiceable ? "text-green-900" : "text-red-900"}`}
                           >
                             {location.isServiceable
                               ? "Delivery Available!"
@@ -1194,7 +1133,6 @@ function Header() {
               className="absolute inset-0 bg-black/50"
               onClick={() => setMobileMenuOpen(false)}
             />
-
             <motion.div
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
@@ -1211,7 +1149,6 @@ function Header() {
                   <X />
                 </button>
 
-                {/* User Info if logged in */}
                 {user && (
                   <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                     <p className="font-semibold text-gray-900">
@@ -1265,60 +1202,71 @@ function Header() {
                   </button>
                 )}
 
-                {/* Categories */}
                 <div className="space-y-4">
-                  {categories.map((category) => (
-                    <div key={category.id} className="border-b pb-4">
-                      <div className="flex items-center justify-between">
-                        <Link
-                          href={getCategoryUrl(category.slug)}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="flex-1 font-medium"
-                        >
-                          {category.name}
-                        </Link>
-                        {category.children && category.children.length > 0 && (
-                          <button
-                            onClick={() =>
-                              setActiveNav(
-                                activeNav === category.name
-                                  ? ""
-                                  : category.name,
-                              )
-                            }
+                  {loading ? (
+                    // ✅ Skeleton for mobile menu too
+                    <>
+                      {[120, 90, 110, 80, 100].map((w, i) => (
+                        <div key={i} className="border-b pb-4">
+                          <div
+                            className="h-4 rounded-full bg-gray-200 animate-pulse"
+                            style={{ width: `${w}px` }}
+                          />
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    categories.map((category) => (
+                      <div key={category.id} className="border-b pb-4">
+                        <div className="flex items-center justify-between">
+                          <Link
+                            href={getCategoryUrl(category.slug)}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex-1 font-medium"
                           >
-                            <ChevronDown
-                              className={`w-4 h-4 transition-transform ${
-                                activeNav === category.name ? "rotate-180" : ""
-                              }`}
-                            />
-                          </button>
-                        )}
-                      </div>
-
-                      <AnimatePresence>
-                        {activeNav === category.name && category.children && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="mt-2 pl-4 space-y-2"
-                          >
-                            {category.children.map((sub) => (
-                              <Link
-                                key={sub.id}
-                                href={getCategoryUrl(sub.slug)}
-                                onClick={() => setMobileMenuOpen(false)}
-                                className="block text-sm text-gray-600 py-1"
+                            {category.name}
+                          </Link>
+                          {category.children &&
+                            category.children.length > 0 && (
+                              <button
+                                onClick={() =>
+                                  setActiveNav(
+                                    activeNav === category.name
+                                      ? ""
+                                      : category.name,
+                                  )
+                                }
                               >
-                                {sub.name}
-                              </Link>
-                            ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  ))}
+                                <ChevronDown
+                                  className={`w-4 h-4 transition-transform ${activeNav === category.name ? "rotate-180" : ""}`}
+                                />
+                              </button>
+                            )}
+                        </div>
+                        <AnimatePresence>
+                          {activeNav === category.name && category.children && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              className="mt-2 pl-4 space-y-2"
+                            >
+                              {category.children.map((sub) => (
+                                <Link
+                                  key={sub.id}
+                                  href={getCategoryUrl(sub.slug)}
+                                  onClick={() => setMobileMenuOpen(false)}
+                                  className="block text-sm text-gray-600 py-1"
+                                >
+                                  {sub.name}
+                                </Link>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -1335,7 +1283,6 @@ function Header() {
           className="md:hidden fixed bottom-0 left-0 right-0 bg-white z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.08)]"
         >
           <ul className="flex justify-around items-center py-3">
-            {/* Filter icons to show only Home, Consultation, Cart, Wishlist, Account */}
             {icons
               .filter((item) =>
                 ["Home", "Consultation", "Cart", "Wishlist"].includes(
@@ -1363,7 +1310,6 @@ function Header() {
                         }}
                         className="flex flex-col items-center gap-1 py-2 relative"
                       >
-                        {/* Active indicator line at top */}
                         {isActive && (
                           <motion.div
                             layoutId="activeTab"
@@ -1376,14 +1322,10 @@ function Header() {
                           />
                         )}
                         <IconComponent
-                          className={`w-5 h-5 transition-colors ${
-                            isActive ? "text-black" : "text-gray-500"
-                          }`}
+                          className={`w-5 h-5 transition-colors ${isActive ? "text-black" : "text-gray-500"}`}
                         />
                         <span
-                          className={`text-[10px] font-medium transition-colors ${
-                            isActive ? "text-black" : "text-gray-500"
-                          }`}
+                          className={`text-[10px] font-medium transition-colors ${isActive ? "text-black" : "text-gray-500"}`}
                         >
                           {item.name}
                         </span>
@@ -1408,7 +1350,6 @@ function Header() {
                 );
               })}
 
-            {/* User/Account Icon */}
             <li className="relative flex-1">
               <button
                 onClick={() => {
@@ -1420,31 +1361,18 @@ function Header() {
                 }}
                 className="flex flex-col items-center gap-1 py-2 w-full relative"
               >
-                {/* Active indicator line at top */}
                 {pathname?.startsWith("/my-account") && (
                   <motion.div
                     layoutId="activeTab"
                     className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-1 bg-black rounded-full"
-                    transition={{
-                      type: "spring",
-                      stiffness: 380,
-                      damping: 30,
-                    }}
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
                   />
                 )}
                 <User
-                  className={`w-5 h-5 transition-colors ${
-                    pathname?.startsWith("/my-account")
-                      ? "text-black"
-                      : "text-gray-500"
-                  }`}
+                  className={`w-5 h-5 transition-colors ${pathname?.startsWith("/my-account") ? "text-black" : "text-gray-500"}`}
                 />
                 <span
-                  className={`text-[10px] font-medium transition-colors ${
-                    pathname?.startsWith("/my-account")
-                      ? "text-black"
-                      : "text-gray-500"
-                  }`}
+                  className={`text-[10px] font-medium transition-colors ${pathname?.startsWith("/my-account") ? "text-black" : "text-gray-500"}`}
                 >
                   {user ? "Account" : "Login"}
                 </span>
@@ -1453,13 +1381,11 @@ function Header() {
           </ul>
         </motion.nav>
       )}
-      {/* Unified Search Modal */}
+
       <UnifiedSearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
       />
-
-      {/* Video Consultation Modal */}
       <VideoConsultationModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

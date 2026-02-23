@@ -5,11 +5,18 @@ import Link from "next/link";
 
 export default function Footer() {
   const links = [
-    { label: "About Us", href: "#" },
-    { label: "Contact", href: "#" },
-    { label: "Returns", href: "#" },
-    { label: "Shipping", href: "#" },
-    { label: "FAQ", href: "#" },
+    { label: "About Us", href: "/about-us" },
+    { label: "Contact", href: "/contact-us" },
+    { label: "Returns", href: "/return-policy" },
+    { label: "Shipping", href: "/shipping-policy" },
+    { label: "FAQ", href: "/faq" },
+  ];
+  const socialMedia = [
+    {
+      label: "Instagram",
+      href: "https://www.instagram.com/kankanasilks/?hl=en",
+    },
+    { label: "Youtube", href: "https://www.youtube.com/@KankanaSilks" },
   ];
 
   return (
@@ -60,9 +67,22 @@ export default function Footer() {
           >
             <h3 className="text-lg font-light mb-4 text-foreground">Connect</h3>
             <div className="space-y-2 text-sm text-muted-foreground font-light">
-              <p>Instagram</p>
-              <p>Pinterest</p>
-              <p>Facebook</p>
+              <ul className="space-y-2">
+                {socialMedia.map((link) => {
+                  return(
+                    <li key={link.label}>
+                      <a
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-muted-foreground hover:text-foreground font-light transition-colors"
+                      >
+                        {link.label}
+                      </a>
+                    </li>
+                  )
+                })}
+              </ul>
             </div>
           </motion.div>
 
@@ -99,23 +119,23 @@ export default function Footer() {
             <p>&copy; 2026 Kankana Silks. All rights reserved.</p>
             <div className="flex gap-6 mt-4 md:mt-0">
               <Link
-                href="#"
+                href="/privacy-policy"
                 className="hover:text-foreground transition-colors"
               >
                 Privacy
               </Link>
               <Link
-                href="#"
+                href="/terms&conditions"
                 className="hover:text-foreground transition-colors"
               >
                 Terms
               </Link>
-              <Link
+              {/* <Link
                 href="#"
                 className="hover:text-foreground transition-colors"
               >
                 Cookies
-              </Link>
+              </Link> */}
             </div>
           </div>
         </motion.div>

@@ -1190,7 +1190,7 @@ export default function CategoryProductsClient({
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setMobileFilterOpen(true)}
-        className="md:hidden fixed bottom-20 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2 z-40"
+        className="md:hidden fixed bottom-5 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2 z-40"
       >
         <SlidersHorizontal className="w-5 h-5" />
         Filter & Sort
