@@ -10,6 +10,10 @@ export default function Footer() {
     { label: "FAQ", href: "/faq" },
     { label: "Return & Refund Policy", href: "/return-policy" },
     { label: "Cancellation Policy", href: "/cancellation-policy" },
+    {
+      label: "Product Details & Appearance",
+      href: "/product-details-appearance",
+    },
     { label: "Shipping Policy", href: "/shipping-policy" },
   ];
   const socialMedia = [
