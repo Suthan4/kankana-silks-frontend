@@ -6,10 +6,11 @@ import Link from "next/link";
 export default function Footer() {
   const links = [
     { label: "About Us", href: "/about-us" },
-    { label: "Contact", href: "/contact-us" },
-    { label: "Returns", href: "/return-policy" },
-    { label: "Shipping", href: "/shipping-policy" },
+    { label: "Contact Us", href: "/contact-us" },
     { label: "FAQ", href: "/faq" },
+    { label: "Return & Refund Policy", href: "/return-policy" },
+    { label: "Cancellation Policy", href: "/cancellation-policy" },
+    { label: "Shipping Policy", href: "/shipping-policy" },
   ];
   const socialMedia = [
     {

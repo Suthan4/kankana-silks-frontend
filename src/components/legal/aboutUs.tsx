@@ -5,12 +5,12 @@ const AboutUs: React.FC = () => {
     <div className="bg-white">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6">
-          About Kanakana Silks
+          About Kankana Silks
         </h1>
 
         <div className="space-y-6 text-gray-700 text-sm sm:text-base leading-relaxed">
           <p>
-            Kanakana Silks is a celebration of timeless elegance and traditional
+            Kankana Silks is a celebration of timeless elegance and traditional
             craftsmanship. We specialize in premium silk sarees that reflect
             heritage, artistry, and modern sophistication.
           </p>
@@ -22,7 +22,7 @@ const AboutUs: React.FC = () => {
           </p>
 
           <p>
-            At Kanakana Silks, we believe in quality, transparency, and customer
+            At Kankana Silks, we believe in quality, transparency, and customer
             satisfaction. From secure payments to trusted delivery partners, we
             ensure a seamless shopping experience.
           </p>

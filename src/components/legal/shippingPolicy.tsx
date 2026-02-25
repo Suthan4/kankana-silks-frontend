@@ -22,8 +22,8 @@ const ShippingPolicy: React.FC = () => {
             </p>
 
             <p className="mb-2">
-              Kankana Silks reserves the right to delay or cancel orders in
-              case of:
+              Kankana Silks reserves the right to delay or cancel orders in case
+              of:
             </p>
 
             <ul className="list-disc pl-5 space-y-1">
@@ -106,6 +106,25 @@ const ShippingPolicy: React.FC = () => {
               Shipment tracking details will be shared via SMS, Email, or
               WhatsApp (if applicable) once dispatched.
             </p>
+          </section>
+          <section>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">
+              6. For Support
+            </h2>
+
+            <div className="bg-gray-50 border rounded-lg p-4 space-y-2">
+              <p>
+                <strong>Email:</strong> support@kankanasilks.com
+              </p>
+              <p>
+                <strong>Location:</strong> Kankana Silks, 464, First floor,
+                Jayachamarajendra road, 1st Stage, Vijayanagar, Mysore,
+                Karnataka
+              </p>
+              <p>
+                All orders are processed and shipped from our Mysore warehouse.
+              </p>
+            </div>
           </section>
         </div>
       </div>
