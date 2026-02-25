@@ -38,7 +38,7 @@ import VideoConsultationModal from "../video-consultationModal";
 import WishlistButton from "../ui/WishlistButton";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getColorHex } from "@/lib/utils/colorValidation";
-
+import DOMPurify from "isomorphic-dompurify";
 interface ProductDetailsClientProps {
   initialProduct: Product;
 }
@@ -1018,9 +1018,12 @@ export default function ProductDetailsClient({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
                 >
-                  <p className="text-gray-700 leading-relaxed text-sm">
-                    {product.description}
-                  </p>
+                  <div
+                    className="product-description"
+                    dangerouslySetInnerHTML={{
+                      __html: DOMPurify.sanitize(product.description),
+                    }}
+                  />
                 </motion.div>
               )}
               {activeTab === "specs" && (

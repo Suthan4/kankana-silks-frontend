@@ -267,6 +267,22 @@ html {
   overflow: hidden;
 }
 
+.product-description ul {
+  list-style-type: disc !important;
+  padding-left: 1.5rem !important;
+  margin: 0.5rem 0 !important;
+}
+
+.product-description ol {
+  list-style-type: decimal !important;
+  padding-left: 1.5rem !important;
+  margin: 0.5rem 0 !important;
+}
+
+.product-description li {
+  display: list-item !important;
+}
+
 /* Responsive utilities */
 @media (prefers-reduced-motion: reduce) {
   * {
