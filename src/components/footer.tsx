@@ -75,7 +75,7 @@ export default function Footer() {
             <div className="space-y-2 text-sm text-muted-foreground font-light">
               <ul className="space-y-2">
                 {socialMedia.map((link) => {
-                  return(
+                  return (
                     <li key={link.label}>
                       <a
                         href={link.href}
@@ -86,7 +86,7 @@ export default function Footer() {
                         {link.label}
                       </a>
                     </li>
-                  )
+                  );
                 })}
               </ul>
             </div>
@@ -131,7 +131,7 @@ export default function Footer() {
                 Privacy
               </Link>
               <Link
-                href="/terms&conditions"
+                href="/terms-and-conditions"
                 className="hover:text-foreground transition-colors"
               >
                 Terms
