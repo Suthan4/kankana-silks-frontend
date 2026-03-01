@@ -63,7 +63,7 @@ export default function OrdersPage() {
 
   // ✅ Check if invoice is available (shipped or delivered)
   const isInvoiceAvailable = (order: any): boolean => {
-    return ["SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED", "COMPLETED"].includes(
+    return ["PROCESSING","SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED", "COMPLETED"].includes(
       order.status,
     );
   };

@@ -124,10 +124,40 @@ const ReturnRefundPolicy: React.FC = () => {
             </ul>
           </section>
 
-          {/* 6 */}
+          {/* Color Disclaimer */}
           <section>
             <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3">
-              6. Refund Timeline
+             6. Color & Product Appearance Disclaimer
+            </h2>
+
+            <p className="mb-3">
+              We make every effort to display product colors as accurately as
+              possible. However, due to variations in screen settings, lighting
+              conditions, and photography limitations, actual product colors may
+              slightly differ from images shown on the website.
+            </p>
+
+            <ul className="list-disc pl-5 space-y-1 mb-3">
+              <li>Lighting during photography may affect appearance</li>
+              <li>Device display settings may cause color variation</li>
+              <li>
+                Handloom and dyed fabrics may have natural shade variations
+              </li>
+            </ul>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="font-medium text-blue-800">
+                Minor color or texture variations shall not be considered
+                defects and will not qualify for return or refund under seller
+                fault category.
+              </p>
+            </div>
+          </section>
+
+          {/* 7 */}
+          <section>
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3">
+              7. Refund Timeline
             </h2>
 
             <p className="mb-3">
@@ -144,6 +174,81 @@ const ReturnRefundPolicy: React.FC = () => {
               Actual credit timeline depends on customer’s bank or payment
               provider.
             </p>
+          </section>
+
+          {/* 8 */}
+          <section>
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3">
+              8. Payment Processing Fee Deduction
+            </h2>
+
+            <p className="mb-3">
+              For prepaid online orders, payment gateway / payment processing
+              charges are non-refundable in case of approved returns or refunds.
+            </p>
+
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-2">
+              <p className="font-medium text-red-800">
+                ✔ Payment processing / convenience fee may be deducted from the
+                refund amount.
+              </p>
+              <p className="font-medium text-red-800">
+                ✔ Refunds will generally include product value (including GST)
+                after applicable deductions.
+              </p>
+            </div>
+
+            <p className="mt-3">
+              Cancellation-related deductions are governed separately under our
+              Cancellation Policy.
+            </p>
+          </section>
+
+          {/* 9 */}
+          <section>
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3">
+              9. Return Address & Store Location
+            </h2>
+
+            <div className="bg-gray-50 border rounded-lg p-4 space-y-2">
+              <p>
+                <strong>Store Name:</strong> Kankana Silks
+              </p>
+              <p>
+                <strong>Store / Warehouse Location:</strong> Kankana Silks, 464,
+                First floor, Jayachamarajendra road, 1st Stage, Vijayanagar,
+                Mysore, Karnataka India
+              </p>
+              <p>
+                All approved returns must be shipped to our Mysore warehouse
+                address shared by our support team after return approval.
+              </p>
+            </div>
+
+            <p className="mt-3">
+              Customers are advised not to send products without prior return
+              approval, as such returns may not be accepted.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">
+              10. For Support
+            </h2>
+
+            <div className="bg-gray-50 border rounded-lg p-4 space-y-2">
+              <p>
+                <strong>Email:</strong> support@kankanasilks.com
+              </p>
+              <p>
+                <strong>Location:</strong> Kankana Silks, 464, First floor,
+                Jayachamarajendra road, 1st Stage, Vijayanagar, Mysore,
+                Karnataka
+              </p>
+              <p>
+                All orders are processed and shipped from our Mysore warehouse.
+              </p>
+            </div>
           </section>
         </div>
       </div>
