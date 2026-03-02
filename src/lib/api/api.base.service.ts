@@ -133,6 +133,7 @@ export class BaseApiService {
     firstName: string;
     lastName: string;
     phone: string;
+    termsAccepted:boolean;
   }) {
     return this.api.post("/auth/register", data);
   }

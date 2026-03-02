@@ -156,20 +156,21 @@ export default function AuthModal() {
     try {
       const validatedData = RegisterDTOSchema.parse(registerData);
       setIsLoading(true);
-
       const res = await authService.register({
         firstName: validatedData.firstName,
         lastName: validatedData.lastName,
         email: validatedData.email,
         password: validatedData.password,
         phone: validatedData.phone,
+        termsAccepted: validatedData.termsAccepted,
       });
-
+      
       if (res.data.data) {
         const { accessToken, refreshToken, user } = res.data.data;
         setAuth(accessToken, user, refreshToken);
       }
-
+      
+      console.log("validatedData", validatedData);
       closeModal();
       console.log(
         "Registration successful - user logged in automatically",
