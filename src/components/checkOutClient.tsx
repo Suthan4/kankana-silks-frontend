@@ -276,10 +276,16 @@ export default function CheckoutClient() {
       if (!selectedAddress?.pincode || displayItems.length === 0) return null;
       const response = await shippingApi.getCartShippingRates({
         deliveryPincode: selectedAddress?.pincode,
+        cartItems: displayItems.map((item: any) => ({
+        productId: item.productId,
+        variantId: item.variantId,
+        quantity: item.quantity,
+        })),
       });
       return response.data;
     },
-    enabled: !!selectedAddress,
+    enabled:  !!selectedAddress?.pincode && displayItems.length > 0,
+    staleTime:0,
   });
 
   useEffect(() => {
@@ -361,16 +367,20 @@ export default function CheckoutClient() {
     });
   }, [availableCouriers, chargeableWeight]);
 
-  useEffect(() => {
-    if (!selectedAddress?.pincode) return;
-    if (eligibleCouriers.length > 0 && !selectedCourier) {
-      const cheapest = eligibleCouriers.reduce((min: any, curr: any) =>
-        curr.freight_charge < min.freight_charge ? curr : min,
-      );
-      setSelectedCourier(cheapest);
-      setCourierPreference("CHEAPEST");
-    }
-  }, [eligibleCouriers, selectedCourier, selectedAddress?.pincode]);
+useEffect(() => {
+  if (!shippingData) return;
+
+  const couriers = shippingData.availableCouriers || [];
+
+  if (couriers.length > 0) {
+    const cheapest = couriers.reduce((min: any, curr: any) =>
+      curr.freight_charge < min.freight_charge ? curr : min
+    );
+
+    setSelectedCourier(cheapest);
+    setCourierPreference("CHEAPEST");
+  }
+}, [shippingData]);
 
   const getStockQty = (item: any) =>
     item?.variant?.stock?.[0]?.quantity ??
