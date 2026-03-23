@@ -522,8 +522,10 @@ export default function ProductDetailsClient({
 
   return (
     <>
-      <div className="h-[calc(100vh-theme(spacing.36))] overflow-hidden bg-gradient-to-br from-amber-50 via-white to-orange-50">
-        <div className="max-w-7xl mx-auto px-4 h-full flex flex-col">
+      {/* <div className="h-[calc(100vh-theme(spacing.36))] overflow-hidden bg-gradient-to-br from-amber-50 via-white to-orange-50">
+        <div className="max-w-7xl mx-auto px-4 h-full flex flex-col"> */}
+      <div className="bg-gradient-to-br from-amber-50 via-white to-orange-50">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col">
           {/* Breadcrumb */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -544,13 +546,15 @@ export default function ProductDetailsClient({
           </motion.div>
 
           {/* ── Main Product Section ─────────────────────────────────────── */}
-          <div className="flex-1 overflow-hidden grid md:grid-cols-2 gap-5 pb-3">
+          {/* <div className="flex-1 overflow-hidden grid md:grid-cols-2 gap-5 pb-3"> */}
+          <div className="grid md:grid-cols-2 gap-5 pb-6">
             {/* ── Left: Image Gallery ──────────────────────────────────── */}
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
-              className="flex flex-col gap-2 h-full overflow-hidden"
+              // className="flex flex-col gap-2 h-full overflow-hidden"
+              className="flex flex-col gap-2 h-[420px] md:h-full"
             >
               {/* Main image */}
               <div className="relative flex-1 rounded-xl overflow-hidden bg-white shadow-lg min-h-0">
@@ -628,7 +632,7 @@ export default function ProductDetailsClient({
               initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
-              className="flex flex-col h-full overflow-hidden"
+              className="flex flex-col"
             >
               {/* Scrollable content area */}
               <div className="flex-1 overflow-y-auto space-y-3 pr-1">

@@ -91,7 +91,13 @@ function Header() {
     },
     enabled: !!user,
     staleTime: 30000,
-    placeholderData: { id: "", userId: "", isPublic: false, items: [], totalItems: 0 },
+    placeholderData: {
+      id: "",
+      userId: "",
+      isPublic: false,
+      items: [],
+      totalItems: 0,
+    },
   });
 
   /* -------------------- CALCULATE COUNTS -------------------- */
@@ -731,7 +737,8 @@ function Header() {
             initial={{ y: -20, opacity: 1 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="flex justify-center items-center gap-8 py-4 px-8"
+            // className="flex justify-center items-center gap-8 py-4 px-8"
+            className="flex justify-center items-center gap-0 py-3 px-8"
           >
             {loading ? (
               // ✅ Skeleton shimmer — same height as real nav, no layout shift
@@ -752,42 +759,97 @@ function Header() {
               <li className="text-xs text-gray-400">No categories available</li>
             ) : (
               categories.map((category, index) => (
-                <motion.li
-                  key={category.id}
-                  initial={{ y: -20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.4, delay: 0.5 + index * 0.05 }}
-                  onHoverStart={() => setActiveNav(category.name)}
-                  onHoverEnd={() => setActiveNav("")}
-                  onMouseEnter={() => setHoveredCategory(category.id)}
-                  onMouseLeave={() => setHoveredCategory(null)}
-                  className="relative cursor-pointer group"
-                >
-                  <Link
-                    href={getCategoryUrl(category.slug)}
-                    className="flex items-center gap-1"
+                <>
+                  <motion.li
+                    key={category.id}
+                    initial={{ y: -20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.4, delay: 0.5 + index * 0.05 }}
+                    onHoverStart={() => setActiveNav(category.name)}
+                    onHoverEnd={() => setActiveNav("")}
+                    onMouseEnter={() => setHoveredCategory(category.id)}
+                    onMouseLeave={() => setHoveredCategory(null)}
+                    className="relative cursor-pointer group"
                   >
-                    <span className="text-xs font-bold tracking-wider transition-all duration-300 hover:text-gray-900">
-                      {category.name}
-                    </span>
-                    {category.children && category.children.length > 0 && (
-                      <ChevronDown
-                        className={`w-3 h-3 transition-all duration-300 ${hoveredCategory === category.id ? "rotate-180 text-black" : "text-gray-500"}`}
+                    <Link
+                      href={getCategoryUrl(category.slug)}
+                      className="relative flex items-center gap-1 px-4 py-1.5"
+                    >
+                      {/* Frosted pill background on hover */}
+                      <motion.span
+                        animate={{
+                          opacity: hoveredCategory === category.id ? 1 : 0,
+                          scale: hoveredCategory === category.id ? 1 : 0.85,
+                        }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="absolute inset-0 rounded-full bg-gray-100/80 backdrop-blur-sm"
+                        style={{ zIndex: 0 }}
                       />
-                    )}
-                  </Link>
-                  {activeNav === category.name && (
-                    <motion.div
-                      layoutId="activeDesktopNav"
-                      className="absolute -bottom-4 left-0 right-0 h-0.5 bg-black"
-                      transition={{
-                        type: "spring",
-                        stiffness: 380,
-                        damping: 30,
-                      }}
-                    />
+
+                      <span
+                        className="relative z-10 text-[12px] font-semibold tracking-[0.12em] uppercase transition-colors duration-200"
+                        style={{
+                          color:
+                            hoveredCategory === category.id
+                              ? "#111"
+                              : "#6b7280",
+                          letterSpacing: "0.1em",
+                        }}
+                      >
+                        {category.name}
+                      </span>
+
+                      {category.children && category.children.length > 0 && (
+                        <motion.span
+                          animate={{
+                            rotate: hoveredCategory === category.id ? 180 : 0,
+                          }}
+                          transition={{
+                            duration: 0.22,
+                            ease: [0.4, 0, 0.2, 1],
+                          }}
+                          className="relative z-10 flex items-center"
+                        >
+                          <ChevronDown
+                            className="w-3 h-3 transition-colors duration-200"
+                            style={{
+                              color:
+                                hoveredCategory === category.id
+                                  ? "#111"
+                                  : "#9ca3af",
+                              strokeWidth: 2.5,
+                            }}
+                          />
+                        </motion.span>
+                      )}
+                    </Link>
+
+                    {/* Slim underline dot indicator */}
+                    <AnimatePresence>
+                      {activeNav === category.name && (
+                        <motion.div
+                          layoutId="activeDesktopNav"
+                          initial={{ opacity: 0, scaleX: 0 }}
+                          animate={{ opacity: 1, scaleX: 1 }}
+                          exit={{ opacity: 0, scaleX: 0 }}
+                          className="absolute -bottom-[16px] left-1/2 -translate-x-1/2 h-[2px] w-[24px] bg-gray-800 rounded-full"
+                          transition={{
+                            type: "spring",
+                            stiffness: 400,
+                            damping: 35,
+                          }}
+                        />
+                      )}
+                    </AnimatePresence>
+                  </motion.li>
+
+                  {/* Refined dot separator */}
+                  {index < categories.length - 1 && (
+                    <li key={`sep-${index}`} aria-hidden="true">
+                      <span className="block w-[3px] h-[3px] rounded-full bg-gray-300" />
+                    </li>
                   )}
-                </motion.li>
+                </>
               ))
             )}
           </motion.ul>
