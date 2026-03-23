@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AnimatePresence } from "framer-motion";
 import SplashScreen from "./splashScreen";
+import Header from "./header";
+import { usePathname } from "next/navigation";
 
 export default function ClientLayout({
   children,
@@ -9,27 +12,31 @@ export default function ClientLayout({
   children: React.ReactNode;
 }) {
   const [showSplash, setShowSplash] = useState(true);
+  const pathname = usePathname();
 
   useEffect(() => {
-    const onLoad = () => {
+    const timer = setTimeout(() => {
       setShowSplash(false);
-      document.body.classList.add("loaded");
-    };
+    }, 1200); // timing matters
 
-    if (document.readyState === "complete") {
-      onLoad();
-    } else {
-      window.addEventListener("load", onLoad);
-    }
-
-    return () => window.removeEventListener("load", onLoad);
+    return () => clearTimeout(timer);
   }, []);
+  // ❗ define where header should be hidden
+  const hideHeaderRoutes = ["/login", "/checkout", "/cart", "/wishlist"];
+  const hideHeader = hideHeaderRoutes.includes(pathname);
 
   return (
     <>
-      <SplashScreen show={showSplash} />
-      {/* Always render children - don't hide behind splash */}
-      <div className={showSplash ? "invisible" : "visible"}>{children}</div>
+      {/* ✅ HEADER ALWAYS MOUNTED */}
+      <div className={hideHeader ? "invisible absolute" : "visible"}>
+        <Header />
+      </div>
+
+      {/* ✅ SPLASH OVERLAY */}
+      <AnimatePresence>{showSplash && <SplashScreen />}</AnimatePresence>
+
+      {/* CONTENT */}
+      {children}
     </>
   );
 }
