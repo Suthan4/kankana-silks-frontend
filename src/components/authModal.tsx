@@ -164,12 +164,12 @@ export default function AuthModal() {
         phone: validatedData.phone,
         termsAccepted: validatedData.termsAccepted,
       });
-      
+
       if (res.data.data) {
         const { accessToken, refreshToken, user } = res.data.data;
         setAuth(accessToken, user, refreshToken);
       }
-      
+
       console.log("validatedData", validatedData);
       closeModal();
       console.log(
@@ -743,7 +743,7 @@ export default function AuthModal() {
                       <span className="text-xs text-gray-600 leading-tight">
                         I agree to the{" "}
                         <a
-                          href="/terms&conditions"
+                          href="/terms-and-conditions"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="underline font-medium hover:text-black"
