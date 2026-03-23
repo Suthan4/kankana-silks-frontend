@@ -7,7 +7,7 @@ import { ReactNode } from "react";
 export default function WithHeader({ children }: { children: ReactNode }) {
   return (
     <>
-      <Header />
+      {/* <Header /> */}
       <main className="overflow-x-hidden">{children}</main>
       <Footer />
     </>

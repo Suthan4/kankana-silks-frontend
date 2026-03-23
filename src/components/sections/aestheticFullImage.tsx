@@ -45,7 +45,7 @@ export default function AestheticFullImage({
             <img
               src={item.url}
               alt={displayTitle}
-              className="w-full h-full object-cover"
+              className="w-full h-[100vh] object-cover"
             />
           ) : (
             <video
@@ -86,8 +86,7 @@ export default function AestheticFullImage({
         )} */}
 
         {/* Subtitle / Overlay Text */}
-        {((section.showSubtitle && section.subtitle) ||
-          section.title) && (
+        {((section.showSubtitle && section.subtitle) || section.title) && (
           <div
             className={`max-w-3xl space-y-3 md:space-y-4 mb-8 md:mb-12
                        transition-all duration-1000 delay-200 ${
@@ -122,20 +121,18 @@ export default function AestheticFullImage({
               </p>
             )}
 
-            {section.showSubtitle &&
-              section.subtitle &&
-              !section.title && (
-                <p
-                  className="text-base md:text-xl lg:text-2xl font-light opacity-90"
-                  style={{
-                    color: section.textColor || "#ffffff",
-                    textShadow: "0 2px 15px rgba(0,0,0,0.5)",
-                    letterSpacing: "0.05em",
-                  }}
-                >
-                  {section.subtitle}
-                </p>
-              )}
+            {section.showSubtitle && section.subtitle && !section.title && (
+              <p
+                className="text-base md:text-xl lg:text-2xl font-light opacity-90"
+                style={{
+                  color: section.textColor || "#ffffff",
+                  textShadow: "0 2px 15px rgba(0,0,0,0.5)",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                {section.subtitle}
+              </p>
+            )}
           </div>
         )}
 
@@ -143,7 +140,7 @@ export default function AestheticFullImage({
         {section.ctaButtons && section.ctaButtons.length > 0 && (
           <div
             className={`flex flex-wrap justify-center gap-4 md:gap-6
-                       transition-all duration-1000 delay-[400ms] ${
+                       transition-all rounded-sm duration-1000 delay-[400ms] ${
                          isVisible
                            ? "opacity-100 translate-y-0"
                            : "opacity-0 translate-y-5"
@@ -165,7 +162,7 @@ export default function AestheticFullImage({
                     rel={btn.openNewTab ? "noopener noreferrer" : undefined}
                     className={`
                       group relative overflow-hidden
-                      px-8 md:px-12 py-3 md:py-4
+                      px-8 md:px-12 py-3 md:py-4 rounded-sm
                       text-sm md:text-base font-light uppercase
                       transition-all duration-500
                       ${
@@ -175,8 +172,9 @@ export default function AestheticFullImage({
                             ? "bg-black text-white hover:bg-white hover:text-black border-2 border-white"
                             : isOutline
                               ? "bg-transparent border-2 border-white text-white hover:bg-white hover:text-black"
-                              :isText
-                                ? "bg-black/20 backdrop-blur-sm text-white hover:bg-white/20" :""
+                              : isText
+                                ? "bg-black/20 backdrop-blur-sm text-white hover:bg-white/20"
+                                : ""
                       }
                     `}
                     style={{
@@ -204,7 +202,7 @@ export default function AestheticFullImage({
             onClick={prevSlide}
             className="absolute left-4 md:left-8 top-1/2 z-20 -translate-y-1/2
                        w-12 h-12 md:w-16 md:h-16
-                       flex items-center justify-center
+                       flex items-center justify-center rounded-sm
                        bg-white/10 hover:bg-white/20 backdrop-blur-sm
                        border border-white/30 transition-all group"
             aria-label="Previous slide"
@@ -216,7 +214,7 @@ export default function AestheticFullImage({
             onClick={nextSlide}
             className="absolute right-4 md:right-8 top-1/2 z-20 -translate-y-1/2
                        w-12 h-12 md:w-16 md:h-16
-                       flex items-center justify-center
+                       flex items-center justify-center rounded-sm
                        bg-white/10 hover:bg-white/20 backdrop-blur-sm
                        border border-white/30 transition-all group"
             aria-label="Next slide"

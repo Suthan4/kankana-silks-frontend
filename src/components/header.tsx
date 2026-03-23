@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageCircle,
@@ -44,6 +44,8 @@ function Header() {
   const [pincode, setPincode] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // ✅ Prevents hydration mismatch: badge counts come from localStorage/API
   // which the server doesn't have. Only render counts after first client paint.
   const [isMounted, setIsMounted] = useState(false);
@@ -290,6 +292,8 @@ function Header() {
       const currentScrollY = window.scrollY;
       if (currentScrollY > lastScrollY && currentScrollY > 120) {
         setShowNav(false);
+        setHoveredCategory(null); // ← close megamenu on scroll
+        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
       } else {
         setShowNav(true);
       }
@@ -362,13 +366,13 @@ function Header() {
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.7, ease: "easeOut" }}
-        className="hidden md:block sticky top-0 z-50 shadow-sm"
+        className="hidden md:block sticky top-0 z-50"
       >
         {/* Top Bar */}
-        <div className="flex items-center justify-between px-8 py-4 bg-white shadow-background">
+        <div className="relative flex items-center justify-between px-8 py-4 bg-white shadow-background">
           {/* Left Section - Logo + Location */}
           <div className="flex items-center gap-6 flex-1">
-            <motion.div
+            {/* <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.2 }}
@@ -383,7 +387,7 @@ function Header() {
                   className={`transition-all duration-300 ${showNav ? "lg:h-10" : "lg:h-14"} w-auto object-contain`}
                 />
               </Link>
-            </motion.div>
+            </motion.div> */}
 
             {/* Location Display */}
             <div className="relative">
@@ -571,28 +575,60 @@ function Header() {
             </div>
           </div>
 
-          {/* Center - Search Bar */}
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
+            initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="flex-1 max-w-xl mx-8"
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="absolute left-1/2 -translate-x-1/2"
           >
-            <button onClick={() => setIsSearchOpen(true)} className="w-full">
-              <div className="relative group">
-                <input
-                  type="text"
-                  placeholder="Search for products, categories..."
-                  className="w-full px-4 py-2 pl-10 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent transition-all duration-300 cursor-pointer"
-                  readOnly
-                />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-gray-600 transition-colors" />
-              </div>
-            </button>
+            <Link href="/">
+              <motion.img
+                src="/image-removebg-preview.png"
+                alt="Kankana Silks"
+                layoutId="main-logo"
+                transition={{
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 18,
+                  mass: 0.6,
+                }}
+                className={`
+    w-auto object-contain
+    ${showNav ? "lg:h-14" : "lg:h-14"}
+  `}
+              />
+            </Link>
           </motion.div>
 
           {/* Right - Icons */}
           <div className="flex items-center gap-6">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="min-w-[400px]"
+            >
+              <button onClick={() => setIsSearchOpen(true)} className="w-full">
+                <div className="relative group">
+                  <input
+                    type="text"
+                    placeholder="Search for products, categories..."
+                    className=" w-full
+  px-5 py-2.5 pl-11
+  text-sm
+  border border-gray-200
+  rounded-full
+  bg-gray-50/70
+  focus:outline-none
+  transition-all duration-300
+  cursor-pointer
+  hover:bg-white hover:shadow-sm"
+                    readOnly
+                  />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-gray-600 transition-colors" />
+                </div>
+              </button>
+            </motion.div>
             {icons
               .filter((item) =>
                 ["Consultation", "Whatsapp", "Cart"].includes(item.name),
@@ -726,12 +762,12 @@ function Header() {
         <motion.nav
           initial={{ y: 0, opacity: 1 }}
           animate={{
-            y: showNav ? 0 : -80,
+            y: showNav ? 0 : -60,
             opacity: showNav ? 1 : 0,
-            display: showNav ? "block" : "none",
+            pointerEvents: showNav ? "auto" : "none",
           }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="hidden md:block relative bg-white border-t border-gray-100"
+          transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+          className={`hidden md:block relative bg-white ${showNav ? "border-t border-gray-100" : ""}`}
         >
           <motion.ul
             initial={{ y: -20, opacity: 1 }}
@@ -759,7 +795,7 @@ function Header() {
               <li className="text-xs text-gray-400">No categories available</li>
             ) : (
               categories.map((category, index) => (
-                <>
+                <Fragment key={category.id}>
                   <motion.li
                     key={category.id}
                     initial={{ y: -20, opacity: 0 }}
@@ -767,8 +803,17 @@ function Header() {
                     transition={{ duration: 0.4, delay: 0.5 + index * 0.05 }}
                     onHoverStart={() => setActiveNav(category.name)}
                     onHoverEnd={() => setActiveNav("")}
-                    onMouseEnter={() => setHoveredCategory(category.id)}
-                    onMouseLeave={() => setHoveredCategory(null)}
+                    onMouseEnter={() => {
+                      if (hoverTimeoutRef.current)
+                        clearTimeout(hoverTimeoutRef.current);
+                      setHoveredCategory(category.id);
+                    }}
+                    onMouseLeave={() => {
+                      hoverTimeoutRef.current = setTimeout(
+                        () => setHoveredCategory(null),
+                        100,
+                      );
+                    }}
                     className="relative cursor-pointer group"
                   >
                     <Link
@@ -849,7 +894,7 @@ function Header() {
                       <span className="block w-[3px] h-[3px] rounded-full bg-gray-300" />
                     </li>
                   )}
-                </>
+                </Fragment>
               ))
             )}
           </motion.ul>
@@ -858,12 +903,20 @@ function Header() {
           <AnimatePresence>
             {hoveredCategory && (
               <motion.div
-                initial={{ opacity: 0, y: -20 }}
+                initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-                onMouseEnter={() => setHoveredCategory(hoveredCategory)}
-                onMouseLeave={() => setHoveredCategory(null)}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
+                onMouseEnter={() => {
+                  if (hoverTimeoutRef.current)
+                    clearTimeout(hoverTimeoutRef.current);
+                }}
+                onMouseLeave={() => {
+                  hoverTimeoutRef.current = setTimeout(
+                    () => setHoveredCategory(null),
+                    100,
+                  );
+                }}
                 className="absolute top-full left-0 right-0 bg-white shadow-2xl border-t border-gray-100 z-50"
               >
                 <div className="max-w-7xl mx-auto px-8 py-8">
@@ -885,7 +938,7 @@ function Header() {
                               key={subCategory.id}
                               initial={{ opacity: 0, y: 12 }}
                               animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.3, delay: idx * 0.06 }}
+                              transition={{ duration: 0.15, delay: idx * 0.03 }}
                               whileHover={{ y: -3, scale: 1.02 }}
                               className="group cursor-pointer"
                             >
