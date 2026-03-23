@@ -554,7 +554,7 @@ export default function ProductDetailsClient({
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
               // className="flex flex-col gap-2 h-full overflow-hidden"
-              className="flex flex-col gap-2 h-[420px] md:h-full"
+              className="flex flex-col gap-2 h-[420px] md:h-[500px]"
             >
               {/* Main image */}
               <div className="relative flex-1 rounded-xl overflow-hidden bg-white shadow-lg min-h-0">
