@@ -869,27 +869,54 @@ function Header() {
                 <div className="max-w-7xl mx-auto px-8 py-8">
                   <div className="grid grid-cols-12 gap-8">
                     <div className="col-span-7">
-                      <div className="grid grid-cols-2 gap-6">
+                      {/* <div className="grid grid-cols-2 gap-6"> */}
+                      <div
+                        className={`grid gap-4 ${
+                          (categories.find((cat) => cat.id === hoveredCategory)
+                            ?.children?.length ?? 0) === 1
+                            ? "grid-cols-1 max-w-xs"
+                            : "grid-cols-2"
+                        }`}
+                      >
                         {categories
                           .find((cat) => cat.id === hoveredCategory)
                           ?.children?.map((subCategory, idx) => (
                             <motion.div
                               key={subCategory.id}
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ duration: 0.3, delay: idx * 0.05 }}
-                              whileHover={{ x: 5 }}
+                              initial={{ opacity: 0, y: 12 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.3, delay: idx * 0.06 }}
+                              whileHover={{ y: -3, scale: 1.02 }}
                               className="group cursor-pointer"
                             >
                               <Link
                                 href={getCategoryUrl(subCategory.slug)}
-                                className="flex items-center gap-2"
+                                className="flex flex-col gap-2 p-4 rounded-xl border border-gray-100 bg-gradient-to-br from-amber-50/60 to-orange-50/40 hover:from-amber-100 hover:to-orange-100 hover:border-amber-300 hover:shadow-md transition-all duration-300"
                               >
-                                <p className="text-sm font-medium text-gray-800 group-hover:text-black transition-colors duration-300">
+                                {/* Top accent bar */}
+                                <div className="w-8 h-0.5 bg-gradient-to-r from-amber-400 to-orange-400 rounded-full group-hover:w-full transition-all duration-500" />
+
+                                <p className="text-sm font-bold text-gray-800 group-hover:text-gray-900 tracking-wide transition-colors duration-200">
                                   {subCategory.name}
                                 </p>
+
+                                <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 group-hover:text-orange-600 transition-colors">
+                                  Explore
+                                  <svg
+                                    className="w-3 h-3 group-hover:translate-x-1 transition-transform duration-200"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2.5}
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+                                    />
+                                  </svg>
+                                </span>
                               </Link>
-                              <div className="h-px bg-gradient-to-r from-gray-300 to-transparent w-0 group-hover:w-full transition-all duration-500 mt-2" />
                             </motion.div>
                           ))}
                       </div>
