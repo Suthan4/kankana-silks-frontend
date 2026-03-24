@@ -594,7 +594,7 @@ function Header() {
                 }}
                 className={`
     w-auto object-contain
-    ${showNav ? "lg:h-14" : "lg:h-14"}
+    lg:h-14
   `}
               />
             </Link>
@@ -606,7 +606,7 @@ function Header() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="min-w-[400px]"
+              className="min-w-[200px]"
             >
               <button onClick={() => setIsSearchOpen(true)} className="w-full">
                 <div className="relative group">
