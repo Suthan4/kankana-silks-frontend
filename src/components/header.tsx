@@ -369,10 +369,11 @@ function Header() {
         className="hidden md:block sticky top-0 z-50"
       >
         {/* Top Bar */}
-        <div className="relative flex items-center justify-between px-8 py-4 bg-white shadow-background">
+        <div className="flex items-center justify-between px-8 py-4 bg-white shadow-background">
           {/* Left Section - Logo + Location */}
-          <div className="flex items-center gap-6 flex-1">
-            {/* <motion.div
+          <div className="relative">
+            <div className="flex items-center gap-6 flex-1">
+              {/* <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.2 }}
@@ -389,189 +390,192 @@ function Header() {
               </Link>
             </motion.div> */}
 
-            {/* Location Display */}
-            <div className="relative">
-              <button
-                onClick={() => setLocationModalOpen((p) => !p)}
-                className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-black transition-colors px-3 py-2 rounded-lg hover:bg-gray-100"
-              >
-                <MapPin className="w-4 h-4" />
-                <div className="flex flex-col items-start">
-                  <span className="text-xs text-gray-500">Deliver to</span>
-                  <span className="font-semibold">
-                    {location
-                      ? `${location.city || "Your Area"} - ${location.pincode}`
-                      : "Select Location"}
-                  </span>
-                </div>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform duration-200 ${locationModalOpen ? "rotate-180" : "rotate-0"}`}
-                />
-              </button>
+              {/* Location Display */}
+              <div className="relative">
+                <button
+                  onClick={() => setLocationModalOpen((p) => !p)}
+                  className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-black transition-colors px-3 py-2 rounded-lg hover:bg-gray-100"
+                >
+                  <MapPin className="w-4 h-4" />
+                  <div className="flex flex-col items-start">
+                    <span className="text-xs text-gray-500">Deliver to</span>
+                    <span className="font-semibold">
+                      {location
+                        ? `${location.city || "Your Area"} - ${location.pincode}`
+                        : "Select Location"}
+                    </span>
+                  </div>
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform duration-200 ${locationModalOpen ? "rotate-180" : "rotate-0"}`}
+                  />
+                </button>
 
-              <AnimatePresence>
-                {locationModalOpen && (
-                  <motion.div
-                    ref={locationRef}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="absolute left-0 mt-3 w-96 bg-white rounded-xl shadow-2xl overflow-hidden z-50 border border-gray-100"
-                  >
-                    <div className="p-5">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-bold text-gray-900">
-                          Choose your location
-                        </h3>
-                        <button
-                          onClick={() => setLocationModalOpen(false)}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-
-                      {user && addresses.length > 0 && (
-                        <div className="mb-4">
-                          <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                            Your Addresses
-                          </h4>
-                          <div className="space-y-2 max-h-48 overflow-y-auto">
-                            {addresses.map((address) => (
-                              <button
-                                key={address.id}
-                                onClick={() => {
-                                  const locationData = {
-                                    city: address.city,
-                                    pincode: address.pincode,
-                                    isServiceable: true,
-                                  };
-                                  setLocation(locationData);
-                                  localStorage.setItem(
-                                    "userLocation",
-                                    JSON.stringify(locationData),
-                                  );
-                                  setLocationModalOpen(false);
-                                  toast.success(
-                                    `Delivering to ${address.city}, ${address.pincode}`,
-                                  );
-                                }}
-                                className="w-full text-left p-3 border-2 border-gray-200 rounded-lg hover:border-black transition-colors"
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <p className="font-semibold text-sm text-gray-900">
-                                      {address.fullName}
-                                    </p>
-                                    <p className="text-xs text-gray-600">
-                                      {address.city} - {address.pincode}
-                                    </p>
-                                  </div>
-                                  {address.isDefault && (
-                                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                                      Default
-                                    </span>
-                                  )}
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                          <Link
-                            href="/my-account/addresses"
-                            onClick={() => setLocationModalOpen(false)}
-                            className="block mt-3 text-sm text-blue-600 font-medium text-center py-2"
-                          >
-                            Manage addresses
-                          </Link>
-                          <div className="border-t border-gray-200 my-4" />
-                        </div>
-                      )}
-
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                          {user && addresses.length > 0
-                            ? "Or enter a different pincode"
-                            : "Enter your pincode"}
-                        </h4>
-                        <div className="flex gap-2 mb-4">
-                          <input
-                            type="text"
-                            placeholder="Enter 6-digit Pincode"
-                            value={pincode}
-                            onChange={(e) => setPincode(e.target.value)}
-                            maxLength={6}
-                            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
-                            onKeyPress={(e) => {
-                              if (e.key === "Enter") handlePincodeSubmit();
-                            }}
-                          />
+                <AnimatePresence>
+                  {locationModalOpen && (
+                    <motion.div
+                      ref={locationRef}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute left-0 mt-3 w-96 bg-white rounded-xl shadow-2xl overflow-hidden z-50 border border-gray-100"
+                    >
+                      <div className="p-5">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-bold text-gray-900">
+                            Choose your location
+                          </h3>
                           <button
-                            onClick={handlePincodeSubmit}
-                            disabled={isCheckingPincode || pincode.length !== 6}
-                            className="px-6 py-2.5 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
+                            onClick={() => setLocationModalOpen(false)}
+                            className="text-gray-400 hover:text-gray-600"
                           >
-                            {isCheckingPincode ? "..." : "Check"}
+                            <X className="w-5 h-5" />
                           </button>
                         </div>
-                        <button
-                          onClick={handleUseCurrentLocation}
-                          disabled={isGettingLocation}
-                          className="w-full mb-4 py-2.5 border-2 border-gray-300 rounded-lg hover:border-black transition-colors flex items-center justify-center gap-2 text-sm font-medium text-gray-700 hover:text-black disabled:opacity-50"
-                        >
-                          <MapPin className="w-4 h-4" />
-                          {isGettingLocation
-                            ? "Getting location..."
-                            : "Use my current location"}
-                        </button>
 
-                        {location && location.isServiceable !== undefined && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            className={`p-4 rounded-lg border-2 ${location.isServiceable ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}
-                          >
-                            <div className="flex items-start gap-3">
-                              {location.isServiceable ? (
-                                <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
-                                  <Check className="w-5 h-5 text-white" />
-                                </div>
-                              ) : (
-                                <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center flex-shrink-0">
-                                  <X className="w-5 h-5 text-white" />
-                                </div>
-                              )}
-                              <div className="flex-1">
-                                <p
-                                  className={`font-bold text-sm mb-1 ${location.isServiceable ? "text-green-900" : "text-red-900"}`}
+                        {user && addresses.length > 0 && (
+                          <div className="mb-4">
+                            <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                              Your Addresses
+                            </h4>
+                            <div className="space-y-2 max-h-48 overflow-y-auto">
+                              {addresses.map((address) => (
+                                <button
+                                  key={address.id}
+                                  onClick={() => {
+                                    const locationData = {
+                                      city: address.city,
+                                      pincode: address.pincode,
+                                      isServiceable: true,
+                                    };
+                                    setLocation(locationData);
+                                    localStorage.setItem(
+                                      "userLocation",
+                                      JSON.stringify(locationData),
+                                    );
+                                    setLocationModalOpen(false);
+                                    toast.success(
+                                      `Delivering to ${address.city}, ${address.pincode}`,
+                                    );
+                                  }}
+                                  className="w-full text-left p-3 border-2 border-gray-200 rounded-lg hover:border-black transition-colors"
                                 >
-                                  {location.isServiceable
-                                    ? "Delivery Available!"
-                                    : "Not Serviceable"}
-                                </p>
-                                <p className="text-xs text-gray-700">
-                                  Pincode: {location.pincode}
-                                </p>
-                              </div>
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="font-semibold text-sm text-gray-900">
+                                        {address.fullName}
+                                      </p>
+                                      <p className="text-xs text-gray-600">
+                                        {address.city} - {address.pincode}
+                                      </p>
+                                    </div>
+                                    {address.isDefault && (
+                                      <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                                        Default
+                                      </span>
+                                    )}
+                                  </div>
+                                </button>
+                              ))}
                             </div>
-                          </motion.div>
+                            <Link
+                              href="/my-account/addresses"
+                              onClick={() => setLocationModalOpen(false)}
+                              className="block mt-3 text-sm text-blue-600 font-medium text-center py-2"
+                            >
+                              Manage addresses
+                            </Link>
+                            <div className="border-t border-gray-200 my-4" />
+                          </div>
+                        )}
+
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                            {user && addresses.length > 0
+                              ? "Or enter a different pincode"
+                              : "Enter your pincode"}
+                          </h4>
+                          <div className="flex gap-2 mb-4">
+                            <input
+                              type="text"
+                              placeholder="Enter 6-digit Pincode"
+                              value={pincode}
+                              onChange={(e) => setPincode(e.target.value)}
+                              maxLength={6}
+                              className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
+                              onKeyPress={(e) => {
+                                if (e.key === "Enter") handlePincodeSubmit();
+                              }}
+                            />
+                            <button
+                              onClick={handlePincodeSubmit}
+                              disabled={
+                                isCheckingPincode || pincode.length !== 6
+                              }
+                              className="px-6 py-2.5 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
+                            >
+                              {isCheckingPincode ? "..." : "Check"}
+                            </button>
+                          </div>
+                          <button
+                            onClick={handleUseCurrentLocation}
+                            disabled={isGettingLocation}
+                            className="w-full mb-4 py-2.5 border-2 border-gray-300 rounded-lg hover:border-black transition-colors flex items-center justify-center gap-2 text-sm font-medium text-gray-700 hover:text-black disabled:opacity-50"
+                          >
+                            <MapPin className="w-4 h-4" />
+                            {isGettingLocation
+                              ? "Getting location..."
+                              : "Use my current location"}
+                          </button>
+
+                          {location && location.isServiceable !== undefined && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              className={`p-4 rounded-lg border-2 ${location.isServiceable ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}
+                            >
+                              <div className="flex items-start gap-3">
+                                {location.isServiceable ? (
+                                  <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
+                                    <Check className="w-5 h-5 text-white" />
+                                  </div>
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center flex-shrink-0">
+                                    <X className="w-5 h-5 text-white" />
+                                  </div>
+                                )}
+                                <div className="flex-1">
+                                  <p
+                                    className={`font-bold text-sm mb-1 ${location.isServiceable ? "text-green-900" : "text-red-900"}`}
+                                  >
+                                    {location.isServiceable
+                                      ? "Delivery Available!"
+                                      : "Not Serviceable"}
+                                  </p>
+                                  <p className="text-xs text-gray-700">
+                                    Pincode: {location.pincode}
+                                  </p>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </div>
+
+                        {!user && (
+                          <button
+                            onClick={() => {
+                              setLocationModalOpen(false);
+                              openModal("login");
+                            }}
+                            className="w-full mt-4 py-3 text-sm text-blue-600 hover:text-blue-700 font-medium border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                          >
+                            Sign in to see your addresses
+                          </button>
                         )}
                       </div>
-
-                      {!user && (
-                        <button
-                          onClick={() => {
-                            setLocationModalOpen(false);
-                            openModal("login");
-                          }}
-                          className="w-full mt-4 py-3 text-sm text-blue-600 hover:text-blue-700 font-medium border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
-                        >
-                          Sign in to see your addresses
-                        </button>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </div>
 

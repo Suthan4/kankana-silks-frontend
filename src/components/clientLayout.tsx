@@ -28,9 +28,7 @@ export default function ClientLayout({
   return (
     <>
       {/* ✅ HEADER ALWAYS MOUNTED */}
-      <div className={hideHeader ? "invisible absolute" : "visible"}>
-        <Header />
-      </div>
+      {!hideHeader && <Header />}
 
       {/* ✅ SPLASH OVERLAY */}
       <AnimatePresence>{showSplash && <SplashScreen />}</AnimatePresence>
