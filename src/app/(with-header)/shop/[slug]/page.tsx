@@ -7,8 +7,7 @@ type Props = {
   params: { slug: string };
 };
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Define Category interface
 interface Category {
@@ -34,7 +33,7 @@ async function getCategoryBySlug(slug: string): Promise<Category | null> {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     return response.data.data;
@@ -87,7 +86,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           ]
         : [],
       type: "website",
-      url: `https://kankanasilks.com/category/${slug}`,
+      url: `https://kankanasilks.com/shop/${slug}`,
       siteName: "Kankana Silks",
     },
     twitter: {
@@ -97,7 +96,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: category.image ? [category.image] : [],
     },
     alternates: {
-      canonical: `/category/${slug}`,
+      canonical: `/shop/${slug}`,
     },
     robots: {
       index: true,
