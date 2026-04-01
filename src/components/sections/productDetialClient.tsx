@@ -106,6 +106,7 @@ export default function ProductDetailsClient({
     checked: boolean;
   } | null>(null);
   const [isCheckingDelivery, setIsCheckingDelivery] = useState(false);
+  console.log("product", product);
 
   const hasVariants =
     product.hasVariants &&
@@ -132,7 +133,13 @@ export default function ProductDetailsClient({
   const availableStock = hasVariants
     ? (selectedVariant?.stock?.[0]?.quantity ?? 0)
     : (product.stock?.[0]?.quantity ?? 0);
-  const isOutOfStock = availableStock === 0;
+  const isOutOfStock =
+    availableStock === 0 ||
+    (hasVariants &&
+      (selectedVariant?.stock?.[0]?.quantity ?? 0) <
+        (selectedVariant?.stock?.[0]?.lowStockThreshold ?? 0)) ||
+    (product.stock?.[0]?.quantity ?? 0) <
+      (product.stock?.[0]?.lowStockThreshold ?? 0);
   const hasVideoConsultation = product.hasVideoConsultation ?? false;
   const videoPurchasingEnabled = product.videoPurchasingEnabled ?? false;
   const videoConsultationNote = product.videoConsultationNote;
@@ -800,7 +807,7 @@ export default function ProductDetailsClient({
 
                 {/* Stock Status */}
                 <div>
-                  {availableStock > 0 ? (
+                  {!isOutOfStock && !allowOutOfStockOrders ? (
                     <p className="text-green-600 font-medium text-sm">
                       ✓ In Stock ({availableStock} available)
                     </p>
@@ -914,21 +921,15 @@ export default function ProductDetailsClient({
               <div className="flex-none pt-3 space-y-2.5 border-t border-gray-200 mt-2">
                 {/* Action Buttons */}
                 <div className="flex gap-2.5">
-                  {isOutOfStock ? (
-                    allowOutOfStockOrders ? (
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={handleRequestProduct}
-                        className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-3 rounded-xl font-semibold shadow flex items-center justify-center gap-2 text-sm"
-                      >
-                        <AlertCircle className="w-4 h-4" /> Request Product
-                      </motion.button>
-                    ) : (
-                      <div className="flex-1 bg-gray-100 text-gray-500 py-3 rounded-xl font-semibold text-center text-sm">
-                        Currently Unavailable
-                      </div>
-                    )
+                  {isOutOfStock && !allowOutOfStockOrders ? (
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleRequestProduct}
+                      className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-3 rounded-xl font-semibold shadow flex items-center justify-center gap-2 text-sm"
+                    >
+                      <AlertCircle className="w-4 h-4" /> Request Product
+                    </motion.button>
                   ) : (
                     <>
                       <motion.button

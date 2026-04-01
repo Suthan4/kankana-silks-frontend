@@ -627,22 +627,22 @@ export default function CategoryProductsClient({
                 }}
               />
             </div>
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  if (selectedColor && isValidCSSColor(selectedColor)) {
-                    handleColorChange(selectedColor);
-                  } else if (selectedColor) {
-                    toast.error(
-                      "Please enter a valid CSS color name or hex code",
-                    );
-                  }
-                }}
-                disabled={!selectedColor || !isValidCSSColor(selectedColor)}
-                className="w-auto px-4 py-2 bg-yellow-400 text-gray-900 rounded-lg font-medium hover:bg-yellow-500 transition-colors text-xs md:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Apply
-              </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                if (selectedColor && isValidCSSColor(selectedColor)) {
+                  handleColorChange(selectedColor);
+                } else if (selectedColor) {
+                  toast.error(
+                    "Please enter a valid CSS color name or hex code",
+                  );
+                }
+              }}
+              disabled={!selectedColor || !isValidCSSColor(selectedColor)}
+              className="w-auto px-4 py-2 bg-yellow-400 text-gray-900 rounded-lg font-medium hover:bg-yellow-500 transition-colors text-xs md:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Apply
+            </motion.button>
           </div>
 
           {/* Validation Feedback */}
@@ -972,6 +972,7 @@ export default function CategoryProductsClient({
                     allowOut: product.allowOutOfStockOrders,
                     showAddToCart: canAddToCart(product),
                   });
+                  console.log("product", product);
 
                   return (
                     <motion.div
@@ -982,7 +983,7 @@ export default function CategoryProductsClient({
                       whileHover={{ y: -4 }}
                       className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                     >
-                      <Link href={`/products/${product.slug}`}>
+                      <Link href={`/${product.category?.slug}/${product.slug}`}>
                         <div className="relative aspect-square overflow-hidden">
                           <motion.div
                             className="absolute inset-0"
@@ -1053,7 +1054,9 @@ export default function CategoryProductsClient({
                       </Link>
 
                       <div className="p-3 md:p-4">
-                        <Link href={`/products/${product.slug}`}>
+                        <Link
+                          href={`/${product.category?.slug}/${product.slug}`}
+                        >
                           <h3 className="font-semibold text-gray-900 text-sm md:text-base mb-1 line-clamp-2">
                             {product.name}
                           </h3>

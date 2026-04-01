@@ -1,15 +1,16 @@
 import type React from "react";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Poppins } from "next/font/google";
 import "./globals.css";
 import AuthModalProvider from "@/components/authModalProvider";
 import ClientLayout from "@/components/clientLayout";
 import Providers from "@/components/provider/tanstackProvider";
 import { Toaster } from "sonner";
 
-const inter = Inter({
+const inter = Poppins({
   subsets: ["latin"],
   variable: "--font-inter",
+  weight: ["400", "500", "600"],
   display: "swap",
 });
 

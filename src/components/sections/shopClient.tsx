@@ -28,6 +28,7 @@ export default function ShopClient({ categories }: ShopClientProps) {
   const getCategoryUrl = (slug: string) => {
     const queryParams = buildCategoryQuery(slug);
     const searchParams = new URLSearchParams();
+    console.log("categories", categories);
 
     Object.entries(queryParams).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
@@ -40,7 +41,7 @@ export default function ShopClient({ categories }: ShopClientProps) {
 
   const totalProducts = categories.reduce(
     (sum, cat) => sum + (cat._count?.products || 0),
-    0
+    0,
   );
 
   const parentCategories = categories.filter((cat) => !cat.parentId);
