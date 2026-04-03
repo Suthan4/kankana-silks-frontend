@@ -308,3 +308,12 @@ html {
   background-color: rgba(0, 0, 0, 0.2);
   color: inherit;
 }
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

@@ -39,6 +39,7 @@ import WishlistButton from "../ui/WishlistButton";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getColorHex } from "@/lib/utils/colorValidation";
 import DOMPurify from "isomorphic-dompurify";
+import { ZoomGallery } from "../ui/ZoomGallery";
 interface ProductDetailsClientProps {
   initialProduct: Product;
 }
@@ -556,83 +557,16 @@ export default function ProductDetailsClient({
           {/* <div className="flex-1 overflow-hidden grid md:grid-cols-2 gap-5 pb-3"> */}
           <div className="grid md:grid-cols-2 gap-5 pb-6">
             {/* ── Left: Image Gallery ──────────────────────────────────── */}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
-              // className="flex flex-col gap-2 h-full overflow-hidden"
-              className="flex flex-col gap-2 h-[420px] md:h-[500px]"
-            >
-              {/* Main image */}
-              <div className="relative flex-1 rounded-xl overflow-hidden bg-white shadow-lg min-h-0">
-                {images.length > 0 ? (
-                  <>
-                    <Image
-                      src={images[selectedImageIndex].url}
-                      alt={images[selectedImageIndex].altText || product.name}
-                      fill
-                      priority
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                      className="object-cover"
-                    />
-                    {images.length > 1 && (
-                      <>
-                        <button
-                          onClick={prevImage}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 p-1.5 rounded-full shadow hover:bg-white transition"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={nextImage}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 p-1.5 rounded-full shadow hover:bg-white transition"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </>
-                    )}
-                  </>
-                ) : (
-                  <div className="flex items-center justify-center h-full bg-gray-100">
-                    <p className="text-gray-400 text-sm">No image available</p>
-                  </div>
-                )}
-
-                {discount > 0 && !isOutOfStock && (
-                  <div className="absolute top-3 left-3 bg-green-600 text-white px-2.5 py-0.5 rounded-full text-xs font-bold">
-                    {discount}% OFF
-                  </div>
-                )}
-                {isOutOfStock && (
-                  <div className="absolute top-3 left-3 bg-red-600 text-white px-2.5 py-0.5 rounded-full text-xs font-bold">
-                    Out of Stock
-                  </div>
-                )}
-              </div>
-
-              {/* Thumbnails */}
-              {images?.length > 1 && (
-                <div className="grid grid-cols-5 gap-1.5 flex-none">
-                  {images?.map((img: any, idx: number) => (
-                    <motion.button
-                      key={img.id}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setSelectedImageIndex(idx)}
-                      className={`aspect-square rounded-lg overflow-hidden border-2 transition ${selectedImageIndex === idx ? "border-yellow-500" : "border-transparent"}`}
-                    >
-                      <Image
-                        src={img.url}
-                        alt={img.altText || `${product.name} ${idx + 1}`}
-                        width={80}
-                        height={80}
-                        className="w-full h-full object-cover"
-                      />
-                    </motion.button>
-                  ))}
-                </div>
-              )}
-            </motion.div>
+            <ZoomGallery
+              images={images}
+              selectedImageIndex={selectedImageIndex}
+              setSelectedImageIndex={setSelectedImageIndex}
+              prevImage={prevImage}
+              nextImage={nextImage}
+              product={product}
+              discount={discount}
+              isOutOfStock={isOutOfStock}
+            />
 
             {/* ── Right: Product Info ──────────────────────────────────── */}
             <motion.div
