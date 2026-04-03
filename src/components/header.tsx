@@ -68,7 +68,9 @@ function Header() {
 
   const { user } = useAuthModal();
   useOnClickOutside(userMenuRef, () => setUserMenuOpen(false));
-  useOnClickOutside(locationRef, () => setLocationModalOpen(false));
+  useOnClickOutside(locationRef, () => {
+    if (window.innerWidth >= 768) setLocationModalOpen(false);
+  });
 
   const isMyAccountPage = pathname?.startsWith("/my-account");
 
@@ -1107,7 +1109,7 @@ function Header() {
             exit={{ opacity: 0 }}
           >
             <div
-              className="absolute inset-0 bg-black/50"
+              className="absolute inset-0 bg-black/50 z-10"
               onClick={() => setLocationModalOpen(false)}
             />
             <motion.div
@@ -1115,8 +1117,9 @@ function Header() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
+              // className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto"
+              className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto z-20"
+              onClickCapture={(e) => e.stopPropagation()}
             >
               <div className="p-6 pb-8">
                 <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6" />

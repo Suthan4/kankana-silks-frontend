@@ -26,6 +26,7 @@ import {
   useFetchProfile,
 } from "@/hooks/useProfileMutation";
 import { useOrders } from "@/hooks/useOrders";
+import { createPortal } from "react-dom";
 
 // Validation Schemas
 const updateProfileSchema = z.object({
@@ -68,7 +69,7 @@ type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user,showPasswordModal,setShowPasswordModal} = useAuthModal();
+  const { user, showPasswordModal, setShowPasswordModal } = useAuthModal();
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -172,44 +173,43 @@ export default function ProfilePage() {
     setShowConfirmPassword(false);
   };
 
-
   // const quickActions = [
-    // {
-    //   id: "orders",
-    //   icon: Package,
-    //   label: "My Orders",
-    //   count: "3",
-    //   href: "/my-account/orders",
-    //   gradient: "from-blue-500 to-blue-600",
-    //   bgGradient: "from-blue-50 to-blue-100",
-    // },
-    // {
-    //   id: "video",
-    //   icon: Video,
-    //   label: "Video Shop",
-    //   count: "1",
-    //   href: "/my-account/video-appointment",
-    //   gradient: "from-purple-500 to-purple-600",
-    //   bgGradient: "from-purple-50 to-purple-100",
-    // },
-    // {
-    //   id: "addresses",
-    //   icon: MapPin,
-    //   label: "Addresses",
-    //   count: "2",
-    //   href: "/my-account/addresses",
-    //   gradient: "from-green-500 to-green-600",
-    //   bgGradient: "from-green-50 to-green-100",
-    // },
-    // {
-    //   id: "wishlist",
-    //   icon: Heart,
-    //   label: "Wishlist",
-    //   count: "8",
-    //   href: "/my-account/wishlist",
-    //   gradient: "from-red-500 to-red-600",
-    //   bgGradient: "from-red-50 to-red-100",
-    // },
+  // {
+  //   id: "orders",
+  //   icon: Package,
+  //   label: "My Orders",
+  //   count: "3",
+  //   href: "/my-account/orders",
+  //   gradient: "from-blue-500 to-blue-600",
+  //   bgGradient: "from-blue-50 to-blue-100",
+  // },
+  // {
+  //   id: "video",
+  //   icon: Video,
+  //   label: "Video Shop",
+  //   count: "1",
+  //   href: "/my-account/video-appointment",
+  //   gradient: "from-purple-500 to-purple-600",
+  //   bgGradient: "from-purple-50 to-purple-100",
+  // },
+  // {
+  //   id: "addresses",
+  //   icon: MapPin,
+  //   label: "Addresses",
+  //   count: "2",
+  //   href: "/my-account/addresses",
+  //   gradient: "from-green-500 to-green-600",
+  //   bgGradient: "from-green-50 to-green-100",
+  // },
+  // {
+  //   id: "wishlist",
+  //   icon: Heart,
+  //   label: "Wishlist",
+  //   count: "8",
+  //   href: "/my-account/wishlist",
+  //   gradient: "from-red-500 to-red-600",
+  //   bgGradient: "from-red-50 to-red-100",
+  // },
   // ];
 
   const settings = [
@@ -353,9 +353,10 @@ export default function ProfilePage() {
 
       {/* Update Profile Modal */}
       {showProfileModal && (
-        <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[999] flex items-end lg:items-center justify-center pb-20 lg:pb-0 bg-black/40 backdrop-blur-sm">
+          {" "}
           <div className="bg-white w-full lg:max-w-lg rounded-t-3xl lg:rounded-2xl shadow-2xl animate-in slide-in-from-bottom lg:slide-in-from-bottom-0 fade-in duration-200 max-h-[90vh] flex flex-col">
-            {/* Header */}
+            {/* HEADER */}
             <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
               <h2 className="text-xl font-bold">Personal Details</h2>
               <button
@@ -366,7 +367,7 @@ export default function ProfilePage() {
               </button>
             </div>
 
-            {/* Body - Scrollable */}
+            {/* BODY */}
             <form
               onSubmit={handleSubmitProfile(onSubmitProfile)}
               className="flex flex-col flex-1 overflow-hidden"
@@ -436,13 +437,13 @@ export default function ProfilePage() {
                   </label>
                   <input
                     {...registerProfile("phone")}
+                    maxLength={10}
                     className={`w-full border ${
                       profileErrors.phone
                         ? "border-red-300 focus:ring-red-200"
                         : "border-gray-300 focus:ring-black/20"
                     } rounded-lg px-4 py-3 focus:ring-2 focus:border-black outline-none transition-all`}
                     placeholder="Enter 10-digit phone number"
-                    maxLength={10}
                   />
                   {profileErrors.phone ? (
                     <p className="text-xs text-red-600 mt-1">
@@ -456,23 +457,26 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Footer */}
+              {/* FOOTER */}
               <div
-                className="p-4 border-t bg-white flex gap-3 sticky bottom-0 z-50"
-                style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+                className="p-4 border-t bg-white flex gap-3"
+                style={{
+                  paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)",
+                }}
               >
                 <button
                   type="button"
                   onClick={handleCloseProfileModal}
                   disabled={updateProfileMutation.isPending}
-                  className="flex-1 border border-gray-300 rounded-lg py-3 font-medium hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 border border-gray-300 rounded-lg py-3 font-medium"
                 >
                   Cancel
                 </button>
+
                 <button
                   type="submit"
                   disabled={updateProfileMutation.isPending}
-                  className="flex-1 bg-black text-white rounded-lg py-3 font-medium hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 bg-black text-white rounded-lg py-3 font-medium flex items-center justify-center gap-2"
                 >
                   {updateProfileMutation.isPending ? (
                     <>
@@ -488,6 +492,134 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+      {showProfileModal &&
+        typeof window !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-end lg:items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div className="bg-white w-full lg:max-w-lg rounded-t-3xl lg:rounded-2xl shadow-2xl animate-in slide-in-from-bottom lg:slide-in-from-bottom-0 fade-in duration-200 max-h-[90vh] flex flex-col">
+              {/* HEADER */}
+              <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
+                <h2 className="text-xl font-bold">Personal Details</h2>
+                <button
+                  onClick={handleCloseProfileModal}
+                  className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-500"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* BODY */}
+              <form
+                onSubmit={handleSubmitProfile(onSubmitProfile)}
+                className="flex flex-col flex-1 overflow-hidden"
+              >
+                <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                  {/* First Name */}
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 block mb-1">
+                      First Name *
+                    </label>
+                    <input
+                      {...registerProfile("firstName")}
+                      className={`w-full border ${
+                        profileErrors.firstName
+                          ? "border-red-300 focus:ring-red-200"
+                          : "border-gray-300 focus:ring-black/20"
+                      } rounded-lg px-4 py-3 focus:ring-2 focus:border-black outline-none transition-all`}
+                      placeholder="Enter first name"
+                    />
+                    {profileErrors.firstName && (
+                      <p className="text-xs text-red-600 mt-1">
+                        {profileErrors.firstName.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Last Name */}
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 block mb-1">
+                      Last Name *
+                    </label>
+                    <input
+                      {...registerProfile("lastName")}
+                      className={`w-full border ${
+                        profileErrors.lastName
+                          ? "border-red-300 focus:ring-red-200"
+                          : "border-gray-300 focus:ring-black/20"
+                      } rounded-lg px-4 py-3 focus:ring-2 focus:border-black outline-none transition-all`}
+                      placeholder="Enter last name"
+                    />
+                    {profileErrors.lastName && (
+                      <p className="text-xs text-red-600 mt-1">
+                        {profileErrors.lastName.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 block mb-1">
+                      Email
+                    </label>
+                    <input
+                      value={currentUserData?.email}
+                      disabled
+                      className="w-full border border-gray-200 rounded-lg px-4 py-3 bg-gray-50 text-gray-500 cursor-not-allowed"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Email cannot be changed
+                    </p>
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 block mb-1">
+                      Phone
+                    </label>
+                    <input
+                      {...registerProfile("phone")}
+                      maxLength={10}
+                      className={`w-full border ${
+                        profileErrors.phone
+                          ? "border-red-300 focus:ring-red-200"
+                          : "border-gray-300 focus:ring-black/20"
+                      } rounded-lg px-4 py-3 focus:ring-2 focus:border-black outline-none transition-all`}
+                      placeholder="Enter 10-digit phone number"
+                    />
+                    {profileErrors.phone ? (
+                      <p className="text-xs text-red-600 mt-1">
+                        {profileErrors.phone.message}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Format: 10-digit number starting with 6-9
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* FOOTER */}
+                <div className="p-4 border-t bg-white flex gap-3">
+                  <button
+                    type="button"
+                    onClick={handleCloseProfileModal}
+                    className="flex-1 border border-gray-300 rounded-lg py-3 font-medium"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="flex-1 bg-black text-white rounded-lg py-3 font-medium"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body,
+        )}
 
       {/* Change Password Modal */}
       {showPasswordModal && (
