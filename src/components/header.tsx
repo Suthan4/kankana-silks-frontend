@@ -64,12 +64,16 @@ function Header() {
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const locationRef = useRef<HTMLDivElement | null>(null);
+  const mobileLocationRef = useRef<HTMLDivElement | null>(null);
   const pathname = usePathname();
 
   const { user } = useAuthModal();
   useOnClickOutside(userMenuRef, () => setUserMenuOpen(false));
   useOnClickOutside(locationRef, () => {
     if (window.innerWidth >= 768) setLocationModalOpen(false);
+  });
+  useOnClickOutside(mobileLocationRef, () => {
+    if (window.innerWidth < 768) setLocationModalOpen(false);
   });
 
   const isMyAccountPage = pathname?.startsWith("/my-account");
@@ -155,6 +159,12 @@ function Header() {
     }
   }, [user, defaultAddress]);
 
+  useEffect(() => {
+    if (locationModalOpen && location?.pincode) {
+      setPincode(location.pincode);
+    }
+  }, [locationModalOpen]);
+
   const checkPincodeServiceability = async (pincode: string) => {
     setIsCheckingPincode(true);
     try {
@@ -181,6 +191,7 @@ function Header() {
     setLocation(locationData);
     localStorage.setItem("userLocation", JSON.stringify(locationData));
     setPincode("");
+    setLocationModalOpen(false);
     if (isServiceable) {
       toast.success("Delivery available to your location!");
     } else {
@@ -215,6 +226,7 @@ function Header() {
             };
             setLocation(locationData);
             localStorage.setItem("userLocation", JSON.stringify(locationData));
+            setLocationModalOpen(false);
             if (isServiceable) {
               toast.success(
                 `Location detected: ${detectedPincode}. Delivery available!`,
@@ -392,7 +404,7 @@ function Header() {
               </Link>
             </motion.div> */}
 
-              {/* Location Display */}
+              {/* Location Display Desktop*/}
               <div className="relative">
                 <button
                   onClick={() => setLocationModalOpen((p) => !p)}
@@ -507,9 +519,10 @@ function Header() {
                               onKeyPress={(e) => {
                                 if (e.key === "Enter") handlePincodeSubmit();
                               }}
+                              // onClick={()=>handlePincodeSubmit()}
                             />
                             <button
-                              onClick={handlePincodeSubmit}
+                              onClick={() => handlePincodeSubmit()}
                               disabled={
                                 isCheckingPincode || pincode.length !== 6
                               }
@@ -1110,16 +1123,19 @@ function Header() {
           >
             <div
               className="absolute inset-0 bg-black/50 z-10"
-              onClick={() => setLocationModalOpen(false)}
+              onClick={(e) => {
+                e.stopPropagation(); // ✅ ADD THIS
+                setLocationModalOpen(false);
+              }}
             />
             <motion.div
+              ref={mobileLocationRef}
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              // className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto"
               className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto z-20"
-              onClickCapture={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6 pb-8">
                 <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6" />
@@ -1136,44 +1152,55 @@ function Header() {
                       Your Addresses
                     </h4>
                     <div className="space-y-3">
-                      {addresses.map((address) => (
-                        <button
-                          key={address.id}
-                          onClick={() => {
-                            const locationData = {
-                              city: address.city,
-                              pincode: address.pincode,
-                              isServiceable: true,
-                            };
-                            setLocation(locationData);
-                            localStorage.setItem(
-                              "userLocation",
-                              JSON.stringify(locationData),
-                            );
-                            setLocationModalOpen(false);
-                            toast.success(
-                              `Delivering to ${address.city}, ${address.pincode}`,
-                            );
-                          }}
-                          className="w-full text-left p-4 border-2 border-gray-200 rounded-xl hover:border-black transition-colors"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-semibold text-sm">
-                                {address.fullName}
-                              </p>
-                              <p className="text-xs text-gray-600">
-                                {address.city} - {address.pincode}
-                              </p>
+                      {addresses.map((address) => {
+                        const isSelected =
+                          location?.pincode === address.pincode;
+
+                        return (
+                          <button
+                            key={address.id}
+                            onClick={() => {
+                              const locationData = {
+                                city: address.city,
+                                pincode: address.pincode,
+                                isServiceable: true,
+                              };
+
+                              setLocation(locationData);
+                              localStorage.setItem(
+                                "userLocation",
+                                JSON.stringify(locationData),
+                              );
+
+                              setLocationModalOpen(false);
+                              toast.success(
+                                `Delivering to ${address.city}, ${address.pincode}`,
+                              );
+                            }}
+                            className={`w-full text-left p-4 border-2 rounded-xl transition-all
+        ${
+          isSelected
+            ? "border-black bg-gray-50"
+            : "border-gray-200 hover:border-black"
+        }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-semibold text-sm">
+                                  {address.fullName}
+                                </p>
+                                <p className="text-xs text-gray-600">
+                                  {address.city} - {address.pincode}
+                                </p>
+                              </div>
+
+                              {isSelected && (
+                                <Check className="w-5 h-5 text-green-600" />
+                              )}
                             </div>
-                            {address.isDefault && (
-                              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                                Default
-                              </span>
-                            )}
-                          </div>
-                        </button>
-                      ))}
+                          </button>
+                        );
+                      })}
                     </div>
                     <Link
                       href="/my-account/addresses"
@@ -1205,14 +1232,16 @@ function Header() {
                       }}
                     />
                     <button
+                      type="button"
                       onClick={handlePincodeSubmit}
                       disabled={isCheckingPincode || pincode.length !== 6}
-                      className="px-5 py-3 bg-black text-white rounded-xl hover:bg-gray-800 disabled:opacity-50"
+                      className="px-5 py-3 bg-black text-white rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isCheckingPincode ? "..." : "Check"}
                     </button>
                   </div>
                   <button
+                    type="button"
                     onClick={handleUseCurrentLocation}
                     disabled={isGettingLocation}
                     className="w-full mb-4 py-3 border-2 border-gray-300 rounded-xl hover:border-black flex items-center justify-center gap-2 disabled:opacity-50"
@@ -1254,6 +1283,7 @@ function Header() {
 
                 {!user && (
                   <button
+                    type="button"
                     onClick={() => {
                       setLocationModalOpen(false);
                       openModal("login");

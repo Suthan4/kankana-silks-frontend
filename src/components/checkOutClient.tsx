@@ -46,7 +46,6 @@ import { shippingApi } from "@/lib/api/shipping.api";
 import confetti from "canvas-confetti";
 import PaymentLogos from "./paymentLogos";
 
-// Razorpay types
 declare global {
   interface Window {
     Razorpay: any;
@@ -77,33 +76,152 @@ const normalizeAttributes = (attrs: any) => {
   return [];
 };
 
-// ─── Step Indicator ──────────────────────────────────────────────────────────
-const steps = [
-  { id: 1, label: "Items", icon: ShoppingBag },
-  { id: 2, label: "Address", icon: MapPin },
-  { id: 3, label: "Payment", icon: CreditCard },
-  { id: 4, label: "Summary", icon: Truck },
-];
+// ─── Accordion Section Component ─────────────────────────────────────────────
+type AccordionSection = "items" | "address" | "courier" | "payment";
 
-const FullPageLoader = ({ text = "Processing your order..." }) => {
+interface AccordionProps {
+  id: AccordionSection;
+  title: string;
+  icon: React.ReactNode;
+  badge?: React.ReactNode;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+  isDone?: boolean;
+}
+
+const AccordionCard = ({
+  title,
+  icon,
+  badge,
+  isOpen,
+  onToggle,
+  children,
+  isDone,
+}: AccordionProps) => (
+  <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-2.5">
+    <button
+      onClick={onToggle}
+      className="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-gray-50 transition text-left"
+    >
+      <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center flex-shrink-0">
+        {icon}
+      </div>
+      <span className="font-bold text-gray-900 text-sm flex-1">{title}</span>
+      {badge && (
+        <span
+          className={`text-xs px-2 py-0.5 rounded-full border flex items-center gap-1 ${
+            isDone
+              ? "bg-green-50 text-green-700 border-green-200"
+              : "bg-gray-100 text-gray-500 border-gray-200"
+          }`}
+        >
+          {isDone && <Check className="w-3 h-3" />}
+          {badge}
+        </span>
+      )}
+      <ChevronDown
+        className={`w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0 ${
+          isOpen ? "rotate-180" : ""
+        }`}
+      />
+    </button>
+    <AnimatePresence initial={false}>
+      {isOpen && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.2, ease: "easeInOut" }}
+          className="overflow-hidden border-t border-gray-100"
+        >
+          <div className="p-3">{children}</div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </div>
+);
+
+// ─── Processing Overlay ────────────────────────────────────────────────────────
+const ProcessingOverlay = ({ step }: { step: 1 | 2 | 3 }) => {
+  const steps = ["Creating Order", "Initiating Payment", "Verifying Payment"];
   return (
-    <div className="fixed inset-0 z-[9999] bg-white/80 backdrop-blur-sm flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <div className="relative">
+    <div className="fixed inset-0 z-[9999] bg-white/5 backdrop-blur-sm flex items-center justify-center">
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 w-[320px]">
+        <div className="flex flex-col items-center gap-5">
           <div className="w-14 h-14 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
-        </div>
-
-        <div className="text-center">
-          <p className="font-semibold text-gray-900 text-lg">{text}</p>
-          <p className="text-sm text-gray-500">
-            Please don’t close or refresh this page
-          </p>
+          <div className="text-center">
+            <p className="text-lg font-bold text-gray-900">
+              Processing your order
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Please don't refresh or close this page
+            </p>
+          </div>
+          <div className="w-full space-y-2 mt-2">
+            {steps.map((label, index) => {
+              const current = index + 1;
+              return (
+                <div key={label} className="flex items-center gap-2 text-sm">
+                  {current < step && (
+                    <span className="text-green-600 font-bold">✔</span>
+                  )}
+                  {current === step && (
+                    <span className="animate-pulse text-gray-900">⏳</span>
+                  )}
+                  {current > step && <span className="text-gray-300">•</span>}
+                  <span
+                    className={
+                      current <= step
+                        ? "text-gray-900 font-medium"
+                        : "text-gray-400"
+                    }
+                  >
+                    {label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
+// ─── Order Success Overlay ────────────────────────────────────────────────────
+const OrderSuccessOverlay = () => (
+  <div className="fixed inset-0 z-[10000] bg-white/5 backdrop-blur-sm flex items-center justify-center">
+    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 w-[320px] text-center">
+      <div className="w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center mb-4">
+        <svg
+          className="w-8 h-8 text-green-600"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={3}
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+      </div>
+      <p className="text-lg font-bold text-gray-900">Order Confirmed</p>
+      <p className="text-sm text-gray-500 mt-1">
+        Redirecting to success page...
+      </p>
+      <div className="flex justify-center gap-1 mt-4">
+        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:.2s]" />
+        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:.4s]" />
+      </div>
+    </div>
+  </div>
+);
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function CheckoutClient() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -119,7 +237,20 @@ export default function CheckoutClient() {
     removeCoupon,
   } = useCartStore();
 
-  const [activeStep, setActiveStep] = useState(1);
+  // ─── Accordion State ──────────────────────────────────────────────────────
+  const [openSections, setOpenSections] = useState<
+    Record<AccordionSection, boolean>
+  >({
+    items: true,
+    address: true,
+    courier: false,
+    payment: true,
+  });
+
+  const toggleSection = (section: AccordionSection) => {
+    setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  };
+
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
@@ -145,13 +276,11 @@ export default function CheckoutClient() {
   const fireConfetti = () => {
     const duration = 1500;
     const animationEnd = Date.now() + duration;
-
     const interval = setInterval(() => {
       if (Date.now() > animationEnd) {
         clearInterval(interval);
         return;
       }
-
       confetti({
         particleCount: 40,
         spread: 60,
@@ -161,10 +290,15 @@ export default function CheckoutClient() {
   };
 
   useEffect(() => {
-    if (showSuccess) {
-      fireConfetti();
-    }
+    if (showSuccess) fireConfetti();
   }, [showSuccess]);
+
+  // Open courier section automatically when address is selected
+  useEffect(() => {
+    if (selectedAddress) {
+      setOpenSections((prev) => ({ ...prev, courier: true }));
+    }
+  }, [selectedAddress?.id]);
 
   const paymentMethods = [
     {
@@ -276,16 +410,21 @@ export default function CheckoutClient() {
       if (!selectedAddress?.pincode || displayItems.length === 0) return null;
       const response = await shippingApi.getCartShippingRates({
         deliveryPincode: selectedAddress?.pincode,
+        // cartItems: displayItems.map((item: any) => ({
+        //   productId: item.productId,
+        //   variantId: item.variantId,
+        //   quantity: item.quantity,
+        // })),
         cartItems: displayItems.map((item: any) => ({
-        productId: item.productId,
-        variantId: item.variantId,
-        quantity: item.quantity,
+          productId: item.productId,
+          ...(item.variantId ? { variantId: item.variantId } : {}),
+          quantity: item.quantity,
         })),
       });
       return response.data;
     },
-    enabled:  !!selectedAddress?.pincode && displayItems.length > 0,
-    staleTime:0,
+    enabled: !!selectedAddress?.pincode && displayItems.length > 0,
+    staleTime: 0,
   });
 
   useEffect(() => {
@@ -345,7 +484,6 @@ export default function CheckoutClient() {
   const cgstAmount = orderPreview?.breakdown.cgstAmount || 0;
   const sgstAmount = orderPreview?.breakdown.sgstAmount || 0;
   const gstAmount = orderPreview?.breakdown.gstAmount || 0;
-  const shippingInfo = shippingData;
   const availableCouriers = shippingData?.availableCouriers ?? [];
   const cheapestCourier = shippingData?.cheapestCourier;
   const fastestCourier = shippingData?.fastestCourier;
@@ -367,26 +505,24 @@ export default function CheckoutClient() {
     });
   }, [availableCouriers, chargeableWeight]);
 
-useEffect(() => {
-  if (!shippingData) return;
-
-  const couriers = shippingData.availableCouriers || [];
-
-  if (couriers.length > 0) {
-    const cheapest = couriers.reduce((min: any, curr: any) =>
-      curr.freight_charge < min.freight_charge ? curr : min
-    );
-
-    setSelectedCourier(cheapest);
-    setCourierPreference("CHEAPEST");
-  }
-}, [shippingData]);
+  useEffect(() => {
+    if (!shippingData) return;
+    const couriers = shippingData.availableCouriers || [];
+    if (couriers.length > 0) {
+      const cheapest = couriers.reduce((min: any, curr: any) =>
+        curr.freight_charge < min.freight_charge ? curr : min,
+      );
+      setSelectedCourier(cheapest);
+      setCourierPreference("CHEAPEST");
+    }
+  }, [shippingData]);
 
   const getStockQty = (item: any) =>
     item?.variant?.stock?.[0]?.quantity ??
     item?.product?.stock?.find((s: any) => s.variantId === item?.variantId)
       ?.quantity ??
     0;
+
   const getUnitPrice = (item: any) =>
     Number(
       item?.variant?.sellingPrice ??
@@ -434,6 +570,7 @@ useEffect(() => {
   useEffect(() => {
     setShowAutocomplete(!!couponCode && filteredCoupons.length > 0);
   }, [couponCode, filteredCoupons.length]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -535,12 +672,14 @@ useEffect(() => {
     }
     validateCouponMutation.mutate(code);
   };
+
   const handleRemoveCoupon = async () => {
     removeCoupon();
     await queryClient.invalidateQueries({ queryKey: ["orderPreview"] });
     await refetchCoupons();
     toast.info("Coupon removed");
   };
+
   const handleCouponSelect = (coupon: Coupon) => {
     setCouponCode(coupon.code);
     setShowAutocomplete(false);
@@ -639,14 +778,12 @@ useEffect(() => {
         theme: { color: "#000000" },
         handler: async function (response: any) {
           try {
-            setProcessingStep(3); // ✅ Verifying Payment
+            setProcessingStep(3);
             const result = await verifyPaymentMutation.mutateAsync({
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
             });
-            console.log("result", result);
-
             if (!isBuyNowMode) clearCart();
             else sessionStorage.removeItem("buyNowItem");
             setIsProcessing(false);
@@ -720,19 +857,16 @@ useEffect(() => {
           : {}),
       };
       const response = await initiatePaymentMutation.mutateAsync(orderDTO);
-      setProcessingStep(2); // ✅ Initiating Payment
+      setProcessingStep(2);
       if (paymentMethod === "COD") {
         if (!isBuyNowMode) clearCart();
         else sessionStorage.removeItem("buyNowItem");
-
         setProcessingStep(3);
         setIsProcessing(false);
         setShowSuccess(true);
-
         setTimeout(() => {
           router.push("/order-success");
         }, 1500);
-
         return;
       } else {
         await handleRazorpayPayment({
@@ -752,12 +886,24 @@ useEffect(() => {
 
   if (displayItems.length === 0) return null;
 
+  // ─── Badge helpers ────────────────────────────────────────────────────────
+  const itemsBadge = `${displayItems.length} item${displayItems.length !== 1 ? "s" : ""}`;
+  const addressBadge = selectedAddress
+    ? selectedAddress.fullName
+    : "Not selected";
+  const courierBadge = selectedCourier
+    ? selectedCourier.courier_name
+    : "Not selected";
+  const paymentBadge =
+    paymentMethods.find((m) => m.id === paymentMethod)?.title || "UPI";
+
   return (
     <>
       {isProcessing && <ProcessingOverlay step={processingStep} />}
       {showSuccess && <OrderSuccessOverlay />}
+
       <div className="h-screen overflow-auto bg-gray-50 flex flex-col">
-        {/* ─── Compact Header ───────────────────────────────────────────────── */}
+        {/* ─── Header ──────────────────────────────────────────────────────── */}
         <div className="flex-none bg-white border-b border-gray-200 px-4 py-3">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -780,7 +926,6 @@ useEffect(() => {
                 )}
               </div>
             </div>
-
             <div className="flex items-center gap-1.5 text-xs text-gray-400">
               <Lock className="w-3.5 h-3.5" />
               <span>Secure Checkout</span>
@@ -788,38 +933,32 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* ─── Main Body ─────────────────────────────────────────────────────── */}
+        {/* ─── Body ────────────────────────────────────────────────────────── */}
         <div className="flex-1 overflow-auto">
-          <div className="max-w-7xl mx-auto h-full px-4 py-4">
-            <div className="grid lg:grid-cols-5 gap-4 h-full">
-              {/* ── Left Column (3/5 width) ─────────────────────────────────── */}
-              <div className="lg:col-span-3 flex flex-col gap-3 h-full overflow-auto">
-                {/* Cart Items — fixed compact */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-xl border border-gray-200 shadow-sm flex-none"
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <div className="grid lg:grid-cols-5 gap-4">
+              {/* ── Left: Accordions (3/5) ───────────────────────────────── */}
+              <div className="lg:col-span-3">
+                {/* 1. Order Items */}
+                <AccordionCard
+                  id="items"
+                  title={`Order Items (${displayItems.length})`}
+                  icon={<ShoppingBag className="w-3.5 h-3.5 text-white" />}
+                  badge={itemsBadge}
+                  isDone={displayItems.length > 0}
+                  isOpen={openSections.items}
+                  onToggle={() => toggleSection("items")}
                 >
-                  <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-100">
-                    <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center">
-                      <ShoppingBag className="w-3.5 h-3.5 text-white" />
-                    </div>
-                    <h2 className="font-bold text-gray-900 text-sm">
-                      Order Items ({displayItems.length})
-                    </h2>
-                  </div>
-
-                  <div className="p-3 space-y-2 max-h-36 overflow-y-auto">
-                    {displayItems?.map((item: any, index: number) => {
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {displayItems.map((item: any, index: number) => {
                       const stockQty = getStockQty(item);
                       const unitPrice = getUnitPrice(item);
-                      const isBuyNowItem = isBuyNowMode;
                       return (
                         <div
                           key={`${item.productId}-${item.variantId}-${index}`}
                           className="flex gap-2.5 p-2.5 bg-gray-50 rounded-lg relative"
                         >
-                          {!isBuyNowItem && (
+                          {!isBuyNowMode && (
                             <button
                               onClick={() =>
                                 user?.id
@@ -877,7 +1016,7 @@ useEffect(() => {
                             <div className="flex items-center justify-between mt-2">
                               <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-full px-1.5 py-0.5">
                                 <button
-                                  disabled={isBuyNowItem || item.quantity <= 1}
+                                  disabled={isBuyNowMode || item.quantity <= 1}
                                   onClick={() => {
                                     if (item.quantity > 1 && user?.id)
                                       updateQtyMutation.mutate({
@@ -894,7 +1033,7 @@ useEffect(() => {
                                 </span>
                                 <button
                                   disabled={
-                                    isBuyNowItem || item.quantity >= stockQty
+                                    isBuyNowMode || item.quantity >= stockQty
                                   }
                                   onClick={() =>
                                     user?.id &&
@@ -920,205 +1059,347 @@ useEffect(() => {
                       );
                     })}
                   </div>
-                </motion.div>
+                </AccordionCard>
 
-                {/* Address */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.05 }}
-                  className="bg-white rounded-xl border border-gray-200 shadow-sm flex-none"
+                {/* 2. Delivery Address */}
+                <AccordionCard
+                  id="address"
+                  title="Delivery Address"
+                  icon={<MapPin className="w-3.5 h-3.5 text-white" />}
+                  badge={addressBadge}
+                  isDone={!!selectedAddress}
+                  isOpen={openSections.address}
+                  onToggle={() => toggleSection("address")}
                 >
-                  <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-100">
-                    <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center">
-                      <MapPin className="w-3.5 h-3.5 text-white" />
+                  {!user ? (
+                    <div className="flex items-center justify-between py-2">
+                      <p className="text-sm text-gray-500">
+                        Login to add delivery address
+                      </p>
+                      <button
+                        onClick={() => openModal("login")}
+                        className="px-4 py-1.5 bg-gray-900 text-white rounded-full text-xs font-semibold"
+                      >
+                        Login
+                      </button>
                     </div>
-                    <h2 className="font-bold text-gray-900 text-sm">
-                      Delivery Address
-                    </h2>
-                  </div>
-
-                  <div className="p-3">
-                    {!user ? (
-                      <div className="flex items-center justify-between py-2">
-                        <p className="text-sm text-gray-500">
-                          Login to add delivery address
-                        </p>
-                        <button
-                          onClick={() => openModal("login")}
-                          className="px-4 py-1.5 bg-gray-900 text-white rounded-full text-xs font-semibold"
+                  ) : isLoadingAddresses ? (
+                    <div className="space-y-2">
+                      {[1, 2].map((i) => (
+                        <div
+                          key={i}
+                          className="p-3 border border-gray-200 rounded-lg animate-pulse"
                         >
-                          Login
-                        </button>
-                      </div>
-                    ) : isLoadingAddresses ? (
-                      <div className="space-y-2">
-                        {[1, 2].map((i) => (
+                          <div className="h-3 bg-gray-200 rounded w-3/4 mb-1.5" />
+                          <div className="h-2.5 bg-gray-200 rounded w-full" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : addresses.length === 0 ? (
+                    <button
+                      onClick={handleAddNewAddress}
+                      className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-900 transition flex items-center justify-center gap-2 text-gray-500 text-sm"
+                    >
+                      <Plus className="w-4 h-4" /> Add Delivery Address
+                    </button>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                        {addresses.map((address) => (
                           <div
-                            key={i}
-                            className="p-3 border border-gray-200 rounded-lg animate-pulse"
+                            key={address.id}
+                            onClick={() => handleAddressSelect(address)}
+                            className={`p-2.5 border rounded-lg cursor-pointer transition-all flex items-start gap-2.5 ${selectedAddress?.id === address.id ? "border-gray-900 bg-gray-50" : "border-gray-200 hover:border-gray-400"}`}
                           >
-                            <div className="h-3 bg-gray-200 rounded w-3/4 mb-1.5" />
-                            <div className="h-2.5 bg-gray-200 rounded w-full" />
+                            <div
+                              className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedAddress?.id === address.id ? "border-gray-900 bg-gray-900" : "border-gray-300"}`}
+                            >
+                              {selectedAddress?.id === address.id && (
+                                <Check className="w-2.5 h-2.5 text-white" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <p className="font-semibold text-gray-900 text-xs">
+                                  {address.fullName}
+                                </p>
+                                {address.isDefault && (
+                                  <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0 rounded-full text-[10px]">
+                                    Default
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-500 line-clamp-1">
+                                {address.addressLine1}
+                                {address.addressLine2 &&
+                                  `, ${address.addressLine2}`}
+                                , {address.city}, {address.state} –{" "}
+                                {address.pincode}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                📞 {address.phone}
+                              </p>
+                            </div>
+                            <div className="flex gap-1 flex-shrink-0">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditAddress(address);
+                                }}
+                                className="p-1 hover:bg-gray-100 rounded transition"
+                              >
+                                <Edit2 className="w-3 h-3 text-gray-500" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteAddress(address.id);
+                                }}
+                                className="p-1 hover:bg-red-50 rounded transition"
+                              >
+                                <Trash2 className="w-3 h-3 text-red-500" />
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
-                    ) : addresses.length === 0 ? (
                       <button
                         onClick={handleAddNewAddress}
-                        className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-900 transition flex items-center justify-center gap-2 text-gray-500 text-sm"
+                        className="w-full py-2 border border-dashed border-gray-300 rounded-lg hover:border-gray-900 transition flex items-center justify-center gap-1.5 text-gray-500 text-xs font-medium"
                       >
-                        <Plus className="w-4 h-4" /> Add Delivery Address
+                        <Plus className="w-3.5 h-3.5" /> Add New Address
                       </button>
-                    ) : (
-                      <div className="space-y-2">
-                        {/* Scrollable address list */}
-                        <div className="space-y-2 max-h-28 overflow-y-auto">
-                          {addresses.map((address) => (
+                    </div>
+                  )}
+                </AccordionCard>
+
+                {/* 3. Courier Selection */}
+                <AccordionCard
+                  id="courier"
+                  title="Select Courier"
+                  icon={<Truck className="w-3.5 h-3.5 text-white" />}
+                  badge={selectedCourier ? courierBadge : "Choose one"}
+                  isDone={!!selectedCourier}
+                  isOpen={openSections.courier}
+                  onToggle={() => toggleSection("courier")}
+                >
+                  {!selectedAddress ? (
+                    <p className="text-xs text-gray-400 py-1">
+                      Select an address first to see courier options.
+                    </p>
+                  ) : isLoadingShipping ? (
+                    <div className="flex items-center gap-2 py-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                      <span className="text-xs text-gray-500">
+                        Fetching courier rates...
+                      </span>
+                    </div>
+                  ) : eligibleCouriers.length === 0 ? (
+                    <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">
+                      No courier available for this pincode.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {chargeableWeight > 0 && (
+                        <div className="text-[10px] bg-blue-50 border border-blue-100 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 text-blue-700">
+                          <Info className="w-3 h-3 flex-shrink-0" />
+                          Chargeable Weight:{" "}
+                          <span className="font-bold">
+                            {chargeableWeight.toFixed(2)} kg
+                          </span>
+                        </div>
+                      )}
+
+                      {cheapestCourier && (
+                        <div
+                          onClick={() =>
+                            handleCourierSelect(cheapestCourier, "CHEAPEST")
+                          }
+                          className={`p-2.5 border rounded-lg cursor-pointer transition-all ${selectedCourier?.courier_company_id === cheapestCourier.courier_company_id ? "border-green-500 bg-green-50" : "border-gray-200 hover:border-green-300"}`}
+                        >
+                          <div className="flex items-center gap-2">
                             <div
-                              key={address.id}
-                              onClick={() => handleAddressSelect(address)}
-                              className={`p-2.5 border rounded-lg cursor-pointer transition-all flex items-start gap-2.5 ${selectedAddress?.id === address.id ? "border-gray-900 bg-gray-50" : "border-gray-200 hover:border-gray-400"}`}
+                              className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedCourier?.courier_company_id === cheapestCourier.courier_company_id ? "border-green-500 bg-green-500" : "border-gray-300"}`}
                             >
+                              {selectedCourier?.courier_company_id ===
+                                cheapestCourier.courier_company_id && (
+                                <Check className="w-2.5 h-2.5 text-white" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0 rounded-full font-bold">
+                                    CHEAPEST
+                                  </span>
+                                  <p className="font-semibold text-gray-900 text-xs mt-0.5">
+                                    {cheapestCourier.courier_name}
+                                  </p>
+                                </div>
+                                <p className="font-bold text-green-600 text-sm">
+                                  {formatMoney(cheapestCourier.freight_charge)}
+                                </p>
+                              </div>
+                              <p className="text-[10px] text-gray-500">
+                                {cheapestCourier.estimated_delivery_days} days •
+                                ⭐ {cheapestCourier.rating}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {fastestCourier &&
+                        fastestCourier.courier_company_id !==
+                          cheapestCourier?.courier_company_id && (
+                          <div
+                            onClick={() =>
+                              handleCourierSelect(fastestCourier, "FASTEST")
+                            }
+                            className={`p-2.5 border rounded-lg cursor-pointer transition-all ${selectedCourier?.courier_company_id === fastestCourier.courier_company_id ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-blue-300"}`}
+                          >
+                            <div className="flex items-center gap-2">
                               <div
-                                className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedAddress?.id === address.id ? "border-gray-900 bg-gray-900" : "border-gray-300"}`}
+                                className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedCourier?.courier_company_id === fastestCourier.courier_company_id ? "border-blue-500 bg-blue-500" : "border-gray-300"}`}
                               >
-                                {selectedAddress?.id === address.id && (
+                                {selectedCourier?.courier_company_id ===
+                                  fastestCourier.courier_company_id && (
                                   <Check className="w-2.5 h-2.5 text-white" />
                                 )}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5">
-                                  <p className="font-semibold text-gray-900 text-xs">
-                                    {address.fullName}
-                                  </p>
-                                  {address.isDefault && (
-                                    <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0 rounded-full text-[10px]">
-                                      Default
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0 rounded-full font-bold">
+                                      FASTEST
                                     </span>
-                                  )}
+                                    <p className="font-semibold text-gray-900 text-xs mt-0.5">
+                                      {fastestCourier.courier_name}
+                                    </p>
+                                  </div>
+                                  <p className="font-bold text-blue-600 text-sm">
+                                    {formatMoney(fastestCourier.freight_charge)}
+                                  </p>
                                 </div>
-                                <p className="text-xs text-gray-500 line-clamp-1">
-                                  {address.addressLine1}
-                                  {address.addressLine2 &&
-                                    `, ${address.addressLine2}`}
-                                  , {address.city}, {address.state} -{" "}
-                                  {address.pincode}
+                                <p className="text-[10px] text-gray-500">
+                                  {fastestCourier.estimated_delivery_days} days
+                                  • ⭐ {fastestCourier.rating}
                                 </p>
-                                <p className="text-xs text-gray-500">
-                                  📞 {address.phone}
-                                </p>
-                              </div>
-                              <div className="flex gap-1 flex-shrink-0">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleEditAddress(address);
-                                  }}
-                                  className="p-1 hover:bg-gray-100 rounded transition"
-                                >
-                                  <Edit2 className="w-3 h-3 text-gray-500" />
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDeleteAddress(address.id);
-                                  }}
-                                  className="p-1 hover:bg-red-50 rounded transition"
-                                >
-                                  <Trash2 className="w-3 h-3 text-red-500" />
-                                </button>
                               </div>
                             </div>
-                          ))}
-                        </div>
+                          </div>
+                        )}
+
+                      {eligibleCouriers.length > 2 && (
                         <button
-                          onClick={handleAddNewAddress}
-                          className="w-full py-2 border border-dashed border-gray-300 rounded-lg hover:border-gray-900 transition flex items-center justify-center gap-1.5 text-gray-500 text-xs font-medium"
+                          onClick={() => setShowAllCouriers(!showAllCouriers)}
+                          className="text-xs text-blue-600 font-semibold flex items-center gap-1 w-full justify-center"
                         >
-                          <Plus className="w-3.5 h-3.5" /> Add New Address
+                          <ChevronDown
+                            className={`w-3 h-3 transition-transform ${showAllCouriers ? "rotate-180" : ""}`}
+                          />
+                          {showAllCouriers
+                            ? "Hide"
+                            : `+${eligibleCouriers.length - 2} more`}
                         </button>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
+                      )}
 
-                {/* Payment Method */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="bg-white rounded-xl border border-gray-200 shadow-sm flex-none"
-                >
-                  <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-100">
-                    <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center">
-                      <CreditCard className="w-3.5 h-3.5 text-white" />
+                      <AnimatePresence>
+                        {showAllCouriers && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="space-y-1.5"
+                          >
+                            {eligibleCouriers
+                              .filter(
+                                (c: any) =>
+                                  c.courier_company_id !==
+                                    cheapestCourier?.courier_company_id &&
+                                  c.courier_company_id !==
+                                    fastestCourier?.courier_company_id,
+                              )
+                              .map((courier: any) => (
+                                <div
+                                  key={courier.id}
+                                  onClick={() =>
+                                    handleCourierSelect(courier, "CUSTOM")
+                                  }
+                                  className={`p-2 border rounded-lg cursor-pointer transition-all text-xs ${selectedCourier?.courier_company_id === courier.courier_company_id ? "border-gray-900 bg-gray-50" : "border-gray-200 hover:border-gray-400"}`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-semibold text-gray-900 truncate">
+                                      {courier.courier_name}
+                                    </span>
+                                    <span className="font-bold text-gray-900 ml-2">
+                                      {formatMoney(courier.freight_charge)}
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-gray-500">
+                                    {courier.estimated_delivery_days} days • ⭐{" "}
+                                    {courier.rating}
+                                  </p>
+                                </div>
+                              ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
-                    <h2 className="font-bold text-gray-900 text-sm">
-                      Payment Method
-                    </h2>
-                  </div>
+                  )}
+                </AccordionCard>
 
-                  {/* <div className="p-3 grid grid-cols-2 gap-2"> */}
-                  <div className="p-4 space-y-3">
+                {/* 4. Payment Method */}
+                <AccordionCard
+                  id="payment"
+                  title="Payment Method"
+                  icon={<CreditCard className="w-3.5 h-3.5 text-white" />}
+                  badge={paymentBadge}
+                  isDone={true}
+                  isOpen={openSections.payment}
+                  onToggle={() => toggleSection("payment")}
+                >
+                  <div className="space-y-2">
                     {paymentMethods.map((method) => {
                       const isSelected = paymentMethod === method.id;
                       const isCOD = method.id === "COD";
                       const isDisabled = isCOD && !isCODAvailable;
-
                       return (
                         <div
                           key={method.id}
                           onClick={() =>
                             !isDisabled && setPaymentMethod(method.id)
                           }
-                          className={`
-          border rounded-xl p-4 cursor-pointer transition
-          ${
-            isSelected
-              ? "border-black bg-gray-50 shadow-sm"
-              : "border-gray-200 hover:border-gray-400"
-          }
-          ${isDisabled && "opacity-50 cursor-not-allowed"}
-        `}
+                          className={`border rounded-xl p-3 cursor-pointer transition ${isSelected ? "border-black bg-gray-50 shadow-sm" : "border-gray-200 hover:border-gray-400"} ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
                           <div className="flex items-center gap-3">
-                            {/* Radio */}
                             <div
-                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center
-            ${isSelected ? "border-black bg-black" : "border-gray-300"}`}
+                              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? "border-black bg-black" : "border-gray-300"}`}
                             >
                               {isSelected && (
-                                <Check className="w-3 h-3 text-white" />
+                                <Check className="w-2.5 h-2.5 text-white" />
                               )}
                             </div>
-
-                            {/* Icon */}
-                            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                              <CreditCard className="w-5 h-5 text-gray-700" />
+                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                              <CreditCard className="w-4 h-4 text-gray-700" />
                             </div>
-
-                            {/* Text */}
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
                                 <p className="font-semibold text-sm text-gray-900">
                                   {method.title}
                                 </p>
-
                                 {method.recommended && (
                                   <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
                                     Recommended
                                   </span>
                                 )}
                               </div>
-
                               <p className="text-xs text-gray-500">
                                 {method.subtitle}
                               </p>
                               <PaymentLogos type={method.id} />
-
                               {method.razorpay && (
-                                <p className="text-[10px] text-gray-400 mt-1">
+                                <p className="text-[10px] text-gray-400 mt-0.5">
                                   Secured by Razorpay
                                 </p>
                               )}
@@ -1128,25 +1409,24 @@ useEffect(() => {
                       );
                     })}
                   </div>
-                  {/* </div> */}
-                </motion.div>
+                </AccordionCard>
               </div>
 
-              {/* ── Right Column (2/5 width) ────────────────────────────────── */}
+              {/* ── Right: Order Summary (2/5) ───────────────────────────── */}
               <motion.div
                 initial={{ opacity: 0, x: 15 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.15 }}
-                className="lg:col-span-2 flex flex-col h-full overflow-hidden"
+                className="lg:col-span-2 flex flex-col"
               >
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col h-full overflow-hidden">
-                  <div className="flex-none px-4 py-3 border-b border-gray-100">
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col lg:sticky lg:top-4">
+                  <div className="px-4 py-3 border-b border-gray-100">
                     <h2 className="font-bold text-gray-900 text-sm">
                       Order Summary
                     </h2>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+                  <div className="px-4 py-3 space-y-4">
                     {/* Coupon */}
                     <div>
                       <div className="flex items-center gap-2 mb-2">
@@ -1254,7 +1534,7 @@ useEffect(() => {
                                   exit={{ opacity: 0, y: -5 }}
                                   className="absolute z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden max-h-56 overflow-y-auto"
                                 >
-                                  {filteredCoupons.map((coupon, index) => {
+                                  {filteredCoupons.map((coupon) => {
                                     const canApply =
                                       subtotal >= coupon.minOrderValue;
                                     const savings =
@@ -1335,186 +1615,6 @@ useEffect(() => {
                       )}
                     </div>
 
-                    {/* Courier Selection */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Truck className="w-4 h-4 text-blue-500" />
-                          <h3 className="font-semibold text-gray-900 text-xs">
-                            Select Courier
-                          </h3>
-                        </div>
-                        {isLoadingShipping && (
-                          <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
-                        )}
-                      </div>
-
-                      {!selectedAddress ? (
-                        <p className="text-xs text-gray-400">
-                          Select an address first
-                        </p>
-                      ) : eligibleCouriers.length === 0 &&
-                        !isLoadingShipping ? (
-                        <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">
-                          No courier available
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {chargeableWeight > 0 && (
-                            <div className="text-[10px] bg-blue-50 border border-blue-100 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 text-blue-700">
-                              <Info className="w-3 h-3 flex-shrink-0" />
-                              Chargeable Weight:{" "}
-                              <span className="font-bold">
-                                {chargeableWeight.toFixed(2)} kg
-                              </span>
-                            </div>
-                          )}
-
-                          {cheapestCourier && (
-                            <div
-                              onClick={() =>
-                                handleCourierSelect(cheapestCourier, "CHEAPEST")
-                              }
-                              className={`p-2.5 border rounded-lg cursor-pointer transition-all ${selectedCourier?.courier_company_id === cheapestCourier.courier_company_id ? "border-green-500 bg-green-50" : "border-gray-200 hover:border-green-300"}`}
-                            >
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedCourier?.courier_company_id === cheapestCourier.courier_company_id ? "border-green-500 bg-green-500" : "border-gray-300"}`}
-                                >
-                                  {selectedCourier?.courier_company_id ===
-                                    cheapestCourier.courier_company_id && (
-                                    <Check className="w-2.5 h-2.5 text-white" />
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0 rounded-full font-bold">
-                                        CHEAPEST
-                                      </span>
-                                      <p className="font-semibold text-gray-900 text-xs mt-0.5">
-                                        {cheapestCourier.courier_name}
-                                      </p>
-                                    </div>
-                                    <p className="font-bold text-green-600 text-sm">
-                                      {formatMoney(
-                                        cheapestCourier.freight_charge,
-                                      )}
-                                    </p>
-                                  </div>
-                                  <p className="text-[10px] text-gray-500">
-                                    {cheapestCourier.estimated_delivery_days}{" "}
-                                    days • ⭐ {cheapestCourier.rating}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {fastestCourier &&
-                            fastestCourier.courier_company_id !==
-                              cheapestCourier?.courier_company_id && (
-                              <div
-                                onClick={() =>
-                                  handleCourierSelect(fastestCourier, "FASTEST")
-                                }
-                                className={`p-2.5 border rounded-lg cursor-pointer transition-all ${selectedCourier?.courier_company_id === fastestCourier.courier_company_id ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-blue-300"}`}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedCourier?.courier_company_id === fastestCourier.courier_company_id ? "border-blue-500 bg-blue-500" : "border-gray-300"}`}
-                                  >
-                                    {selectedCourier?.courier_company_id ===
-                                      fastestCourier.courier_company_id && (
-                                      <Check className="w-2.5 h-2.5 text-white" />
-                                    )}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center justify-between">
-                                      <div>
-                                        <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0 rounded-full font-bold">
-                                          FASTEST
-                                        </span>
-                                        <p className="font-semibold text-gray-900 text-xs mt-0.5">
-                                          {fastestCourier.courier_name}
-                                        </p>
-                                      </div>
-                                      <p className="font-bold text-blue-600 text-sm">
-                                        {formatMoney(
-                                          fastestCourier.freight_charge,
-                                        )}
-                                      </p>
-                                    </div>
-                                    <p className="text-[10px] text-gray-500">
-                                      {fastestCourier.estimated_delivery_days}{" "}
-                                      days • ⭐ {fastestCourier.rating}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                          {eligibleCouriers.length > 2 && (
-                            <button
-                              onClick={() =>
-                                setShowAllCouriers(!showAllCouriers)
-                              }
-                              className="text-xs text-blue-600 font-semibold flex items-center gap-1 w-full justify-center"
-                            >
-                              <ChevronDown
-                                className={`w-3 h-3 transition-transform ${showAllCouriers ? "rotate-180" : ""}`}
-                              />
-                              {showAllCouriers
-                                ? "Hide"
-                                : `+${eligibleCouriers.length - 2} more`}
-                            </button>
-                          )}
-
-                          <AnimatePresence>
-                            {showAllCouriers && (
-                              <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: "auto" }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="space-y-1.5"
-                              >
-                                {eligibleCouriers
-                                  .filter(
-                                    (c: any) =>
-                                      c.courier_company_id !==
-                                        cheapestCourier?.courier_company_id &&
-                                      c.courier_company_id !==
-                                        fastestCourier?.courier_company_id,
-                                  )
-                                  .map((courier: any) => (
-                                    <div
-                                      key={courier.id}
-                                      onClick={() =>
-                                        handleCourierSelect(courier, "CUSTOM")
-                                      }
-                                      className={`p-2 border rounded-lg cursor-pointer transition-all text-xs ${selectedCourier?.courier_company_id === courier.courier_company_id ? "border-gray-900 bg-gray-50" : "border-gray-200 hover:border-gray-400"}`}
-                                    >
-                                      <div className="flex items-center justify-between">
-                                        <span className="font-semibold text-gray-900 truncate">
-                                          {courier.courier_name}
-                                        </span>
-                                        <span className="font-bold text-gray-900 ml-2">
-                                          {formatMoney(courier.freight_charge)}
-                                        </span>
-                                      </div>
-                                      <p className="text-[10px] text-gray-500">
-                                        {courier.estimated_delivery_days} days •
-                                        ⭐ {courier.rating}
-                                      </p>
-                                    </div>
-                                  ))}
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      )}
-                    </div>
-
                     {/* Price Breakdown */}
                     <div className="space-y-2 pt-2 border-t border-gray-100">
                       <div className="flex justify-between text-xs text-gray-600">
@@ -1588,8 +1688,8 @@ useEffect(() => {
                     </div>
                   </div>
 
-                  {/* ─── Sticky Total + CTA ───────────────────────────────── */}
-                  <div className="flex-none border-t border-gray-200 px-4 py-3 bg-white">
+                  {/* Total + CTA */}
+                  <div className="border-t border-gray-200 px-4 py-3 bg-white rounded-b-xl">
                     <div className="flex items-baseline justify-between mb-3">
                       <span className="font-bold text-gray-900 text-sm">
                         Total
@@ -1661,105 +1761,17 @@ useEffect(() => {
             </div>
           </div>
         </div>
-
-        <AddressModal
-          isOpen={isAddressModalOpen}
-          onClose={() => {
-            setIsAddressModalOpen(false);
-            setEditingAddress(null);
-          }}
-          existingAddress={editingAddress ?? undefined}
-          mode={editingAddress ? "edit" : "create"}
-        />
       </div>
+
+      <AddressModal
+        isOpen={isAddressModalOpen}
+        onClose={() => {
+          setIsAddressModalOpen(false);
+          setEditingAddress(null);
+        }}
+        existingAddress={editingAddress ?? undefined}
+        mode={editingAddress ? "edit" : "create"}
+      />
     </>
   );
 }
-const ProcessingOverlay = ({ step }: { step: 1 | 2 | 3 }) => {
-  const steps = ["Creating Order", "Initiating Payment", "Verifying Payment"];
-
-  return (
-    <div className="fixed inset-0 z-[9999] bg-white/5 backdrop-blur-sm flex items-center justify-center">
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 w-[320px]">
-        <div className="flex flex-col items-center gap-5">
-          <div className="w-14 h-14 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
-
-          <div className="text-center">
-            <p className="text-lg font-bold text-gray-900">
-              Processing your order
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              Please don’t refresh or close this page
-            </p>
-          </div>
-
-          <div className="w-full space-y-2 mt-2">
-            {steps.map((label, index) => {
-              const current = index + 1;
-
-              return (
-                <div key={label} className="flex items-center gap-2 text-sm">
-                  {current < step && (
-                    <span className="text-green-600 font-bold">✔</span>
-                  )}
-
-                  {current === step && (
-                    <span className="animate-pulse text-gray-900">⏳</span>
-                  )}
-
-                  {current > step && <span className="text-gray-300">•</span>}
-
-                  <span
-                    className={
-                      current <= step
-                        ? "text-gray-900 font-medium"
-                        : "text-gray-400"
-                    }
-                  >
-                    {label}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const OrderSuccessOverlay = () => {
-  return (
-    <div className="fixed inset-0 z-[10000] bg-white/5 backdrop-blur-sm flex items-center justify-center">
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 w-[320px] text-center">
-        <div className="w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center mb-4">
-          <svg
-            className="w-8 h-8 text-green-600"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={3}
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
-        </div>
-
-        <p className="text-lg font-bold text-gray-900">Order Confirmed</p>
-
-        <p className="text-sm text-gray-500 mt-1">
-          Redirecting to success page...
-        </p>
-
-        <div className="flex justify-center gap-1 mt-4">
-          <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-          <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:.2s]" />
-          <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:.4s]" />
-        </div>
-      </div>
-    </div>
-  );
-};
