@@ -32,7 +32,7 @@ export default function AestheticFullImage({
     setCurrentSlide((prev) => (prev - 1 + media.length) % media.length);
 
   return (
-    <section className="relative w-full h-screen overflow-hidden">
+    <section className="relative w-full h-[70vh] md:h-screen overflow-hidden">
       {/* Background Images/Videos */}
       {media.map((item, index) => (
         <div
@@ -45,7 +45,7 @@ export default function AestheticFullImage({
             <img
               src={item.url}
               alt={displayTitle}
-              className="w-full h-[100vh] object-cover"
+              className="w-full h-full object-cover object-center"
             />
           ) : (
             <video

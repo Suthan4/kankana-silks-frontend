@@ -517,11 +517,23 @@ export default function CheckoutClient() {
     }
   }, [shippingData]);
 
-  const getStockQty = (item: any) =>
-    item?.variant?.stock?.[0]?.quantity ??
-    item?.product?.stock?.find((s: any) => s.variantId === item?.variantId)
-      ?.quantity ??
-    0;
+  const getStockQty = (item: any) => {
+    // 1. Variant stock (preferred)
+    if (item?.variant?.stock?.length > 0) {
+      return Number(item.variant.stock[0].quantity);
+    }
+
+    // 2. Product stock fallback
+    if (item?.product?.stock?.length > 0) {
+      const match = item.product.stock.find(
+        (s: any) => s.variantId === item.variantId,
+      );
+      if (match) return Number(match.quantity);
+    }
+
+    // 3. Final fallback (IMPORTANT)
+    return Number(item?.variant?.quantity ?? item?.product?.quantity ?? 0);
+  };
 
   const getUnitPrice = (item: any) =>
     Number(
@@ -953,6 +965,8 @@ export default function CheckoutClient() {
                     {displayItems.map((item: any, index: number) => {
                       const stockQty = getStockQty(item);
                       const unitPrice = getUnitPrice(item);
+                      console.log("item", item);
+
                       return (
                         <div
                           key={`${item.productId}-${item.variantId}-${index}`}
@@ -1032,9 +1046,7 @@ export default function CheckoutClient() {
                                   {item.quantity}
                                 </span>
                                 <button
-                                  disabled={
-                                    isBuyNowMode || item.quantity >= stockQty
-                                  }
+                                  disabled={item.quantity >= stockQty}
                                   onClick={() =>
                                     user?.id &&
                                     updateQtyMutation.mutate({
@@ -1430,7 +1442,7 @@ export default function CheckoutClient() {
                     {/* Coupon */}
                     <div>
                       <div className="flex items-center gap-2 mb-2">
-                        <Gift className="w-4 h-4 text-amber-500" />
+                        <Gift className="w-4 h-4 text-main-primary" />
                         <h3 className="font-semibold text-gray-900 text-xs">
                           Apply Coupon
                         </h3>

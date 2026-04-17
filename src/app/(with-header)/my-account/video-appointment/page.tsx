@@ -59,7 +59,7 @@ export default function VideoAppointmentPage() {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"upcoming" | "completed">(
-    "upcoming"
+    "upcoming",
   );
 
   // Fetch consultations based on active tab
@@ -176,7 +176,7 @@ export default function VideoAppointmentPage() {
               {activeTab === "upcoming" && (
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="inline-block bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-6 py-3 rounded-full font-semibold hover:shadow-xl transition"
+                  className="inline-block bg-main-primary text-main-secondary px-6 py-3 rounded-full font-semibold hover:shadow-xl transition"
                 >
                   Book Consultation
                 </button>
@@ -193,9 +193,7 @@ export default function VideoAppointmentPage() {
                 ];
               const PlatformIcon = platformInfo.icon;
               const StatusIcon =
-                statusIcons[
-                  consultation.status as keyof typeof statusIcons
-                ];
+                statusIcons[consultation.status as keyof typeof statusIcons];
 
               const preferredDate = new Date(consultation.preferredDate);
               const formattedDate = preferredDate.toLocaleDateString("en-US", {
@@ -216,7 +214,7 @@ export default function VideoAppointmentPage() {
                   className="bg-white rounded-2xl border-2 border-gray-100 overflow-hidden hover:shadow-xl transition-all cursor-pointer"
                   onClick={() =>
                     router.push(
-                      `/my-account/video-appointment/${consultation.id}`
+                      `/my-account/video-appointment/${consultation.id}`,
                     )
                   }
                 >
@@ -231,7 +229,9 @@ export default function VideoAppointmentPage() {
                       <div className="flex items-center gap-2 text-sm font-semibold opacity-90">
                         <Calendar className="w-4 h-4" />
                         <span>
-                          {isApproved ? "CONFIRMED SESSION" : "PENDING APPROVAL"}
+                          {isApproved
+                            ? "CONFIRMED SESSION"
+                            : "PENDING APPROVAL"}
                         </span>
                       </div>
                       <div
@@ -387,7 +387,7 @@ export default function VideoAppointmentPage() {
                     <button
                       onClick={() =>
                         router.push(
-                          `/my-account/video-appointment/${consultation.id}`
+                          `/my-account/video-appointment/${consultation.id}`,
                         )
                       }
                       className="py-3 border-2 border-gray-200 rounded-xl font-semibold hover:bg-gray-50 transition-all"
@@ -402,8 +402,8 @@ export default function VideoAppointmentPage() {
           {/* Info Card */}
           <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-6 border-2 border-purple-100">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                <Video className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 bg-main-primary rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                <Video className="w-6 h-6 text-main-secondary" />
               </div>
               <div>
                 <p className="font-bold text-lg mb-2">Why Video Shopping?</p>
