@@ -98,14 +98,13 @@ function Header() {
       return res.data;
     },
     enabled: !!user,
-    staleTime: 30000,
-    placeholderData: {
-      id: "",
-      userId: "",
-      isPublic: false,
-      items: [],
-      totalItems: 0,
-    },
+    // placeholderData: {
+    //   id: "",
+    //   userId: "",
+    //   isPublic: false,
+    //   items: [],
+    //   totalItems: 0,
+    // },
   });
 
   /* -------------------- CALCULATE COUNTS -------------------- */
@@ -373,6 +372,35 @@ function Header() {
     },
   ];
 
+  {
+    /* Navigation Bar */
+  }
+  const navRef = useRef<HTMLElement>(null);
+  const [navBottom, setNavBottom] = useState(140);
+
+  // ✅ Track nav bottom position dynamically
+  useEffect(() => {
+    const updateNavBottom = () => {
+      if (navRef.current) {
+        setNavBottom(navRef.current.getBoundingClientRect().bottom);
+      }
+    };
+    updateNavBottom();
+    window.addEventListener("resize", updateNavBottom);
+    window.addEventListener("scroll", updateNavBottom, { passive: true });
+    return () => {
+      window.removeEventListener("resize", updateNavBottom);
+      window.removeEventListener("scroll", updateNavBottom);
+    };
+  }, [showNav]);
+
+  // ✅ Close dropdown on scroll
+  useEffect(() => {
+    const close = () => setHoveredCategory(null);
+    window.addEventListener("scroll", close, { passive: true });
+    return () => window.removeEventListener("scroll", close);
+  }, []);
+
   return (
     <>
       {/* Desktop Header */}
@@ -383,27 +411,10 @@ function Header() {
         className="hidden md:block sticky top-0 z-50"
       >
         {/* Top Bar */}
-        <div className="flex items-center justify-between px-8 py-4 bg-white shadow-background">
+        <div className="flex border-b border-gray-300 items-center justify-between px-8 py-4 bg-white">
           {/* Left Section - Logo + Location */}
           <div className="relative">
             <div className="flex items-center gap-6 flex-1">
-              {/* <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              <Link href="/">
-                <Image
-                  src="/image-removebg-preview.png"
-                  alt="Kankana Silks"
-                  width={200}
-                  height={200}
-                  priority
-                  className={`transition-all duration-300 ${showNav ? "lg:h-10" : "lg:h-14"} w-auto object-contain`}
-                />
-              </Link>
-            </motion.div> */}
-
               {/* Location Display Desktop*/}
               <div className="relative">
                 <button
@@ -449,7 +460,7 @@ function Header() {
                         {user && addresses.length > 0 && (
                           <div className="mb-4">
                             <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                              Your Addresses
+                              Your Address
                             </h4>
                             <div className="space-y-2 max-h-48 overflow-y-auto">
                               {addresses.map((address) => (
@@ -496,7 +507,7 @@ function Header() {
                               onClick={() => setLocationModalOpen(false)}
                               className="block mt-3 text-sm text-blue-600 font-medium text-center py-2"
                             >
-                              Manage addresses
+                              Manage address
                             </Link>
                             <div className="border-t border-gray-200 my-4" />
                           </div>
@@ -583,7 +594,7 @@ function Header() {
                             }}
                             className="w-full mt-4 py-3 text-sm text-blue-600 hover:text-blue-700 font-medium border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
                           >
-                            Sign in to see your addresses
+                            Sign in to see your address
                           </button>
                         )}
                       </div>
@@ -650,7 +661,7 @@ function Header() {
             </motion.div>
             {icons
               .filter((item) =>
-                ["Consultation", "Whatsapp", "Cart"].includes(item.name),
+                ["Whatsapp", "Cart", "Wishlist"].includes(item.name),
               )
               .map((item) => {
                 const Icon = item.icon;
@@ -759,7 +770,7 @@ function Header() {
                       onClick={() => setUserMenuOpen(false)}
                       className="block px-4 py-3 text-sm hover:bg-gray-50 transition-colors"
                     >
-                      Addresses
+                      Address
                     </Link>
                     <button
                       onClick={() => {
@@ -779,6 +790,7 @@ function Header() {
 
         {/* Navigation Bar */}
         <motion.nav
+          ref={navRef}
           initial={{ y: 0, opacity: 1 }}
           animate={{
             y: showNav ? 0 : -60,
@@ -786,17 +798,15 @@ function Header() {
             pointerEvents: showNav ? "auto" : "none",
           }}
           transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-          className={`hidden md:block relative bg-white ${showNav ? "border-t border-gray-100" : ""}`}
+          className={`hidden border-b border-gray-300 md:block relative bg-white`}
         >
           <motion.ul
             initial={{ y: -20, opacity: 1 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            // className="flex justify-center items-center gap-8 py-4 px-8"
             className="flex justify-center items-center gap-0 py-3 px-8"
           >
             {loading ? (
-              // ✅ Skeleton shimmer — same height as real nav, no layout shift
               <>
                 {[80, 100, 72, 88, 96, 76].map((w, i) => (
                   <li key={i}>
@@ -826,11 +836,18 @@ function Header() {
                       if (hoverTimeoutRef.current)
                         clearTimeout(hoverTimeoutRef.current);
                       setHoveredCategory(category.id);
+                      // ✅ Snap navBottom at the moment of hover for accuracy
+                      if (navRef.current) {
+                        setNavBottom(
+                          navRef.current.getBoundingClientRect().bottom,
+                        );
+                      }
                     }}
                     onMouseLeave={() => {
+                      // ✅ Shortened to 50ms — enough to reach the dropdown card
                       hoverTimeoutRef.current = setTimeout(
                         () => setHoveredCategory(null),
-                        100,
+                        50,
                       );
                     }}
                     className="relative cursor-pointer group"
@@ -843,26 +860,21 @@ function Header() {
                       <motion.span
                         animate={{
                           opacity: hoveredCategory === category.id ? 1 : 0,
-                          scale: hoveredCategory === category.id ? 1 : 0.85,
+                          scale: hoveredCategory === category.id ? 1 : 0.92,
                         }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="absolute inset-0 rounded-full bg-gray-100/80 backdrop-blur-sm"
+                        transition={{ duration: 0.15 }}
+                        className="absolute inset-y-0 inset-x-1 rounded-full bg-main-primary"
                         style={{ zIndex: 0 }}
                       />
-
                       <span
-                        className="relative z-10 text-[12px] font-semibold tracking-[0.12em] uppercase transition-colors duration-200"
-                        style={{
-                          color:
-                            hoveredCategory === category.id
-                              ? "#111"
-                              : "#6b7280",
-                          letterSpacing: "0.1em",
-                        }}
+                        className={`relative z-10 text-[14px] font-medium tracking-wide uppercase transition-colors duration-200 ${
+                          hoveredCategory === category.id
+                            ? "text-main-secondary"
+                            : "text-main-primary group-hover:text-main-primary"
+                        }`}
                       >
                         {category.name}
                       </span>
-
                       {category.children && category.children.length > 0 && (
                         <motion.span
                           animate={{
@@ -888,7 +900,7 @@ function Header() {
                       )}
                     </Link>
 
-                    {/* Slim underline dot indicator */}
+                    {/* Slim underline indicator */}
                     <AnimatePresence>
                       {activeNav === category.name && (
                         <motion.div
@@ -907,7 +919,7 @@ function Header() {
                     </AnimatePresence>
                   </motion.li>
 
-                  {/* Refined dot separator */}
+                  {/* Dot separator */}
                   {index < categories.length - 1 && (
                     <li key={`sep-${index}`} aria-hidden="true">
                       <span className="block w-[3px] h-[3px] rounded-full bg-gray-300" />
@@ -921,139 +933,169 @@ function Header() {
           {/* Dropdown Megamenu */}
           <AnimatePresence>
             {hoveredCategory && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
-                onMouseEnter={() => {
-                  if (hoverTimeoutRef.current)
-                    clearTimeout(hoverTimeoutRef.current);
-                }}
-                onMouseLeave={() => {
-                  hoverTimeoutRef.current = setTimeout(
-                    () => setHoveredCategory(null),
-                    100,
-                  );
-                }}
-                className="absolute top-full left-0 right-0 bg-white shadow-2xl border-t border-gray-100 z-50"
-              >
-                <div className="max-w-7xl mx-auto px-8 py-8">
-                  <div className="grid grid-cols-12 gap-8">
-                    <div className="col-span-7">
-                      {/* <div className="grid grid-cols-2 gap-6"> */}
-                      <div
-                        className={`grid gap-4 ${
-                          (categories.find((cat) => cat.id === hoveredCategory)
-                            ?.children?.length ?? 0) === 1
-                            ? "grid-cols-1 max-w-xs"
-                            : "grid-cols-2"
-                        }`}
-                      >
-                        {categories
-                          .find((cat) => cat.id === hoveredCategory)
-                          ?.children?.map((subCategory, idx) => (
-                            <motion.div
-                              key={subCategory.id}
-                              initial={{ opacity: 0, y: 12 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.15, delay: idx * 0.03 }}
-                              whileHover={{ y: -3, scale: 1.02 }}
-                              className="group cursor-pointer"
-                            >
-                              <Link
-                                href={getCategoryUrl(subCategory.slug)}
-                                className="flex flex-col gap-2 p-4 rounded-xl border border-gray-100 bg-gradient-to-br from-amber-50/60 to-orange-50/40 hover:from-amber-100 hover:to-orange-100 hover:border-amber-300 hover:shadow-md transition-all duration-300"
-                              >
-                                {/* Top accent bar */}
-                                <div className="w-8 h-0.5 bg-gradient-to-r from-amber-400 to-orange-400 rounded-full group-hover:w-full transition-all duration-500" />
+              <>
+                {/* ✅ BACKDROP — top set from navRef, closes immediately on enter */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[3px]"
+                  style={{ top: navBottom }}
+                  onMouseEnter={() => {
+                    // ✅ Cursor hit the backdrop = fully outside dropdown → close immediately
+                    if (hoverTimeoutRef.current)
+                      clearTimeout(hoverTimeoutRef.current);
+                    setHoveredCategory(null);
+                  }}
+                  onClick={() => setHoveredCategory(null)}
+                />
 
-                                <p className="text-sm font-bold text-gray-800 group-hover:text-gray-900 tracking-wide transition-colors duration-200">
-                                  {subCategory.name}
-                                </p>
-
-                                <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 group-hover:text-orange-600 transition-colors">
-                                  Explore
-                                  <svg
-                                    className="w-3 h-3 group-hover:translate-x-1 transition-transform duration-200"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={2.5}
+                {/* ✅ DROPDOWN WRAPPER — top also from navRef */}
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                  transition={{ duration: 0.2 }}
+                  className="fixed inset-x-0 z-50 flex justify-center"
+                  style={{ top: navBottom }}
+                  onMouseEnter={() => {
+                    // ✅ Back inside dropdown — cancel any pending close
+                    if (hoverTimeoutRef.current)
+                      clearTimeout(hoverTimeoutRef.current);
+                  }}
+                  onMouseLeave={() => {
+                    // ✅ Left the dropdown card — close quickly
+                    hoverTimeoutRef.current = setTimeout(
+                      () => setHoveredCategory(null),
+                      50,
+                    );
+                  }}
+                >
+                  {/* MAIN DROPDOWN CARD */}
+                  <div className="relative w-[1200px] max-w-[95vw] bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-gray-100 overflow-hidden">
+                    <div className="px-8 py-8">
+                      <div className="grid grid-cols-12 gap-8">
+                        {/* LEFT — SUBCATEGORIES */}
+                        <div className="col-span-7">
+                          <div
+                            className={`grid gap-4 ${
+                              (categories.find(
+                                (cat) => cat.id === hoveredCategory,
+                              )?.children?.length ?? 0) === 1
+                                ? "grid-cols-1 max-w-xs"
+                                : "grid-cols-2"
+                            }`}
+                          >
+                            {categories
+                              .find((cat) => cat.id === hoveredCategory)
+                              ?.children?.map((subCategory, idx) => (
+                                <motion.div
+                                  key={subCategory.id}
+                                  initial={{ opacity: 0, y: 12 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{
+                                    duration: 0.15,
+                                    delay: idx * 0.03,
+                                  }}
+                                  whileHover={{ y: -3, scale: 1.02 }}
+                                  className="group cursor-pointer"
+                                >
+                                  <Link
+                                    href={getCategoryUrl(subCategory.slug)}
+                                    className="flex flex-col gap-2 p-4 rounded-xl border border-gray-100 bg-white hover:bg-gray-50 hover:border-black transition-all duration-200"
                                   >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
-                                    />
-                                  </svg>
-                                </span>
+                                    <div className="w-8 h-0.5 bg-gradient-to-r from-amber-400 to-orange-400 rounded-full group-hover:w-full transition-all duration-500" />
+                                    <p className="text-sm font-semibold text-gray-800 group-hover:text-black">
+                                      {subCategory.name}
+                                    </p>
+                                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-gray-600 group-hover:text-black transition-colors">
+                                      Explore
+                                      <svg
+                                        className="w-3 h-3 group-hover:translate-x-1 transition-transform duration-200"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        strokeWidth={2.5}
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+                                        />
+                                      </svg>
+                                    </span>
+                                  </Link>
+                                </motion.div>
+                              ))}
+                          </div>
+                        </div>
+
+                        {/* RIGHT — CATEGORY PREVIEW */}
+                        <div className="col-span-5 border-l border-gray-100 pl-8">
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.3 }}
+                            className="space-y-4"
+                          >
+                            {categories.find(
+                              (cat) => cat.id === hoveredCategory,
+                            )?.image && (
+                              <div className="relative w-full h-48 rounded-xl overflow-hidden shadow-md">
+                                <Image
+                                  src={
+                                    categories.find(
+                                      (cat) => cat.id === hoveredCategory,
+                                    )?.image || ""
+                                  }
+                                  alt={
+                                    categories.find(
+                                      (cat) => cat.id === hoveredCategory,
+                                    )?.name || ""
+                                  }
+                                  fill
+                                  className="object-cover hover:scale-105 transition-transform duration-500"
+                                />
+                              </div>
+                            )}
+                            <div>
+                              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                                {
+                                  categories.find(
+                                    (cat) => cat.id === hoveredCategory,
+                                  )?.name
+                                }
+                              </h3>
+                              {categories.find(
+                                (cat) => cat.id === hoveredCategory,
+                              )?.description && (
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                  {
+                                    categories.find(
+                                      (cat) => cat.id === hoveredCategory,
+                                    )?.description
+                                  }
+                                </p>
+                              )}
+                              <Link
+                                href={getCategoryUrl(
+                                  categories.find(
+                                    (cat) => cat.id === hoveredCategory,
+                                  )?.slug || "",
+                                )}
+                                className="inline-block mt-4 text-sm font-semibold text-black hover:underline"
+                              >
+                                View All →
                               </Link>
-                            </motion.div>
-                          ))}
+                            </div>
+                          </motion.div>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="col-span-5 border-l border-gray-100 pl-8">
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.4 }}
-                        className="space-y-4"
-                      >
-                        {categories.find((cat) => cat.id === hoveredCategory)
-                          ?.image && (
-                          <div className="relative w-full h-48 rounded-lg overflow-hidden shadow-md">
-                            <Image
-                              src={
-                                categories.find(
-                                  (cat) => cat.id === hoveredCategory,
-                                )?.image || ""
-                              }
-                              alt={
-                                categories.find(
-                                  (cat) => cat.id === hoveredCategory,
-                                )?.name || ""
-                              }
-                              fill
-                              className="object-cover hover:scale-105 transition-transform duration-500"
-                            />
-                          </div>
-                        )}
-                        <div>
-                          <h3 className="text-xl font-bold text-gray-900 mb-2">
-                            {
-                              categories.find(
-                                (cat) => cat.id === hoveredCategory,
-                              )?.name
-                            }
-                          </h3>
-                          {categories.find((cat) => cat.id === hoveredCategory)
-                            ?.description && (
-                            <p className="text-sm text-gray-600 leading-relaxed">
-                              {
-                                categories.find(
-                                  (cat) => cat.id === hoveredCategory,
-                                )?.description
-                              }
-                            </p>
-                          )}
-                          <Link
-                            href={getCategoryUrl(
-                              categories.find(
-                                (cat) => cat.id === hoveredCategory,
-                              )?.slug || "",
-                            )}
-                            className="inline-block mt-4 text-sm font-medium text-black hover:underline"
-                          >
-                            View All →
-                          </Link>
-                        </div>
-                      </motion.div>
-                    </div>
                   </div>
-                </div>
-              </motion.div>
+                </motion.div>
+              </>
             )}
           </AnimatePresence>
         </motion.nav>
@@ -1134,7 +1176,8 @@ function Header() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto z-20"
+              // className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto z-20"
+              className="absolute top-full left-1/2 -translate-x-1/2 w-[900px] max-w-[95vw] bg-white shadow-2xl border border-gray-100 rounded-2xl z-50"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6 pb-8">
@@ -1149,7 +1192,7 @@ function Header() {
                 {user && addresses.length > 0 && (
                   <div className="mb-6">
                     <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                      Your Addresses
+                      Your Address
                     </h4>
                     <div className="space-y-3">
                       {addresses.map((address) => {
@@ -1207,7 +1250,7 @@ function Header() {
                       onClick={() => setLocationModalOpen(false)}
                       className="block mt-3 text-sm text-blue-600 font-medium text-center py-2"
                     >
-                      Manage addresses
+                      Manage address
                     </Link>
                     <div className="border-t border-gray-200 my-4" />
                   </div>
@@ -1290,7 +1333,7 @@ function Header() {
                     }}
                     className="w-full mt-6 py-3 text-blue-600 font-semibold border-2 border-blue-200 rounded-xl hover:bg-blue-50"
                   >
-                    Sign in to see your addresses
+                    Sign in to see your address
                   </button>
                 )}
               </div>
@@ -1354,7 +1397,7 @@ function Header() {
                         onClick={() => setMobileMenuOpen(false)}
                         className="block text-sm text-gray-700 hover:text-black"
                       >
-                        Addresses
+                        Address
                       </Link>
                       <button
                         onClick={() => {

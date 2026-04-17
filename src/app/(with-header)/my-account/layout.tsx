@@ -48,9 +48,9 @@ export default function MyAccountLayout({
                     {/* Profile Header */}
                     <div className="p-6 border-b border-gray-200 bg-gradient-to-br from-gray-50 to-white">
                       <div className="flex flex-col items-center text-center">
-                        <div className="w-20 h-20 bg-gradient-to-br from-gray-900 to-gray-700 rounded-full flex items-center justify-center text-white text-3xl mb-3 ring-4 ring-gray-100">
+                        {/* <div className="w-20 h-20 bg-gradient-to-br from-gray-900 to-gray-700 rounded-full flex items-center justify-center text-white text-3xl mb-3 ring-4 ring-gray-100">
                           👩
-                        </div>
+                        </div> */}
                         <h3 className="font-bold text-gray-900 text-lg">
                           {user?.firstName} {user?.lastName}
                         </h3>

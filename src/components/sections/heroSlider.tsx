@@ -6,6 +6,8 @@ import { useState, useEffect } from "react";
 function HeroSlider({ section }: { section: HomeSection }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   if (!section.media || section.media.length === 0) return null;
 
@@ -23,6 +25,32 @@ function HeroSlider({ section }: { section: HomeSection }) {
   const goToSlide = (index: number) => {
     setCurrentIndex(index);
     setIsAutoPlaying(false);
+  };
+
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setIsAutoPlaying(false); // 🔥 important
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+
+    if (distance > minSwipeDistance) {
+      // Swipe left → next
+      handleNext();
+    } else if (distance < -minSwipeDistance) {
+      // Swipe right → prev
+      handlePrev();
+    }
   };
 
   // Auto-play functionality
@@ -50,7 +78,12 @@ function HeroSlider({ section }: { section: HomeSection }) {
       style={{ backgroundColor: section.backgroundColor }}
     >
       {/* Slides */}
-      <div className="relative w-full h-full">
+      <div
+        className="relative w-full h-full"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
         {slides.map((slide, index) => (
           <div
             key={slide.id}
@@ -130,8 +163,8 @@ function HeroSlider({ section }: { section: HomeSection }) {
                               btn.style === "PRIMARY"
                                 ? "bg-white text-gray-900 hover:bg-gray-100"
                                 : btn.style === "SECONDARY"
-                                ? "bg-gray-900 text-white hover:bg-gray-800"
-                                : "border-2 border-white text-white hover:bg-white hover:text-gray-900"
+                                  ? "bg-gray-900 text-white hover:bg-gray-800"
+                                  : "border-2 border-white text-white hover:bg-white hover:text-gray-900"
                             }
                           `}
                         >

@@ -51,6 +51,7 @@ class WishlistApiService {
    */
   async getWishlist(): Promise<WishlistResponse> {
     const response = await authService.api.get("/wishlist");
+    console.log("response",response);
     return response.data;
   }
 

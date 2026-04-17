@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, memo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -29,6 +29,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCartStore } from "@/store/useCartStore";
 import { formatMaskedPrice } from "@/lib/utils/priceMasked";
 import { getColorHex, isValidCSSColor } from "@/lib/utils/colorValidation";
+import { useWishlist } from "@/hooks/useWishlist";
 
 interface CategoryProductsClientProps {
   category: Category;
@@ -87,6 +88,7 @@ export default function CategoryProductsClient({
   const [inStockOnly, setInStockOnly] = useState(
     searchParams.get("inStock") === "true",
   );
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   const limit = 12;
 
@@ -133,7 +135,7 @@ export default function CategoryProductsClient({
         }
       });
 
-      router.push(`?${params.toString()}`, { scroll: false });
+      router.replace(`?${params.toString()}`, { scroll: false });
     },
     [searchParams, router],
   );
@@ -195,17 +197,17 @@ export default function CategoryProductsClient({
   const {
     data: productRes,
     isLoading,
+    isFetching,
     isError,
     error,
   } = useQuery({
-    queryKey: ["products", category.slug, searchParams.toString()],
+    queryKey: ["products", category.slug, queryParams],
     queryFn: async () => {
       console.log("🔵 Fetching products with params:", queryParams);
       const result = await productApi.getProducts(queryParams);
       console.log("✅ Products fetched:", result);
       return result;
     },
-    retry: 1,
     staleTime: 30000,
   });
 
@@ -216,55 +218,44 @@ export default function CategoryProductsClient({
 
   /* ------------------ WISHLIST QUERY ------------------ */
 
-  const { data: wishlistData = [] } = useQuery({
-    queryKey: ["wishlist", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const res = await wishlistApi.getWishlist();
-      const items = res?.data?.items ?? [];
-      return items.map((i: any) => i.productId);
-    },
-  });
-
-  const likedProducts = useMemo(() => {
-    return new Set(Array.isArray(wishlistData) ? wishlistData : []);
-  }, [wishlistData]);
+  const { isProductWishlisted, toggleWishlist } = useWishlist();
 
   /* ------------------ MUTATIONS ------------------ */
 
-  const toggleWishlistMutation = useMutation({
-    mutationFn: async (productId: string) => {
-      const wishlist = await wishlistApi.getWishlist();
-      const item = wishlist.data.items?.find(
-        (i: any) => i.productId === productId,
-      );
+  // const toggleWishlistMutation = useMutation({
+  //   mutationFn: async (productId: string) => {
+  //     const wishlist = await wishlistApi.getWishlist();
+  //     const item = wishlist.data.items?.find(
+  //       (i: any) => i.productId === productId,
+  //     );
+  //     if (item) {
+  //       await wishlistApi.removeFromWishlist(item.id);
+  //       return { action: "removed", productId };
+  //     } else {
+  //       await wishlistApi.addToWishlist({ productId });
+  //       return { action: "added", productId };
+  //     }
+  //   },
+  //   onSuccess: (data) => {
+  //     // ✅ Invalidate BOTH keys so header count + card heart stay in sync
+  //     queryClient.invalidateQueries({ queryKey: ["wishlist", user?.id] });
+  //     queryClient.invalidateQueries({ queryKey: ["wishlist-ids", user?.id] });
+  //     toast.success(
+  //       data.action === "added" ? "Added to wishlist" : "Removed from wishlist",
+  //     );
+  //   },
+  //   onError: () => {
+  //     toast.error("Failed to update wishlist");
+  //   },
+  // });
 
-      if (item) {
-        await wishlistApi.removeFromWishlist(item.id);
-        return { action: "removed", productId };
-      } else {
-        await wishlistApi.addToWishlist({ productId });
-        return { action: "added", productId };
-      }
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
-      toast.success(
-        data.action === "added" ? "Added to wishlist" : "Removed from wishlist",
-      );
-    },
-    onError: () => {
-      toast.error("Failed to update wishlist");
-    },
-  });
-
-  const toggleWishlist = (productId: string) => {
-    if (!user) {
-      openModal("login");
-      return;
-    }
-    toggleWishlistMutation.mutate(productId);
-  };
+  // const toggleWishlist = (productId: string) => {
+  //   if (!user) {
+  //     openModal("login");
+  //     return;
+  //   }
+  //   toggleWishlistMutation.mutate(productId);
+  // };
 
   // ✅ FIXED: Add to cart mutation with proper local cart integration
   const addToCartMutation = useMutation({
@@ -385,7 +376,16 @@ export default function CategoryProductsClient({
 
   const handlePriceRangeChange = (newRange: [number, number]) => {
     setPriceRange(newRange);
-    updateFilters({ minPrice: newRange[0], maxPrice: newRange[1], page: 1 });
+
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+
+    debounceTimer.current = setTimeout(() => {
+      updateFilters({
+        minPrice: newRange[0],
+        maxPrice: newRange[1],
+        page: 1,
+      });
+    }, 400);
   };
 
   const handleSortChange = (newSort: typeof sortBy) => {
@@ -437,9 +437,9 @@ export default function CategoryProductsClient({
     router.push(`/shop/${category.slug}`);
   };
 
-  const FilterSidebar = ({ isMobile = false }: { isMobile?: boolean }) => (
+  const FilterSidebar = memo(({ isMobile = false }: { isMobile?: boolean }) => (
     <motion.div
-      initial={{ opacity: 0 }}
+      initial={false}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
       className={`${isMobile ? "p-6" : ""}`}
@@ -495,7 +495,7 @@ export default function CategoryProductsClient({
             type="checkbox"
             checked={inStockOnly}
             onChange={(e) => handleInStockChange(e.target.checked)}
-            className="w-4 h-4 accent-yellow-500 rounded"
+            className="w-4 h-4 accent-main-primary rounded"
           />
           <span className="text-sm font-medium text-gray-700">
             In Stock Only
@@ -518,22 +518,22 @@ export default function CategoryProductsClient({
             onChange={(e) =>
               handlePriceRangeChange([priceRange[0], Number(e.target.value)])
             }
-            className="w-full accent-yellow-500"
+            className="w-full accent-main-primary"
           />
           <div className="flex justify-between text-sm text-gray-600">
-            <span>₹{priceRange[0].toLocaleString()}</span>
-            <span>₹{priceRange[1].toLocaleString()}</span>
+            <span>₹{priceRange[0].toLocaleString("en-IN")}</span>
+            <span>₹{priceRange[1].toLocaleString("en-IN")}</span>
           </div>
         </div>
       </div>
 
-      <div className="mb-6">
+      {/* <div className="mb-6">
         <div className="flex items-center gap-2 mb-4">
           <Palette className="h-5 w-5 text-purple-600" />
           <h3 className="font-semibold text-gray-900">Colors</h3>
         </div>
 
-        {/* Color Grid - Responsive */}
+        // Color Grid - Responsive 
         <div className="grid grid-cols-4 md:grid-cols-5 gap-3">
           {colors.map((colorName) => {
             const isSelected = selectedColor === colorName;
@@ -552,32 +552,32 @@ export default function CategoryProductsClient({
                     : ""
                 }`}
               >
-                {/* Color Swatch */}
+                // Color Swatch
                 {isValidColor && colorHex ? (
                   <div
                     className="w-full aspect-square rounded-lg border-2 border-gray-300 shadow-sm transition-transform group-hover:scale-105"
                     style={{ backgroundColor: colorHex }}
                   />
                 ) : (
-                  /* Fallback for invalid colors */
+                 //  Fallback for invalid colors 
                   <div className="w-full aspect-square rounded-lg border-2 border-gray-300 bg-gray-100 flex items-center justify-center">
                     <span className="text-xs text-gray-400">?</span>
                   </div>
                 )}
 
-                {/* Color Name Label */}
+                // Color Name Label
                 <span className="text-[10px] md:text-xs text-gray-600 font-medium capitalize text-center line-clamp-1 w-full">
                   {colorName}
                 </span>
 
-                {/* Hex Tooltip on Hover - Desktop Only */}
+                // Hex Tooltip on Hover - Desktop Only
                 {isValidColor && colorHex && (
                   <div className="hidden md:block absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none">
                     {colorHex}
                   </div>
                 )}
 
-                {/* Selected Checkmark */}
+                // Selected Checkmark
                 {isSelected && (
                   <motion.div
                     initial={{ scale: 0 }}
@@ -603,7 +603,7 @@ export default function CategoryProductsClient({
           })}
         </div>
 
-        {/* Custom Color Input */}
+        // Custom Color Input
         <div className="mt-4 pt-4 border-t border-gray-200">
           <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
             Or enter a custom color:
@@ -645,7 +645,7 @@ export default function CategoryProductsClient({
             </motion.button>
           </div>
 
-          {/* Validation Feedback */}
+          // Validation Feedback
           {selectedColor && !colors.includes(selectedColor) && (
             <div className="mt-2">
               {isValidCSSColor(selectedColor) ? (
@@ -675,7 +675,7 @@ export default function CategoryProductsClient({
             </div>
           )}
 
-          {/* Clear Custom Color Button */}
+           // Clear Custom Color Button 
           {selectedColor &&
             !colors.includes(selectedColor) &&
             isValidCSSColor(selectedColor) && (
@@ -692,7 +692,7 @@ export default function CategoryProductsClient({
               </motion.button>
             )}
         </div>
-      </div>
+      </div>   */}
 
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-4">
@@ -711,7 +711,7 @@ export default function CategoryProductsClient({
                 name="fabric"
                 checked={selectedFabric === material}
                 onChange={() => handleFabricChange(material)}
-                className="w-4 h-4 accent-yellow-500"
+                className="w-4 h-4 accent-primary-main"
               />
               <label className="text-gray-700 cursor-pointer">{material}</label>
             </motion.li>
@@ -719,7 +719,7 @@ export default function CategoryProductsClient({
         </ul>
       </div>
 
-      <div className="mb-6">
+      {/* <div className="mb-6">
         <div className="flex items-center gap-2 mb-4">
           <span className="text-lg">📏</span>
           <h3 className="font-semibold text-gray-900">Size</h3>
@@ -740,9 +740,9 @@ export default function CategoryProductsClient({
             </motion.button>
           ))}
         </div>
-      </div>
+      </div> */}
     </motion.div>
-  );
+  ));
 
   if (isError) {
     console.error("❌ Error loading products:", error);
@@ -925,7 +925,7 @@ export default function CategoryProductsClient({
 
           {/* Product Grid */}
           <div className="flex-1">
-            {isLoading ? (
+            {isLoading && !productRes ? (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                 {[...Array(6)].map((_, i) => (
                   <div
@@ -953,179 +953,196 @@ export default function CategoryProductsClient({
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-                {products.map((product, index) => {
-                  const availableStock = product.stock?.[0]?.quantity ?? 0;
-                  const isOutOfStock = isProductOutOfStock(product);
-                  const showAddToCart = canAddToCart(product);
-                  const displayPrice = Number(product.sellingPrice);
-                  const basePrice = Number(product.basePrice);
-                  const discount =
-                    basePrice > displayPrice
-                      ? Math.round(
-                          ((basePrice - displayPrice) / basePrice) * 100,
-                        )
-                      : 0;
-                  console.log("PRODUCT:", product.name, {
-                    qty: product.stock?.[0]?.quantity,
-                    low: product.stock?.[0]?.lowStockThreshold,
-                    allowOut: product.allowOutOfStockOrders,
-                    showAddToCart: canAddToCart(product),
-                  });
-                  console.log("product", product);
+              <div className="relative">
+                {isFetching && (
+                  <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                    <div className="text-9xl text-gray-500">Updating...</div>
+                  </div>
+                )}
 
-                  return (
-                    <motion.div
-                      key={product.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
-                      whileHover={{ y: -4 }}
-                      className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                    >
-                      <Link href={`/${product.category?.slug}/${product.slug}`}>
-                        <div className="relative aspect-square overflow-hidden">
-                          <motion.div
-                            className="absolute inset-0"
-                            initial={{ scale: 1 }}
-                            whileHover={{ scale: 1.15 }}
-                            transition={{ duration: 0.3, ease: "easeOut" }}
-                          >
-                            <Image
-                              src={
-                                product.media?.[0]?.url || "/placeholder.jpg"
-                              }
-                              alt={product.media?.[0]?.altText || product.name}
-                              fill
-                              sizes="(max-width: 768px) 50vw, 33vw"
-                              className="object-cover"
-                            />
-                          </motion.div>
-
-                          {/* ✅ Out of Stock Badge */}
-                          {isOutOfStock && (
-                            <div className="absolute top-2 left-2 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-semibold z-10">
-                              Out of Stock
-                            </div>
-                          )}
-
-                          {/* ✅ Discount Badge - Only show if in stock */}
-                          {!isOutOfStock && discount > 0 && (
-                            <div className="absolute top-2 left-2 bg-green-600 text-white px-3 py-1 rounded-full text-xs font-semibold z-10">
-                              {discount}% OFF
-                            </div>
-                          )}
-
-                          {/* ✅ Video Consultation Icon - Show only if enabled and in stock */}
-                          {!isOutOfStock &&
-                            product.hasVideoConsultation &&
-                            product.videoPurchasingEnabled && (
-                              <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={(e) =>
-                                  handleVideoConsultation(e, product)
-                                }
-                                className="absolute top-2 right-12 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full p-2 shadow-lg z-10"
-                                title="Video Consultation Available"
-                              >
-                                <Video className="w-4 h-4" />
-                              </motion.button>
-                            )}
-
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              toggleWishlist(product.id);
-                            }}
-                            className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md z-10"
-                          >
-                            <Heart
-                              className={`w-4 h-4 transition-colors ${
-                                likedProducts.has(product.id)
-                                  ? "fill-red-500 text-red-500"
-                                  : "text-gray-600"
-                              }`}
-                            />
-                          </motion.button>
-                        </div>
-                      </Link>
-
-                      <div className="p-3 md:p-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                  {products.map((product, index) => {
+                    const availableStock = product.stock?.[0]?.quantity ?? 0;
+                    const isOutOfStock = isProductOutOfStock(product);
+                    const showAddToCart = canAddToCart(product);
+                    const displayPrice = Number(product.sellingPrice);
+                    const basePrice = Number(product.basePrice);
+                    const discount =
+                      basePrice > displayPrice
+                        ? Math.round(
+                            ((basePrice - displayPrice) / basePrice) * 100,
+                          )
+                        : 0;
+                    console.log("PRODUCT:", product.name, {
+                      qty: product.stock?.[0]?.quantity,
+                      low: product.stock?.[0]?.lowStockThreshold,
+                      allowOut: product.allowOutOfStockOrders,
+                      showAddToCart: canAddToCart(product),
+                    });
+                    console.log("product", product);
+                    console.log(
+                      "isProductWishlisted",
+                      isProductWishlisted(product.id),
+                    );
+                    console.log("product.id", product.id);
+                    return (
+                      <motion.div
+                        key={product.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                        whileHover={{ y: -4 }}
+                        className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                      >
                         <Link
                           href={`/${product.category?.slug}/${product.slug}`}
                         >
-                          <h3 className="font-semibold text-gray-900 text-sm md:text-base mb-1 line-clamp-2">
-                            {product.name}
-                          </h3>
-                        </Link>
-                        <p className="text-xs md:text-sm text-gray-500 mb-2">
-                          {product.category?.name}
-                        </p>
+                          <div className="relative aspect-square overflow-hidden">
+                            <motion.div
+                              className="absolute inset-0"
+                              initial={{ scale: 1 }}
+                              whileHover={{ scale: 1.15 }}
+                              transition={{ duration: 0.3, ease: "easeOut" }}
+                            >
+                              <Image
+                                src={
+                                  product.media?.[0]?.url || "/placeholder.jpg"
+                                }
+                                alt={
+                                  product.media?.[0]?.altText || product.name
+                                }
+                                fill
+                                sizes="(max-width: 768px) 50vw, 33vw"
+                                className="object-cover"
+                              />
+                            </motion.div>
 
-                        {/* ✅ FIXED: Price Display - Show masked price when out of stock */}
-                        <div className="flex items-center gap-2 mb-2">
-                          {isOutOfStock ? (
-                            /* OUT OF STOCK: Show masked prices */
-                            <>
-                              <span className="text-yellow-600 font-bold">
-                                {formatMaskedPrice(displayPrice)}
-                              </span>
-                              {discount > 0 && (
-                                <>
-                                  <span className="text-gray-400 line-through text-sm">
-                                    {formatMaskedPrice(basePrice)}
-                                  </span>
-                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                                    {discount}% OFF
-                                  </span>
-                                </>
+                            {/* ✅ Out of Stock Badge */}
+                            {isOutOfStock && (
+                              <div className="absolute top-2 left-2 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-semibold z-10">
+                                Out of Stock
+                              </div>
+                            )}
+
+                            {/* ✅ Discount Badge - Only show if in stock */}
+                            {!isOutOfStock && discount > 0 && (
+                              <div className="absolute top-2 left-2 bg-green-600 text-white px-3 py-1 rounded-full text-xs font-semibold z-10">
+                                {discount}% OFF
+                              </div>
+                            )}
+
+                            {/* ✅ Video Consultation Icon - Show only if enabled and in stock */}
+                            {!isOutOfStock &&
+                              product.hasVideoConsultation &&
+                              product.videoPurchasingEnabled && (
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={(e) =>
+                                    handleVideoConsultation(e, product)
+                                  }
+                                  className="absolute top-2 right-12 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full p-2 shadow-lg z-10"
+                                  title="Video Consultation Available"
+                                >
+                                  <Video className="w-4 h-4" />
+                                </motion.button>
                               )}
-                            </>
+
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                toggleWishlist(product.id);
+                              }}
+                              className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md z-10"
+                            >
+                              <Heart
+                                className={`w-4 h-4 transition-colors ${
+                                  isProductWishlisted(product.id) // ✅ force string match
+                                    ? "fill-red-500 text-red-500"
+                                    : "text-gray-600"
+                                }`}
+                              />
+                            </motion.button>
+                          </div>
+                        </Link>
+
+                        <div className="p-3 md:p-4">
+                          <Link
+                            href={`/${product.category?.slug}/${product.slug}`}
+                          >
+                            <h3 className="font-semibold text-gray-900 text-sm md:text-base mb-1 line-clamp-2">
+                              {product.name}
+                            </h3>
+                          </Link>
+                          <p className="text-xs md:text-sm text-gray-500 mb-2">
+                            {product.category?.name}
+                          </p>
+
+                          {/* ✅ FIXED: Price Display - Show masked price when out of stock */}
+                          <div className="flex items-center gap-2 mb-2">
+                            {isOutOfStock ? (
+                              /* OUT OF STOCK: Show masked prices */
+                              <>
+                                <span className="text-yellow-600 font-bold">
+                                  {formatMaskedPrice(displayPrice)}
+                                </span>
+                                {discount > 0 && (
+                                  <>
+                                    <span className="text-gray-400 line-through text-sm">
+                                      {formatMaskedPrice(basePrice)}
+                                    </span>
+                                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                                      {discount}% OFF
+                                    </span>
+                                  </>
+                                )}
+                              </>
+                            ) : (
+                              /* IN STOCK: Show formatted prices */
+                              <>
+                                <span className="text-yellow-600 font-bold">
+                                  ₹{displayPrice.toLocaleString()}
+                                </span>
+                                {discount > 0 && (
+                                  <>
+                                    <span className="text-gray-400 line-through text-sm">
+                                      ₹{basePrice.toLocaleString()}
+                                    </span>
+                                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                                      {discount}% OFF
+                                    </span>
+                                  </>
+                                )}
+                              </>
+                            )}
+                          </div>
+
+                          {/* ✅ FIXED: Conditional Button Rendering */}
+                          {showAddToCart ? (
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => handleAddToCart(product)}
+                              disabled={addToCartMutation.isPending}
+                              className="w-full bg-black text-white py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                              <ShoppingCart className="w-4 h-4" />
+                              Add to Cart
+                            </motion.button>
                           ) : (
-                            /* IN STOCK: Show formatted prices */
-                            <>
-                              <span className="text-yellow-600 font-bold">
-                                ₹{displayPrice.toLocaleString()}
-                              </span>
-                              {discount > 0 && (
-                                <>
-                                  <span className="text-gray-400 line-through text-sm">
-                                    ₹{basePrice.toLocaleString()}
-                                  </span>
-                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                                    {discount}% OFF
-                                  </span>
-                                </>
-                              )}
-                            </>
+                            <div className="w-full bg-gray-100 text-gray-500 py-2 rounded-lg text-sm font-medium text-center flex items-center justify-center gap-2">
+                              <AlertCircle className="w-4 h-4" />
+                              {isOutOfStock ? "Out of Stock" : "Unavailable"}
+                            </div>
                           )}
                         </div>
-
-                        {/* ✅ FIXED: Conditional Button Rendering */}
-                        {showAddToCart ? (
-                          <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => handleAddToCart(product)}
-                            disabled={addToCartMutation.isPending}
-                            className="w-full bg-black text-white py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
-                          >
-                            <ShoppingCart className="w-4 h-4" />
-                            Add to Cart
-                          </motion.button>
-                        ) : (
-                          <div className="w-full bg-gray-100 text-gray-500 py-2 rounded-lg text-sm font-medium text-center flex items-center justify-center gap-2">
-                            <AlertCircle className="w-4 h-4" />
-                            {isOutOfStock ? "Out of Stock" : "Unavailable"}
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  );
-                })}
+                      </motion.div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 

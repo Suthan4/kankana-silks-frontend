@@ -7,13 +7,6 @@ import ClientLayout from "@/components/clientLayout";
 import Providers from "@/components/provider/tanstackProvider";
 import { Toaster } from "sonner";
 
-const inter = Poppins({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  weight: ["400", "500", "600"],
-  display: "swap",
-});
-
 export const metadata: Metadata = {
   title: {
     default: "Kankana Silks - Timeless Heritage | Authentic Silk Sarees",
@@ -121,9 +114,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${inter.variable} "bg-[#faf7f2] text-neutral-900 antialiased overflow-x-hidden`}
-      >
+      <head>
+        <link rel="stylesheet" href="https://use.typekit.net/gmp5qfk.css" />
+      </head>
+
+      <body className="bg-[#faf7f2] text-neutral-900 antialiased overflow-x-hidden">
         <Providers>
           <ClientLayout>{children}</ClientLayout>
           <AuthModalProvider />

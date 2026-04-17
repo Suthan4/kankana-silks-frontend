@@ -1,9 +1,18 @@
 @import "tailwindcss";
 
+body {
+  font-family: "futura-pt", sans-serif !important;
+  font-weight: 400;
+}
+
 @theme {
   /* LIGHT (default) */
+  --color-main-primary: #58292C;
+  --color-main-primary-two: #643436;
   --color-primary: #000;
   --color-primary-dark: #000;
+
+  --color-main-secondary: #C7A76E;
 
   --color-background: #fff;
   --color-surface: #fff;

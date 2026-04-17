@@ -61,7 +61,7 @@ export default function ShopClient({ categories }: ShopClientProps) {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full text-sm font-medium mb-6"
+              className="inline-flex items-center gap-2 text-main-secondary bg-[#643436] px-4 py-2 rounded-full text-sm font-medium mb-6"
             >
               <Sparkles className="w-4 h-4" />
               <span>Premium Silk Collection</span>
@@ -86,7 +86,7 @@ export default function ShopClient({ categories }: ShopClientProps) {
             </motion.p>
 
             {/* Trust Badges */}
-            <motion.div
+            {/* <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
@@ -110,7 +110,7 @@ export default function ShopClient({ categories }: ShopClientProps) {
                 </div>
                 <span>Trusted Quality</span>
               </div>
-            </motion.div>
+            </motion.div> */}
           </div>
         </div>
       </motion.div>
@@ -195,7 +195,7 @@ export default function ShopClient({ categories }: ShopClientProps) {
                     <div className="p-6">
                       <div className="flex items-start justify-between gap-4 mb-3">
                         <div className="flex-1">
-                          <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-yellow-600 transition-colors">
+                          <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-main-primary transition-colors">
                             {category.name}
                           </h3>
                           {category.description && (
@@ -205,10 +205,10 @@ export default function ShopClient({ categories }: ShopClientProps) {
                           )}
                         </div>
                         <motion.div
-                          className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-yellow-400 transition-colors"
+                          className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-main-primary transition-colors"
                           whileHover={{ x: 4 }}
                         >
-                          <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gray-900" />
+                          <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-white" />
                         </motion.div>
                       </div>
 
