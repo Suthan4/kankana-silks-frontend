@@ -4,7 +4,11 @@ import { BaseApiService } from "./api.base.service";
 class ClientApiService extends BaseApiService {
   constructor() {
     super(() => {
-      authModalStore.getState().openModal();
+      const {user} = authModalStore.getState();
+        // ✅ Only open modal if NOT logged in
+      if (!user) {
+        authModalStore.getState().openModal();
+      }
     }); // Redirect to client login on auth failure
     
   }

@@ -80,6 +80,7 @@ export default function CartPage() {
   const [selectedCourier, setSelectedCourier] = useState<any>(null);
   const [showCourierDropdown, setShowCourierDropdown] = useState(false);
   const courierDropdownRef = useRef<HTMLDivElement>(null);
+  const [couponErrorMsg, setCouponErrorMsg] = useState("");
   const CGST_RATE = 0.025;
   const SGST_RATE = 0.025;
 
@@ -97,13 +98,12 @@ export default function CartPage() {
     queryKey: ["cartApi", user?.id],
     queryFn: async () => (await cartApi.getCart()).data,
     enabled: !!user,
-    staleTime: 0,
   });
 
   const apiItems = cartData?.items ?? [];
-  const displayItems = user?.id ? apiItems : items;
+  const displayItems = user?.id ? (apiItems.length ? apiItems : items) : items;
   const deliveryPin = user?.id ? addressData?.pincode : deliveryPincode;
-
+  console.log("apiItems", apiItems);
   const totalItems = useMemo(
     () => displayItems.reduce((sum: number, i: any) => sum + i.quantity, 0),
     [displayItems],
@@ -138,21 +138,26 @@ export default function CartPage() {
     [displayItems],
   );
   const getStockQty = (item: any) => {
-    // 1. Variant stock (preferred)
+    // 1. Variant stock
     if (item?.variant?.stock?.length > 0) {
       return Number(item.variant.stock[0].quantity);
     }
 
-    // 2. Product stock fallback
+    // 2. Product stock
     if (item?.product?.stock?.length > 0) {
-      const match = item.product.stock.find(
-        (s: any) => s.variantId === item.variantId,
-      );
-      if (match) return Number(match.quantity);
+      // if variantId exists → match
+      if (item.variantId) {
+        const match = item.product.stock.find(
+          (s: any) => s.variantId === item.variantId,
+        );
+        if (match) return Number(match.quantity);
+      }
+
+      // ❗ if NO variant → take first stock
+      return Number(item.product.stock[0].quantity);
     }
 
-    // 3. Final fallback (IMPORTANT)
-    return Number(item?.variant?.quantity ?? item?.product?.quantity ?? 0);
+    return 0;
   };
   const {
     data: shippingData,
@@ -270,8 +275,7 @@ export default function CartPage() {
         productId: item.productId ?? item.product?.id,
         categoryId: item.categoryId,
         quantity: item.quantity,
-        price:
-          item.variant?.price ?? item.product?.sellingPrice ?? item.price ?? 0,
+        price: getStrictItemPrice(item),
       }));
       return await couponApi.validateCoupon({
         code: code.toUpperCase(),
@@ -280,31 +284,47 @@ export default function CartPage() {
       });
     },
     onSuccess: (response, code) => {
-      if (
-        response.valid &&
-        response.coupon &&
-        response.discount !== undefined
-      ) {
-        applyCoupon({
-          code: response.coupon.code,
-          discountType: response.coupon.discountType,
-          discountValue: response.coupon.discountValue,
-          minOrderValue: response.coupon.minOrderValue,
-          maxDiscountAmount: response.coupon.maxDiscountAmount,
-          validFrom: response.coupon.validFrom,
-          validUntil: response.coupon.validUntil,
-          isActive: response.coupon.isActive,
-          discountAmount: response.discount,
-          finalAmount: response.finalAmount,
-        });
-        toast.success(`Coupon "${code}" applied successfully!`);
-        setCouponCode("");
-        setShowCouponDropdown(false);
-        setShowAutocomplete(false);
-        refetchCoupons();
-      } else {
-        toast.error(response.error || "Invalid coupon code");
+      console.log("coupon response", response);
+
+      // ❌ Invalid response (no data)
+      if (!response?.success) {
+        const errorMsg = response?.message || "Invalid coupon code";
+        toast.error(errorMsg);
+        setCouponErrorMsg(errorMsg);
+        return;
       }
+
+      const payload = response.data;
+
+      // ❌ Invalid coupon
+      if (!payload || !payload.valid) {
+        const errorMsg = payload?.message || "Invalid coupon code";
+        toast.error(errorMsg);
+        setCouponErrorMsg(errorMsg);
+        return;
+      }
+
+      // ✅ SUCCESS
+      setCouponErrorMsg("");
+
+      applyCoupon({
+        code: payload.coupon.code,
+        discountType: payload.coupon.discountType,
+        discountValue: payload.coupon.discountValue,
+        minOrderValue: payload.coupon.minOrderValue,
+        maxDiscountAmount: payload.coupon.maxDiscountAmount,
+        validFrom: payload.coupon.validFrom,
+        validUntil: payload.coupon.validUntil,
+        isActive: payload.coupon.isActive,
+        discountAmount: payload.discount,
+        finalAmount: payload.finalAmount,
+      });
+
+      toast.success(`Coupon "${code}" applied successfully!`);
+      setCouponCode("");
+      setShowCouponDropdown(false);
+      setShowAutocomplete(false);
+      refetchCoupons();
     },
     onError: (error: any) =>
       toast.error(error.message || "Failed to apply coupon"),
@@ -439,6 +459,7 @@ export default function CartPage() {
                   {displayItems.map((item: any, index: number) => {
                     const stockQty = getStockQty(item);
                     console.log("item-cart", item);
+                    console.log("stockQty", stockQty);
 
                     return (
                       <motion.div
@@ -476,7 +497,7 @@ export default function CartPage() {
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
                                 <Link href={`/products/${item?.product?.slug}`}>
-                                  <h3 className="font-bold text-gray-900 text-sm hover:text-amber-600 transition cursor-pointer line-clamp-1">
+                                  <h3 className="font-bold text-gray-900 text-sm hover:text-main-primary transition cursor-pointer line-clamp-1">
                                     {item.product?.name}
                                   </h3>
                                 </Link>
@@ -508,6 +529,11 @@ export default function CartPage() {
                                       </span>
                                     ))}
                                   </div>
+                                )}
+                                {stockQty > 0 && stockQty <= 5 && (
+                                  <p className="text-xs text-red-500 mt-1 font-medium">
+                                    ⚠️ Only {stockQty} left in stock
+                                  </p>
                                 )}
                               </div>
                               <button
@@ -605,7 +631,7 @@ export default function CartPage() {
                     </div>
 
                     {appliedCoupon ? (
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-2.5 flex items-center justify-between">
+                      <div className="bg-main-primary/5 border border-green-200 rounded-lg p-2.5 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Check className="w-4 h-4 text-green-600" />
                           <div>
@@ -634,9 +660,10 @@ export default function CartPage() {
                               ref={inputRef}
                               type="text"
                               value={couponCode}
-                              onChange={(e) =>
-                                setCouponCode(e.target.value.toUpperCase())
-                              }
+                              onChange={(e) => {
+                                setCouponCode(e.target.value.toUpperCase());
+                                setCouponErrorMsg("");
+                              }}
                               onFocus={() => {
                                 if (couponCode) setShowAutocomplete(true);
                               }}
@@ -674,6 +701,11 @@ export default function CartPage() {
                             )}
                           </button>
                         </div>
+                        {couponErrorMsg && (
+                          <p className="text-[11px] text-red-600 mt-1 font-medium">
+                            {couponErrorMsg}
+                          </p>
+                        )}
 
                         <AnimatePresence>
                           {(showAutocomplete || showCouponDropdown) &&
@@ -764,7 +796,7 @@ export default function CartPage() {
                     <div className="pt-3 border-t border-gray-100">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <Truck className="w-4 h-4 text-blue-500" />
+                          <Truck className="w-4 h-4 text-main-primary" />
                           <h3 className="font-semibold text-gray-900 text-xs">
                             Select Courier
                           </h3>
@@ -814,16 +846,16 @@ export default function CartPage() {
                                     );
                                     setShowCourierDropdown(false);
                                   }}
-                                  className={`w-full p-3 text-left border-b hover:bg-green-50 transition ${selectedCourier?.courier_company_id === shippingData.cheapestCourier.courier_company_id ? "bg-green-50" : ""}`}
+                                  className={`w-full p-3 text-left border-b hover:bg-green-50 transition ${selectedCourier?.courier_company_id === shippingData.cheapestCourier.courier_company_id ? "bg-main-primary/10" : ""}`}
                                 >
                                   <div className="flex items-center gap-2 mb-0.5">
-                                    <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0 rounded-full font-bold">
+                                    <span className="text-[10px] bg-main-primary/10 text-main-primary px-1.5 py-0 rounded-full font-bold">
                                       CHEAPEST
                                     </span>
                                     {selectedCourier?.courier_company_id ===
                                       shippingData.cheapestCourier
                                         .courier_company_id && (
-                                      <Check className="w-3 h-3 text-green-600" />
+                                      <Check className="w-3 h-3 text-main-primary" />
                                     )}
                                   </div>
                                   <p className="font-semibold text-gray-900 text-xs">
@@ -855,16 +887,16 @@ export default function CartPage() {
                                       );
                                       setShowCourierDropdown(false);
                                     }}
-                                    className={`w-full p-3 text-left border-b hover:bg-blue-50 transition ${selectedCourier?.courier_company_id === shippingData.fastestCourier.courier_company_id ? "bg-blue-50" : ""}`}
+                                    className={`w-full p-3 text-left border-b hover:bg-blue-50 transition ${selectedCourier?.courier_company_id === shippingData.fastestCourier.courier_company_id ? "bg-main-primary-two/10" : ""}`}
                                   >
                                     <div className="flex items-center gap-2 mb-0.5">
-                                      <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0 rounded-full font-bold">
+                                      <span className="text-[10px] bg-main-primary/10 text-main-primary px-1.5 py-0 rounded-full font-bold">
                                         FASTEST
                                       </span>
                                       {selectedCourier?.courier_company_id ===
                                         shippingData.fastestCourier
                                           .courier_company_id && (
-                                        <Check className="w-3 h-3 text-blue-600" />
+                                        <Check className="w-3 h-3 text-main-primary-two" />
                                       )}
                                     </div>
                                     <p className="font-semibold text-gray-900 text-xs">
@@ -963,13 +995,13 @@ export default function CartPage() {
                       <div>
                         <span>Shipping</span>
                         {selectedCourier && (
-                          <p className="text-[10px] text-blue-500">
+                          <p className="text-[10px] text-main-primary">
                             {selectedCourier.courier_name}
                           </p>
                         )}
                       </div>
                       <span
-                        className={`font-semibold ${shippingCost === 0 && shippingData ? "text-green-600" : "text-gray-900"}`}
+                        className={`font-semibold ${shippingCost === 0 && shippingData ? "text-main-primary" : "text-gray-900"}`}
                       >
                         {!shippingData ? (
                           isLoadingShipping ? (

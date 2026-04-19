@@ -22,7 +22,19 @@ export default function ClientLayout({
     return () => clearTimeout(timer);
   }, []);
   // ❗ define where header should be hidden
-  const hideHeaderRoutes = ["/login", "/checkout", "/cart", "/wishlist"];
+  const hideHeaderRoutes = [
+    "/login",
+    "/checkout",
+    "/cart",
+    "/wishlist",
+    "/about-us",
+    "/contact-us",
+    "/faq",
+    "/return-policy",
+    "/cancellation-policy",
+    "/product-details-appearance",
+    "/shipping-policy",
+  ];
   const hideHeader = hideHeaderRoutes.includes(pathname);
 
   return (

@@ -20,7 +20,6 @@ import {
   type Product,
   type ProductQueryParams,
 } from "@/lib/api/product.api";
-import { wishlistApi } from "@/lib/api/wishlist.api";
 import { cartApi } from "@/lib/api/cart.api";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { toast } from "@/store/useToastStore";
@@ -77,8 +76,8 @@ export default function CategoryProductsClient({
     searchParams.get("color") || "",
   );
 
-  const [selectedFabric, setSelectedFabric] = useState(
-    searchParams.get("fabric") || "",
+  const [selectedFabric, setSelectedFabric] = useState<string[]>(
+    searchParams.get("fabric") ? searchParams.get("fabric")!.split(",") : [],
   );
 
   const [selectedSize, setSelectedSize] = useState(
@@ -181,8 +180,14 @@ export default function CategoryProductsClient({
     const color = searchParams.get("color");
     if (color) params.color = color;
 
-    const fabric = searchParams.get("fabric");
-    if (fabric) params.fabric = fabric;
+    // ✅ FIXED FABRIC (multi-select)
+    const fabricParam = searchParams.get("fabric");
+    if (fabricParam) {
+      params.fabric = fabricParam
+        .split(",")
+        .map((f) => f.trim())
+        .filter(Boolean);
+    }
 
     const size = searchParams.get("size");
     if (size) params.size = size;
@@ -201,7 +206,7 @@ export default function CategoryProductsClient({
     isError,
     error,
   } = useQuery({
-    queryKey: ["products", category.slug, queryParams],
+    queryKey: ["products", category.slug, JSON.stringify(queryParams)],
     queryFn: async () => {
       console.log("🔵 Fetching products with params:", queryParams);
       const result = await productApi.getProducts(queryParams);
@@ -209,12 +214,16 @@ export default function CategoryProductsClient({
       return result;
     },
     staleTime: 30000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: 1,
   });
 
   const products = productRes?.data?.products ?? [];
   const total = productRes?.data?.pagination?.total ?? 0;
   const totalPages = productRes?.data?.pagination?.totalPages ?? 1;
   const currentPage = productRes?.data?.pagination?.page ?? 1;
+  console.log("products-res", products);
 
   /* ------------------ WISHLIST QUERY ------------------ */
 
@@ -309,34 +318,32 @@ export default function CategoryProductsClient({
     onError: () => toast.error("Failed to add to cart"),
   });
 
+  const isProductUnavailable = (product: Product) => {
+    const qty = product.stock?.[0]?.quantity ?? 0;
+    const threshold = product.stock?.[0]?.lowStockThreshold ?? 0;
+    const allowOut = product.allowOutOfStockOrders ?? false;
+
+    // Rule 1: No stock = always unavailable
+    if (qty === 0) return true;
+
+    // Rule 2: If out-of-stock orders allowed → always available
+    if (allowOut) return false;
+
+    // Rule 3: If qty <= threshold → unavailable
+    if (qty <= threshold) return true;
+
+    return false;
+  };
+
   // ✅ Helper function to check if product can be added to cart
   const canAddToCart = (product: Product) => {
-    const availableStock = product.stock?.[0]?.quantity ?? 0;
-    const lowStockThreshold = product.stock?.[0]?.lowStockThreshold ?? 0;
-    const allowOutOfStockOrders = product.allowOutOfStockOrders ?? false;
-
-    // ✅ Rule 1: If stock is 0, always block Add to Cart
-    if (availableStock === 0) {
-      return false;
-    }
-
-    // ✅ Rule 2: If out-of-stock orders allowed, ignore threshold
-    if (allowOutOfStockOrders) {
-      return true;
-    }
-
-    // ✅ Rule 3: If stock <= threshold and out-of-stock orders NOT allowed
-    if (availableStock <= lowStockThreshold) {
-      return false;
-    }
-
-    return true;
+    return !isProductUnavailable(product);
   };
 
   // ✅ Helper function to check if product is out of stock
   const isProductOutOfStock = (product: Product) => {
-    const availableStock = product.stock?.[0]?.quantity ?? 0;
-    return availableStock === 0;
+    const qty = product.stock?.[0]?.quantity ?? 0;
+    return qty === 0;
   };
 
   const handleAddToCart = (product: Product) => {
@@ -408,10 +415,17 @@ export default function CategoryProductsClient({
     updateFilters({ color: newColor || null, page: 1 });
   };
 
-  const handleFabricChange = (fabric: string) => {
-    const newFabric = selectedFabric === fabric ? "" : fabric;
-    setSelectedFabric(newFabric);
-    updateFilters({ fabric: newFabric || null, page: 1 });
+  const handleFabricChange = (material: string) => {
+    const updated = selectedFabric.includes(material)
+      ? selectedFabric.filter((item) => item !== material)
+      : [...selectedFabric, material];
+
+    setSelectedFabric(updated);
+
+    updateFilters({
+      fabric: updated.length > 0 ? updated.join(",") : null, // 🔥 KEY FIX
+      page: 1,
+    });
   };
 
   const handleSizeChange = (size: string) => {
@@ -428,7 +442,7 @@ export default function CategoryProductsClient({
   const clearAllFilters = () => {
     setPriceRange([0, 100000]);
     setSelectedColor("");
-    setSelectedFabric("");
+    setSelectedFabric([]);
     setSelectedSize("");
     setInStockOnly(false);
     setSelectedSubCategory(null);
@@ -456,7 +470,7 @@ export default function CategoryProductsClient({
       {category.children && category.children.length > 0 && (
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-lg">📂</span>
+            {/* <span className="text-lg">📂</span> */}
             <h3 className="font-semibold text-gray-900">Subcategories</h3>
           </div>
           <ul className="space-y-2">
@@ -505,7 +519,7 @@ export default function CategoryProductsClient({
 
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-4">
-          <span className="text-lg">💰</span>
+          {/* <span className="text-lg">💰</span> */}
           <h3 className="font-semibold text-gray-900">Price Range</h3>
         </div>
         <div className="space-y-4">
@@ -696,7 +710,7 @@ export default function CategoryProductsClient({
 
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-4">
-          <span className="text-lg">🧵</span>
+          {/* <span className="text-lg">🧵</span> */}
           <h3 className="font-semibold text-gray-900">Fabric</h3>
         </div>
         <ul className="space-y-2">
@@ -707,11 +721,10 @@ export default function CategoryProductsClient({
               className="flex items-center gap-2"
             >
               <input
-                type="radio"
-                name="fabric"
-                checked={selectedFabric === material}
+                type="checkbox"
+                checked={selectedFabric.includes(material)}
                 onChange={() => handleFabricChange(material)}
-                className="w-4 h-4 accent-primary-main"
+                className="w-4 h-4 accent-main-primary"
               />
               <label className="text-gray-700 cursor-pointer">{material}</label>
             </motion.li>
@@ -811,10 +824,9 @@ export default function CategoryProductsClient({
           </div>
           <div className="ml-auto flex items-center gap-3">
             <motion.div whileTap={{ scale: 0.9 }}>
-              <Heart className="w-6 h-6" />
-            </motion.div>
-            <motion.div whileTap={{ scale: 0.9 }}>
-              <Search className="w-6 h-6" />
+              <Link href="/wishlist">
+                <Heart className="w-6 h-6" />
+              </Link>
             </motion.div>
           </div>
         </div>
@@ -826,7 +838,7 @@ export default function CategoryProductsClient({
             onClick={() => handleSortChange("createdAt-desc")}
             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
               sortBy === "createdAt-desc"
-                ? "bg-yellow-400 text-gray-900"
+                ? "bg-main-primary text-main-secondary"
                 : "bg-gray-100 text-gray-600"
             }`}
           >
@@ -984,7 +996,9 @@ export default function CategoryProductsClient({
                       "isProductWishlisted",
                       isProductWishlisted(product.id),
                     );
+                    const isUnavailable = isProductUnavailable(product);
                     console.log("product.id", product.id);
+
                     return (
                       <motion.div
                         key={product.id}
@@ -1048,24 +1062,27 @@ export default function CategoryProductsClient({
                                 </motion.button>
                               )}
 
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                toggleWishlist(product.id);
-                              }}
-                              className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md z-10"
-                            >
-                              <Heart
-                                className={`w-4 h-4 transition-colors ${
-                                  isProductWishlisted(product.id) // ✅ force string match
-                                    ? "fill-red-500 text-red-500"
-                                    : "text-gray-600"
-                                }`}
-                              />
-                            </motion.button>
+                            {!isUnavailable && (
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  toggleWishlist(product.id);
+                                }}
+                                className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md z-10 cursor-pointer"
+                                title="Add to wishlist"
+                              >
+                                <Heart
+                                  className={`w-4 h-4 transition-colors ${
+                                    isProductWishlisted(product.id)
+                                      ? "fill-red-500 text-red-500"
+                                      : "text-gray-600"
+                                  }`}
+                                />
+                              </motion.button>
+                            )}
                           </div>
                         </Link>
 
@@ -1086,7 +1103,7 @@ export default function CategoryProductsClient({
                             {isOutOfStock ? (
                               /* OUT OF STOCK: Show masked prices */
                               <>
-                                <span className="text-yellow-600 font-bold">
+                                <span className="text-main-primary font-bold">
                                   {formatMaskedPrice(displayPrice)}
                                 </span>
                                 {discount > 0 && (
@@ -1094,16 +1111,16 @@ export default function CategoryProductsClient({
                                     <span className="text-gray-400 line-through text-sm">
                                       {formatMaskedPrice(basePrice)}
                                     </span>
-                                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                                    {/* <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
                                       {discount}% OFF
-                                    </span>
+                                    </span> */}
                                   </>
                                 )}
                               </>
                             ) : (
                               /* IN STOCK: Show formatted prices */
                               <>
-                                <span className="text-yellow-600 font-bold">
+                                <span className="text-main-primary font-bold">
                                   ₹{displayPrice.toLocaleString()}
                                 </span>
                                 {discount > 0 && (
@@ -1111,9 +1128,9 @@ export default function CategoryProductsClient({
                                     <span className="text-gray-400 line-through text-sm">
                                       ₹{basePrice.toLocaleString()}
                                     </span>
-                                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                                    {/* <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
                                       {discount}% OFF
-                                    </span>
+                                    </span> */}
                                   </>
                                 )}
                               </>
@@ -1135,7 +1152,9 @@ export default function CategoryProductsClient({
                           ) : (
                             <div className="w-full bg-gray-100 text-gray-500 py-2 rounded-lg text-sm font-medium text-center flex items-center justify-center gap-2">
                               <AlertCircle className="w-4 h-4" />
-                              {isOutOfStock ? "Out of Stock" : "Unavailable"}
+                              {isProductOutOfStock(product)
+                                ? "Out of Stock"
+                                : "Unavailable"}{" "}
                             </div>
                           )}
                         </div>

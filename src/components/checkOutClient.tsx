@@ -227,6 +227,7 @@ export default function CheckoutClient() {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const isBuyNowMode = searchParams.get("mode") === "buyNow";
+  const [couponErrorMsg, setCouponErrorMsg] = useState("");
 
   const { user, openModal } = useAuthModal();
   const {
@@ -518,21 +519,26 @@ export default function CheckoutClient() {
   }, [shippingData]);
 
   const getStockQty = (item: any) => {
-    // 1. Variant stock (preferred)
+    // 1. Variant stock
     if (item?.variant?.stock?.length > 0) {
       return Number(item.variant.stock[0].quantity);
     }
 
-    // 2. Product stock fallback
+    // 2. Product stock
     if (item?.product?.stock?.length > 0) {
-      const match = item.product.stock.find(
-        (s: any) => s.variantId === item.variantId,
-      );
-      if (match) return Number(match.quantity);
+      // if variantId exists → match
+      if (item.variantId) {
+        const match = item.product.stock.find(
+          (s: any) => s.variantId === item.variantId,
+        );
+        if (match) return Number(match.quantity);
+      }
+
+      // ❗ if NO variant → take first stock
+      return Number(item.product.stock[0].quantity);
     }
 
-    // 3. Final fallback (IMPORTANT)
-    return Number(item?.variant?.quantity ?? item?.product?.quantity ?? 0);
+    return 0;
   };
 
   const getUnitPrice = (item: any) =>
@@ -557,7 +563,7 @@ export default function CheckoutClient() {
         productId: item.productId,
         categoryId: item.categoryId,
         quantity: item.quantity,
-        price: item.price,
+        price: getUnitPrice(item),
       }));
       return await couponApi.getApplicableCoupons({
         orderAmount: subtotal,
@@ -566,7 +572,6 @@ export default function CheckoutClient() {
     },
     enabled:
       !!user && displayItems.length > 0 && !!orderPreview && subtotal > 0,
-    staleTime: 30000,
   });
 
   const availableCoupons = useMemo(
@@ -634,7 +639,7 @@ export default function CheckoutClient() {
         productId: item.productId,
         categoryId: item.categoryId,
         quantity: item.quantity,
-        price: item.price,
+        price: getUnitPrice(item),
       }));
       return await couponApi.validateCoupon({
         code: code.toUpperCase(),
@@ -643,38 +648,65 @@ export default function CheckoutClient() {
       });
     },
     onSuccess: async (response, code) => {
-      const payload = response?.data;
-      if (payload.valid && payload.coupon && payload.discount !== undefined) {
-        applyCoupon({
-          code: payload.coupon.code,
-          discountType: payload.coupon.discountType,
-          discountValue: payload.coupon.discountValue,
-          minOrderValue: payload.coupon.minOrderValue,
-          maxDiscountAmount: payload.coupon.maxDiscountAmount,
-          validFrom: payload.coupon.validFrom,
-          validUntil: payload.coupon.validUntil,
-          isActive: payload.coupon.isActive,
-          discountAmount: payload.discount,
-          finalAmount: payload.finalAmount || 0,
-        });
-        setCouponCode("");
-        setShowCouponDropdown(false);
-        setShowAutocomplete(false);
-        await queryClient.invalidateQueries({
-          queryKey: ["orderPreview"],
-          exact: false,
-        });
-        await refetchPreview();
-        toast.success(
-          `Coupon "${code}" applied! You save ₹${Number(response.discount).toFixed(2)}`,
-        );
-        refetchCoupons();
-      } else {
-        toast.error(response.error || "Invalid coupon code");
+      console.log("coupon response", response);
+
+      // ✅ Handle invalid structure safely
+      if (!response?.success) {
+        const errorMsg = response?.message || "Invalid coupon code";
+        toast.error(errorMsg);
+        setCouponErrorMsg(errorMsg);
+        return;
       }
+
+      const payload = response.data;
+
+      // ✅ Extra safety check
+      if (!payload || !payload.valid) {
+        const errorMsg = payload?.message || "Invalid coupon code";
+        toast.error(errorMsg);
+        setCouponErrorMsg(errorMsg);
+        return;
+      }
+
+      // ✅ SUCCESS FLOW
+      setCouponErrorMsg("");
+
+      applyCoupon({
+        code: payload.coupon.code,
+        discountType: payload.coupon.discountType,
+        discountValue: payload.coupon.discountValue,
+        minOrderValue: payload.coupon.minOrderValue,
+        maxDiscountAmount: payload.coupon.maxDiscountAmount,
+        validFrom: payload.coupon.validFrom,
+        validUntil: payload.coupon.validUntil,
+        isActive: payload.coupon.isActive,
+        discountAmount: payload.discount,
+        finalAmount: payload.finalAmount || 0,
+      });
+
+      setCouponCode("");
+      setShowCouponDropdown(false);
+      setShowAutocomplete(false);
+
+      await queryClient.invalidateQueries({
+        queryKey: ["orderPreview"],
+        exact: false,
+      });
+
+      await refetchPreview();
+
+      toast.success(
+        `Coupon "${code}" applied! You save ₹${Number(payload.discount).toFixed(2)}`,
+      );
+
+      refetchCoupons();
     },
-    onError: (error: any) =>
-      toast.error(error.message || "Failed to apply coupon"),
+    onError: (error: any) => {
+      console.log("error", error);
+
+      (toast.error(error.message || "Failed to apply coupon"),
+        setCouponErrorMsg(error.message || "Invalid coupon code"));
+    },
   });
 
   const handleApplyCoupon = (code: string) => {
@@ -840,6 +872,15 @@ export default function CheckoutClient() {
     }
     if (!selectedCourier) {
       toast.error("Please select a courier");
+      return;
+    }
+    // ✅ STOCK VALIDATION (ADD HERE)
+    const invalidItem = displayItems.find(
+      (item: any) => item.quantity > getStockQty(item),
+    );
+
+    if (invalidItem) {
+      toast.error(`${invalidItem.product?.name} exceeds available stock`);
       return;
     }
     if (paymentMethod === "COD" && !isCODAvailable) {
@@ -1026,6 +1067,17 @@ export default function CheckoutClient() {
                                   </span>
                                 ))}
                               </div>
+                            )}
+                            {stockQty > 0 && stockQty <= 5 && (
+                              <p className="text-[10px] text-red-500 mt-1 font-medium">
+                                ⚠️ Only {stockQty} left in stock
+                              </p>
+                            )}
+
+                            {stockQty === 0 && (
+                              <p className="text-[10px] text-red-600 mt-1 font-bold">
+                                ❌ Out of stock
+                              </p>
                             )}
                             <div className="flex items-center justify-between mt-2">
                               <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-full px-1.5 py-0.5">
@@ -1241,7 +1293,7 @@ export default function CheckoutClient() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0 rounded-full font-bold">
+                                  <span className="text-[10px] bg-green-100 text-main-primary px-1.5 py-0 rounded-full font-bold">
                                     CHEAPEST
                                   </span>
                                   <p className="font-semibold text-gray-900 text-xs mt-0.5">
@@ -1495,9 +1547,10 @@ export default function CheckoutClient() {
                                 ref={inputRef}
                                 type="text"
                                 value={couponCode}
-                                onChange={(e) =>
-                                  setCouponCode(e.target.value.toUpperCase())
-                                }
+                                onChange={(e) => {
+                                  setCouponCode(e.target.value.toUpperCase());
+                                  setCouponErrorMsg("");
+                                }}
                                 onFocus={() => {
                                   if (filteredCoupons.length > 0)
                                     setShowAutocomplete(true);
@@ -1510,6 +1563,7 @@ export default function CheckoutClient() {
                                 className="w-full px-3 py-2 pr-7 border border-gray-200 rounded-lg focus:outline-none text-xs font-medium uppercase placeholder:normal-case placeholder:text-gray-400 transition"
                                 disabled={validateCouponMutation.isPending}
                               />
+
                               <button
                                 onClick={() => {
                                   setShowAutocomplete(!showAutocomplete);
@@ -1536,7 +1590,11 @@ export default function CheckoutClient() {
                               )}
                             </button>
                           </div>
-
+                          {couponErrorMsg && (
+                            <p className="text-[11px] text-red-600 mt-1 font-medium">
+                              {couponErrorMsg}
+                            </p>
+                          )}
                           <AnimatePresence>
                             {(showAutocomplete || showCouponDropdown) &&
                               filteredCoupons.length > 0 && (

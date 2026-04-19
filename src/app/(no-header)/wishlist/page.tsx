@@ -19,11 +19,14 @@ import { useCartStore } from "@/store/useCartStore";
 import { cartApi } from "@/lib/api/cart.api";
 import { useWishlist } from "@/hooks/useWishlist";
 import { ProtectedRoute } from "@/components/auth/protectedRoutes";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Product } from "@/lib/api/product.api";
 
 export default function WishlistPage() {
   const router = useRouter();
   const { user, openModal } = useAuthModal();
   const { addItem: addToLocalCart } = useCartStore();
+  const queryClient = useQueryClient();
 
   const {
     items,
@@ -96,52 +99,73 @@ export default function WishlistPage() {
     }
   };
 
-  const handleAddToCart = async (item: any) => {
-    const product = item.product;
-    const stock = product.stock?.[0]?.quantity ?? 0;
+  const handleAddToCart = useMutation({
+    mutationFn: async (item: any) => {
+      return cartApi.addToCart({
+        productId: item?.product.id,
+        quantity: 1,
+      });
+    },
 
-    if (stock === 0) {
-      toast.error("Out of stock");
-      return;
-    }
+    onMutate: async (item: any) => {
+      const product = item.product;
+      const availableStock = product.stock?.[0]?.quantity ?? 0;
 
-    const cartItem = {
-      id: crypto.randomUUID(),
-      cartId: "local",
-      productId: product.id,
-      variantId: null,
-      quantity: 1,
-      product: {
-        id: product.id,
-        name: product.name,
-        slug: product.slug,
-        categoryId: product.category?.name ?? "",
-        sellingPrice: Number(product.sellingPrice),
-        basePrice: Number(product.basePrice),
-        media: [
-          {
-            url: product.media?.[0]?.url ?? "/placeholder.jpg",
-            altText: product.name,
-          },
-        ],
-        stock: [{ quantity: stock }],
-      },
-      variant: null,
-    };
+      const cartItem = {
+        id: crypto.randomUUID(),
+        cartId: "local",
+        productId: product.id,
+        variantId: null,
+        quantity: 1,
+        product: {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          categoryId: product.categoryId,
+          sellingPrice: Number(product.sellingPrice),
+          basePrice: Number(product.basePrice),
+          media: [
+            {
+              url: product.media?.[0]?.url ?? "/placeholder.jpg",
+              altText: product.name,
+              isActive: true,
+            },
+          ],
+          stock: [{ quantity: availableStock }],
+        },
+        variant: null,
+      };
 
-    addToLocalCart(cartItem);
+      await queryClient.cancelQueries({ queryKey: ["cartApi", user?.id] });
 
-    if (user) {
-      try {
-        await cartApi.addToCart({
-          productId: product.id,
-          quantity: 1,
-        });
-      } catch {}
-    }
+      const previousCart = queryClient.getQueryData(["cartApi", user?.id]);
 
-    toast.success("Added to cart");
-  };
+      addToLocalCart(cartItem);
+
+      return { previousCart };
+    },
+
+    // ✅ SUCCESS → NAVIGATE HERE
+    onSuccess: async (_, item) => {
+      await queryClient.refetchQueries({ queryKey: ["cartApi", user?.id] });
+      await removeFromWishlist(item.id);
+      toast.success("Added to cart");
+
+      router.push("/cart");
+    },
+
+    onError: (err, product, context) => {
+      if (context?.previousCart) {
+        queryClient.setQueryData(["cartApi", user?.id], context.previousCart);
+      }
+
+      toast.error("Failed to add to cart");
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["cartApi", user?.id] });
+    },
+  });
 
   /* ------------------ EMPTY ------------------ */
 
@@ -236,14 +260,27 @@ export default function WishlistPage() {
                     </p>
 
                     <button
-                      onClick={() => handleAddToCart(item)}
-                      disabled={!inStock}
-                      className={`mt-3 w-full py-2 rounded ${
-                        inStock ? "bg-black text-white" : "bg-gray-300"
+                      onClick={() => handleAddToCart.mutate(item)}
+                      disabled={!inStock || handleAddToCart.isPending}
+                      className={`mt-3 w-full py-2 rounded flex items-center justify-center gap-2 transition-all duration-200 ${
+                        !inStock
+                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : handleAddToCart.isPending
+                            ? "bg-gray-800 text-white cursor-wait"
+                            : "bg-black text-white hover:bg-gray-800 cursor-pointer active:scale-[0.98]"
                       }`}
                     >
-                      <ShoppingCart className="inline w-4 h-4 mr-1" />
-                      {inStock ? "Add to Cart" : "Out of Stock"}
+                      {handleAddToCart.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Adding...
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingCart className="w-4 h-4" />
+                          {inStock ? "Move to Cart" : "Out of Stock"}
+                        </>
+                      )}
                     </button>
                   </div>
                 </motion.div>
