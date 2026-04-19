@@ -63,7 +63,7 @@ export default function ShopClient({ categories }: ShopClientProps) {
               transition={{ duration: 0.5 }}
               className="inline-flex items-center gap-2 text-main-secondary bg-[#643436] px-4 py-2 rounded-full text-sm font-medium mb-6"
             >
-              <Sparkles className="w-4 h-4" />
+              {/* <Sparkles className="w-4 h-4" /> */}
               <span>Premium Silk Collection</span>
             </motion.div>
 

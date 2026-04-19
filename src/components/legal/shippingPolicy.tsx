@@ -6,7 +6,7 @@ const ShippingPolicy: React.FC = () => {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Title */}
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
-          🚚 Shipping & Delivery Policy
+          Shipping & Delivery Policy
         </h1>
 
         {/* Section */}

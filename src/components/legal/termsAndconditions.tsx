@@ -5,7 +5,7 @@ const TermsAndConditions: React.FC = () => {
     <div className="w-full bg-white">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
-          📜 Terms & Conditions
+          Terms & Conditions
         </h1>
 
         <div className="space-y-8 text-sm sm:text-base text-gray-700 leading-relaxed">

@@ -14,6 +14,7 @@ import {
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { z } from "zod";
 import { authService } from "@/lib/api/api.base.service";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Zod Schemas
 const loginSchema = z.object({
@@ -83,6 +84,7 @@ export default function AuthModal() {
     Partial<Record<keyof ForgotPasswordFormData, string>>
   >({});
   const [apiError, setApiError] = useState<string>("");
+  const queryClient = useQueryClient();
 
   // Reset form when mode changes
   useEffect(() => {
@@ -125,10 +127,17 @@ export default function AuthModal() {
 
       if (res.data.data) {
         const { accessToken, refreshToken, user } = res.data.data;
+
+        // ✅ 1. Set auth
         setAuth(accessToken, user, refreshToken);
+
+        // ✅ 2. 🔥 CLEAR OLD QUERIES (THIS FIXES YOUR ISSUE)
+        queryClient.clear();
       }
 
+      // ✅ 3. Close modal
       closeModal();
+
       console.log("Login successful", res);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -432,7 +441,7 @@ export default function AuthModal() {
                       onClick={() => setMode("forgot")}
                       className="text-black hover:text-black/60 font-medium focus:outline-none focus:ring-2 focus:ring-black rounded px-1"
                     >
-                      Forgot?
+                      Forgot Password?
                     </button>
                   </div>
 

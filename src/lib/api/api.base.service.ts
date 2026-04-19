@@ -123,8 +123,14 @@ export class BaseApiService {
 
   private clearAuthAndRedirect() {
     // Clear all auth data
-    authModalStore.getState().logout();
-    this.onAuthFailure();
+      const { user } = authModalStore.getState();
+
+      authModalStore.getState().logout();
+
+      // ✅ Only trigger modal if user was actually logged in before
+      if (user) {
+        this.onAuthFailure();
+      }
   }
 
   async register(data: {

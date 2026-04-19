@@ -183,7 +183,7 @@ export interface ProductQueryParams {
 
   // Filters (Advanced)
   color?: string;
-  fabric?: string;
+  fabric?: string[];
   size?: string;
   artisan?: string;
 

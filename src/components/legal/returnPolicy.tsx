@@ -6,7 +6,7 @@ const ReturnRefundPolicy: React.FC = () => {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Title */}
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
-          🔄 Return, Replacement & Refund Policy
+          Return, Replacement & Refund Policy
         </h1>
 
         <div className="space-y-8 text-sm sm:text-base text-gray-700 leading-relaxed">
@@ -127,7 +127,7 @@ const ReturnRefundPolicy: React.FC = () => {
           {/* Color Disclaimer */}
           <section>
             <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3">
-             6. Color & Product Appearance Disclaimer
+              6. Color & Product Appearance Disclaimer
             </h2>
 
             <p className="mb-3">
