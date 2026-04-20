@@ -258,13 +258,13 @@ export default function ShopClient({ categories }: ShopClientProps) {
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link
-              href="/contact"
+              href="/contact-us"
               className="px-6 py-3 bg-gray-900 text-white rounded-full font-medium hover:bg-gray-800 transition-colors"
             >
               Get in Touch
             </Link>
             <Link
-              href="/about"
+              href="/about-us"
               className="px-6 py-3 border-2 border-gray-900 text-gray-900 rounded-full font-medium hover:bg-gray-900 hover:text-white transition-colors"
             >
               Our Story
