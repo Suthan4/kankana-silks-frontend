@@ -3,11 +3,11 @@
 import React, { useState } from "react";
 
 const ContactUs: React.FC = () => {
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    message: "",
-  });
+  // const [form, setForm] = useState({
+  //   name: "",
+  //   email: "",
+  //   message: "",
+  // });
 
   return (
     <div className="bg-white">
@@ -38,7 +38,7 @@ const ContactUs: React.FC = () => {
           </div>
 
           {/* Contact Form */}
-          <form className="space-y-4">
+          {/* <form className="space-y-4">
             <input
               type="text"
               placeholder="Your Name"
@@ -63,7 +63,7 @@ const ContactUs: React.FC = () => {
             >
               Send Message
             </button>
-          </form>
+          </form> */}
         </div>
       </div>
     </div>

@@ -22,7 +22,7 @@ import {
 } from "@/lib/api/product.api";
 import { cartApi } from "@/lib/api/cart.api";
 import { useAuthModal } from "@/store/useAuthModalStore";
-import { toast } from "@/store/useToastStore";
+import { toast } from "sonner";
 import { Category } from "@/lib/api/category.api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCartStore } from "@/store/useCartStore";
@@ -313,7 +313,12 @@ export default function CategoryProductsClient({
       if (user) {
         queryClient.invalidateQueries({ queryKey: ["cartApi"] });
       }
-      toast.success("Added to cart");
+      toast.success("Added to cart", {
+        action: {
+          label: "View Cart",
+          onClick: () => router.push("/cart"),
+        },
+      });
     },
     onError: () => toast.error("Failed to add to cart"),
   });
@@ -849,7 +854,7 @@ export default function CategoryProductsClient({
             onClick={() => handleSortChange("price-asc")}
             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
               sortBy === "price-asc"
-                ? "bg-yellow-400 text-gray-900"
+                ? "bg-main-primary text-main-secondary"
                 : "border border-gray-300 text-gray-600"
             }`}
           >
@@ -860,7 +865,7 @@ export default function CategoryProductsClient({
             onClick={() => handleSortChange("price-desc")}
             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
               sortBy === "price-desc"
-                ? "bg-yellow-400 text-gray-900"
+                ? "bg-main-primary text-main-secondary"
                 : "border border-gray-300 text-gray-600"
             }`}
           >
@@ -871,7 +876,7 @@ export default function CategoryProductsClient({
             onClick={() => handleSortChange("popularity-desc")}
             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
               sortBy === "popularity-desc"
-                ? "bg-yellow-400 text-gray-900"
+                ? "bg-main-primary text-main-secondary"
                 : "border border-gray-300 text-gray-600"
             }`}
           >
