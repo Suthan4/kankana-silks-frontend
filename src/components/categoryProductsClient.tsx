@@ -29,6 +29,7 @@ import { useCartStore } from "@/store/useCartStore";
 import { formatMaskedPrice } from "@/lib/utils/priceMasked";
 import { getColorHex, isValidCSSColor } from "@/lib/utils/colorValidation";
 import { useWishlist } from "@/hooks/useWishlist";
+import SortDropdown from "./customDropdown";
 
 interface CategoryProductsClientProps {
   category: Category;
@@ -90,7 +91,12 @@ export default function CategoryProductsClient({
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   const limit = 12;
-
+  const options = [
+    { label: "Featured", value: "createdAt-desc" },
+    { label: "Price: Low to High", value: "price-asc" },
+    { label: "Price: High to Low", value: "price-desc" },
+    { label: "Most Popular", value: "popularity-desc" },
+  ];
   const materials = ["Pure Silk", "Cotton Silk", "Art Silk", "Georgette"];
   const colors = [
     "Red",
@@ -911,20 +917,10 @@ export default function CategoryProductsClient({
           transition={{ duration: 0.3, delay: 0.1 }}
           className="hidden md:flex justify-end mb-6"
         >
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Sort by:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => handleSortChange(e.target.value as any)}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
-            >
-              <option value="createdAt-desc">Featured</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-              <option value="popularity-desc">Most Popular</option>
-              <option value="name-asc">Name: A to Z</option>
-            </select>
-          </div>
+          <SortDropdown
+            value={sortBy}
+            onChange={(val) => handleSortChange(val as any)}
+          />
         </motion.div>
 
         <div className="flex gap-6">

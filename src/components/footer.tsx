@@ -1,9 +1,29 @@
 "use client";
 
+import clientApiService from "@/lib/api/api.client.service";
+import { useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useState } from "react";
 
 export default function Footer() {
+  const [email, setEmail] = useState("");
+
+  const {
+    mutate: subscribe,
+    isPending,
+    isSuccess,
+    isError,
+  } = useMutation({
+    mutationFn: (email: string) =>
+      clientApiService.api.post("/auth/newsletter/subscribe", { email }),
+    onSuccess: () => setEmail(""),
+  });
+
+  const handleSubscribe = () => {
+    if (!email) return;
+    subscribe(email);
+  };
   const links = [
     { label: "About Us", href: "/about-us" },
     { label: "Contact Us", href: "/contact-us" },
@@ -104,13 +124,31 @@ export default function Footer() {
             <div className="flex gap-2">
               <input
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSubscribe()}
                 placeholder="Your email"
-                className="flex-1 px-3 py-2 bg-background text-foreground text-sm rounded-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+                disabled={isPending || isSuccess}
+                className="flex-1 px-3 py-2 bg-background text-foreground text-sm rounded-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
               />
-              <button className="px-4 py-2 bg-accent text-accent-foreground rounded-sm hover:opacity-90 transition-all text-sm font-medium">
-                Join
+              <button
+                onClick={handleSubscribe}
+                disabled={isPending || isSuccess}
+                className="px-4 py-2 bg-accent text-accent-foreground rounded-sm hover:opacity-90 transition-all text-sm font-medium disabled:opacity-50"
+              >
+                {isPending ? "..." : isSuccess ? "✓" : "Join"}
               </button>
             </div>
+            {isSuccess && (
+              <p className="text-xs text-green-600 mt-2">
+                Thanks for subscribing!
+              </p>
+            )}
+            {isError && (
+              <p className="text-xs text-red-500 mt-2">
+                Something went wrong. Try again.
+              </p>
+            )}
           </motion.div>
         </div>
 
