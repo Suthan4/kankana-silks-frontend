@@ -798,7 +798,7 @@ function Header() {
             pointerEvents: showNav ? "auto" : "none",
           }}
           transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-          className={`hidden border-b border-gray-300 md:block relative bg-main-primary`}
+          className={`hidden md:block relative bg-main-primary`}
         >
           <motion.ul
             initial={{ y: -20, opacity: 1 }}
