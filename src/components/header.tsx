@@ -798,7 +798,7 @@ function Header() {
             pointerEvents: showNav ? "auto" : "none",
           }}
           transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-          className={`hidden border-b border-gray-300 md:block relative bg-white`}
+          className={`hidden border-b border-gray-300 md:block relative bg-main-primary`}
         >
           <motion.ul
             initial={{ y: -20, opacity: 1 }}
@@ -863,14 +863,14 @@ function Header() {
                           scale: hoveredCategory === category.id ? 1 : 0.92,
                         }}
                         transition={{ duration: 0.15 }}
-                        className="absolute inset-y-0 inset-x-1 rounded-full bg-main-primary"
+                        className="absolute inset-y-0 inset-x-1 rounded-full bg-main-secondary"
                         style={{ zIndex: 0 }}
                       />
                       <span
                         className={`relative z-10 text-[14px] font-medium tracking-wide uppercase transition-colors duration-200 ${
                           hoveredCategory === category.id
-                            ? "text-main-secondary"
-                            : "text-main-primary group-hover:text-main-primary"
+                            ? "text-main-primary"
+                            : "text-main-secondary group-hover:text-main-secondary"
                         }`}
                       >
                         {category.name}
@@ -922,7 +922,7 @@ function Header() {
                   {/* Dot separator */}
                   {index < categories.length - 1 && (
                     <li key={`sep-${index}`} aria-hidden="true">
-                      <span className="block w-[3px] h-[3px] rounded-full bg-gray-300" />
+                      <span className="block w-[5px] h-[5px] rounded-full bg-main-secondary" />
                     </li>
                   )}
                 </Fragment>

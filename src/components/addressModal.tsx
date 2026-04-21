@@ -502,8 +502,17 @@ export default function AddressModal({
                 />
                 <CompactInput
                   label="Phone"
+                  inputMode="numeric"
+                  maxLength={10}
                   error={errors.phone?.message}
-                  {...register("phone")}
+                  {...register("phone", {
+                    onChange: (e) => {
+                      // allow only numbers + max 10 digits
+                      e.target.value = e.target.value
+                        .replace(/\D/g, "") // remove non-numbers
+                        .slice(0, 10); // limit to 10
+                    },
+                  })}
                 />
               </div>
 

@@ -165,8 +165,8 @@ export default function UnifiedSearchModal({
                 <div className="flex gap-2">
                   {[
                     { value: "all", label: "All", icon: Search },
-                    { value: "products", label: "Products", icon: Package },
-                    { value: "categories", label: "Collections", icon: Folder },
+                    { value: "products", label: "Products" },
+                    { value: "categories", label: "Collections" },
                   ].map((tab) => (
                     <button
                       key={tab.value}
@@ -177,7 +177,7 @@ export default function UnifiedSearchModal({
                           : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                       }`}
                     >
-                      <tab.icon className="w-4 h-4" />
+                      {/* <tab.icon className="w-4 h-4" /> */}
                       {tab.label}
                       {searchQuery.length >= 2 && (
                         <span className="text-xs opacity-75">
@@ -446,7 +446,7 @@ export default function UnifiedSearchModal({
               </div>
 
               {/* Footer */}
-              <div className="p-3 border-t border-gray-200 bg-gray-50">
+              <div className="hidden md:flex justify-center p-3 border-t border-gray-200 bg-gray-50">
                 <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
                   <div className="flex items-center gap-1">
                     <kbd className="px-2 py-1 bg-white border border-gray-300 rounded text-xs font-mono">
