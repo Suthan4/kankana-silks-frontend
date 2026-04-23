@@ -1177,7 +1177,7 @@ function Header() {
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
               // className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto z-20"
-              className="absolute top-full left-1/2 -translate-x-1/2 w-[900px] max-w-[95vw] bg-white shadow-2xl border border-gray-100 rounded-2xl z-50"
+              className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto z-20"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6 pb-8">

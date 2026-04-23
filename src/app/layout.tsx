@@ -1,11 +1,11 @@
 import type React from "react";
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
 import "./globals.css";
 import AuthModalProvider from "@/components/authModalProvider";
 import ClientLayout from "@/components/clientLayout";
 import Providers from "@/components/provider/tanstackProvider";
 import { Toaster } from "sonner";
+import MiniCartDrawer from "@/components/miniCartDrawer";
 
 export const metadata: Metadata = {
   title: {
@@ -121,6 +121,7 @@ export default function RootLayout({
       <body className="bg-[#faf7f2] text-neutral-900 antialiased overflow-x-hidden">
         <Providers>
           <ClientLayout>{children}</ClientLayout>
+          <MiniCartDrawer />
           <AuthModalProvider />
         </Providers>
         <div id="portal-root" />

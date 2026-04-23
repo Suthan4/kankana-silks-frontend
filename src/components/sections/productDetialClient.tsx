@@ -445,6 +445,7 @@ export default function ProductDetailsClient({
     onSuccess: () => {
       if (user) queryClient.invalidateQueries({ queryKey: ["cartApi"] });
       toast.success("Added to cart");
+      router.push("/cart");
     },
     onError: () => toast.error("Failed to add to cart"),
   });
