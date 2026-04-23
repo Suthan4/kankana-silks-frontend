@@ -30,6 +30,7 @@ import { formatMaskedPrice } from "@/lib/utils/priceMasked";
 import { getColorHex, isValidCSSColor } from "@/lib/utils/colorValidation";
 import { useWishlist } from "@/hooks/useWishlist";
 import SortDropdown from "./customDropdown";
+import { useCartDrawer } from "@/store/useCartDrawer";
 
 interface CategoryProductsClientProps {
   category: Category;
@@ -43,6 +44,7 @@ export default function CategoryProductsClient({
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { addItem: addToLocalCart } = useCartStore();
+  const { open } = useCartDrawer();
 
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
@@ -229,8 +231,7 @@ export default function CategoryProductsClient({
   const total = productRes?.data?.pagination?.total ?? 0;
   const totalPages = productRes?.data?.pagination?.totalPages ?? 1;
   const currentPage = productRes?.data?.pagination?.page ?? 1;
-  console.log("products-res", products);
-
+  console.log("products-res", JSON.stringify(productRes, null, 2));
   /* ------------------ WISHLIST QUERY ------------------ */
 
   const { isProductWishlisted, toggleWishlist } = useWishlist();
@@ -319,15 +320,56 @@ export default function CategoryProductsClient({
       if (user) {
         queryClient.invalidateQueries({ queryKey: ["cartApi"] });
       }
-      toast.success("Added to cart", {
-        action: {
-          label: "View Cart",
-          onClick: () => router.push("/cart"),
-        },
-      });
+      open();
+      // toast.success("Added to cart", {
+      //   action: {
+      //     label: "View Cart",
+      //     onClick: () => router.push("/cart"),
+      //   },
+      // });
     },
     onError: () => toast.error("Failed to add to cart"),
   });
+  const updateQtyMutation = useMutation({
+    mutationFn: async ({
+      itemId,
+      quantity,
+    }: {
+      itemId: string;
+      quantity: number;
+    }) => await cartApi.updateCartItem(itemId, { quantity }),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cartApi"] });
+      open();
+    },
+
+    onError: () => toast.error("Failed to update quantity"),
+  });
+  const {
+    data: cartData,
+    isLoading: isLoadingCartApi,
+    refetch: refetchCartApi,
+  } = useQuery({
+    queryKey: ["cartApi", user?.id],
+    queryFn: async () => (await cartApi.getCart()).data,
+    enabled: !!user,
+  });
+
+  const removeItemMutation = useMutation({
+    mutationFn: async (itemId: string) => await cartApi.removeFromCart(itemId),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cartApi"] });
+    },
+
+    onError: () => toast.error("Failed to remove item"),
+  });
+
+  const cartItems = useCartStore((state) => state.items);
+  const effectiveCartItems = user ? (cartData?.items ?? []) : cartItems;
+  const updateQuantityLocal = useCartStore((state) => state.updateQuantity);
+  const removeItemLocal = useCartStore((state) => state.removeItem);
 
   const isProductUnavailable = (product: Product) => {
     const qty = product.stock?.[0]?.quantity ?? 0;
@@ -974,7 +1016,7 @@ export default function CategoryProductsClient({
                 )}
 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-                  {products.map((product, index) => {
+                  {products?.map((product, index) => {
                     const availableStock = product.stock?.[0]?.quantity ?? 0;
                     const isOutOfStock = isProductOutOfStock(product);
                     const showAddToCart = canAddToCart(product);
@@ -998,6 +1040,54 @@ export default function CategoryProductsClient({
                       isProductWishlisted(product.id),
                     );
                     const isUnavailable = isProductUnavailable(product);
+                    const cartItem = effectiveCartItems.find(
+                      (i: any) => i.productId === product.id,
+                    );
+                    console.log("cartItem", cartItem);
+                    console.log("cartItems", cartItems);
+
+                    const handleIncrease = () => {
+                      if (!cartItem) {
+                        handleAddToCart(product);
+                        return;
+                      }
+
+                      const newQty = cartItem.quantity + 1;
+
+                      if (user) {
+                        updateQtyMutation.mutate({
+                          itemId: cartItem.id, // ✅ now correct (server id)
+                          quantity: newQty,
+                        });
+                      } else {
+                        updateQuantityLocal(cartItem.id, newQty);
+                      }
+                    };
+
+                    const handleDecrease = () => {
+                      if (!cartItem) return;
+
+                      const newQty = cartItem.quantity - 1;
+
+                      if (newQty <= 0) {
+                        if (user) {
+                          removeItemMutation.mutate(cartItem.id); // ✅ server id
+                        } else {
+                          removeItemLocal(cartItem.id);
+                        }
+                        return;
+                      }
+
+                      if (user) {
+                        updateQtyMutation.mutate({
+                          itemId: cartItem.id,
+                          quantity: newQty,
+                        });
+                      } else {
+                        updateQuantityLocal(cartItem.id, newQty);
+                      }
+                    };
+
                     console.log("product.id", product.id);
 
                     return (
@@ -1140,16 +1230,54 @@ export default function CategoryProductsClient({
 
                           {/* ✅ FIXED: Conditional Button Rendering */}
                           {showAddToCart ? (
-                            <motion.button
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                              onClick={() => handleAddToCart(product)}
-                              disabled={addToCartMutation.isPending}
-                              className="w-full bg-black text-white py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
-                            >
-                              <ShoppingCart className="w-4 h-4" />
-                              Add to Cart
-                            </motion.button>
+                            cartItem ? (
+                              // ✅ QUANTITY STEPPER
+
+                              <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl overflow-hidden mt-2">
+                                {/* MINUS */}
+                                <button
+                                  onClick={handleDecrease}
+                                  className="w-12 h-10 flex items-center justify-center text-lg text-gray-600 hover:bg-gray-100 transition"
+                                >
+                                  −
+                                </button>
+
+                                {/* QUANTITY WITH ANIMATION */}
+                                <div className="flex-1 text-center">
+                                  <AnimatePresence mode="wait">
+                                    <motion.span
+                                      key={cartItem.quantity}
+                                      initial={{ y: 6, opacity: 0 }}
+                                      animate={{ y: 0, opacity: 1 }}
+                                      exit={{ y: -6, opacity: 0 }}
+                                      transition={{ duration: 0.15 }}
+                                      className="font-semibold text-gray-900"
+                                    >
+                                      {cartItem.quantity}
+                                    </motion.span>
+                                  </AnimatePresence>
+                                </div>
+
+                                {/* PLUS */}
+                                <button
+                                  onClick={handleIncrease}
+                                  className="w-12 h-10 flex items-center justify-center text-lg text-main-primary hover:bg-main-primary/10 transition"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            ) : (
+                              // ✅ ADD TO CART BUTTON
+                              <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => handleAddToCart(product)}
+                                className="w-full bg-black text-white py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+                              >
+                                <ShoppingCart className="w-4 h-4" />
+                                Add to Cart
+                              </motion.button>
+                            )
                           ) : (
                             <div className="w-full bg-gray-100 text-gray-500 py-2 rounded-lg text-sm font-medium text-center flex items-center justify-center gap-2">
                               <AlertCircle className="w-4 h-4" />
