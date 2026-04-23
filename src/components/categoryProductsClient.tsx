@@ -231,8 +231,7 @@ export default function CategoryProductsClient({
   const total = productRes?.data?.pagination?.total ?? 0;
   const totalPages = productRes?.data?.pagination?.totalPages ?? 1;
   const currentPage = productRes?.data?.pagination?.page ?? 1;
-  console.log("products-res", products);
-
+  console.log("products-res", JSON.stringify(productRes, null, 2));
   /* ------------------ WISHLIST QUERY ------------------ */
 
   const { isProductWishlisted, toggleWishlist } = useWishlist();
@@ -1017,7 +1016,7 @@ export default function CategoryProductsClient({
                 )}
 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-                  {products.map((product, index) => {
+                  {products?.map((product, index) => {
                     const availableStock = product.stock?.[0]?.quantity ?? 0;
                     const isOutOfStock = isProductOutOfStock(product);
                     const showAddToCart = canAddToCart(product);
