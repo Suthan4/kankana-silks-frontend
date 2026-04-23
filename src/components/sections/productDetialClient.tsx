@@ -695,7 +695,7 @@ export default function ProductDetailsClient({
                                       onClick={() =>
                                         handleSelectAnyAttribute(attr.key, val)
                                       }
-                                      className={`group relative px-3 py-1.5 border-2 rounded-lg font-medium transition text-xs flex items-center gap-1.5 ${isSelected ? "border-yellow-500 bg-yellow-50 text-yellow-700" : "border-gray-300 hover:border-gray-400"}`}
+                                      className={`group relative px-3 py-1.5 border-2 rounded-lg font-medium transition text-xs flex items-center gap-1.5 ${isSelected ? "border-main-primary bg-main-primary text-main-secondary" : "border-gray-300 hover:border-gray-400"}`}
                                     >
                                       <div
                                         className="w-4 h-4 rounded-full border border-gray-300 shadow-sm"
@@ -726,7 +726,7 @@ export default function ProductDetailsClient({
                                     onClick={() =>
                                       handleSelectAnyAttribute(attr.key, val)
                                     }
-                                    className={`px-3 py-1.5 border-2 rounded-lg font-medium transition text-xs ${isSelected ? "border-yellow-500 bg-yellow-50 text-yellow-700" : "border-gray-300 hover:border-gray-400"}`}
+                                    className={`px-3 py-1.5 border-2 rounded-lg font-medium transition text-xs ${isSelected ? "border-main-primary bg-main-primary text-main-secondary" : "border-gray-300 hover:border-gray-400"}`}
                                   >
                                     {val}
                                   </motion.button>

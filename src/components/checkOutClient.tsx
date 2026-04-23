@@ -1061,7 +1061,7 @@ export default function CheckoutClient() {
                                 ).map((attr) => (
                                   <span
                                     key={attr.key}
-                                    className="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100"
+                                    className="text-xs bg-main-primary text-main-secondary px-1.5 py-0.5 rounded border border-main-primary"
                                   >
                                     {attr.key}: <b>{attr.value}</b>
                                   </span>
@@ -1265,7 +1265,7 @@ export default function CheckoutClient() {
                   ) : (
                     <div className="space-y-2">
                       {chargeableWeight > 0 && (
-                        <div className="text-[10px] bg-blue-50 border border-blue-100 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 text-blue-700">
+                        <div className="text-[10px] bg-main-primary border border-main-primary rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 text-main-secondary">
                           <Info className="w-3 h-3 flex-shrink-0" />
                           Chargeable Weight:{" "}
                           <span className="font-bold">

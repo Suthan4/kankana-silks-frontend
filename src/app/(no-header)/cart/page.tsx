@@ -196,6 +196,7 @@ export default function CartPage() {
   const {
     data: applicableCouponsData,
     isLoading: isLoadingCoupons,
+    isFetching: isFetchingCoupons,
     refetch: refetchCoupons,
   } = useQuery({
     queryKey: ["applicableCoupons", subtotal, displayItems.length],
@@ -214,6 +215,7 @@ export default function CartPage() {
     },
     enabled: displayItems.length > 0,
     staleTime: 30000,
+    placeholderData: (prev) => prev,
   });
 
   const availableCoupons = applicableCouponsData?.data ?? [];
@@ -523,7 +525,7 @@ export default function CartPage() {
                                     ).map((attr) => (
                                       <span
                                         key={attr.key}
-                                        className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100"
+                                        className="text-xs bg-main-primary text-main-secondary px-2 py-0.5 rounded border border-main-primary"
                                       >
                                         {attr.key}: <b>{attr.value}</b>
                                       </span>
@@ -653,7 +655,7 @@ export default function CartPage() {
                         </button>
                       </div>
                     ) : (
-                      <div className="space-y-2" ref={dropdownRef}>
+                      <div className="space-y-2 min-h-[60px]" ref={dropdownRef}>
                         <div className="flex gap-1.5">
                           <div className="relative flex-1">
                             <input
@@ -782,11 +784,21 @@ export default function CartPage() {
                             : `View ${availableCoupons.length} available coupon${availableCoupons.length !== 1 ? "s" : ""}`}
                         </button>
 
-                        {availableCoupons.length === 0 && !isLoadingCoupons && (
-                          <p className="text-[10px] text-gray-400 text-center py-1.5 bg-gray-50 rounded">
-                            No coupons available for your cart
-                          </p>
-                        )}
+                        <motion.p
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="text-[10px] text-gray-400 text-center py-1.5 bg-gray-50 rounded"
+                        >
+                          {availableCoupons.length === 0 &&
+                            !isLoadingCoupons &&
+                            !isFetchingCoupons &&
+                            "No coupons available for your cart"}
+                          {isLoadingCoupons && isFetchingCoupons && (
+                            <div className="flex items-center justify-center gap-2">
+                              <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                            </div>
+                          )}
+                        </motion.p>
                       </div>
                     )}
                   </div>

@@ -36,14 +36,16 @@ function ProductGrid({ section }: { section: HomeSection }) {
   };
 
   const getGridColumns = () => {
-    const cols = section.columns || 4;
+    const cols = section.columns || 3;
+
     const colMap: Record<number, string> = {
       1: "grid-cols-1",
-      2: "grid-cols-1 md:grid-cols-2",
-      3: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
-      4: "grid-cols-1 md:grid-cols-2 lg:grid-cols-4",
+      2: "grid-cols-2",
+      3: "grid-cols-2 md:grid-cols-3",
+      4: "grid-cols-2 md:grid-cols-3 lg:grid-cols-3", // 👈 force clean layout
     };
-    return colMap[cols] || "grid-cols-1 md:grid-cols-4";
+
+    return colMap[cols] || "grid-cols-2 md:grid-cols-3";
   };
 
   const handleAddToCart = async (e: React.MouseEvent, product: any) => {
@@ -106,21 +108,9 @@ function ProductGrid({ section }: { section: HomeSection }) {
 
   return (
     <section
-      className="py-12 md:py-20 lg:py-24 relative overflow-hidden"
+      className="py-16 md:py-24 relative overflow-hidden"
       style={{ backgroundColor: section.backgroundColor }}
     >
-      {/* Background decorations */}
-      <div className="absolute inset-0 opacity-5">
-        <div
-          className="absolute top-20 left-10 w-64 h-64 rounded-full blur-3xl"
-          style={{ backgroundColor: section.textColor }}
-        />
-        <div
-          className="absolute bottom-20 right-10 w-96 h-96 rounded-full blur-3xl"
-          style={{ backgroundColor: section.textColor }}
-        />
-      </div>
-
       <div className="relative max-w-7xl mx-auto px-4 md:px-8">
         {(section.showTitle || section.showSubtitle) && (
           <div className="text-center mb-10 md:mb-16 animate-fadeIn">
@@ -203,7 +193,7 @@ function ProductGrid({ section }: { section: HomeSection }) {
 
           {/* Products grid */}
           <div
-            className={`grid ${getGridColumns()} gap-6 transition-all duration-500`}
+            className={`grid ${getGridColumns()} gap-10 md:gap-12 transition-all duration-500`}
           >
             {visibleProducts.map((product, index) => {
               const productImage = product.media?.[0]?.url;
@@ -228,9 +218,10 @@ function ProductGrid({ section }: { section: HomeSection }) {
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   {/* Product Card */}
-                  <div className="bg-white/5 backdrop-blur-sm rounded-2xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.02]">
-                    {/* Image Container */}
-                    <div className="relative aspect-[3/4] overflow-hidden bg-gray-100">
+                  {/* <div className="bg-white/5 backdrop-blur-sm rounded-2xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.02]"> */}
+                  {/* Image Container */}
+                  <div className="rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.01]">
+                    <div className="relative aspect-[1/1.1] max-h-[420px] md:max-h-[480px] overflow-hidden bg-gray-100">
                       {productImage ? (
                         <img
                           src={productImage}
@@ -247,7 +238,6 @@ function ProductGrid({ section }: { section: HomeSection }) {
                       )}
 
                       {/* Gradient overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                       {/* Badges */}
                       <div className="absolute top-3 right-3 flex flex-col gap-2">
@@ -264,7 +254,7 @@ function ProductGrid({ section }: { section: HomeSection }) {
                       </div>
 
                       {/* Quick action buttons */}
-                      <div className="absolute bottom-3 left-3 right-3 flex gap-2 transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+                      {/* <div className="absolute bottom-3 left-3 right-3 flex gap-2 transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
                         <button
                           onClick={(e) => handleAddToCart(e, product)}
                           disabled={!inStock || isLoading}
@@ -280,7 +270,7 @@ function ProductGrid({ section }: { section: HomeSection }) {
                           size="md"
                           className="bg-white hover:bg-gray-100 shadow-lg"
                         />
-                      </div>
+                      </div> */}
                     </div>
 
                     {/* Product Info */}
@@ -288,17 +278,17 @@ function ProductGrid({ section }: { section: HomeSection }) {
                       <div className="text-xs opacity-60 uppercase tracking-wider mb-1 font-medium">
                         {product.category.name}
                       </div>
-                      <h3 className="font-bold text-lg mb-2 line-clamp-2 group-hover:opacity-80 transition-opacity">
+                      <h3 className="font-medium text-base tracking-tight mb-2 line-clamp-2 group-hover:opacity-80 transition-opacity">
                         {product.name}
                       </h3>
 
                       {/* Price */}
                       <div className="flex items-baseline gap-2">
-                        <span className="text-xl font-bold">
+                        <span className="text-lg font-semibold tracking-tight">
                           ₹{product.sellingPrice.toLocaleString()}
                         </span>
                         {product.basePrice !== product.sellingPrice && (
-                          <span className="text-sm opacity-50 line-through">
+                          <span className="text-sm text-gray-400 line-through">
                             ₹{product.basePrice.toLocaleString()}
                           </span>
                         )}
