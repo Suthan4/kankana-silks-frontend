@@ -217,7 +217,9 @@ export default function AuthModal() {
       });
 
       setApiError("");
-      alert("Password reset link sent! Check your email.");
+      alert(
+        "Password reset link sent! Please check your inbox. If you don't see it, check your Spam/Junk folder (email sent from no-reply@kankanasilks.com).",
+      );
       setMode("login");
     } catch (error) {
       if (error instanceof z.ZodError) {
