@@ -784,7 +784,7 @@ export default function CartPage() {
                             : `View ${availableCoupons.length} available coupon${availableCoupons.length !== 1 ? "s" : ""}`}
                         </button>
 
-                        <motion.p
+                        <motion.div
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           className="text-[10px] text-gray-400 text-center py-1.5 bg-gray-50 rounded"
@@ -798,7 +798,7 @@ export default function CartPage() {
                               <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
                             </div>
                           )}
-                        </motion.p>
+                        </motion.div>
                       </div>
                     )}
                   </div>
