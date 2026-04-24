@@ -1225,16 +1225,25 @@ export default function CategoryProductsClient({
                               >
                                 View Options
                               </button>
-                            ) : cartItem ? (
+                            ) : cartItem &&
+                              cartItem.quantity > 0 &&
+                              variants.length <= 1 ? (
                               // 🟢 QUANTITY STEPPER
-                              <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl overflow-hidden mt-2">
+                              <motion.div
+                                key="stepper"
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                transition={{ duration: 0.2 }}
+                                className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl overflow-hidden mt-2"
+                              >
+                                {" "}
                                 <button
                                   onClick={handleDecrease}
                                   className="w-12 h-10 flex items-center justify-center text-lg text-gray-600 hover:bg-gray-100 transition"
                                 >
                                   −
                                 </button>
-
                                 <div className="flex-1 text-center">
                                   <AnimatePresence mode="wait">
                                     <motion.span
@@ -1249,14 +1258,13 @@ export default function CategoryProductsClient({
                                     </motion.span>
                                   </AnimatePresence>
                                 </div>
-
                                 <button
                                   onClick={handleIncrease}
                                   className="w-12 h-10 flex items-center justify-center text-lg text-main-primary hover:bg-main-primary/10 transition"
                                 >
                                   +
                                 </button>
-                              </div>
+                              </motion.div>
                             ) : (
                               // 🟢 ADD TO CART
                               <motion.button

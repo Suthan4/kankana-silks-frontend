@@ -7,6 +7,7 @@ import {
   Loader2,
   Package,
   AlertCircle,
+  ArrowLeft,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -39,22 +40,107 @@ export default function WishlistPage() {
     refetch,
   } = useWishlist();
 
+  // ✅ MOVE HOOK HERE (TOP LEVEL)
+  const handleAddToCart = useMutation({
+    mutationFn: async (item: any) => {
+      return cartApi.addToCart({
+        productId: item?.product.id,
+        quantity: 1,
+      });
+    },
+    onMutate: async (item: any) => {
+      const product = item.product;
+      const availableStock = product.stock?.[0]?.quantity ?? 0;
+
+      const cartItem = {
+        id: crypto.randomUUID(),
+        cartId: "local",
+        productId: product.id,
+        variantId: null,
+        quantity: 1,
+        product: {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          categoryId: product.categoryId,
+          sellingPrice: Number(product.sellingPrice),
+          basePrice: Number(product.basePrice),
+          media: [
+            {
+              url: product.media?.[0]?.url ?? "/placeholder.jpg",
+              altText: product.name,
+              isActive: true,
+            },
+          ],
+          stock: [{ quantity: availableStock }],
+        },
+        variant: null,
+      };
+
+      await queryClient.cancelQueries({ queryKey: ["cartApi", user?.id] });
+
+      const previousCart = queryClient.getQueryData(["cartApi", user?.id]);
+
+      addToLocalCart(cartItem);
+
+      return { previousCart };
+    },
+    onSuccess: async (_, item) => {
+      await queryClient.refetchQueries({ queryKey: ["cartApi", user?.id] });
+      await removeFromWishlist(item.id);
+      toast.success("Added to cart");
+      router.push("/cart");
+    },
+    onError: (err, product, context) => {
+      if (context?.previousCart) {
+        queryClient.setQueryData(["cartApi", user?.id], context.previousCart);
+      }
+      toast.error("Failed to add to cart");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["cartApi", user?.id] });
+    },
+  });
+
   /* ------------------ AUTH CHECK ------------------ */
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Heart className="w-12 h-12 mx-auto text-red-500 mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Login Required</h1>
-          <button
-            onClick={() => openModal("login")}
-            className="bg-black text-white px-6 py-2 rounded-lg"
-          >
-            Login
-          </button>
+      <>
+        <div className="flex-none bg-white border-b border-gray-200 px-4 py-3">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Link href="/shop">
+                <motion.button
+                  whileHover={{ x: -3 }}
+                  className="flex items-center gap-1.5 text-gray-500 hover:text-gray-900 text-sm transition"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Shop
+                </motion.button>
+              </Link>
+              <div className="h-4 w-px bg-gray-300" />
+              <h1 className="text-xl font-bold text-gray-900">
+                Wishlist Items
+                <span className="text-sm text-gray-400 font-normal ml-2">
+                  {wishlistCount} items
+                </span>
+              </h1>
+            </div>
+          </div>
         </div>
-      </div>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <Heart className="w-12 h-12 mx-auto text-red-500 mb-4" />
+            <h1 className="text-2xl font-bold mb-2">Login Required</h1>
+            <button
+              onClick={() => openModal("login")}
+              className="bg-black text-white px-6 py-2 rounded-lg"
+            >
+              Login
+            </button>
+          </div>
+        </div>
+      </>
     );
   }
 
@@ -99,85 +185,42 @@ export default function WishlistPage() {
     }
   };
 
-  const handleAddToCart = useMutation({
-    mutationFn: async (item: any) => {
-      return cartApi.addToCart({
-        productId: item?.product.id,
-        quantity: 1,
-      });
-    },
-
-    onMutate: async (item: any) => {
-      const product = item.product;
-      const availableStock = product.stock?.[0]?.quantity ?? 0;
-
-      const cartItem = {
-        id: crypto.randomUUID(),
-        cartId: "local",
-        productId: product.id,
-        variantId: null,
-        quantity: 1,
-        product: {
-          id: product.id,
-          name: product.name,
-          slug: product.slug,
-          categoryId: product.categoryId,
-          sellingPrice: Number(product.sellingPrice),
-          basePrice: Number(product.basePrice),
-          media: [
-            {
-              url: product.media?.[0]?.url ?? "/placeholder.jpg",
-              altText: product.name,
-              isActive: true,
-            },
-          ],
-          stock: [{ quantity: availableStock }],
-        },
-        variant: null,
-      };
-
-      await queryClient.cancelQueries({ queryKey: ["cartApi", user?.id] });
-
-      const previousCart = queryClient.getQueryData(["cartApi", user?.id]);
-
-      addToLocalCart(cartItem);
-
-      return { previousCart };
-    },
-
-    // ✅ SUCCESS → NAVIGATE HERE
-    onSuccess: async (_, item) => {
-      await queryClient.refetchQueries({ queryKey: ["cartApi", user?.id] });
-      await removeFromWishlist(item.id);
-      toast.success("Added to cart");
-
-      router.push("/cart");
-    },
-
-    onError: (err, product, context) => {
-      if (context?.previousCart) {
-        queryClient.setQueryData(["cartApi", user?.id], context.previousCart);
-      }
-
-      toast.error("Failed to add to cart");
-    },
-
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["cartApi", user?.id] });
-    },
-  });
-
   /* ------------------ EMPTY ------------------ */
 
   if (!items.length) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <Heart className="w-12 h-12 text-gray-400 mb-3" />
-        <h2 className="text-xl font-semibold">Wishlist is empty</h2>
-        <Link href="/shop" className="mt-4 underline">
-          Start shopping
-        </Link>
-      </div>
+      <>
+        {/* ─── Header ──────────────────────────────────────────────────── */}
+        <div className="flex-none bg-white border-b border-gray-200 px-4 py-3">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Link href="/shop">
+                <motion.button
+                  whileHover={{ x: -3 }}
+                  className="flex items-center gap-1.5 text-gray-500 hover:text-gray-900 text-sm transition"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Shop
+                </motion.button>
+              </Link>
+              <div className="h-4 w-px bg-gray-300" />
+              <h1 className="text-xl font-bold text-gray-900">
+                WHishlist Items
+                <span className="text-sm text-gray-400 font-normal ml-2">
+                  {wishlistCount} items
+                </span>
+              </h1>
+            </div>
+          </div>
+        </div>
+
+        <div className="min-h-screen flex flex-col items-center justify-center">
+          <Heart className="w-12 h-12 text-gray-400 mb-3" />
+          <h2 className="text-xl font-semibold">Wishlist is empty</h2>
+          <Link href="/shop" className="mt-4 underline">
+            Start shopping
+          </Link>
+        </div>
+      </>
     );
   }
 
