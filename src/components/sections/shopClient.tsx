@@ -1,9 +1,10 @@
 "use client";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { buildCategoryQuery } from "@/lib/shared/builders/productCategoryQuery.builder.ts";
-import { ChevronRight, Sparkles, Package } from "lucide-react";
+import { Package, LayoutGrid, Grid2x2, List } from "lucide-react";
 
 interface Category {
   id: string;
@@ -15,257 +16,283 @@ interface Category {
   children?: Category[];
   isActive: boolean;
   order: number;
-  _count?: {
-    products: number;
-  };
+  _count?: { products: number };
 }
 
 interface ShopClientProps {
   categories: Category[];
 }
 
+type GridType = "3col" | "4col" | "list";
+
 export default function ShopClient({ categories }: ShopClientProps) {
+  const [grid, setGrid] = useState<GridType>("3col");
+
   const getCategoryUrl = (slug: string) => {
     const queryParams = buildCategoryQuery(slug);
     const searchParams = new URLSearchParams();
-    console.log("categories", categories);
-
     Object.entries(queryParams).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
+      if (value !== undefined && value !== null)
         searchParams.append(key, String(value));
-      }
     });
-
     return `/shop/${slug}?${searchParams.toString()}`;
   };
 
+  const parentCategories = categories.filter((cat) => !cat.parentId);
   const totalProducts = categories.reduce(
     (sum, cat) => sum + (cat._count?.products || 0),
     0,
   );
 
-  const parentCategories = categories.filter((cat) => !cat.parentId);
+  const container = {
+    hidden: {},
+    show: { transition: { staggerChildren: 0.08 } },
+  };
+  const item = {
+    hidden: { opacity: 0, y: 16 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as const },
+    },
+  };
+
+  const gridClass = {
+    "3col": "grid grid-cols-2 lg:grid-cols-3",
+    "4col": "grid grid-cols-2 lg:grid-cols-4",
+    list: "flex flex-col",
+  }[grid];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="bg-gradient-to-br from-yellow-50 via-white to-orange-50 border-b border-gray-200"
-      >
-        <div className="container mx-auto px-4 md:px-6 py-12 md:py-20">
-          <div className="max-w-3xl mx-auto text-center">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 text-main-secondary bg-[#643436] px-4 py-2 rounded-full text-sm font-medium mb-6"
-            >
-              {/* <Sparkles className="w-4 h-4" /> */}
-              <span>Premium Silk Collection</span>
-            </motion.div>
-
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-4xl md:text-6xl font-light tracking-tight text-gray-900 mb-4"
-            >
-              Discover Timeless Elegance
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="text-lg md:text-xl text-gray-600 mb-8"
-            >
-              Explore {totalProducts.toLocaleString()}+ handcrafted
-              masterpieces, each telling its own unique story
-            </motion.p>
-
-            {/* Trust Badges */}
-            {/* <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="flex flex-wrap justify-center gap-8 text-sm text-gray-600"
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                  ✨
-                </div>
-                <span>100% Authentic</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                  🎨
-                </div>
-                <span>Handcrafted Excellence</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                  🛡️
-                </div>
-                <span>Trusted Quality</span>
-              </div>
-            </motion.div> */}
+    <div className="min-h-screen bg-white">
+      {/* ── TOOLBAR ── */}
+      <div className="border-b border-gray-100 sticky top-0 z-30 bg-white">
+        <div className="max-w-screen mx-auto px-6 md:px-12 flex items-center justify-between h-11">
+          {/* Left — grid toggles */}
+          <div className="flex items-center gap-1">
+            {(["3col", "4col", "list"] as GridType[]).map((g) => {
+              const Icon =
+                g === "3col" ? LayoutGrid : g === "4col" ? Grid2x2 : List;
+              return (
+                <button
+                  key={g}
+                  onClick={() => setGrid(g)}
+                  className={`w-8 h-8 flex items-center justify-center transition-colors ${
+                    grid === g
+                      ? "text-black"
+                      : "text-gray-300 hover:text-gray-500"
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                </button>
+              );
+            })}
           </div>
+
+          {/* Right — piece count */}
+          {totalProducts > 0 && (
+            <p className="text-[11px] tracking-widest text-gray-400 uppercase">
+              {totalProducts.toLocaleString()} pieces
+            </p>
+          )}
         </div>
-      </motion.div>
+      </div>
 
-      {/* Categories Grid */}
-      <div className="container mx-auto px-4 md:px-6 py-12">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="mb-8"
-        >
-          <h2 className="text-3xl font-light text-gray-900 mb-2">
-            Find Your Perfect Style
-          </h2>
-          <p className="text-gray-600">
-            Discover timeless elegance in every collection
-          </p>
-        </motion.div>
-
-        {categories.length === 0 ? (
-          <div className="text-center py-20">
-            <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">No categories available</p>
+      {/* ── GRID ── */}
+      <div className="max-w-screen mx-auto px-6 md:px-12 py-8">
+        {parentCategories.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-32 gap-4">
+            <Package className="w-10 h-10 text-gray-200" />
+            <p className="text-xs tracking-widest uppercase text-gray-300">
+              No collections available
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {parentCategories.map((category, index) => (
-              <motion.div
-                key={category.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 * index }}
-                whileHover={{ y: -8 }}
-                className="group"
-              >
-                <Link href={getCategoryUrl(category.slug)}>
-                  <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
-                    {/* Image */}
-                    <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
+          <motion.div
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className={`${gridClass} border-t border-l border-gray-100`}
+          >
+            {parentCategories.map((category) =>
+              grid === "list" ? (
+                /* ── LIST ROW ── */
+                <motion.div
+                  key={category.id}
+                  variants={item}
+                  className="bg-white border-r border-b border-gray-100"
+                >
+                  <Link
+                    href={getCategoryUrl(category.slug)}
+                    className="group flex items-center gap-6 px-4 py-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
+                  >
+                    {/* Thumb */}
+                    <div className="relative w-20 h-20 flex-shrink-0 bg-gray-50 overflow-hidden">
                       {category.image ? (
-                        <motion.div
-                          initial={{ scale: 1 }}
-                          whileHover={{ scale: 1.1 }}
-                          transition={{ duration: 0.6, ease: "easeOut" }}
-                          className="w-full h-full"
-                        >
+                        <Image
+                          src={category.image}
+                          alt={category.name}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package className="w-6 h-6 text-gray-200" />
+                        </div>
+                      )}
+                    </div>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] tracking-[0.18em] uppercase text-gray-900 font-medium">
+                        {category.name}
+                      </p>
+                      {category.description && (
+                        <p className="text-xs text-gray-400 mt-1 line-clamp-1">
+                          {category.description}
+                        </p>
+                      )}
+                      {category.children && category.children.length > 0 && (
+                        <div className="flex gap-2 mt-2 flex-wrap">
+                          {category.children.slice(0, 3).map((sub) => (
+                            <span
+                              key={sub.id}
+                              className="text-[10px] tracking-wider uppercase text-gray-400"
+                            >
+                              {sub.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {/* Count + arrow */}
+                    <div className="flex items-center gap-4 flex-shrink-0">
+                      {category._count?.products ? (
+                        <span className="text-[10px] tracking-widest uppercase text-gray-400 hidden sm:block">
+                          {category._count.products} pieces
+                        </span>
+                      ) : null}
+                      <span className="text-gray-300 group-hover:text-black group-hover:translate-x-1 inline-block transition-all duration-300">
+                        →
+                      </span>
+                    </div>
+                  </Link>
+                </motion.div>
+              ) : (
+                /* ── CARD (3col / 4col) — Tarun Tahiliani style ── */
+                <motion.div
+                  key={category.id}
+                  variants={item}
+                  className="bg-white border-r border-b border-gray-100"
+                >
+                  <Link
+                    href={getCategoryUrl(category.slug)}
+                    className="group block bg-white"
+                  >
+                    {/* Image — fixed height, object-contain so full image shows */}
+                    <div
+                      className={`relative w-full bg-white overflow-hidden ${
+                        grid === "4col" ? "h-64 md:h-72" : "h-72 md:h-96"
+                      }`}
+                    >
+                      {category.image ? (
+                        <>
                           <Image
                             src={category.image}
                             alt={category.name}
                             fill
-                            className="object-cover"
-                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                           />
-                        </motion.div>
+                          {/* subtle dark veil on hover */}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500" />
+                        </>
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-                          <Package className="w-16 h-16 text-gray-400" />
+                        <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                          <Package className="w-10 h-10 text-gray-200" />
                         </div>
                       )}
 
-                      {/* Product Count Badge */}
-                      {category._count?.products && (
-                        <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-gray-900 shadow-lg">
-                          {category._count.products} items
+                      {/* Piece count — top right */}
+                      {category._count?.products ? (
+                        <div className="absolute top-3 right-3 bg-white/95 px-2 py-0.5 text-[9px] tracking-widest uppercase text-gray-600">
+                          {category._count.products} pieces
                         </div>
-                      )}
+                      ) : null}
 
-                      {/* Overlay on hover */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-6">
-                        <motion.span
-                          initial={{ y: 10, opacity: 0 }}
-                          whileHover={{ y: 0, opacity: 1 }}
-                          className="text-white font-medium text-sm"
-                        >
-                          Explore Collection
-                        </motion.span>
-                      </div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-6">
-                      <div className="flex items-start justify-between gap-4 mb-3">
-                        <div className="flex-1">
-                          <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-main-primary transition-colors">
-                            {category.name}
-                          </h3>
-                          {category.description && (
-                            <p className="text-sm text-gray-600 line-clamp-2">
-                              {category.description}
-                            </p>
+                      {/* Subcategory pills — slide up on hover */}
+                      {category.children && category.children.length > 0 && (
+                        <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out flex flex-wrap gap-1.5">
+                          {category.children.slice(0, 3).map((sub) => (
+                            <span
+                              key={sub.id}
+                              className="bg-white/95 px-2 py-0.5 text-[9px] tracking-wider uppercase text-gray-700"
+                            >
+                              {sub.name}
+                            </span>
+                          ))}
+                          {category.children.length > 3 && (
+                            <span className="bg-white/95 px-2 py-0.5 text-[9px] tracking-wider uppercase text-gray-400">
+                              +{category.children.length - 3}
+                            </span>
                           )}
                         </div>
-                        <motion.div
-                          className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-main-primary transition-colors"
-                          whileHover={{ x: 4 }}
-                        >
-                          <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-white" />
-                        </motion.div>
-                      </div>
-
-                      {/* Subcategories Preview */}
-                      {category.children && category.children.length > 0 && (
-                        <div className="pt-3 border-t border-gray-100">
-                          <div className="flex flex-wrap gap-2">
-                            {category.children.slice(0, 3).map((subCat) => (
-                              <span
-                                key={subCat.id}
-                                className="text-xs px-2 py-1 bg-gray-50 text-gray-600 rounded-full hover:bg-yellow-50 hover:text-yellow-700 transition-colors"
-                              >
-                                {subCat.name}
-                              </span>
-                            ))}
-                            {category.children.length > 3 && (
-                              <span className="text-xs px-2 py-1 text-gray-400">
-                                +{category.children.length - 3} more
-                              </span>
-                            )}
-                          </div>
-                        </div>
                       )}
                     </div>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
+
+                    {/* Name row */}
+                    <div className="flex items-center justify-between px-3 py-3 bg-white">
+                      <div>
+                        <p className="text-[10px] tracking-[0.18em] uppercase text-gray-900 font-medium">
+                          {category.name}
+                        </p>
+                        {category.description && grid === "3col" && (
+                          <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-1">
+                            {category.description}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-gray-300 group-hover:text-black group-hover:translate-x-0.5 inline-block transition-all duration-300 text-xs">
+                        →
+                      </span>
+                    </div>
+                  </Link>
+                </motion.div>
+              ),
+            )}
+          </motion.div>
         )}
       </div>
 
-      {/* Bottom CTA Section */}
+      {/* ── BOTTOM STRIP ── */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.6 }}
-        className="bg-gradient-to-r from-yellow-50 to-orange-50 border-y border-gray-200 mt-16"
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+        className="border-t border-gray-100 mt-4"
       >
-        <div className="container mx-auto px-4 md:px-6 py-12 text-center">
-          <h2 className="text-2xl md:text-3xl font-light text-gray-900 mb-4">
-            Looking for Something Special?
-          </h2>
-          <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-            We're here to help you find the perfect piece. From custom orders to
-            personalized recommendations, our team is ready to assist you.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
+        <div className="max-w-screen-xl mx-auto px-6 md:px-12 py-14 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div>
+            <p className="text-[10px] tracking-[0.22em] uppercase text-gray-400 mb-1">
+              Bespoke Service
+            </p>
+            <h2 className="text-xl font-light text-gray-900">
+              Looking for something special?
+            </h2>
+            <p className="text-xs text-gray-400 mt-1 max-w-sm leading-relaxed">
+              Custom orders, personalised recommendations — our team is ready.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 flex-shrink-0">
             <Link
               href="/contact-us"
-              className="px-6 py-3 bg-gray-900 text-white rounded-full font-medium hover:bg-gray-800 transition-colors"
+              className="px-5 py-2.5 bg-black text-white text-[10px] tracking-[0.15em] uppercase font-medium hover:bg-gray-800 transition-colors"
             >
               Get in Touch
             </Link>
             <Link
               href="/about-us"
-              className="px-6 py-3 border-2 border-gray-900 text-gray-900 rounded-full font-medium hover:bg-gray-900 hover:text-white transition-colors"
+              className="px-5 py-2.5 border border-gray-200 text-[10px] tracking-[0.15em] uppercase font-medium text-gray-700 hover:border-black hover:text-black transition-colors"
             >
               Our Story
             </Link>

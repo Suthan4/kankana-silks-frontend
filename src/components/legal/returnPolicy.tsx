@@ -18,7 +18,7 @@ const ReturnRefundPolicy: React.FC = () => {
 
             <p className="mb-3">
               Customers must raise a return request within{" "}
-              <strong>48 hours (2 days)</strong> of delivery.
+              <strong>24 hours (1 day)</strong> of delivery.
             </p>
 
             <p>
@@ -118,7 +118,7 @@ const ReturnRefundPolicy: React.FC = () => {
             <ul className="list-disc pl-5 space-y-1">
               <li>Product is used / washed / altered</li>
               <li>Product damaged after delivery</li>
-              <li>Return requested after 48 hours</li>
+              <li>Return requested after 24 hours</li>
               <li>Customised / altered products</li>
               <li>Missing tags / original packaging</li>
             </ul>

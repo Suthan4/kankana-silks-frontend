@@ -147,7 +147,7 @@ function MediaGridSection({ section }: { section: HomeSection }) {
 
   return (
     <section
-      className="py-12 md:py-20 lg:py-24 relative overflow-hidden"
+      className="py-8 md:py-20 lg:py-8 relative overflow-hidden"
       style={{ backgroundColor: section.backgroundColor }}
     >
       {/* Background decoration */}
