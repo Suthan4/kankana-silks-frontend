@@ -84,6 +84,8 @@ export default function AuthModal() {
     Partial<Record<keyof ForgotPasswordFormData, string>>
   >({});
   const [apiError, setApiError] = useState<string>("");
+  const [isMobile, setIsMobile] = useState(false);
+
   const queryClient = useQueryClient();
 
   // Reset form when mode changes
@@ -97,6 +99,18 @@ export default function AuthModal() {
   // Prevent hydration mismatch
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const checkScreen = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkScreen();
+
+    window.addEventListener("resize", checkScreen);
+
+    return () => window.removeEventListener("resize", checkScreen);
   }, []);
 
   // Prevent body scroll when modal is open
@@ -264,7 +278,7 @@ export default function AuthModal() {
           aria-labelledby="modal-title"
         >
           {/* Header - Compact mobile-first */}
-          <div className="relative bg-gradient-to-br from-gray-50 to-white px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 text-black flex-shrink-0 border-b border-gray-100">
+          <div className="relative bg-gradient-to-br from-gray-50 to-white px-4 py-2 sm:px-6 sm:pt-6 sm:pb-4 text-black flex-shrink-0 border-b border-gray-100">
             <button
               onClick={closeModal}
               className="absolute top-3 right-3 sm:top-4 sm:right-4 p-1.5 hover:bg-gray-200 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
@@ -272,14 +286,20 @@ export default function AuthModal() {
             >
               <X className="w-5 h-5" />
             </button>
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring" }}
-              className="w-10 h-10 sm:w-12 sm:h-12 bg-black/5 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3"
-            >
-              <User className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
-            </motion.div>
+            <div className="flex justify-center mb-2">
+              <motion.img
+                src="/image-removebg-preview.png"
+                alt="Kankana Silks"
+                layoutId={isMobile ? "mobile-logo" : "desktop-logo"}
+                transition={{
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 18,
+                  mass: 0.6,
+                }}
+                className="h-9 w-auto object-contain"
+              />
+            </div>
             <h2
               id="modal-title"
               className="text-lg sm:text-xl font-bold text-center"

@@ -108,7 +108,7 @@ function ProductGrid({ section }: { section: HomeSection }) {
 
   return (
     <section
-      className="py-16 md:py-24 relative overflow-hidden"
+      className="py-16 md:py-12 relative overflow-hidden"
       style={{ backgroundColor: section.backgroundColor }}
     >
       <div className="relative max-w-7xl mx-auto px-4 md:px-8">
@@ -247,9 +247,11 @@ function ProductGrid({ section }: { section: HomeSection }) {
                           </span>
                         )}
                         {discount > 0 && (
-                          <span className="bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg animate-pulse">
-                            -{discount}%
-                          </span>
+                          <div className="px-2.5 py-1 rounded-md bg-main-primary/90 backdrop-blur-md">
+                            <span className="text-[11px] font-medium text-main-secondary">
+                              {discount}% OFF
+                            </span>
+                          </div>
                         )}
                       </div>
 

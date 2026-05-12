@@ -15,7 +15,7 @@ const faqs = [
   },
   {
     question: "What is your return policy?",
-    answer: "Return requests must be raised within 48 hours of delivery.",
+    answer: "Return requests must be raised within 24 hours of delivery.",
   },
   {
     question: "How is GST calculated?",

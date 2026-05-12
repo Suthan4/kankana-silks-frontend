@@ -1,7 +1,21 @@
 "use client";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 
 export default function SplashScreen() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkScreen = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkScreen();
+
+    window.addEventListener("resize", checkScreen);
+
+    return () => window.removeEventListener("resize", checkScreen);
+  }, []);
   return (
     <motion.div
       initial={{ opacity: 1 }}
@@ -24,7 +38,7 @@ export default function SplashScreen() {
         {/* 🔥 MAIN LOGO (NO animate here) */}
         <motion.img
           src="/image-removebg-preview.png"
-          layoutId="main-logo"
+          layoutId={isMobile ? "mobile-logo" : "desktop-logo"}
           transition={{
             type: "spring",
             stiffness: 260,

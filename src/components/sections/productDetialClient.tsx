@@ -861,7 +861,7 @@ export default function ProductDetailsClient({
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={handleRequestProduct}
-                      className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-3 rounded-xl font-semibold shadow flex items-center justify-center gap-2 text-sm"
+                      className="flex-1 bg-black text-white py-3 rounded-xl font-semibold shadow flex items-center justify-center gap-2 text-sm"
                     >
                       <AlertCircle className="w-4 h-4" /> Request Product
                     </motion.button>
