@@ -2324,7 +2324,15 @@ export default function CategoryProductsClient({
                                   e.stopPropagation();
                                   toggleWishlist(product.id);
                                 }}
-                                className="absolute top-3 right-3 w-8 h-8 bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white"
+                                className="
+absolute top-3 right-3 z-10
+flex items-center justify-center
+w-9 h-9 rounded-full
+bg-white/90 backdrop-blur-sm shadow-sm
+opacity-100 md:opacity-0 md:group-hover:opacity-100
+transition-all duration-300
+hover:bg-white
+"
                               >
                                 <Heart
                                   className={`w-4 h-4 ${
