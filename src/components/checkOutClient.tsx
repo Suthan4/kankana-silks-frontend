@@ -19,6 +19,7 @@ import {
   ChevronDown,
   Loader2,
   Info,
+  Star,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -411,11 +412,7 @@ export default function CheckoutClient() {
       if (!selectedAddress?.pincode || displayItems.length === 0) return null;
       const response = await shippingApi.getCartShippingRates({
         deliveryPincode: selectedAddress?.pincode,
-        // cartItems: displayItems.map((item: any) => ({
-        //   productId: item.productId,
-        //   variantId: item.variantId,
-        //   quantity: item.quantity,
-        // })),
+        selectedCourierCompanyId: selectedCourier?.courier_company_id,
         cartItems: displayItems.map((item: any) => ({
           productId: item.productId,
           ...(item.variantId ? { variantId: item.variantId } : {}),
@@ -481,17 +478,26 @@ export default function CheckoutClient() {
   const subtotal = orderPreview?.breakdown.subtotal || 0;
   const discount = orderPreview?.breakdown.discount || 0;
   const couponDiscount = orderPreview?.breakdown.couponDiscount || 0;
-  const shippingCost = orderPreview?.breakdown.shippingCost || 0;
-  const cgstAmount = orderPreview?.breakdown.cgstAmount || 0;
-  const sgstAmount = orderPreview?.breakdown.sgstAmount || 0;
-  const gstAmount = orderPreview?.breakdown.gstAmount || 0;
+  // const shippingCost = orderPreview?.breakdown.shippingCost || 0;
+  const shippingCost = Number(
+    selectedCourier?.freight_charge ??
+      orderPreview?.breakdown?.shippingCost ??
+      0,
+  );
+  const taxableAmount = subtotal - couponDiscount + shippingCost;
+
+  const cgstAmount = taxableAmount * 0.025;
+  const sgstAmount = taxableAmount * 0.025;
+
+  const gstAmount = cgstAmount + sgstAmount;
+
   const availableCouriers = shippingData?.availableCouriers ?? [];
   const cheapestCourier = shippingData?.cheapestCourier;
   const fastestCourier = shippingData?.fastestCourier;
   const chargeableWeight = shippingData?.chargeableWeight || 0;
   const isServiceable = shippingData?.serviceable ?? true;
   const isFreeShipping = shippingData?.isFreeShipping ?? shippingCost === 0;
-  const total = orderPreview?.breakdown.total || 0;
+  const total = taxableAmount + gstAmount;
   const estimatedDelivery = orderPreview?.estimatedDelivery || "3-5 days";
   const couponError = orderPreview?.couponError;
   const isCODAvailable = total > 0 && total <= 2000;
@@ -757,10 +763,20 @@ export default function CheckoutClient() {
     deleteAddressMutation.mutate(addressId);
   };
 
-  const handleCourierSelect = (courier: any, preference: CourierPreference) => {
+  const handleCourierSelect = async (
+    courier: any,
+    preference: CourierPreference,
+  ) => {
     setSelectedCourier(courier);
     setCourierPreference(preference);
-    refetchPreview();
+
+    await queryClient.invalidateQueries({
+      queryKey: ["orderPreview"],
+    });
+
+    await queryClient.invalidateQueries({
+      queryKey: ["cartShipping"],
+    });
   };
 
   const getRazorpayBlock = (method: PaymentMethodType) => {
@@ -973,7 +989,7 @@ export default function CheckoutClient() {
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-bold text-gray-900">Checkout</h1>
                 {isBuyNowMode && (
-                  <span className="text-xs bg-orange-50 text-orange-600 border border-orange-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <span className="text-xs bg-main-primary text-main-secondary border border-main-primary/40 px-2 py-0.5 rounded-full flex items-center gap-1">
                     <Zap className="w-3 h-3" /> Express
                   </span>
                 )}
@@ -1013,18 +1029,17 @@ export default function CheckoutClient() {
                           key={`${item.productId}-${item.variantId}-${index}`}
                           className="flex gap-2.5 p-2.5 bg-gray-50 rounded-lg relative"
                         >
-                          {!isBuyNowMode && (
-                            <button
-                              onClick={() =>
-                                user?.id
-                                  ? removeItemMutation.mutate(item.id)
-                                  : clearCart()
-                              }
-                              className="absolute top-2 right-2 p-1 hover:bg-red-50 rounded transition"
-                            >
-                              <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                            </button>
-                          )}
+                          <button
+                            onClick={() =>
+                              user?.id
+                                ? removeItemMutation.mutate(item.id)
+                                : clearCart()
+                            }
+                            className="absolute top-2 right-2 p-1 hover:bg-red-50 rounded transition"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                          </button>
+
                           <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                             {item?.product?.media?.[0]?.url ? (
                               <Image
@@ -1188,7 +1203,7 @@ export default function CheckoutClient() {
                                   {address.fullName}
                                 </p>
                                 {address.isDefault && (
-                                  <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0 rounded-full text-[10px]">
+                                  <span className="text-xs bg-main-primary text-main-secondary px-1.5 py-0 rounded-full text-[10px]">
                                     Default
                                   </span>
                                 )}
@@ -1279,34 +1294,41 @@ export default function CheckoutClient() {
                           onClick={() =>
                             handleCourierSelect(cheapestCourier, "CHEAPEST")
                           }
-                          className={`p-2.5 border rounded-lg cursor-pointer transition-all ${selectedCourier?.courier_company_id === cheapestCourier.courier_company_id ? "border-green-500 bg-green-50" : "border-gray-200 hover:border-green-300"}`}
+                          className={`p-2.5 border rounded-lg cursor-pointer transition-all ${selectedCourier?.courier_company_id === cheapestCourier.courier_company_id ? "bg-main-primary/10 border-main-primary" : ""}`}
                         >
                           <div className="flex items-center gap-2">
                             <div
-                              className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedCourier?.courier_company_id === cheapestCourier.courier_company_id ? "border-green-500 bg-green-500" : "border-gray-300"}`}
+                              className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedCourier?.courier_company_id === cheapestCourier.courier_company_id ? "border-main-primary bg-main-primary" : "border-gray-300"}`}
                             >
                               {selectedCourier?.courier_company_id ===
                                 cheapestCourier.courier_company_id && (
-                                <Check className="w-2.5 h-2.5 text-white" />
+                                <Check className="w-2.5 h-2.5 text-main-secondary" />
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <span className="text-[10px] bg-green-100 text-main-primary px-1.5 py-0 rounded-full font-bold">
-                                    CHEAPEST
+                                  <span className="text-[10px] bg-main-secondary text-main-primary px-1.5 py-0 rounded-full font-bold">
+                                    AFFORDABLE
                                   </span>
                                   <p className="font-semibold text-gray-900 text-xs mt-0.5">
                                     {cheapestCourier.courier_name}
                                   </p>
                                 </div>
-                                <p className="font-bold text-green-600 text-sm">
+                                <p className="font-bold text-main-primary text-sm">
                                   {formatMoney(cheapestCourier.freight_charge)}
                                 </p>
                               </div>
-                              <p className="text-[10px] text-gray-500">
-                                {cheapestCourier.estimated_delivery_days} days •
-                                ⭐ {cheapestCourier.rating}
+                              <p className="text-[10px] text-gray-500 flex items-center gap-1 flex-wrap">
+                                <span>
+                                  {cheapestCourier.estimated_delivery_days} days
+                                </span>
+
+                                <span className="flex items-center gap-0.5">
+                                  •
+                                  <Star className="w-2 h-2 text-main-primary" />
+                                  {cheapestCourier.rating}
+                                </span>
                               </p>
                             </div>
                           </div>
@@ -1320,34 +1342,42 @@ export default function CheckoutClient() {
                             onClick={() =>
                               handleCourierSelect(fastestCourier, "FASTEST")
                             }
-                            className={`p-2.5 border rounded-lg cursor-pointer transition-all ${selectedCourier?.courier_company_id === fastestCourier.courier_company_id ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-blue-300"}`}
+                            className={`p-2.5 border rounded-lg cursor-pointer transition-all ${selectedCourier?.courier_company_id === fastestCourier.courier_company_id ? "bg-main-secondary/20" : "border-gray-200 hover:border-gray-400"}`}
                           >
                             <div className="flex items-center gap-2">
                               <div
-                                className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedCourier?.courier_company_id === fastestCourier.courier_company_id ? "border-blue-500 bg-blue-500" : "border-gray-300"}`}
+                                className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedCourier?.courier_company_id === fastestCourier.courier_company_id ? "bg-main-secondary border-main-secondary" : "border-gray-300"}`}
                               >
                                 {selectedCourier?.courier_company_id ===
                                   fastestCourier.courier_company_id && (
-                                  <Check className="w-2.5 h-2.5 text-white" />
+                                  <Check className="w-2.5 h-2.5 text-main-primary" />
                                 )}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between">
                                   <div>
-                                    <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0 rounded-full font-bold">
+                                    <span className="text-[10px] bg-main-primary text-main-secondary px-1.5 py-0 rounded-full font-bold">
                                       FASTEST
                                     </span>
                                     <p className="font-semibold text-gray-900 text-xs mt-0.5">
                                       {fastestCourier.courier_name}
                                     </p>
                                   </div>
-                                  <p className="font-bold text-blue-600 text-sm">
+                                  <p className="font-bold text-black text-sm">
                                     {formatMoney(fastestCourier.freight_charge)}
                                   </p>
                                 </div>
-                                <p className="text-[10px] text-gray-500">
-                                  {fastestCourier.estimated_delivery_days} days
-                                  • ⭐ {fastestCourier.rating}
+                                <p className="text-[10px] text-gray-500 flex items-center gap-1 flex-wrap">
+                                  <span>
+                                    {fastestCourier.estimated_delivery_days}{" "}
+                                    days
+                                  </span>
+
+                                  <span className="flex items-center gap-0.5">
+                                    •
+                                    <Star className="w-2 h-2 text-main-primary" />
+                                    {fastestCourier.rating}
+                                  </span>
                                 </p>
                               </div>
                             </div>
@@ -1357,7 +1387,7 @@ export default function CheckoutClient() {
                       {eligibleCouriers.length > 2 && (
                         <button
                           onClick={() => setShowAllCouriers(!showAllCouriers)}
-                          className="text-xs text-blue-600 font-semibold flex items-center gap-1 w-full justify-center"
+                          className="text-xs text-main-primary font-semibold flex items-center gap-1 w-full justify-center"
                         >
                           <ChevronDown
                             className={`w-3 h-3 transition-transform ${showAllCouriers ? "rotate-180" : ""}`}
@@ -1400,9 +1430,16 @@ export default function CheckoutClient() {
                                       {formatMoney(courier.freight_charge)}
                                     </span>
                                   </div>
-                                  <p className="text-[10px] text-gray-500">
-                                    {courier.estimated_delivery_days} days • ⭐{" "}
-                                    {courier.rating}
+                                  <p className="text-[10px] text-gray-500 flex items-center gap-1 flex-wrap">
+                                    <span>
+                                      {courier.estimated_delivery_days} days
+                                    </span>
+
+                                    <span className="flex items-center gap-0.5">
+                                      •
+                                      <Star className="w-2 h-2 text-main-primary" />
+                                      {courier.rating}
+                                    </span>
                                   </p>
                                 </div>
                               ))}

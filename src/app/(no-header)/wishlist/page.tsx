@@ -250,7 +250,16 @@ export default function WishlistPage() {
           <AnimatePresence>
             {items.map((item) => {
               const product = item.product;
-              const inStock = (product.stock?.[0]?.quantity ?? 0) > 0;
+              const stockQty = product.stock?.[0]?.quantity ?? 0;
+
+              const lowStockThreshold =
+                product.stock?.[0]?.lowStockThreshold ?? 0;
+
+              const isOutOfStock =
+                stockQty === 0 ||
+                (lowStockThreshold > 0 && stockQty <= lowStockThreshold);
+
+              const inStock = !isOutOfStock;
 
               return (
                 <motion.div

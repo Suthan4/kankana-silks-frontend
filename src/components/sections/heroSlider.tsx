@@ -79,7 +79,12 @@ function HeroSlider({ section }: { section: HomeSection }) {
     >
       {/* Slides */}
       <div
-        className="relative w-full h-full"
+        className="
+  relative w-full h-full
+  touch-pan-y
+  select-none
+  overscroll-x-contain
+"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -184,17 +189,31 @@ function HeroSlider({ section }: { section: HomeSection }) {
       </div>
 
       {/* Navigation Controls - only show if multiple slides */}
+      {/* Navigation Controls */}
       {slides.length > 1 && (
         <>
-          {/* Previous/Next Buttons */}
+          {/* DESKTOP ONLY ARROWS */}
           <button
             onClick={handlePrev}
             onMouseEnter={() => setIsAutoPlaying(false)}
-            className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-20 w-12 h-12 md:w-16 md:h-16 bg-white/10 backdrop-blur-xl rounded-full shadow-lg flex items-center justify-center hover:bg-white/20 hover:scale-110 transition-all duration-300 border border-white/20"
+            className="
+        hidden md:flex
+        absolute left-6 top-1/2 -translate-y-1/2 z-30
+        w-14 h-14
+        items-center justify-center
+        rounded-full
+        bg-black/20
+        backdrop-blur-2xl
+        border border-white/10
+        shadow-[0_10px_40px_rgba(0,0,0,0.25)]
+        hover:bg-black/35
+        hover:scale-105
+        transition-all duration-500
+      "
             aria-label="Previous slide"
           >
             <svg
-              className="w-6 h-6 md:w-8 md:h-8 text-white"
+              className="w-5 h-5 text-white"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -202,7 +221,7 @@ function HeroSlider({ section }: { section: HomeSection }) {
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2.5}
+                strokeWidth={1.8}
                 d="M15 19l-7-7 7-7"
               />
             </svg>
@@ -211,11 +230,24 @@ function HeroSlider({ section }: { section: HomeSection }) {
           <button
             onClick={handleNext}
             onMouseEnter={() => setIsAutoPlaying(false)}
-            className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-20 w-12 h-12 md:w-16 md:h-16 bg-white/10 backdrop-blur-xl rounded-full shadow-lg flex items-center justify-center hover:bg-white/20 hover:scale-110 transition-all duration-300 border border-white/20"
+            className="
+        hidden md:flex
+        absolute right-6 top-1/2 -translate-y-1/2 z-30
+        w-14 h-14
+        items-center justify-center
+        rounded-full
+        bg-black/20
+        backdrop-blur-2xl
+        border border-white/10
+        shadow-[0_10px_40px_rgba(0,0,0,0.25)]
+        hover:bg-black/35
+        hover:scale-105
+        transition-all duration-500
+      "
             aria-label="Next slide"
           >
             <svg
-              className="w-6 h-6 md:w-8 md:h-8 text-white"
+              className="w-5 h-5 text-white"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -223,37 +255,76 @@ function HeroSlider({ section }: { section: HomeSection }) {
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2.5}
+                strokeWidth={1.8}
                 d="M9 5l7 7-7 7"
               />
             </svg>
           </button>
 
-          {/* Pagination Indicators */}
-          <div className="absolute bottom-8 md:bottom-12 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3">
+          {/* MOBILE SWIPE INDICATOR */}
+          <div className="md:hidden absolute bottom-24 left-1/2 -translate-x-1/2 z-30">
+            <div
+              className="
+        px-4 py-1.5
+        rounded-full
+        bg-black/20
+        backdrop-blur-xl
+        border border-white/10
+      "
+            >
+              <p className="text-[10px] tracking-[0.25em] uppercase text-white/75">
+                Swipe
+              </p>
+            </div>
+          </div>
+
+          {/* PREMIUM PAGINATION */}
+          <div
+            className="
+      absolute bottom-10 md:bottom-12
+      left-1/2 -translate-x-1/2
+      z-30
+      flex items-center gap-2
+    "
+          >
             {slides.map((_, index) => (
               <button
                 key={index}
                 onClick={() => goToSlide(index)}
-                className={`transition-all duration-300 rounded-full ${
-                  index === currentIndex
-                    ? "w-12 h-2 bg-white"
-                    : "w-2 h-2 bg-white/40 hover:bg-white/70"
-                }`}
+                className={`
+            rounded-full
+            transition-all duration-500
+            ${
+              index === currentIndex
+                ? "w-10 h-[3px] bg-white"
+                : "w-2 h-2 bg-white/35"
+            }
+          `}
                 aria-label={`Go to slide ${index + 1}`}
               />
             ))}
           </div>
 
-          {/* Auto-play toggle */}
+          {/* AUTOPLAY BUTTON DESKTOP ONLY */}
           <button
             onClick={() => setIsAutoPlaying(!isAutoPlaying)}
-            className="absolute bottom-8 md:bottom-12 right-8 z-20 w-10 h-10 bg-white/10 backdrop-blur-xl rounded-full shadow-lg flex items-center justify-center hover:bg-white/20 transition-all duration-300 border border-white/20"
+            className="
+        hidden md:flex
+        absolute bottom-10 right-8 z-30
+        w-10 h-10
+        items-center justify-center
+        rounded-full
+        bg-black/20
+        backdrop-blur-xl
+        border border-white/10
+        hover:bg-black/35
+        transition-all duration-300
+      "
             aria-label={isAutoPlaying ? "Pause autoplay" : "Resume autoplay"}
           >
             {isAutoPlaying ? (
               <svg
-                className="w-5 h-5 text-white"
+                className="w-4 h-4 text-white"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -267,7 +338,7 @@ function HeroSlider({ section }: { section: HomeSection }) {
               </svg>
             ) : (
               <svg
-                className="w-5 h-5 text-white ml-0.5"
+                className="w-4 h-4 text-white ml-0.5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -285,7 +356,8 @@ function HeroSlider({ section }: { section: HomeSection }) {
       )}
 
       {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
+      <div className="hidden md:block absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
+        {" "}
         <svg
           className="w-6 h-6 text-white opacity-70"
           fill="none"

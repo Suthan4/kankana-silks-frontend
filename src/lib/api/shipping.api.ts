@@ -53,6 +53,7 @@ export interface CartShippingRequest {
     variantId?: string;
     quantity: number;
   }>;
+  selectedCourierCompanyId?: number;
 }
 
 export interface CartShippingResponse {

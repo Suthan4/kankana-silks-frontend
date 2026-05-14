@@ -63,9 +63,13 @@ export default function OrdersPage() {
 
   // ✅ Check if invoice is available (shipped or delivered)
   const isInvoiceAvailable = (order: any): boolean => {
-    return ["PROCESSING","SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED", "COMPLETED"].includes(
-      order.status,
-    );
+    return [
+      "PROCESSING",
+      "SHIPPED",
+      "OUT_FOR_DELIVERY",
+      "DELIVERED",
+      "COMPLETED",
+    ].includes(order.status);
   };
 
   // ✅ Invoice download handler
@@ -223,7 +227,7 @@ export default function OrdersPage() {
                   className="bg-white rounded-2xl border-2 border-gray-100 overflow-hidden hover:shadow-xl transition-all cursor-pointer"
                   onClick={() => router.push(`/my-account/orders/${order.id}`)}
                 >
-                  <div className="p-5 lg:p-6">
+                  <div className="p-4 sm:p-5 lg:p-6">
                     {/* Header */}
                     <div className="flex items-start justify-between mb-4">
                       <div>
@@ -252,7 +256,7 @@ export default function OrdersPage() {
                     </div>
 
                     {/* Product Info */}
-                    <div className="flex gap-4 mb-4 p-4 bg-gray-50 rounded-xl">
+                    <div className="flex gap-3 sm:gap-4 mb-4 p-3 sm:p-4 bg-gray-50 rounded-xl">
                       <img
                         src={productImage}
                         alt={productName}
@@ -263,7 +267,7 @@ export default function OrdersPage() {
                       />
 
                       <div className="flex-1">
-                        <div className="font-semibold text-sm lg:text-base mb-1">
+                        <div className="font-semibold text-sm lg:text-base mb-1 line-clamp-2 leading-snug">
                           {productName}
                           {order.items.length > 1
                             ? ` +${order.items.length - 1} more`
@@ -300,7 +304,7 @@ export default function OrdersPage() {
                     </div>
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between pt-4 border-t-2">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-gray-200">
                       <div>
                         <div className="text-xs text-gray-500 mb-1">
                           Total Amount
@@ -309,7 +313,7 @@ export default function OrdersPage() {
                           ₹{Number(order.total).toFixed(2)}
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex items-stretch gap-2 flex-wrap sm:flex-nowrap justify-end">
                         {/* ✅ Invoice Download Button - Only show if shipped/delivered */}
                         {hasInvoice && (
                           <motion.button
@@ -317,7 +321,7 @@ export default function OrdersPage() {
                             whileTap={{ scale: 0.95 }}
                             onClick={(e) => handleDownloadInvoice(e, order)}
                             disabled={isDownloading}
-                            className="px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl text-sm font-semibold hover:from-green-700 hover:to-emerald-700 transition-all flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="h-11 min-w-[44px] px-3 sm:px-4 bg-main-primary text-main-secondary rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {isDownloading ? (
                               <>
@@ -348,7 +352,7 @@ export default function OrdersPage() {
                                 `/my-account/order-tracking/${order.id}`,
                               );
                             }}
-                            className="px-5 py-2.5 bg-black text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-all flex items-center gap-2"
+                            className="h-11 px-4 sm:px-5 bg-black text-white rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-2 whitespace-nowrap"
                           >
                             Track Order
                             <ArrowRight className="w-4 h-4" />
@@ -363,7 +367,7 @@ export default function OrdersPage() {
                             e.stopPropagation();
                             router.push(`/my-account/orders/${order.id}`);
                           }}
-                          className="px-5 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-all flex items-center gap-2"
+                          className="h-11 px-4 sm:px-5 border-2 border-gray-200 rounded-xl text-xs sm:text-sm font-semibold hover:bg-gray-50 transition-all flex items-center justify-center gap-2 whitespace-nowrap"
                         >
                           View Details
                           <ArrowRight className="w-4 h-4" />

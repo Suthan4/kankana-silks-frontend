@@ -16,6 +16,7 @@ import {
   ChevronDown,
   Loader2,
   Truck,
+  Star,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -804,7 +805,7 @@ export default function CartPage() {
                   </div>
 
                   {/* Courier Selection */}
-                  {shippingData && shippingData.serviceable && (
+                  {/* {shippingData && shippingData.serviceable && (
                     <div className="pt-3 border-t border-gray-100">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
@@ -862,7 +863,7 @@ export default function CartPage() {
                                 >
                                   <div className="flex items-center gap-2 mb-0.5">
                                     <span className="text-[10px] bg-main-primary/10 text-main-primary px-1.5 py-0 rounded-full font-bold">
-                                      CHEAPEST
+                                      Affordable
                                     </span>
                                     {selectedCourier?.courier_company_id ===
                                       shippingData.cheapestCourier
@@ -953,9 +954,17 @@ export default function CartPage() {
                                         <p className="font-semibold text-gray-900 text-xs truncate">
                                           {courier.courier_name}
                                         </p>
-                                        <p className="text-[10px] text-gray-500">
-                                          {courier.estimated_delivery_days} days
-                                          • ⭐ {courier.rating}
+                                        <p className="text-[10px] text-gray-500 flex items-center gap-1 flex-wrap">
+                                          <span>
+                                            {courier.estimated_delivery_days}{" "}
+                                            days
+                                          </span>
+
+                                          <span className="flex items-center gap-0.5">
+                                            •
+                                            <Star className="w-2 h-2 text-main-primary" />
+                                            {courier.rating}
+                                          </span>
                                         </p>
                                       </div>
                                       <div className="flex items-center gap-1.5 ml-2">
@@ -975,7 +984,7 @@ export default function CartPage() {
                         </AnimatePresence>
                       </div>
                     </div>
-                  )}
+                  )} */}
 
                   {/* Price Breakdown */}
                   <div className="space-y-2 pt-3 border-t border-gray-100">

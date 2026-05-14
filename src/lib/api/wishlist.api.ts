@@ -16,6 +16,7 @@ export interface WishlistItem {
     }>;
     stock?: Array<{
       quantity: number;
+      lowStockThreshold?: number;
     }>;
     category?: {
       name: string;

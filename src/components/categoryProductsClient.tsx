@@ -2312,7 +2312,7 @@ export default function CategoryProductsClient({
 
                               {/* Discount badge — top left, matches shop page style */}
                               {!isOutOfStock && discount > 0 && (
-                                <div className="absolute top-3 left-3 bg-white/95 text-black px-2.5 py-0.5 text-[10px] tracking-widest uppercase">
+                                <div className="absolute top-3 left-3 bg-main-primary text-main-secondary px-2.5 py-0.5 text-[10px] tracking-widest uppercase">
                                   {discount}% Off
                                 </div>
                               )}
@@ -2352,7 +2352,7 @@ hover:bg-white
                           <Link
                             href={`/${product.category?.slug}/${product.slug}`}
                           >
-                            <h3 className="text-sm text-gray-900 leading-snug line-clamp-2 hover:underline underline-offset-2 decoration-gray-300 tracking-tight">
+                            <h3 className="min-h-[38px] md:min-h-[44px] text-[13px] md:text-sm text-gray-900 leading-[1.35] line-clamp-2 tracking-tight hover:underline underline-offset-2 decoration-gray-300">
                               {product.name}
                             </h3>
                           </Link>

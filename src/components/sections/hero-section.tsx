@@ -17,6 +17,8 @@ export default function HeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
   const [enableScrollAnim, setEnableScrollAnim] = useState(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
   // const [banners, setBanners] = useState<Banner[]>([]);
   const ref = useRef<HTMLDivElement | null>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -42,7 +44,7 @@ export default function HeroSection() {
           target: ref,
           offset: ["start start", "end center"],
         }
-      : {}
+      : {},
   );
 
   const yTransform = useTransform(scrollYProgress, [0, 1], [0, 150]);
@@ -60,7 +62,6 @@ export default function HeroSection() {
       }
     }
   }, []);
-
 
   /* ------------------ AUTOPLAY ------------------ */
   useEffect(() => {
@@ -84,6 +85,29 @@ export default function HeroSection() {
   const goToSlide = (index: number) => {
     setCurrentSlide(index);
     setAutoPlay(false);
+  };
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setAutoPlay(false);
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+
+    if (distance > minSwipeDistance) {
+      nextSlide();
+    } else if (distance < -minSwipeDistance) {
+      prevSlide();
+    }
   };
 
   if (loading) {
@@ -114,7 +138,18 @@ export default function HeroSection() {
       style={{ contain: "layout paint size" }}
     >
       {/* ------------------ BACKGROUND MEDIA ------------------ */}
-      <div className="absolute inset-0 w-full h-full overflow-hidden">
+      <div
+        className="
+    absolute inset-0 w-full h-full overflow-hidden
+    touch-pan-y
+    select-none
+    overscroll-x-contain
+  "
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
+        {" "}
         {banners.map((banner, index) => (
           <motion.div
             key={banner.id}
@@ -188,36 +223,88 @@ export default function HeroSection() {
         </motion.div>
       </div>
 
-      {/* ------------------ NAV CONTROLS ------------------ */}
+      {/* ------------------ LUXURY NAVIGATION ------------------ */}
       {banners.length > 1 && (
         <>
+          {/* DESKTOP ONLY ARROWS */}
           <button
             onClick={prevSlide}
-            className="absolute left-6 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-sm transition"
+            className="
+        hidden md:flex
+        absolute left-6 top-1/2 -translate-y-1/2 z-30
+        w-14 h-14
+        items-center justify-center
+        rounded-full
+        bg-black/20
+        backdrop-blur-2xl
+        border border-white/10
+        shadow-[0_10px_40px_rgba(0,0,0,0.25)]
+        hover:bg-black/35
+        hover:scale-105
+        transition-all duration-500
+      "
             aria-label="Previous slide"
           >
-            <ChevronLeft className="w-6 h-6 text-white" />
+            <ChevronLeft className="w-5 h-5 text-white" />
           </button>
 
           <button
             onClick={nextSlide}
-            className="absolute right-6 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-sm transition"
+            className="
+        hidden md:flex
+        absolute right-6 top-1/2 -translate-y-1/2 z-30
+        w-14 h-14
+        items-center justify-center
+        rounded-full
+        bg-black/20
+        backdrop-blur-2xl
+        border border-white/10
+        shadow-[0_10px_40px_rgba(0,0,0,0.25)]
+        hover:bg-black/35
+        hover:scale-105
+        transition-all duration-500
+      "
             aria-label="Next slide"
           >
-            <ChevronRight className="w-6 h-6 text-white" />
+            <ChevronRight className="w-5 h-5 text-white" />
           </button>
 
-          {/* ------------------ DOTS ------------------ */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+          {/* MOBILE SWIPE HINT */}
+          <div className="md:hidden absolute bottom-24 left-1/2 -translate-x-1/2 z-30">
+            <div
+              className="
+          px-4 py-1.5
+          rounded-full
+          bg-black/20
+          backdrop-blur-xl
+          border border-white/10
+        "
+            >
+              <p className="text-[10px] uppercase tracking-[0.25em] text-white/70">
+                Swipe
+              </p>
+            </div>
+          </div>
+
+          {/* PREMIUM DOTS */}
+          <div
+            className="
+        absolute bottom-10 left-1/2 -translate-x-1/2
+        z-30 flex items-center gap-2
+      "
+          >
             {banners.map((_, index) => (
               <button
                 key={index}
                 onClick={() => goToSlide(index)}
-                className={`rounded-full transition-all ${
-                  index === currentSlide
-                    ? "bg-white w-8 h-2"
-                    : "bg-white/50 w-2 h-2 hover:bg-white/75"
-                }`}
+                className={`
+            rounded-full transition-all duration-500
+            ${
+              index === currentSlide
+                ? "w-10 h-[3px] bg-white"
+                : "w-2 h-2 bg-white/35"
+            }
+          `}
                 aria-label={`Go to slide ${index + 1}`}
               />
             ))}
