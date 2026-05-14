@@ -151,7 +151,7 @@ export function ZoomGallery({
               onClick={() => setSelectedImageIndex(idx)}
               className={`relative rounded-lg overflow-hidden border-2 ${
                 selectedImageIndex === idx
-                  ? "border-yellow-500"
+                  ? "border-main-secondary"
                   : "border-transparent opacity-60"
               }`}
             >
@@ -207,7 +207,7 @@ export function ZoomGallery({
           )}
 
           {/* Navigation */}
-          {!isHovering && images.length > 1 && (
+          {images.length > 1 && (
             <>
               <button
                 onClick={prevImage}
@@ -226,7 +226,7 @@ export function ZoomGallery({
 
           {/* Badge */}
           {discount > 0 && !isOutOfStock && (
-            <div className="absolute top-3 left-3 bg-green-600 text-white px-2 py-1 text-xs rounded-full">
+            <div className="absolute top-3 left-3 bg-main-primary text-main-secondary px-2 py-1 text-xs rounded-full">
               {discount}% OFF
             </div>
           )}

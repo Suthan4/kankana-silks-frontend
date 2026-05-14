@@ -485,21 +485,52 @@ export default function ProductDetailsClient({
       return;
     }
     const buyNowItem = {
+      id: crypto.randomUUID(),
       productId: product.id,
       variantId: selectedVariant?.id,
       quantity,
-      productName: product.name,
-      slug: product.slug,
-      price: Number(displayPrice),
-      basePrice: Number(basePrice),
-      image: images?.[0]?.url ?? "/placeholder.jpg",
-      stock: availableStock,
+
+      // ✅ FULL PRODUCT OBJECT
+      product: {
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        categoryId: product.categoryId,
+        sellingPrice: Number(product.sellingPrice),
+        basePrice: Number(product.basePrice),
+
+        media: [
+          {
+            url: images?.[0]?.url ?? "/placeholder.jpg",
+            altText: product.name,
+            isActive: true,
+          },
+        ],
+
+        stock:
+          product.stock?.map((s) => ({
+            ...s,
+            lowStockThreshold: s.lowStockThreshold ?? 0,
+          })) ?? [],
+      },
+
+      // ✅ FULL VARIANT OBJECT
       variant: selectedVariant
         ? {
+            id: selectedVariant.id,
+            sellingPrice: Number(selectedVariant.sellingPrice),
+            basePrice: Number(selectedVariant.basePrice),
+
             size: selectedVariant.size ?? undefined,
             color: selectedVariant.color ?? undefined,
             fabric: selectedVariant.fabric ?? undefined,
-            attributes: selectedVariant.attributes ?? undefined,
+            attributes: selectedVariant.attributes,
+
+            stock:
+              selectedVariant.stock?.map((s) => ({
+                ...s,
+                lowStockThreshold: s.lowStockThreshold ?? 0,
+              })) ?? [],
           }
         : undefined,
     };
@@ -516,6 +547,7 @@ export default function ProductDetailsClient({
     } catch (error) {
       toast.error("Failed to proceed to checkout");
     }
+    console.log("buyNowItem", buyNowItem);
   };
 
   const nextImage = () => {
@@ -532,7 +564,7 @@ export default function ProductDetailsClient({
   return (
     <>
       {/* <div className="h-[calc(100vh-theme(spacing.36))] overflow-hidden bg-gradient-to-br from-amber-50 via-white to-orange-50">
-        <div className="max-w-7xl mx-auto px-4 h-full flex flex-col"> */}
+          <div className="max-w-7xl mx-auto px-4 h-full flex flex-col"> */}
       <div className="bg-gradient-to-br from-amber-50 via-white to-orange-50">
         <div className="max-w-7xl mx-auto px-4 flex flex-col">
           {/* Breadcrumb */}
@@ -545,7 +577,7 @@ export default function ProductDetailsClient({
               Home
             </Link>
             <span>›</span>
-            <Link href="/products" className="hover:text-gray-900">
+            <Link href="/shop" className="hover:text-gray-900">
               Products
             </Link>
             <span>›</span>
@@ -598,7 +630,7 @@ export default function ProductDetailsClient({
                             <span className="text-lg text-gray-400 line-through">
                               {formatMaskedPrice(basePrice)}
                             </span>
-                            <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-semibold">
+                            <span className="bg-main-primary text-main-secondary px-2 py-0.5 rounded-full text-xs font-semibold">
                               {discount}% OFF
                             </span>
                           </>
@@ -622,7 +654,7 @@ export default function ProductDetailsClient({
                                 maximumFractionDigits: 2,
                               })}
                             </span>
-                            <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-semibold">
+                            <span className="bg-main-primary text-main-secondary px-2 py-0.5 rounded-full text-xs font-semibold">
                               {discount}% OFF
                             </span>
                           </>
@@ -743,7 +775,7 @@ export default function ProductDetailsClient({
                 {/* Stock Status */}
                 <div>
                   {!isOutOfStock && !allowOutOfStockOrders ? (
-                    <p className="text-green-600 font-medium text-sm">
+                    <p className="text-main-secondary font-medium text-sm">
                       ✓ In Stock ({availableStock} available)
                     </p>
                   ) : (
@@ -795,23 +827,33 @@ export default function ProductDetailsClient({
                       <motion.div
                         initial={{ opacity: 0, y: -6 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className={`mt-2 p-2.5 rounded-lg flex items-center gap-2 ${deliveryInfo.isServiceable ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}
+                        className={`mt-2 p-3 rounded-xl flex items-center gap-2 ${
+                          deliveryInfo.isServiceable
+                            ? "bg-[#58292C]/10 border border-[#58292C]/20"
+                            : "bg-red-50 border border-red-200"
+                        }`}
                       >
                         {deliveryInfo.isServiceable ? (
-                          <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
+                          <Check className="w-4 h-4 text-main-secondary flex-shrink-0" />
                         ) : (
                           <X className="w-4 h-4 text-red-600 flex-shrink-0" />
                         )}
+
                         <div>
                           <p
-                            className={`font-medium text-xs ${deliveryInfo.isServiceable ? "text-green-900" : "text-red-900"}`}
+                            className={`font-medium text-sm ${
+                              deliveryInfo.isServiceable
+                                ? "text-main-primary"
+                                : "text-red-900"
+                            }`}
                           >
                             {deliveryInfo.isServiceable
                               ? "Delivery Available"
                               : "Not Serviceable"}
                           </p>
+
                           {deliveryInfo.isServiceable && (
-                            <p className="text-[10px] text-green-700">
+                            <p className="text-xs text-main-secondary">
                               Expected in {deliveryInfo.estimatedDays}
                             </p>
                           )}
@@ -884,7 +926,7 @@ export default function ProductDetailsClient({
                         whileTap={{ scale: 0.98 }}
                         onClick={handleBuyNow}
                         disabled={availableStock === 0}
-                        className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-xl font-semibold shadow hover:shadow-md transition flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 bg-main-primary text-main-secondary py-3 rounded-xl font-semibold shadow hover:shadow-md transition flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Zap className="w-4 h-4" /> Buy Now
                       </motion.button>
@@ -901,8 +943,8 @@ export default function ProductDetailsClient({
                 {/* Trust badges */}
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { icon: Truck, label: "Free Shipping" },
-                    { icon: RotateCcw, label: "7 Days Return" },
+                    // { icon: Truck, label: "Free Shipping" },
+                    // { icon: RotateCcw, label: "7 Days Return" },
                     { icon: Shield, label: "Secure Payment" },
                   ].map(({ icon: Icon, label }) => (
                     <div

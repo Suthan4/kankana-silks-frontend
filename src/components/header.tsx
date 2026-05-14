@@ -351,7 +351,10 @@ function Header() {
       type: "action",
       requiresAuth: false,
       onClick: () => {
-        window.open("https://wa.me/91XXXXXXXXXX", "_blank");
+        window.open(
+          "https://api.whatsapp.com/send?phone=918838562459&text=Hello%20Kankana%20Silks,%20I%E2%80%99m%20interested%20in%20exploring%20your%20saree%20collection.",
+          "_blank",
+        );
       },
     },
     {
@@ -413,7 +416,7 @@ function Header() {
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.55, ease: "easeOut" }}
-        className="hidden md:block sticky top-0 z-50 bg-white"
+        className="hidden md:block sticky top-0 z-40 bg-white"
       >
         {/* ── SINGLE COMPACT TOP BAR ── */}
         <div
@@ -631,26 +634,32 @@ function Header() {
                 .map((item) => {
                   const Icon = item.icon;
                   const Btn = (
-                    <motion.button
-                      whileHover={{ scale: 0.92 }}
-                      whileTap={{ scale: 0.86 }}
-                      onClick={() => {
-                        if (item.requiresAuth) authGuard(item.onClick);
-                        else item.onClick?.();
-                      }}
-                      className="relative flex items-center justify-center w-9 h-9 text-gray-600 hover:text-black transition-colors"
-                    >
-                      <Icon
-                        // className="w-4.5 h-4.5"
-                        style={{ width: "18px", height: "18px" }}
-                      />
-                      {"badgeCount" in item && item.badgeCount! > 0 && (
-                        <span className="absolute -top-1.5 -right-1.5 bg-black text-white text-[9px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-medium">
-                          {item.badgeCount}
-                        </span>
-                      )}
-                    </motion.button>
+                    <div className="relative group">
+                      <motion.button
+                        whileHover={{ scale: 0.92 }}
+                        whileTap={{ scale: 0.86 }}
+                        onClick={() => {
+                          if (item.requiresAuth) authGuard(item.onClick);
+                          else item.onClick?.();
+                        }}
+                        className="relative flex items-center justify-center w-9 h-9 text-gray-600 hover:text-black transition-colors"
+                      >
+                        <Icon style={{ width: "18px", height: "18px" }} />
+                        {"badgeCount" in item && item.badgeCount! > 0 && (
+                          <span className="absolute -top-[0.1rem] -right-[0.1rem] bg-black text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-medium">
+                            {item.badgeCount}
+                          </span>
+                        )}
+                      </motion.button>
+
+                      {/* Tooltip */}
+                      <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-0.5 z-[50] whitespace-nowrap rounded-full bg-black/95 px-3 py-1.5 text-[10px] font-medium tracking-[0.08em] text-white opacity-0 shadow-lg transition-all duration-200 -translate-y-1 group-hover:translate-y-0 group-hover:opacity-100">
+                        {item.name}
+                        <span className="absolute left-1/2 -translate-x-1/2 bottom-full w-0 h-0 border-x-4 border-x-transparent border-b-4 border-b-black/95" />
+                      </span>
+                    </div>
                   );
+
                   if (item.type === "link") {
                     return (
                       <Link
@@ -670,21 +679,32 @@ function Header() {
                   return <div key={item.name}>{Btn}</div>;
                 })}
 
-              {/* WhatsApp */}
-              <motion.button
-                whileHover={{ scale: 0.92 }}
-                whileTap={{ scale: 0.86 }}
-                onClick={() =>
-                  window.open("https://wa.me/91XXXXXXXXXX", "_blank")
-                }
-                className="flex items-center justify-center w-9 h-9 text-gray-600 hover:text-black transition-colors"
-              >
-                <MessageCircle style={{ width: "18px", height: "18px" }} />
-              </motion.button>
+              <div className="relative group">
+                <motion.button
+                  whileHover={{ scale: 0.92 }}
+                  whileTap={{ scale: 0.86 }}
+                  onClick={() =>
+                    window.open(
+                      "https://api.whatsapp.com/send?phone=918838562459&text=Hello%20Kankana%20Silks,%20I%E2%80%99m%20interested%20in%20exploring%20your%20saree%20collection.",
+                      "_blank",
+                    )
+                  }
+                  className="flex items-center justify-center w-9 h-9 text-gray-600 hover:text-black transition-colors"
+                >
+                  <MessageCircle style={{ width: "18px", height: "18px" }} />
+                </motion.button>
+
+                {/* Tooltip */}
+                <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-0.5 z-[50] whitespace-nowrap rounded-full bg-black/95 px-3 py-1.5 text-[10px] font-medium tracking-[0.08em] text-white opacity-0 shadow-lg transition-all duration-200 -translate-y-1 group-hover:translate-y-0 group-hover:opacity-100">
+                  Connect on WhatsApp
+                  {/* Arrow pointing UP toward button */}
+                  <span className="absolute left-1/2 -translate-x-1/2 bottom-full w-0 h-0 border-x-4 border-x-transparent border-b-4 border-b-black/95" />
+                </span>
+              </div>
 
               {/* User */}
               <div
-                className="relative"
+                className="relative group"
                 onMouseEnter={() => user && setUserMenuOpen(true)}
                 onMouseLeave={() => setUserMenuOpen(false)}
               >
@@ -696,6 +716,13 @@ function Header() {
                   className="flex items-center justify-center gap-1 h-9 px-1 text-gray-600 hover:text-black transition-colors"
                 >
                   {!user && <User style={{ width: "18px", height: "18px" }} />}
+                  {/* Tooltip — only show when logged out (icon state) */}
+                  {!user && (
+                    <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-0.5 z-[50] whitespace-nowrap rounded-full bg-black/95 px-3 py-1.5 text-[10px] font-medium tracking-[0.08em] text-white opacity-0 shadow-lg transition-all duration-200 -translate-y-1 group-hover:translate-y-0 group-hover:opacity-100">
+                      Sign In
+                      <span className="absolute left-1/2 -translate-x-1/2 bottom-full w-0 h-0 border-x-4 border-x-transparent border-b-4 border-b-black/95" />
+                    </span>
+                  )}
                   {user && (
                     <>
                       <span className="text-xs font-semibold text-gray-900 hidden lg:block">
@@ -756,13 +783,16 @@ function Header() {
         {/* ── NAV BAR — black & white, Sabyasachi style ── */}
         <motion.nav
           ref={navRef}
+          initial={false}
           animate={{
-            y: showNav ? 0 : -48,
+            height: showNav ? 40 : 0,
             opacity: showNav ? 1 : 0,
-            pointerEvents: showNav ? "auto" : "none",
           }}
-          transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
-          className="hidden md:block relative bg-white border-b border-gray-200"
+          transition={{
+            duration: 0.22,
+            ease: [0.25, 0.1, 0.25, 1],
+          }}
+          className="hidden md:block relative bg-white border-b border-gray-200 overflow-hidden z-40"
         >
           <ul className="flex justify-center items-center gap-0 h-10">
             {loading ? (
@@ -1413,11 +1443,13 @@ function Header() {
         >
           <ul className="flex justify-around items-center py-3">
             {icons
-              .filter((item) =>
-                ["Home", "Consultation", "Cart", "Wishlist"].includes(
-                  item.name,
-                ),
-              )
+              .filter((item) => {
+                const visibleItems = !user
+                  ? ["Home", "Consultation", "Cart", "Wishlist"]
+                  : ["Home", "Cart", "Wishlist"];
+
+                return visibleItems.includes(item.name);
+              })
               .map((item, index) => {
                 const IconComponent = item.icon;
                 const isActive =

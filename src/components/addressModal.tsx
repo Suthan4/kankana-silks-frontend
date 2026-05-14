@@ -469,9 +469,9 @@ export default function AddressModal({
           "
         >
           {/* ── Header ── */}
-          <div className="relative bg-main-primary px-5 py-3.5 text-main-secondary flex items-center gap-3 shrink-0">
-            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-              <MapPin className="w-4 h-4" />
+          <div className="relative bg-white px-5 py-3.5 text-black flex items-center gap-3 shrink-0">
+            <div className="w-8 h-8 bg-black/20 rounded-full flex items-center justify-center">
+              <MapPin className="w-4 h-4 text-black" />
             </div>
             <div>
               <h2 className="text-base font-bold leading-tight">
@@ -612,7 +612,7 @@ export default function AddressModal({
                   disabled={isSubmitting}
                   className="
                     flex items-center gap-2 px-6 py-2.5 rounded-full
-                    bg-main-primary text-main-secondary
+                    bg-black text-white
                     text-sm font-semibold
                     hover:opacity-90 active:scale-95
                     transition-all duration-150
