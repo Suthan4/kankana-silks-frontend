@@ -301,19 +301,49 @@ function Header() {
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
-    const handleScroll = () => {
+    let ticking = false;
+
+    const updateNavbar = () => {
       const currentScrollY = window.scrollY;
-      if (currentScrollY > lastScrollY && currentScrollY > 120) {
-        setShowNav(false);
-        setHoveredCategory(null); // ← close megamenu on scroll
-        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-      } else {
+
+      // Always show near top
+      if (currentScrollY < 80) {
         setShowNav(true);
       }
+      // Hide only after meaningful downward scroll
+      else if (currentScrollY > lastScrollY + 12) {
+        setShowNav(false);
+
+        // Close megamenu while hiding
+        setHoveredCategory(null);
+
+        if (hoverTimeoutRef.current) {
+          clearTimeout(hoverTimeoutRef.current);
+        }
+      }
+      // Show only after meaningful upward scroll
+      else if (currentScrollY < lastScrollY - 12) {
+        setShowNav(true);
+      }
+
       lastScrollY = currentScrollY;
+      ticking = false;
     };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+
+    const handleScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(updateNavbar);
+        ticking = true;
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, {
+      passive: true,
+    });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
   /* -------------------- GENERATE CATEGORY URL -------------------- */
@@ -385,7 +415,7 @@ function Header() {
   useEffect(() => {
     const updateNavBottom = () => {
       if (navRef.current) {
-        setNavBottom(navRef.current.getBoundingClientRect().bottom);
+        // setNavBottom(navRef.current.getBoundingClientRect().bottom);
       }
     };
     updateNavBottom();
@@ -789,87 +819,102 @@ function Header() {
             opacity: showNav ? 1 : 0,
           }}
           transition={{
-            duration: 0.22,
-            ease: [0.25, 0.1, 0.25, 1],
+            height: {
+              duration: 0.18,
+              ease: [0.22, 1, 0.36, 1],
+            },
+            opacity: {
+              duration: 0.12,
+            },
           }}
-          className="hidden md:block relative bg-white border-b border-gray-200 overflow-hidden z-40"
+          style={{
+            willChange: "opacity",
+            transform: "translateZ(0)",
+            backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden",
+          }}
+          className="hidden md:block relative bg-white z-40"
         >
-          <ul className="flex justify-center items-center gap-0 h-10">
-            {loading ? (
-              [80, 100, 72, 88, 96, 76].map((w, i) => (
-                <li key={i} className="px-5">
-                  <div
-                    className="h-2.5 rounded-full bg-gray-100 animate-pulse"
-                    style={{ width: `${w}px` }}
-                  />
+          <div className="overflow-hidden border-b border-gray-200">
+            <ul className="flex justify-center items-center gap-0 h-10">
+              {loading ? (
+                [80, 100, 72, 88, 96, 76].map((w, i) => (
+                  <li key={i} className="px-5">
+                    <div
+                      className="h-2.5 rounded-full bg-gray-100 animate-pulse"
+                      style={{ width: `${w}px` }}
+                    />
+                  </li>
+                ))
+              ) : categories.length === 0 ? (
+                <li className="text-xs text-gray-400">
+                  No categories available
                 </li>
-              ))
-            ) : categories.length === 0 ? (
-              <li className="text-xs text-gray-400">No categories available</li>
-            ) : (
-              categories.map((category, index) => (
-                <Fragment key={category.id}>
-                  <li
-                    onMouseEnter={() => {
-                      if (hoverTimeoutRef.current)
-                        clearTimeout(hoverTimeoutRef.current);
-                      setHoveredCategory(category.id);
-                      if (navRef.current)
-                        setNavBottom(
-                          navRef.current.getBoundingClientRect().bottom,
+              ) : (
+                categories.map((category, index) => (
+                  <Fragment key={category.id}>
+                    <li
+                      onMouseEnter={() => {
+                        if (hoverTimeoutRef.current)
+                          clearTimeout(hoverTimeoutRef.current);
+                        setHoveredCategory(category.id);
+                        if (navRef.current)
+                          setNavBottom(
+                            navRef.current.getBoundingClientRect().bottom,
+                          );
+                      }}
+                      onMouseLeave={() => {
+                        hoverTimeoutRef.current = setTimeout(
+                          () => setHoveredCategory(null),
+                          80,
                         );
-                    }}
-                    onMouseLeave={() => {
-                      hoverTimeoutRef.current = setTimeout(
-                        () => setHoveredCategory(null),
-                        80,
-                      );
-                    }}
-                    className="relative h-full flex items-center"
-                  >
-                    <Link
-                      href={getCategoryUrl(category.slug)}
-                      className={`relative flex items-center gap-1 px-5 h-10 text-[12px] font-medium tracking-[0.12em] uppercase transition-colors duration-150 ${
-                        hoveredCategory === category.id
-                          ? "text-black"
-                          : "text-gray-500 hover:text-black"
-                      }`}
+                      }}
+                      className="relative h-full flex items-center"
                     >
-                      {category.name}
-                      {category.children && category.children.length > 0 && (
-                        <ChevronDown
-                          className={`w-2.5 h-2.5 transition-transform duration-200 ${hoveredCategory === category.id ? "rotate-180" : ""}`}
+                      <Link
+                        href={getCategoryUrl(category.slug)}
+                        className={`relative flex items-center gap-1 px-5 h-10 text-[12px] font-medium tracking-[0.12em] uppercase transition-colors duration-150 ${
+                          hoveredCategory === category.id
+                            ? "text-black"
+                            : "text-gray-500 hover:text-black"
+                        }`}
+                      >
+                        {category.name}
+                        {category.children && category.children.length > 0 && (
+                          <ChevronDown
+                            className={`w-2.5 h-2.5 transition-transform duration-200 ${hoveredCategory === category.id ? "rotate-180" : ""}`}
+                          />
+                        )}
+                      </Link>
+                      {/* Active underline */}
+                      {hoveredCategory === category.id && (
+                        <motion.div
+                          layoutId="navUnderline"
+                          className="absolute bottom-0 left-5 right-5 h-[1.5px] bg-black"
+                          transition={{
+                            type: "spring",
+                            stiffness: 500,
+                            damping: 40,
+                          }}
                         />
                       )}
-                    </Link>
-                    {/* Active underline */}
-                    {hoveredCategory === category.id && (
-                      <motion.div
-                        layoutId="navUnderline"
-                        className="absolute bottom-0 left-5 right-5 h-[1.5px] bg-black"
-                        transition={{
-                          type: "spring",
-                          stiffness: 500,
-                          damping: 40,
-                        }}
-                      />
-                    )}
-                  </li>
-
-                  {/* Dot separator */}
-                  {index < categories.length - 1 && (
-                    <li
-                      key={`sep-${index}`}
-                      aria-hidden="true"
-                      className="flex items-center"
-                    >
-                      <span className="block w-[3px] h-[3px] rounded-full bg-gray-300" />
                     </li>
-                  )}
-                </Fragment>
-              ))
-            )}
-          </ul>
+
+                    {/* Dot separator */}
+                    {index < categories.length - 1 && (
+                      <li
+                        key={`sep-${index}`}
+                        aria-hidden="true"
+                        className="flex items-center"
+                      >
+                        <span className="block w-[3px] h-[3px] rounded-full bg-gray-300" />
+                      </li>
+                    )}
+                  </Fragment>
+                ))
+              )}
+            </ul>
+          </div>
 
           {/* ── SABYASACHI-STYLE MEGAMENU ── */}
           <AnimatePresence>
@@ -881,8 +926,8 @@ function Header() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.18 }}
-                  className="fixed inset-0 z-40 bg-black/30"
-                  style={{ top: navBottom }}
+                  className="absolute left-0 right-0 top-full h-screen z-40 bg-black/30"
+                  // style={{ top: navBottom }}
                   onMouseEnter={() => {
                     if (hoverTimeoutRef.current)
                       clearTimeout(hoverTimeoutRef.current);
@@ -897,8 +942,8 @@ function Header() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.18, ease: "easeOut" }}
-                  className="fixed left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-xl"
-                  style={{ top: navBottom }}
+                  className="absolute left-0 right-0 top-full z-50 bg-white border-t border-gray-200 shadow-xl"
+                  // style={{ top: navBottom }}
                   onMouseEnter={() => {
                     if (hoverTimeoutRef.current)
                       clearTimeout(hoverTimeoutRef.current);
