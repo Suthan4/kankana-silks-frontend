@@ -586,13 +586,13 @@ export default function AddressModal({
       w-4 h-4 border-2 border-gray-300 rounded 
       flex items-center justify-center
       transition-colors
-      group-has-[:checked]:bg-main-primary
-      group-has-[:checked]:border-main-primary
+      group-has-[:checked]:bg-black
+      group-has-[:checked]:border-black
     "
                     >
                       <Check
                         className="
-        w-3 h-3 text-main-secondary 
+        w-3 h-3 text-white 
         opacity-0 scale-75 
         transition-all duration-150
         group-has-[:checked]:opacity-100 

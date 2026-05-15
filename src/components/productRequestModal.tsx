@@ -13,7 +13,7 @@ interface ProductRequestModalProps {
   onClose: () => void;
   product: Product;
   selectedVariant?: ProductVariant | null;
-  onSuccess?: () => void;
+  // onSuccess?: () => void;
 }
 
 export default function ProductRequestModal({
@@ -21,7 +21,7 @@ export default function ProductRequestModal({
   onClose,
   product,
   selectedVariant,
-  onSuccess,
+  // onSuccess,
 }: ProductRequestModalProps) {
   const [message, setMessage] = useState("");
 
@@ -40,7 +40,7 @@ export default function ProductRequestModal({
       });
       setMessage("");
       onClose();
-      onSuccess?.();
+      // onSuccess?.();
     },
     onError: (error: any) => {
       toast.error("Failed to submit request", {
@@ -69,16 +69,16 @@ export default function ProductRequestModal({
           />
 
           {/* Modal */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: "spring", duration: 0.5 }}
-              className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+              className="bg-white rounded-t-3xl md:rounded-2xl shadow-2xl max-w-md w-full overflow-hidden max-h-[92vh] overflow-y-auto"
             >
               {/* Header */}
-              <div className="relative bg-gradient-to-br from-amber-50 to-orange-50 p-6 border-b border-gray-100">
+              <div className="relative bg-gray-100 p-6 border-b border-gray-100">
                 <button
                   onClick={onClose}
                   className="absolute top-4 right-4 p-2 hover:bg-white/50 rounded-full transition-colors"
@@ -87,7 +87,7 @@ export default function ProductRequestModal({
                 </button>
 
                 <div className="flex items-start gap-4">
-                  <div className="p-3 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl shadow-lg">
+                  <div className="p-3 bg-black rounded-xl shadow-lg">
                     <Package className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
@@ -143,7 +143,7 @@ export default function ProductRequestModal({
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Let us know if you have any specific requirements..."
                     rows={4}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none transition-shadow text-sm"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent resize-none transition-shadow text-sm"
                     maxLength={500}
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -164,19 +164,19 @@ export default function ProductRequestModal({
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-3">
+                <div className="flex gap-2 sm:gap:3">
                   <button
                     type="button"
                     onClick={onClose}
                     disabled={requestMutation.isPending}
-                    className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    className="min-w-[110px] px-4 py-3 border border-gray-300 rounded-xl font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50 text-sm"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={requestMutation.isPending}
-                    className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 min-w-0 px-4 py-3 bg-black text-white rounded-xl font-medium hover:bg-neutral-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm whitespace-nowrap"
                   >
                     {requestMutation.isPending ? (
                       <>
@@ -186,7 +186,7 @@ export default function ProductRequestModal({
                     ) : (
                       <>
                         <Send className="w-4 h-4" />
-                        Submit Request
+                        <span className="truncate">Submit Request</span>
                       </>
                     )}
                   </button>

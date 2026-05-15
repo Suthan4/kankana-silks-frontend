@@ -271,15 +271,15 @@ export default function ShopClient({ categories }: ShopClientProps) {
         transition={{ duration: 0.5 }}
         className="border-t border-gray-100 mt-4"
       >
-        <div className="max-w-screen-xl mx-auto px-6 md:px-12 py-14 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="max-w-screen-xl mx-auto px-5 md:px-12 py-8 md:py-14 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 md:gap-6">
           <div>
             <p className="text-[10px] tracking-[0.22em] uppercase text-gray-400 mb-1">
               Bespoke Service
             </p>
-            <h2 className="text-xl font-light text-gray-900">
+            <h2 className="text-lg md:text-xl font-light text-gray-900">
               Looking for something special?
             </h2>
-            <p className="text-xs text-gray-400 mt-1 max-w-sm leading-relaxed">
+            <p className="text-[11px] md:text-xs text-gray-400 mt-1.5 max-w-sm leading-relaxed">
               Custom orders, personalised recommendations — our team is ready.
             </p>
           </div>
