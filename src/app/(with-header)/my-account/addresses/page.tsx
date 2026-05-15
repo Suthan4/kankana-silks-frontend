@@ -20,9 +20,62 @@ import {
 } from "@/hooks/useAddresses";
 import type { Address } from "@/lib/api/addresses.api";
 
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+export const addressSchema = z.object({
+  type: z.enum(["SHIPPING", "BILLING", "BOTH"]),
+
+  fullName: z.string().min(2, "Full name is required").max(60),
+
+  phone: z
+    .string()
+    .trim()
+    .regex(/^[6-9]\d{9}$/, "Enter valid 10-digit phone number"),
+
+  addressLine1: z.string().min(5, "Address is too short"),
+
+  addressLine2: z.string().optional(),
+
+  city: z.string().min(2, "City is required"),
+
+  state: z.string().min(2, "State is required"),
+
+  pincode: z.string().regex(/^\d{6}$/, "Enter valid 6-digit pincode"),
+
+  country: z.string(),
+
+  isDefault: z.boolean(),
+});
+
+export type AddressFormValues = z.infer<typeof addressSchema>;
+
 export default function AddressesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<AddressFormValues>({
+    resolver: zodResolver(addressSchema),
+    defaultValues: {
+      type: "SHIPPING",
+      fullName: "",
+      phone: "",
+      addressLine1: "",
+      addressLine2: "",
+      city: "",
+      state: "",
+      pincode: "",
+      country: "India",
+      isDefault: false,
+    },
+  });
   const [formData, setFormData] = useState({
     type: "SHIPPING" as "SHIPPING" | "BILLING" | "BOTH",
     fullName: "",
@@ -63,7 +116,8 @@ export default function AddressesPage() {
   const openModal = (address?: Address) => {
     if (address) {
       setEditingAddress(address);
-      setFormData({
+
+      reset({
         type: address.type,
         fullName: address.fullName,
         phone: address.phone,
@@ -76,28 +130,29 @@ export default function AddressesPage() {
         isDefault: address.isDefault,
       });
     } else {
-      resetForm();
+      reset();
+      setEditingAddress(null);
     }
+
     setIsModalOpen(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const onSubmit = async (values: AddressFormValues) => {
     try {
       if (editingAddress) {
         await updateMutation.mutateAsync({
           id: editingAddress.id,
-          data: formData,
+          data: values,
         });
       } else {
-        await createMutation.mutateAsync(formData);
+        await createMutation.mutateAsync(values);
       }
 
       setIsModalOpen(false);
-      resetForm();
-    } catch (error) {
-      console.error("Failed to save address:", error);
+      reset();
+      setEditingAddress(null);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -276,169 +331,244 @@ export default function AddressesPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="p-5 sm:p-6 space-y-4"
+            >
+              {/* Address Type */}
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => setFormData({ ...formData, type: "SHIPPING" })}
-                  className={`flex items-center justify-center gap-2 p-4 border-2 rounded-xl ${
-                    formData.type === "SHIPPING"
-                      ? "border-blue-500 bg-blue-50"
+                  onClick={() => setValue("type", "SHIPPING")}
+                  className={`flex items-center justify-center gap-2 p-4 border-2 rounded-xl transition-all ${
+                    watch("type") === "SHIPPING"
+                      ? "border-black bg-black text-white"
                       : "border-gray-200 hover:bg-gray-50"
                   }`}
                 >
-                  <Home className="w-5 h-5 text-blue-600" />
+                  <Home
+                    className={`w-5 h-5 ${
+                      watch("type") === "SHIPPING" ? "text-white" : "text-black"
+                    }`}
+                  />
                   <span className="font-medium">Home</span>
                 </button>
+
                 <button
                   type="button"
-                  onClick={() => setFormData({ ...formData, type: "BILLING" })}
-                  className={`flex items-center justify-center gap-2 p-4 border-2 rounded-xl ${
-                    formData.type === "BILLING"
-                      ? "border-purple-500 bg-purple-50"
+                  onClick={() => setValue("type", "BILLING")}
+                  className={`flex items-center justify-center gap-2 p-4 border-2 rounded-xl transition-all ${
+                    watch("type") === "BILLING"
+                      ? "border-black bg-black text-white"
                       : "border-gray-200 hover:bg-gray-50"
                   }`}
                 >
-                  <Briefcase className="w-5 h-5 text-purple-600" />
+                  <Briefcase
+                    className={`w-5 h-5 ${
+                      watch("type") === "BILLING" ? "text-white" : "text-black"
+                    }`}
+                  />
                   <span className="font-medium">Work</span>
                 </button>
               </div>
 
+              {/* Full Name */}
               <div>
                 <label className="block text-sm font-medium mb-2">
                   Full Name *
                 </label>
+
                 <input
+                  {...register("fullName")}
                   type="text"
-                  required
-                  value={formData.fullName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, fullName: e.target.value })
-                  }
-                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black outline-none"
                   placeholder="Enter full name"
+                  className={`w-full px-4 py-3 border rounded-xl outline-none transition-all text-sm ${
+                    errors.fullName
+                      ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                      : "border-gray-300 focus:ring-2 focus:ring-black/10 focus:border-black"
+                  }`}
                 />
+
+                {errors.fullName && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {errors.fullName.message}
+                  </p>
+                )}
               </div>
 
+              {/* Phone */}
               <div>
                 <label className="block text-sm font-medium mb-2">
                   Phone Number *
                 </label>
+
                 <input
+                  {...register("phone")}
                   type="tel"
-                  required
-                  value={formData.phone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
-                  }
-                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black outline-none"
-                  placeholder="+91 98765 43210"
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="81111221111"
+                  onInput={(e) => {
+                    e.currentTarget.value = e.currentTarget.value
+                      .replace(/\D/g, "")
+                      .slice(0, 10);
+                  }}
+                  className={`w-full px-4 py-3 border rounded-xl outline-none transition-all text-sm ${
+                    errors.phone
+                      ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                      : "border-gray-300 focus:ring-2 focus:ring-black/10 focus:border-black"
+                  }`}
                 />
+
+                {errors.phone && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {errors.phone.message}
+                  </p>
+                )}
               </div>
 
+              {/* Address 1 */}
               <div>
                 <label className="block text-sm font-medium mb-2">
                   Address Line 1 *
                 </label>
+
                 <textarea
-                  rows={2}
-                  required
-                  value={formData.addressLine1}
-                  onChange={(e) =>
-                    setFormData({ ...formData, addressLine1: e.target.value })
-                  }
-                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black outline-none resize-none"
+                  {...register("addressLine1")}
+                  rows={3}
                   placeholder="House No., Building Name, Street"
+                  className={`w-full px-4 py-3 border rounded-xl outline-none resize-none transition-all text-sm ${
+                    errors.addressLine1
+                      ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                      : "border-gray-300 focus:ring-2 focus:ring-black/10 focus:border-black"
+                  }`}
                 />
+
+                {errors.addressLine1 && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {errors.addressLine1.message}
+                  </p>
+                )}
               </div>
 
+              {/* Address 2 */}
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Address Line 2 (Optional)
+                  Address Line 2
                 </label>
+
                 <input
+                  {...register("addressLine2")}
                   type="text"
-                  value={formData.addressLine2}
-                  onChange={(e) =>
-                    setFormData({ ...formData, addressLine2: e.target.value })
-                  }
-                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black outline-none"
                   placeholder="Landmark, Area"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none transition-all focus:ring-2 focus:ring-black/10 focus:border-black text-sm"
                 />
               </div>
 
+              {/* City + Pincode */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     City *
                   </label>
+
                   <input
+                    {...register("city")}
                     type="text"
-                    required
-                    value={formData.city}
-                    onChange={(e) =>
-                      setFormData({ ...formData, city: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black outline-none"
                     placeholder="City"
+                    className={`w-full px-4 py-3 border rounded-xl outline-none transition-all text-sm ${
+                      errors.city
+                        ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                        : "border-gray-300 focus:ring-2 focus:ring-black/10 focus:border-black"
+                    }`}
                   />
+
+                  {errors.city && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {errors.city.message}
+                    </p>
+                  )}
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     Pincode *
                   </label>
+
                   <input
+                    {...register("pincode")}
                     type="text"
-                    required
-                    value={formData.pincode}
-                    onChange={(e) =>
-                      setFormData({ ...formData, pincode: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black outline-none"
+                    inputMode="numeric"
                     placeholder="560038"
+                    className={`w-full px-4 py-3 border rounded-xl outline-none transition-all text-sm ${
+                      errors.pincode
+                        ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                        : "border-gray-300 focus:ring-2 focus:ring-black/10 focus:border-black"
+                    }`}
                   />
+
+                  {errors.pincode && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {errors.pincode.message}
+                    </p>
+                  )}
                 </div>
               </div>
 
+              {/* State */}
               <div>
                 <label className="block text-sm font-medium mb-2">
                   State *
                 </label>
+
                 <input
+                  {...register("state")}
                   type="text"
-                  required
-                  value={formData.state}
-                  onChange={(e) =>
-                    setFormData({ ...formData, state: e.target.value })
-                  }
-                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black outline-none"
                   placeholder="Karnataka"
+                  className={`w-full px-4 py-3 border rounded-xl outline-none transition-all text-sm ${
+                    errors.state
+                      ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                      : "border-gray-300 focus:ring-2 focus:ring-black/10 focus:border-black"
+                  }`}
                 />
+
+                {errors.state && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {errors.state.message}
+                  </p>
+                )}
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* Checkbox */}
+              <div className="flex items-center gap-3 pt-1">
                 <input
                   type="checkbox"
                   id="default"
-                  checked={formData.isDefault}
-                  onChange={(e) =>
-                    setFormData({ ...formData, isDefault: e.target.checked })
-                  }
-                  className="w-4 h-4 accent-black border-gray-300 rounded-sm focus:ring-0 focus:outline-none"
+                  {...register("isDefault")}
+                  className="w-4 h-4 accent-black rounded border-gray-300"
                 />
-                <label htmlFor="default" className="text-sm">
+
+                <label htmlFor="default" className="text-sm text-gray-700">
                   Set as default address
                 </label>
               </div>
 
+              {/* Submit */}
               <button
                 type="submit"
                 disabled={createMutation.isPending || updateMutation.isPending}
-                className="w-full bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-800 transition disabled:opacity-50"
+                className="w-full bg-black text-white py-3.5 rounded-xl font-medium hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {createMutation.isPending || updateMutation.isPending
-                  ? "Saving..."
-                  : "Save Address"}
+                {createMutation.isPending || updateMutation.isPending ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </div>
+                ) : editingAddress ? (
+                  "Update Address"
+                ) : (
+                  "Save Address"
+                )}
               </button>
             </form>
           </div>
