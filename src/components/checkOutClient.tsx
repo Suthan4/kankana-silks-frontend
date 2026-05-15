@@ -20,6 +20,7 @@ import {
   Loader2,
   Info,
   Star,
+  Phone,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -1216,7 +1217,10 @@ export default function CheckoutClient() {
                                 {address.pincode}
                               </p>
                               <p className="text-xs text-gray-500">
-                                📞 {address.phone}
+                                <span className="flex items-center gap-0.5">
+                                  <Phone className="w-3 h-3 text-main-primary" />{" "}
+                                  {address.phone}
+                                </span>
                               </p>
                             </div>
                             <div className="flex gap-1 flex-shrink-0">
@@ -1279,7 +1283,7 @@ export default function CheckoutClient() {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {chargeableWeight > 0 && (
+                      {/* {chargeableWeight > 0 && (
                         <div className="text-[10px] bg-main-primary border border-main-primary rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 text-main-secondary">
                           <Info className="w-3 h-3 flex-shrink-0" />
                           Chargeable Weight:{" "}
@@ -1287,7 +1291,7 @@ export default function CheckoutClient() {
                             {chargeableWeight.toFixed(2)} kg
                           </span>
                         </div>
-                      )}
+                      )} */}
 
                       {cheapestCourier && (
                         <div

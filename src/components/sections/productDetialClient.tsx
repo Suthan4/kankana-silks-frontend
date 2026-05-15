@@ -1103,7 +1103,7 @@ export default function ProductDetailsClient({
         onClose={() => setIsRequestModalOpen(false)}
         product={product}
         selectedVariant={selectedVariant}
-        onSuccess={() => router.push("/my-account/requests")}
+        // onSuccess={() => router.push("/my-account/requests")}
       />
       <VideoConsultationModal
         isOpen={isVideoModalOpen}

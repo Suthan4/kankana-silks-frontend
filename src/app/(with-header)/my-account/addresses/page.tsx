@@ -424,7 +424,7 @@ export default function AddressesPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, isDefault: e.target.checked })
                   }
-                  className="w-4 h-4"
+                  className="w-4 h-4 accent-black border-gray-300 rounded-sm focus:ring-0 focus:outline-none"
                 />
                 <label htmlFor="default" className="text-sm">
                   Set as default address
