@@ -957,85 +957,103 @@ function Header() {
                 >
                   <div className="max-w-screen-xl mx-auto flex">
                     {/* LEFT SIDEBAR — category title + sub links (Sabyasachi style) */}
-                    <div className="w-56 flex-shrink-0 border-r border-gray-100 py-8 px-8">
-                      <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-gray-400 mb-4">
-                        {activeCategory.name}
-                      </p>
-                      <ul className="space-y-3">
+                    {/* LEFT SIDEBAR — horizontal layout */}
+                    <div className="w-64 flex-shrink-0 border-r border-gray-100 py-10 px-8">
+                      <div className="flex flex-col gap-6">
                         {activeCategory.children?.map((sub, idx) => (
-                          <motion.li
+                          <motion.div
                             key={sub.id}
                             initial={{ opacity: 0, x: -8 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.12, delay: idx * 0.03 }}
                           >
+                            {/* Level 2 — e.g. "Sarees", "Salwars" */}
                             <Link
                               href={getCategoryUrl(sub.slug)}
                               onClick={() => setHoveredCategory(null)}
-                              className="group flex items-center gap-2 text-sm text-gray-500 hover:text-black transition-colors duration-150"
+                              className="group flex items-center gap-3 text-base font-semibold tracking-wide text-gray-800 hover:text-black transition-colors duration-150 mb-2"
                             >
-                              <span className="block w-0 group-hover:w-3 h-px bg-black transition-all duration-200 ease-out" />
+                              <span className="block w-0 group-hover:w-4 h-[1.5px] bg-black transition-all duration-200 ease-out flex-shrink-0" />
                               {sub.name}
                             </Link>
-                          </motion.li>
+
+                            {/* Level 3 — grandchildren horizontal */}
+                            {sub.children && sub.children.length > 0 && (
+                              <div className="flex flex-row flex-wrap gap-x-3 gap-y-1 ml-2 pl-3 border-l-2 border-gray-100">
+                                {sub.children.map((grandchild, gIdx) => (
+                                  <motion.div
+                                    key={grandchild.id}
+                                    initial={{ opacity: 0, x: -6 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{
+                                      duration: 0.1,
+                                      delay: gIdx * 0.02,
+                                    }}
+                                  >
+                                    <Link
+                                      href={getCategoryUrl(grandchild.slug)}
+                                      onClick={() => setHoveredCategory(null)}
+                                      className="text-sm text-gray-500 hover:text-black transition-colors duration-150 whitespace-nowrap"
+                                    >
+                                      {grandchild.name}
+                                    </Link>
+                                  </motion.div>
+                                ))}
+                              </div>
+                            )}
+                          </motion.div>
                         ))}
-                      </ul>
-                      <div className="mt-6 pt-4 border-t border-gray-100">
+                      </div>
+
+                      <div className="mt-8 pt-5 border-t border-gray-200">
                         <Link
                           href={getCategoryUrl(activeCategory.slug)}
                           onClick={() => setHoveredCategory(null)}
-                          className="text-[11px] font-semibold text-black uppercase tracking-wider hover:underline underline-offset-2"
+                          className="text-xs font-bold text-black uppercase tracking-[0.15em] hover:underline underline-offset-4"
                         >
                           View All →
                         </Link>
                       </div>
                     </div>
 
-                    {/* RIGHT — image cards grid (Sabyasachi style) */}
-                    <div className="flex-1 py-8 px-8 max-h-72 overflow-hidden">
+                    {/* RIGHT — only show cards that have an image */}
+                    <div className="flex-1 py-10 px-10 max-h-72 overflow-hidden">
                       {activeCategory.children &&
                       activeCategory.children.length > 0 ? (
-                        <div
-                          className="grid gap-4"
-                          style={{
-                            gridTemplateColumns: `repeat(${Math.min(activeCategory.children.length, 4)}, 1fr)`,
-                          }}
-                        >
-                          {activeCategory.children.map((sub, idx) => (
-                            <motion.div
-                              key={sub.id}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.15, delay: idx * 0.04 }}
-                            >
-                              <Link
-                                href={getCategoryUrl(sub.slug)}
-                                onClick={() => setHoveredCategory(null)}
-                                className="group block"
-                              >
-                                {/* Small square thumbnail — not a banner */}
-                                <div className="relative w-32 h-44 overflow-hidden bg-gray-50 mb-2">
-                                  {sub.image ? (
+                        (() => {
+                          const withImages = activeCategory.children.filter(
+                            (sub) => sub.image,
+                          );
+                          return withImages.length > 0 ? (
+                            <div className="flex flex-row gap-8">
+                              {withImages.map((sub, idx) => (
+                                <motion.div
+                                  key={sub.id}
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{
+                                    duration: 0.15,
+                                    delay: idx * 0.04,
+                                  }}
+                                  className="flex flex-col items-start gap-3"
+                                >
+                                  <div className="relative w-36 h-48 overflow-hidden bg-gray-50 flex-shrink-0">
                                     <Image
-                                      src={sub.image}
+                                      src={sub.image!}
                                       alt={sub.name}
                                       fill
-                                      className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                                      className="object-cover object-top"
                                     />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                                      <span className="text-[9px] tracking-widest uppercase text-gray-300">
-                                        {sub.name}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              </Link>
-                            </motion.div>
-                          ))}
-                        </div>
+                                  </div>
+                                  <span className="text-sm font-semibold text-gray-800 tracking-wide uppercase">
+                                    {sub.name}
+                                  </span>
+                                </motion.div>
+                              ))}
+                            </div>
+                          ) : null;
+                        })()
                       ) : (
-                        /* Category with no children — show category image as small rectangle */
                         <div className="flex items-center gap-6">
                           {activeCategory.image && (
                             <div className="relative w-32 h-44 flex-shrink-0 overflow-hidden bg-gray-100">
@@ -1043,7 +1061,7 @@ function Header() {
                                 src={activeCategory.image}
                                 alt={activeCategory.name}
                                 fill
-                                className="object-cover transition-transform duration-500 hover:scale-105"
+                                className="object-cover"
                               />
                             </div>
                           )}
