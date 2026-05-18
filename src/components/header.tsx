@@ -436,6 +436,14 @@ function Header() {
 
   // Find the currently hovered category object
   const activeCategory = categories.find((cat) => cat.id === hoveredCategory);
+  const totalGrandchildren =
+    activeCategory?.children?.reduce(
+      (acc, child) => acc + (child.children?.length || 0),
+      0,
+    ) ?? 0;
+
+  const shouldUseGrid =
+    (activeCategory?.children?.length || 0) > 4 || totalGrandchildren > 8;
 
   return (
     <>
@@ -851,67 +859,70 @@ function Header() {
                   No categories available
                 </li>
               ) : (
-                categories.map((category, index) => (
-                  <Fragment key={category.id}>
-                    <li
-                      onMouseEnter={() => {
-                        if (hoverTimeoutRef.current)
-                          clearTimeout(hoverTimeoutRef.current);
-                        setHoveredCategory(category.id);
-                        if (navRef.current)
-                          setNavBottom(
-                            navRef.current.getBoundingClientRect().bottom,
+                categories.map((category, index) => {
+                  return (
+                    <Fragment key={category.id}>
+                      <li
+                        onMouseEnter={() => {
+                          if (hoverTimeoutRef.current)
+                            clearTimeout(hoverTimeoutRef.current);
+                          setHoveredCategory(category.id);
+                          if (navRef.current)
+                            setNavBottom(
+                              navRef.current.getBoundingClientRect().bottom,
+                            );
+                        }}
+                        onMouseLeave={() => {
+                          hoverTimeoutRef.current = setTimeout(
+                            () => setHoveredCategory(null),
+                            80,
                           );
-                      }}
-                      onMouseLeave={() => {
-                        hoverTimeoutRef.current = setTimeout(
-                          () => setHoveredCategory(null),
-                          80,
-                        );
-                      }}
-                      className="relative h-full flex items-center"
-                    >
-                      <Link
-                        href={getCategoryUrl(category.slug)}
-                        className={`relative flex items-center gap-1 px-5 h-10 text-[12px] font-medium tracking-[0.12em] uppercase transition-colors duration-150 ${
-                          hoveredCategory === category.id
-                            ? "text-black"
-                            : "text-gray-500 hover:text-black"
-                        }`}
+                        }}
+                        className="relative h-full flex items-center"
                       >
-                        {category.name}
-                        {category.children && category.children.length > 0 && (
-                          <ChevronDown
-                            className={`w-2.5 h-2.5 transition-transform duration-200 ${hoveredCategory === category.id ? "rotate-180" : ""}`}
+                        <Link
+                          href={getCategoryUrl(category.slug)}
+                          className={`relative flex items-center gap-1 px-5 h-10 text-[12px] font-medium tracking-[0.12em] uppercase transition-colors duration-150 ${
+                            hoveredCategory === category.id
+                              ? "text-black"
+                              : "text-gray-500 hover:text-black"
+                          }`}
+                        >
+                          {category.name}
+                          {category.children &&
+                            category.children.length > 0 && (
+                              <ChevronDown
+                                className={`w-2.5 h-2.5 transition-transform duration-200 ${hoveredCategory === category.id ? "rotate-180" : ""}`}
+                              />
+                            )}
+                        </Link>
+                        {/* Active underline */}
+                        {hoveredCategory === category.id && (
+                          <motion.div
+                            layoutId="navUnderline"
+                            className="absolute bottom-0 left-5 right-5 h-[1.5px] bg-black"
+                            transition={{
+                              type: "spring",
+                              stiffness: 500,
+                              damping: 40,
+                            }}
                           />
                         )}
-                      </Link>
-                      {/* Active underline */}
-                      {hoveredCategory === category.id && (
-                        <motion.div
-                          layoutId="navUnderline"
-                          className="absolute bottom-0 left-5 right-5 h-[1.5px] bg-black"
-                          transition={{
-                            type: "spring",
-                            stiffness: 500,
-                            damping: 40,
-                          }}
-                        />
-                      )}
-                    </li>
-
-                    {/* Dot separator */}
-                    {index < categories.length - 1 && (
-                      <li
-                        key={`sep-${index}`}
-                        aria-hidden="true"
-                        className="flex items-center"
-                      >
-                        <span className="block w-[3px] h-[3px] rounded-full bg-gray-300" />
                       </li>
-                    )}
-                  </Fragment>
-                ))
+
+                      {/* Dot separator */}
+                      {index < categories.length - 1 && (
+                        <li
+                          key={`sep-${index}`}
+                          aria-hidden="true"
+                          className="flex items-center"
+                        >
+                          <span className="block w-[3px] h-[3px] rounded-full bg-gray-300" />
+                        </li>
+                      )}
+                    </Fragment>
+                  );
+                })
               )}
             </ul>
           </div>
@@ -955,17 +966,31 @@ function Header() {
                     );
                   }}
                 >
-                  <div className="max-w-screen-xl mx-auto flex min-h-[280px]">
+                  <div className="max-w-screen-2xl mx-auto flex min-h-[320px]">
                     {activeCategory.children &&
                     activeCategory.children.length > 0 ? (
                       /* ── CASE A: HAS CHILDREN (e.g. "What's New") ── */
                       <>
                         {/* Left sidebar */}
-                        <div className="w-64 flex-shrink-0 border-r border-gray-100 py-10 px-8">
-                          <div className="flex flex-col gap-6">
+                        <div
+                          className={`border-r border-gray-100 py-10 transition-all duration-300 ${
+                            shouldUseGrid
+                              ? "flex-1 pl-8 pr-16"
+                              : "w-64 flex-shrink-0 px-8"
+                          }`}
+                        >
+                          {" "}
+                          <div
+                            className={`gap-10 ${
+                              shouldUseGrid
+                                ? "flex flex-row items-start"
+                                : "flex flex-col"
+                            }`}
+                          >
                             {activeCategory.children.map((sub, idx) => (
                               <motion.div
                                 key={sub.id}
+                                className="min-w-[220px] flex-shrink-0"
                                 initial={{ opacity: 0, x: -8 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{
@@ -982,7 +1007,8 @@ function Header() {
                                   {sub.name}
                                 </Link>
                                 {sub.children && sub.children.length > 0 && (
-                                  <div className="flex flex-row flex-wrap gap-x-3 gap-y-1 ml-2 pl-3 border-l-2 border-gray-100">
+                                  <div className="flex flex-col gap-3 ml-2 pl-4 border-l border-gray-100">
+                                    {" "}
                                     {sub.children.map((grandchild, gIdx) => (
                                       <motion.div
                                         key={grandchild.id}
