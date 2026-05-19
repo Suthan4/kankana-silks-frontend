@@ -774,11 +774,7 @@ export default function ProductDetailsClient({
 
                 {/* Stock Status */}
                 <div>
-                  {!isOutOfStock && !allowOutOfStockOrders ? (
-                    <p className="text-main-secondary font-medium text-sm">
-                      ✓ In Stock ({availableStock} available)
-                    </p>
-                  ) : (
+                  {isOutOfStock && !allowOutOfStockOrders ? (
                     <div className="space-y-1">
                       <p className="text-red-600 font-medium text-sm flex items-center gap-1.5">
                         <AlertCircle className="w-4 h-4" /> Out of Stock
@@ -789,6 +785,10 @@ export default function ProductDetailsClient({
                         </p>
                       )}
                     </div>
+                  ) : (
+                    <p className="text-main-secondary font-medium text-sm">
+                      ✓ In Stock ({availableStock} available)
+                    </p>
                   )}
                 </div>
 
