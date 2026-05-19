@@ -26,7 +26,7 @@ interface ShopClientProps {
 type GridType = "3col" | "4col" | "list";
 
 export default function ShopClient({ categories }: ShopClientProps) {
-  const [grid, setGrid] = useState<GridType>("3col");
+  const [grid, setGrid] = useState<GridType>("4col");
 
   const getCategoryUrl = (slug: string) => {
     const queryParams = buildCategoryQuery(slug);

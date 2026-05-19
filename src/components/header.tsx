@@ -975,14 +975,15 @@ function Header() {
                     );
                   }}
                 >
-                  <div className="max-w-screen-2xl mx-auto flex min-h-[320px]">
+                  <div className="max-w-screen-2xl mx-auto flex min-h-[420px] max-h-[420px]">
+                    {" "}
                     {activeCategory.children &&
                     activeCategory.children.length > 0 ? (
                       /* ── CASE A: HAS CHILDREN (e.g. "What's New") ── */
                       <>
                         {/* Left sidebar */}
                         <div
-                          className={`border-r border-gray-100 py-10 transition-all duration-300 ${
+                          className={`border-r border-gray-100 min-h-full py-10 transition-all duration-300 transition-all duration-300 ${
                             shouldUseGrid
                               ? "flex-1 pl-8 pr-16"
                               : "w-64 flex-shrink-0 px-8"
@@ -993,7 +994,7 @@ function Header() {
                             className={`gap-10 ${
                               shouldUseGrid
                                 ? "flex flex-row items-start"
-                                : "flex flex-col"
+                                : "flex flex-col items-start"
                             }`}
                           >
                             {activeCategory.children.map((sub, idx) => (
@@ -1056,13 +1057,13 @@ function Header() {
                         </div>
 
                         {/* Right — image cards (only subcategories that have an image) */}
-                        <div className="flex-1 py-10 px-10 overflow-hidden">
+                        <div className="flex-1 h-[420px] py-10 px-10 overflow-hidden flex items-start">
                           {(() => {
                             const withImages = activeCategory.children.filter(
                               (sub) => sub.image,
                             );
                             return withImages.length > 0 ? (
-                              <div className="flex flex-row gap-8">
+                              <div className="flex flex-row items-start gap-10">
                                 {withImages.map((sub, idx) => (
                                   <motion.div
                                     key={sub.id}
@@ -1074,7 +1075,7 @@ function Header() {
                                     }}
                                     className="flex flex-col items-start gap-3"
                                   >
-                                    <div className="relative w-36 h-48 overflow-hidden bg-gray-50 flex-shrink-0">
+                                    <div className="relative w-[180px] h-[240px] overflow-hidden bg-[#f8f8f8] flex-shrink-0">
                                       <Image
                                         src={sub.image!}
                                         alt={sub.name}
@@ -1095,7 +1096,7 @@ function Header() {
                     ) : (
                       /* ── CASE B: NO CHILDREN — clean editorial 2-column (e.g. "Weddings") ── */
                       <motion.div
-                        className="flex w-full h-[280px] overflow-hidden"
+                        className="flex w-full h-[420px] overflow-hidden items-start"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.18 }}
