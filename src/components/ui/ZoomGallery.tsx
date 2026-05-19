@@ -3,6 +3,8 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
 
 interface ZoomGalleryProps {
   images: any[];
@@ -138,123 +140,182 @@ export function ZoomGallery({
   const bgY = -((lensPos.y - renderedRect.y) * zoomScale);
 
   return (
-    <motion.div
-      className="flex gap-2 w-full"
-      style={{ height: "clamp(320px, 55vw, 620px)" }}
-    >
-      {/* Thumbnails */}
-      {images?.length > 1 && (
-        <div className="flex flex-col gap-2 w-[70px] overflow-y-auto">
-          {images.map((img, idx) => (
-            <button
-              key={img.id}
-              onClick={() => setSelectedImageIndex(idx)}
-              className={`relative rounded-lg overflow-hidden border-2 ${
-                selectedImageIndex === idx
-                  ? "border-main-secondary"
-                  : "border-transparent opacity-60"
-              }`}
-            >
-              <Image
-                src={img.url}
-                alt=""
-                width={70}
-                height={90}
-                quality={100}
-                unoptimized
-                className="object-cover object-top"
-              />
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Main Image */}
-      <div className="relative flex-1">
-        <div
-          ref={imageContainerRef}
-          className="relative w-full h-full rounded-xl overflow-hidden bg-white cursor-crosshair"
-          onMouseEnter={() => !isMobile && setIsHovering(true)}
-          onMouseLeave={() => setIsHovering(false)}
-          onMouseMove={handleMouseMove}
+    <>
+      {/* ================= MOBILE ================= */}
+      <div className="md:hidden w-full">
+        {/* Swipe Gallery */}
+        <Swiper
+          slidesPerView={1}
+          spaceBetween={0}
+          onSlideChange={(swiper) => setSelectedImageIndex(swiper.activeIndex)}
+          initialSlide={selectedImageIndex}
+          className="w-full"
         >
-          {images.length > 0 && (
-            <>
-              {/* 🔥 FIX 4: High quality image */}
-              <Image
-                src={images[selectedImageIndex].url}
-                alt={product.name}
-                fill
-                priority
-                quality={100}
-                sizes="(max-width: 768px) 100vw, 50vw"
-                className="object-cover object-top"
-              />
-
-              {/* Lens */}
-              {isHovering && (
-                <div
-                  className="absolute border-2 border-yellow-400 rounded-md pointer-events-none"
-                  style={{
-                    width: LENS_SIZE,
-                    height: LENS_SIZE,
-                    left: lensPos.x,
-                    top: lensPos.y,
-                  }}
+          {images.map((img, idx) => (
+            <SwiperSlide key={idx}>
+              <div className="relative w-full aspect-[3/4] bg-[#f8f5f2] overflow-hidden">
+                <Image
+                  src={img.url}
+                  alt={product.name}
+                  fill
+                  priority
+                  quality={100}
+                  sizes="100vw"
+                  className="object-cover"
                 />
-              )}
-            </>
-          )}
 
-          {/* Navigation */}
-          {images.length > 1 && (
-            <>
+                {/* Discount Badge */}
+                {discount > 0 && !isOutOfStock && (
+                  <div className="absolute top-3 left-3 bg-main-primary text-main-secondary px-2.5 py-1 rounded-full text-xs font-semibold z-10">
+                    {discount}% OFF
+                  </div>
+                )}
+              </div>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+
+        {/* Thumbnails */}
+        {images.length > 1 && (
+          <div className="flex gap-2 overflow-x-auto px-4 py-3 scrollbar-hide bg-white">
+            {images.map((img, idx) => (
               <button
-                onClick={prevImage}
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full"
+                key={idx}
+                onClick={() => setSelectedImageIndex(idx)}
+                className={`relative w-16 h-20 rounded-xl overflow-hidden border-2 flex-shrink-0 transition-all ${
+                  selectedImageIndex === idx
+                    ? "border-black"
+                    : "border-gray-200"
+                }`}
               >
-                <ChevronLeft size={16} />
+                <Image
+                  src={img.url}
+                  alt=""
+                  fill
+                  quality={100}
+                  className="object-cover"
+                />
               </button>
-              <button
-                onClick={nextImage}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </>
-          )}
-
-          {/* Badge */}
-          {discount > 0 && !isOutOfStock && (
-            <div className="absolute top-3 left-3 bg-main-primary text-main-secondary px-2 py-1 text-xs rounded-full">
-              {discount}% OFF
-            </div>
-          )}
-        </div>
-
-        {/* 🔥 Zoom Panel */}
-        <AnimatePresence>
-          {isHovering && (
-            <motion.div
-              className="fixed border shadow-xl rounded-xl overflow-hidden"
-              style={{
-                top:
-                  imageContainerRef.current?.getBoundingClientRect().top ?? 0,
-                left:
-                  (imageContainerRef.current?.getBoundingClientRect().right ??
-                    0) + 10,
-                width: containerSize.w,
-                height: containerSize.h,
-                backgroundImage: `url(${images[selectedImageIndex].url})`,
-                backgroundRepeat: "no-repeat",
-                backgroundSize: `${bgW}px ${bgH}px`,
-                backgroundPosition: `${bgX}px ${bgY}px`,
-                zIndex: 9999,
-              }}
-            />
-          )}
-        </AnimatePresence>
+            ))}
+          </div>
+        )}
       </div>
-    </motion.div>
+
+      {/* ================= DESKTOP ================= */}
+      <motion.div
+        className="hidden md:flex gap-2 w-full"
+        style={{ height: "clamp(320px, 55vw, 620px)" }}
+      >
+        {/* Thumbnails */}
+        {images?.length > 1 && (
+          <div className="flex flex-col gap-2 w-[70px] overflow-y-auto">
+            {images.map((img, idx) => (
+              <button
+                key={img.id}
+                onClick={() => setSelectedImageIndex(idx)}
+                className={`relative rounded-lg overflow-hidden border-2 ${
+                  selectedImageIndex === idx
+                    ? "border-main-secondary"
+                    : "border-transparent opacity-60"
+                }`}
+              >
+                <Image
+                  src={img.url}
+                  alt=""
+                  width={70}
+                  height={90}
+                  quality={100}
+                  unoptimized
+                  className="object-cover object-top"
+                />
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Main Image */}
+        <div className="relative flex-1">
+          <div
+            ref={imageContainerRef}
+            className="relative w-full h-full rounded-xl overflow-hidden bg-white cursor-crosshair"
+            onMouseEnter={() => !isMobile && setIsHovering(true)}
+            onMouseLeave={() => setIsHovering(false)}
+            onMouseMove={handleMouseMove}
+          >
+            {images.length > 0 && (
+              <>
+                <Image
+                  src={images[selectedImageIndex].url}
+                  alt={product.name}
+                  fill
+                  priority
+                  quality={100}
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover object-top"
+                />
+
+                {isHovering && (
+                  <div
+                    className="absolute border-2 border-yellow-400 rounded-md pointer-events-none"
+                    style={{
+                      width: LENS_SIZE,
+                      height: LENS_SIZE,
+                      left: lensPos.x,
+                      top: lensPos.y,
+                    }}
+                  />
+                )}
+              </>
+            )}
+
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={prevImage}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                <button
+                  onClick={nextImage}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </>
+            )}
+
+            {discount > 0 && !isOutOfStock && (
+              <div className="absolute top-3 left-3 bg-main-primary text-main-secondary px-2 py-1 text-xs rounded-full">
+                {discount}% OFF
+              </div>
+            )}
+          </div>
+
+          <AnimatePresence>
+            {isHovering && (
+              <motion.div
+                className="fixed border shadow-xl rounded-xl overflow-hidden"
+                style={{
+                  top:
+                    imageContainerRef.current?.getBoundingClientRect().top ?? 0,
+                  left:
+                    (imageContainerRef.current?.getBoundingClientRect().right ??
+                      0) + 10,
+                  width: containerSize.w,
+                  height: containerSize.h,
+                  backgroundImage: `url(${images[selectedImageIndex].url})`,
+                  backgroundRepeat: "no-repeat",
+                  backgroundSize: `${bgW}px ${bgH}px`,
+                  backgroundPosition: `${bgX}px ${bgY}px`,
+                  zIndex: 9999,
+                }}
+              />
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
+    </>
   );
 }
