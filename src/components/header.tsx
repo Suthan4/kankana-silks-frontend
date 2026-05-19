@@ -78,6 +78,14 @@ function Header() {
   });
 
   const isMyAccountPage = pathname?.startsWith("/my-account");
+  const isProductDetailPage = !!(
+    pathname?.match(/^\/products\/[^/]+$/) ||
+    (pathname?.match(/^\/[^/]+\/[^/]+$/) &&
+      !pathname?.startsWith("/shop/") &&
+      !pathname?.startsWith("/my-account"))
+  );
+  const isCategoryPage =
+    pathname?.match(/^\/shop\/[^/]+$/) || pathname?.match(/^\/[^/]+\/[^/]+$/);
 
   /* -------------------- CART API QUERY -------------------- */
   const { data: cartData } = useQuery({
@@ -1186,7 +1194,10 @@ function Header() {
           </motion.button>
         </div>
 
-        <div className="px-4 py-2 border-t border-gray-100">
+        <div
+          className={`px-4 py-2 border-t border-gray-100${isProductDetailPage || isCategoryPage ? " hidden" : ""}`}
+        >
+          {" "}
           <button
             onClick={() => setLocationModalOpen(true)}
             className="flex items-center gap-2 text-sm"
@@ -1656,7 +1667,7 @@ function Header() {
       </AnimatePresence>
 
       {/* Mobile Bottom Navigation */}
-      {!isMyAccountPage && (
+      {!isMyAccountPage && !isProductDetailPage && !isCategoryPage && (
         <motion.nav
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}

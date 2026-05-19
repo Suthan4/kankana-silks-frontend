@@ -40,6 +40,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getColorHex } from "@/lib/utils/colorValidation";
 import DOMPurify from "isomorphic-dompurify";
 import { ZoomGallery } from "../ui/ZoomGallery";
+
 interface ProductDetailsClientProps {
   initialProduct: Product;
 }
@@ -134,6 +135,7 @@ export default function ProductDetailsClient({
   const availableStock = hasVariants
     ? (selectedVariant?.stock?.[0]?.quantity ?? 0)
     : (product.stock?.[0]?.quantity ?? 0);
+
   const isOutOfStock =
     availableStock === 0 ||
     (hasVariants &&
@@ -141,6 +143,7 @@ export default function ProductDetailsClient({
         (selectedVariant?.stock?.[0]?.lowStockThreshold ?? 0)) ||
     (product.stock?.[0]?.quantity ?? 0) <
       (product.stock?.[0]?.lowStockThreshold ?? 0);
+
   const hasVideoConsultation = product.hasVideoConsultation ?? false;
   const videoPurchasingEnabled = product.videoPurchasingEnabled ?? false;
   const videoConsultationNote = product.videoConsultationNote;
@@ -489,8 +492,6 @@ export default function ProductDetailsClient({
       productId: product.id,
       variantId: selectedVariant?.id,
       quantity,
-
-      // ✅ FULL PRODUCT OBJECT
       product: {
         id: product.id,
         name: product.name,
@@ -498,7 +499,6 @@ export default function ProductDetailsClient({
         categoryId: product.categoryId,
         sellingPrice: Number(product.sellingPrice),
         basePrice: Number(product.basePrice),
-
         media: [
           {
             url: images?.[0]?.url ?? "/placeholder.jpg",
@@ -506,26 +506,21 @@ export default function ProductDetailsClient({
             isActive: true,
           },
         ],
-
         stock:
           product.stock?.map((s) => ({
             ...s,
             lowStockThreshold: s.lowStockThreshold ?? 0,
           })) ?? [],
       },
-
-      // ✅ FULL VARIANT OBJECT
       variant: selectedVariant
         ? {
             id: selectedVariant.id,
             sellingPrice: Number(selectedVariant.sellingPrice),
             basePrice: Number(selectedVariant.basePrice),
-
             size: selectedVariant.size ?? undefined,
             color: selectedVariant.color ?? undefined,
             fabric: selectedVariant.fabric ?? undefined,
             attributes: selectedVariant.attributes,
-
             stock:
               selectedVariant.stock?.map((s) => ({
                 ...s,
@@ -563,8 +558,6 @@ export default function ProductDetailsClient({
 
   return (
     <>
-      {/* <div className="h-[calc(100vh-theme(spacing.36))] overflow-hidden bg-gradient-to-br from-amber-50 via-white to-orange-50">
-          <div className="max-w-7xl mx-auto px-4 h-full flex flex-col"> */}
       <div className="bg-gradient-to-br from-amber-50 via-white to-orange-50">
         <div className="max-w-7xl mx-auto px-4 flex flex-col">
           {/* Breadcrumb */}
@@ -586,10 +579,14 @@ export default function ProductDetailsClient({
             </span>
           </motion.div>
 
-          {/* ── Main Product Section ─────────────────────────────────────── */}
-          {/* <div className="flex-1 overflow-hidden grid md:grid-cols-2 gap-5 pb-3"> */}
-          <div className="flex flex-col md:grid md:grid-cols-2 gap-5 pb-6">
-            {/* ── Left: Image Gallery ──────────────────────────────────── */}
+          {/* ── Main Product Section ── */}
+          {/*
+            Mobile: single column, content flows naturally.
+            Desktop: side-by-side grid.
+            On mobile we add pb-28 so content isn't hidden behind the floating bar.
+          */}
+          <div className="flex flex-col md:grid md:grid-cols-2 gap-5 pb-28 md:pb-6">
+            {/* ── Left: Image Gallery ── */}
             <ZoomGallery
               images={images}
               selectedImageIndex={selectedImageIndex}
@@ -601,7 +598,7 @@ export default function ProductDetailsClient({
               isOutOfStock={isOutOfStock}
             />
 
-            {/* ── Right: Product Info ──────────────────────────────────── */}
+            {/* ── Right: Product Info ── */}
             <motion.div
               initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
@@ -620,7 +617,7 @@ export default function ProductDetailsClient({
                   </p>
 
                   <div className="flex items-baseline gap-2.5 mt-2">
-                    {isOutOfStock ? (
+                    {isOutOfStock && !allowOutOfStockOrders ? (
                       <>
                         <span className="text-3xl font-bold text-gray-900">
                           {formatMaskedPrice(displayPrice)}
@@ -838,7 +835,6 @@ export default function ProductDetailsClient({
                         ) : (
                           <X className="w-4 h-4 text-red-600 flex-shrink-0" />
                         )}
-
                         <div>
                           <p
                             className={`font-medium text-sm ${
@@ -851,7 +847,6 @@ export default function ProductDetailsClient({
                               ? "Delivery Available"
                               : "Not Serviceable"}
                           </p>
-
                           {deliveryInfo.isServiceable && (
                             <p className="text-xs text-main-secondary">
                               Expected in {deliveryInfo.estimatedDays}
@@ -894,8 +889,8 @@ export default function ProductDetailsClient({
                 )}
               </div>
 
-              {/* ── Sticky CTA Footer ──────────────────────────────────── */}
-              <div className="flex-none pt-3 space-y-2.5 border-t border-gray-200 mt-2">
+              {/* ── Desktop-only sticky CTA footer ── */}
+              <div className="hidden md:block flex-none pt-3 space-y-2.5 border-t border-gray-200 mt-2">
                 {/* Action Buttons */}
                 <div className="flex gap-2.5">
                   {isOutOfStock && !allowOutOfStockOrders ? (
@@ -942,21 +937,19 @@ export default function ProductDetailsClient({
 
                 {/* Trust badges */}
                 <div className="grid grid-cols-3 gap-2">
-                  {[
-                    // { icon: Truck, label: "Free Shipping" },
-                    // { icon: RotateCcw, label: "7 Days Return" },
-                    { icon: Shield, label: "Secure Payment" },
-                  ].map(({ icon: Icon, label }) => (
-                    <div
-                      key={label}
-                      className="flex items-center justify-center gap-1.5 py-1.5 bg-gray-50 rounded-lg"
-                    >
-                      <Icon className="w-3.5 h-3.5 text-gray-600 flex-shrink-0" />
-                      <p className="text-[10px] text-gray-600 font-medium">
-                        {label}
-                      </p>
-                    </div>
-                  ))}
+                  {[{ icon: Shield, label: "Secure Payment" }].map(
+                    ({ icon: Icon, label }) => (
+                      <div
+                        key={label}
+                        className="flex items-center justify-center gap-1.5 py-1.5 bg-gray-50 rounded-lg"
+                      >
+                        <Icon className="w-3.5 h-3.5 text-gray-600 flex-shrink-0" />
+                        <p className="text-[10px] text-gray-600 font-medium">
+                          {label}
+                        </p>
+                      </div>
+                    ),
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -964,7 +957,89 @@ export default function ProductDetailsClient({
         </div>
       </div>
 
-      {/* ── Below-fold: Tabs + Related (normal scroll) ───────────────────── */}
+      {/* ══════════════════════════════════════════════════════════════
+          MOBILE FLOATING CTA BAR
+          Fixed to bottom, above everything. Hidden on md+ screens.
+          Shows: Add to Cart | Buy Now | Wishlist icon
+      ══════════════════════════════════════════════════════════════ */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.12)]">
+        {/* Price strip */}
+        <div className="flex items-center justify-between px-4 pt-2.5 pb-1">
+          <div className="flex items-baseline gap-2">
+            <span className="text-lg font-bold text-gray-900">
+              {isOutOfStock && !allowOutOfStockOrders
+                ? formatMaskedPrice(displayPrice)
+                : `₹${displayPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            </span>
+            {discount > 0 && !isOutOfStock && (
+              <span className="text-xs text-gray-400 line-through">
+                ₹
+                {basePrice.toLocaleString("en-IN", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </span>
+            )}
+          </div>
+          {discount > 0 && !isOutOfStock && (
+            <span className="bg-main-primary text-main-secondary text-[10px] font-bold px-2 py-0.5 rounded-full">
+              {discount}% OFF
+            </span>
+          )}
+        </div>
+
+        {/* Buttons row */}
+        <div
+          className="flex items-center gap-2 px-4 pb-4 pt-1"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
+        >
+          {isOutOfStock && !allowOutOfStockOrders ? (
+            /* Out of stock — Request button full width */
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={handleRequestProduct}
+              className="flex-1 bg-black text-white py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg"
+            >
+              <AlertCircle className="w-4 h-4" />
+              Request Product
+            </motion.button>
+          ) : (
+            <>
+              {/* Add to Cart */}
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => handleAddToCart(product, selectedVariant)}
+                disabled={availableStock === 0 || addToCartMutation.isPending}
+                className="flex-1 bg-gray-900 text-white py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ShoppingCart className="w-4 h-4" />
+                {addToCartMutation.isPending ? "Adding..." : "Add to Cart"}
+              </motion.button>
+
+              {/* Buy Now */}
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={handleBuyNow}
+                disabled={availableStock === 0}
+                className="flex-1 bg-main-primary text-main-secondary py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Zap className="w-4 h-4" />
+                Buy Now
+              </motion.button>
+
+              {/* Wishlist icon button */}
+              <WishlistButton
+                productId={product.id}
+                variant="icon"
+                size="md"
+                className="w-12 h-12 flex-shrink-0 bg-gray-100 hover:bg-gray-200 rounded-xl border border-gray-200 flex items-center justify-center"
+              />
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ── Below-fold: Tabs + Related (normal scroll) ── */}
       <div className="bg-gradient-to-br from-amber-50 via-white to-orange-50">
         <div className="max-w-7xl mx-auto px-4 pb-12">
           {/* Tabs */}
@@ -1103,7 +1178,6 @@ export default function ProductDetailsClient({
         onClose={() => setIsRequestModalOpen(false)}
         product={product}
         selectedVariant={selectedVariant}
-        // onSuccess={() => router.push("/my-account/requests")}
       />
       <VideoConsultationModal
         isOpen={isVideoModalOpen}
