@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback, useMemo, memo, useRef } from "react";
+import { useState, useCallback, useMemo, memo, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -94,6 +94,45 @@ export default function CategoryProductsClient({
     searchParams.get("inStock") === "true",
   );
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(false);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+
+    if (!el) return;
+
+    const updateArrows = () => {
+      setShowLeftArrow(el.scrollLeft > 5);
+
+      setShowRightArrow(el.scrollLeft + el.clientWidth < el.scrollWidth - 5);
+    };
+
+    updateArrows();
+
+    el.addEventListener("scroll", updateArrows);
+    window.addEventListener("resize", updateArrows);
+
+    return () => {
+      el.removeEventListener("scroll", updateArrows);
+      window.removeEventListener("resize", updateArrows);
+    };
+  }, [category.children]);
+
+  const scrollCategories = (direction: "left" | "right") => {
+    const el = scrollRef.current;
+
+    if (!el) return;
+
+    const scrollAmount = 220;
+
+    el.scrollBy({
+      left: direction === "right" ? scrollAmount : -scrollAmount,
+      behavior: "smooth",
+    });
+  };
 
   const limit = 12;
   const options = [
@@ -697,32 +736,64 @@ export default function CategoryProductsClient({
 
           {/* RIGHT: subcategory chips + filter toggle + sort */}
           <div className="flex items-center gap-3">
-            {/* Subcategory chips — inline in top bar, no separate row */}
+            {/* Subcategory chips */}
             {category.children && category.children.length > 0 && (
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => handleSubCategoryChange(null)}
-                  className={`px-3 py-1 text-xs tracking-widest uppercase transition-colors border rounded-full ${
-                    selectedSubCategory === null
-                      ? "bg-black text-white border-black"
-                      : "border-gray-300 text-gray-600 hover:border-black hover:text-black"
-                  }`}
-                >
-                  All
-                </button>
-                {category.children.map((subCat) => (
+              <div className="relative flex items-center max-w-[720px]">
+                {/* Left Arrow */}
+                {showLeftArrow && (
                   <button
-                    key={subCat.id}
-                    onClick={() => handleSubCategoryChange(subCat.id)}
-                    className={`px-3 py-1 text-xs tracking-widest uppercase transition-colors border rounded-full ${
-                      selectedSubCategory === subCat.id
+                    onClick={() => scrollCategories("left")}
+                    className="absolute left-0 z-10 h-8 w-8 flex items-center justify-center rounded-full bg-white border border-gray-200 shadow-xl hover:border-black transition"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                )}
+
+                {/* Scroll Area */}
+                <div
+                  ref={scrollRef}
+                  className="
+        flex items-center gap-1.5
+        overflow-x-auto scrollbar-none
+        scroll-smooth
+        px-10
+      "
+                >
+                  <button
+                    onClick={() => handleSubCategoryChange(null)}
+                    className={`shrink-0 px-3 py-1 text-xs tracking-widest uppercase transition-colors border rounded-full whitespace-nowrap ${
+                      selectedSubCategory === null
                         ? "bg-black text-white border-black"
                         : "border-gray-300 text-gray-600 hover:border-black hover:text-black"
                     }`}
                   >
-                    {subCat.name}
+                    All
                   </button>
-                ))}
+
+                  {category.children.map((subCat) => (
+                    <button
+                      key={subCat.id}
+                      onClick={() => handleSubCategoryChange(subCat.id)}
+                      className={`shrink-0 px-3 py-1 text-xs tracking-widest uppercase transition-colors border rounded-full whitespace-nowrap ${
+                        selectedSubCategory === subCat.id
+                          ? "bg-black text-white border-black"
+                          : "border-gray-300 text-gray-600 hover:border-black hover:text-black"
+                      }`}
+                    >
+                      {subCat.name}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Right Arrow */}
+                {showRightArrow && (
+                  <button
+                    onClick={() => scrollCategories("right")}
+                    className="absolute right-0 z-10 h-8 w-8 flex items-center justify-center rounded-full shadow-xl bg-white border border-gray-200 shadow-sm hover:border-black transition"
+                  >
+                    <ChevronLeft className="w-4 h-4 rotate-180" />
+                  </button>
+                )}
               </div>
             )}
 
