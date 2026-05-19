@@ -588,7 +588,7 @@ export default function ProductDetailsClient({
 
           {/* ── Main Product Section ─────────────────────────────────────── */}
           {/* <div className="flex-1 overflow-hidden grid md:grid-cols-2 gap-5 pb-3"> */}
-          <div className="grid md:grid-cols-2 gap-5 pb-6">
+          <div className="flex flex-col md:grid md:grid-cols-2 gap-5 pb-6">
             {/* ── Left: Image Gallery ──────────────────────────────────── */}
             <ZoomGallery
               images={images}
