@@ -48,6 +48,8 @@ export default function CategoryProductsClient({
 
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [desktopFilterOpen, setDesktopFilterOpen] = useState(false);
+  const [gridCols, setGridCols] = useState<2 | 3 | 4>(3);
+  const [mobileGrid, setMobileGrid] = useState<1 | 2>(2);
 
   // Filter state - Initialize from URL
   const [priceRange, setPriceRange] = useState<[number, number]>(() => {
@@ -482,7 +484,7 @@ export default function CategoryProductsClient({
         </div>
       )}
 
-      <div className="mb-6">
+      {/* <div className="mb-6">
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
@@ -494,7 +496,7 @@ export default function CategoryProductsClient({
             In Stock Only
           </span>
         </label>
-      </div>
+      </div> */}
 
       <div className="mb-6">
         <h3 className="font-semibold text-gray-900 mb-4">Price Range</h3>
@@ -588,7 +590,39 @@ export default function CategoryProductsClient({
             <h2 className="font-semibold text-gray-900">{category.name}</h2>
             <p className="text-xs text-gray-500">{total} items</p>
           </div>
+
           <div className="ml-auto flex items-center gap-3">
+            {/* Grid toggles */}
+            <button
+              onClick={() => setMobileGrid(1)}
+              className={`p-1.5 border ${
+                mobileGrid === 1
+                  ? "bg-black text-white border-black"
+                  : "border-gray-300"
+              }`}
+            >
+              <div className="grid gap-[2px]">
+                <div className="w-3 h-[2px] bg-current" />
+                <div className="w-3 h-[2px] bg-current" />
+                <div className="w-3 h-[2px] bg-current" />
+              </div>
+            </button>
+            <button
+              onClick={() => setMobileGrid(2)}
+              className={`p-1.5 border ${
+                mobileGrid === 2
+                  ? "bg-black text-white border-black"
+                  : "border-gray-300"
+              }`}
+            >
+              <div className="grid grid-cols-2 gap-[2px]">
+                <div className="w-1.5 h-1.5 bg-current" />
+                <div className="w-1.5 h-1.5 bg-current" />
+                <div className="w-1.5 h-1.5 bg-current" />
+                <div className="w-1.5 h-1.5 bg-current" />
+              </div>
+            </button>
+            {/* Wishlist */}
             <motion.div whileTap={{ scale: 0.9 }}>
               <Link href="/wishlist">
                 <Heart className="w-6 h-6" />
@@ -634,7 +668,7 @@ export default function CategoryProductsClient({
       {/* ═══════════════════════════════════════════
           DESKTOP LAYOUT
       ═══════════════════════════════════════════ */}
-      <div className="max-w-[1600px] mx-auto">
+      <div className="max-w-[1450px]mx-auto">
         {/* ── SLIM TOP BAR: category title + filter toggle + sort ── */}
         {/*
           KEY UX FIX:
@@ -696,6 +730,54 @@ export default function CategoryProductsClient({
             {category.children && category.children.length > 0 && (
               <span className="h-4 w-px bg-gray-200" />
             )}
+
+            <div className="hidden md:flex items-center gap-1 border-r border-gray-200 pr-4 mr-2">
+              <button
+                onClick={() => setGridCols(2)}
+                className={`p-2 border transition-colors ${
+                  gridCols === 2
+                    ? "bg-black text-white border-black"
+                    : "border-gray-300 text-gray-500 hover:border-black hover:text-black"
+                }`}
+              >
+                <div className="grid grid-cols-2 gap-[2px]">
+                  <div className="w-2 h-2 bg-current" />
+                  <div className="w-2 h-2 bg-current" />
+                  <div className="w-2 h-2 bg-current" />
+                  <div className="w-2 h-2 bg-current" />
+                </div>
+              </button>
+
+              <button
+                onClick={() => setGridCols(3)}
+                className={`p-2 border transition-colors ${
+                  gridCols === 3
+                    ? "bg-black text-white border-black"
+                    : "border-gray-300 text-gray-500 hover:border-black hover:text-black"
+                }`}
+              >
+                <div className="grid grid-cols-3 gap-[2px]">
+                  {Array.from({ length: 9 }).map((_, i) => (
+                    <div key={i} className="w-1.5 h-1.5 bg-current" />
+                  ))}
+                </div>
+              </button>
+
+              <button
+                onClick={() => setGridCols(4)}
+                className={`p-2 border transition-colors ${
+                  gridCols === 4
+                    ? "bg-black text-white border-black"
+                    : "border-gray-300 text-gray-500 hover:border-black hover:text-black"
+                }`}
+              >
+                <div className="grid grid-cols-4 gap-[1px]">
+                  {Array.from({ length: 16 }).map((_, i) => (
+                    <div key={i} className="w-1 h-1 bg-current" />
+                  ))}
+                </div>
+              </button>
+            </div>
 
             {/* Filter toggle */}
             <button
@@ -784,7 +866,24 @@ export default function CategoryProductsClient({
                   - Add to Cart button: full-width, black, flat
                   ═══════════════════════════════════════
                 */}
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 md:gap-x-6 gap-y-10 md:gap-y-12">
+                <div
+                  className={`
+    grid
+    ${mobileGrid === 1 ? "grid-cols-1" : "grid-cols-2"}
+
+${
+  gridCols === 2
+    ? "md:grid-cols-3 xl:grid-cols-3"
+    : gridCols === 3
+      ? "md:grid-cols-4 xl:grid-cols-4"
+      : "md:grid-cols-5 xl:grid-cols-5"
+}
+
+    gap-x-3 md:gap-x-6
+    gap-y-8 md:gap-y-12
+  `}
+                >
+                  {" "}
                   {products?.map((product: Product, index: number) => {
                     const isOutOfStock = isProductOutOfStock(product);
                     const showAddToCart = canAddToCart(product);
@@ -864,12 +963,8 @@ export default function CategoryProductsClient({
                               Capped at 520px so it never overflows on tall monitors.
                               On mobile (2-col) the shorter width naturally constrains height.
                             */}
-                            <div
-                              className="relative overflow-hidden w-full"
-                              style={{
-                                height: "min(calc(100vh - 260px), 520px)",
-                              }}
-                            >
+                            <div className="relative w-full overflow-hidden bg-[#f5f2ee] aspect-[3/4]">
+                              {" "}
                               <Image
                                 src={
                                   product.media?.[0]?.url || "/placeholder.jpg"
@@ -877,19 +972,17 @@ export default function CategoryProductsClient({
                                 alt={product.name}
                                 fill
                                 priority={index < 3}
-                                className="object-cover object-top transition-transform duration-700 group-hover:scale-[1.04]"
+                                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                                className="object-cover object-top transition-transform duration-700 group-hover:scale-[1.03]"
                               />
-
                               {/* Subtle bottom gradient */}
                               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
                               {/* Discount badge — top left, matches shop page style */}
                               {!isOutOfStock && discount > 0 && (
                                 <div className="absolute top-3 left-3 bg-main-primary text-main-secondary px-2.5 py-0.5 text-[10px] tracking-widest uppercase">
                                   {discount}% Off
                                 </div>
                               )}
-
                               {/* Wishlist button */}
                               <button
                                 onClick={(e) => {
