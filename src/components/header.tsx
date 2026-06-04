@@ -468,7 +468,7 @@ function Header() {
         {/* ── SINGLE COMPACT TOP BAR ── */}
         <div
           className="flex items-center justify-between px-8 border-b border-gray-200"
-          style={{ height: "56px" }}
+          style={{ height: "62px" }}
         >
           {/* LEFT — Location */}
           <div className="relative flex items-center gap-6 w-[260px]">
@@ -659,7 +659,7 @@ function Header() {
                   damping: 18,
                   mass: 0.6,
                 }}
-                className="h-9 w-auto object-contain hidden md:block"
+                className="h-14 lg:h-12 w-auto object-contain hidden md:block"
               />
             </Link>
           </div>
