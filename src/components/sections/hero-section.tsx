@@ -19,7 +19,6 @@ export default function HeroSection() {
   const [enableScrollAnim, setEnableScrollAnim] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  // const [banners, setBanners] = useState<Banner[]>([]);
   const ref = useRef<HTMLDivElement | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -57,7 +56,6 @@ export default function HeroSection() {
       if ("requestIdleCallback" in window) {
         (window as any).requestIdleCallback(run);
       } else {
-        // Safari fallback
         setTimeout(run, 1);
       }
     }
@@ -112,7 +110,7 @@ export default function HeroSection() {
 
   if (loading) {
     return (
-      <section className="relative w-full min-h-screen overflow-hidden bg-gray-100 flex items-center justify-center">
+      <section className="relative w-full h-screen overflow-hidden bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-gray-300 border-t-black rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
@@ -123,7 +121,7 @@ export default function HeroSection() {
 
   if (banners.length === 0) {
     return (
-      <section className="relative w-full min-h-screen overflow-hidden bg-gray-100 flex items-center justify-center">
+      <section className="relative w-full h-screen overflow-hidden bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600">No banners available</p>
         </div>
@@ -132,9 +130,11 @@ export default function HeroSection() {
   }
 
   return (
+    // ✅ h-screen (not min-h-screen) + -mt to pull the section under the
+    // fixed/transparent header, so it's truly full-bleed like Sabyasachi's hero.
     <section
       ref={ref}
-      className="relative w-full min-h-screen overflow-hidden bg-background"
+      className="relative w-full h-screen overflow-hidden bg-background"
       style={{ contain: "layout paint size" }}
     >
       {/* ------------------ BACKGROUND MEDIA ------------------ */}
@@ -149,7 +149,6 @@ export default function HeroSection() {
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        {" "}
         {banners.map((banner, index) => (
           <motion.div
             key={banner.id}
@@ -182,6 +181,7 @@ export default function HeroSection() {
             )}
           </motion.div>
         ))}
+        {/* Slight darkening so white header text/logo stays readable */}
         <div className="absolute inset-0 bg-black/20" />
       </div>
 
@@ -196,8 +196,8 @@ export default function HeroSection() {
           <AnimatePresence mode="wait">
             <motion.div
               key={currentSlide}
-              initial={{ opacity: 0, y: 220 }}
-              animate={{ opacity: 1, y: 250 }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.5 }}
             >

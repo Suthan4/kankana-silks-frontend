@@ -197,7 +197,10 @@ export default function Footer() {
       { label: "FAQ", href: "/faq" },
       { label: "Return & Refund Policy", href: "/return-policy" },
       { label: "Cancellation Policy", href: "/cancellation-policy" },
-      { label: "Product Details & Appearance", href: "/product-details-appearance" },
+      {
+        label: "Product Details & Appearance",
+        href: "/product-details-appearance",
+      },
       { label: "Shipping Policy", href: "/shipping-policy" },
     ],
     Connect: [
@@ -226,9 +229,9 @@ export default function Footer() {
               <img
                 src="/image-removebg-preview.png"
                 alt="Kankana Silks"
-                className="h-10 w-auto object-contain mb-4"
+                className="h-14 w-14 w-auto object-contain mb-4"
               />
-              <p className="text-xs text-gray-500 leading-relaxed max-w-[200px]">
+              <p className="text-base text-gray-500 leading-relaxed max-w-[200px]">
                 Celebrating centuries of saree-making tradition with modern
                 elegance.
               </p>
@@ -236,7 +239,7 @@ export default function Footer() {
               {/* Store Locator CTA */}
               <button
                 onClick={() => setStoreLocatorOpen(true)}
-                className="mt-5 inline-flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-full text-xs font-medium text-gray-700 hover:border-black hover:text-black transition-all group"
+                className="mt-5 inline-flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-full text-base font-medium text-gray-700 hover:border-black hover:text-black transition-all group"
               >
                 <MapPin className="w-3.5 h-3.5 group-hover:text-black transition-colors" />
                 Find Our Stores
@@ -245,7 +248,8 @@ export default function Footer() {
 
             {/* ── Shop ── */}
             <div>
-              <h4 className="text-[11px] font-bold tracking-[0.15em] uppercase text-gray-900 mb-4">
+              <h4 className="mb-4 text-base font-bold uppercase tracking-[0.15em] text-gray-900">
+                {" "}
                 Shop
               </h4>
               <ul className="space-y-2.5">
@@ -253,7 +257,7 @@ export default function Footer() {
                   <li key={label}>
                     <Link
                       href={href}
-                      className="text-xs text-gray-500 hover:text-black transition-colors"
+                      className="text-base text-gray-500 transition-colors hover:text-black"
                     >
                       {label}
                     </Link>
@@ -264,7 +268,8 @@ export default function Footer() {
 
             {/* ── Connect ── */}
             <div>
-              <h4 className="text-[11px] font-bold tracking-[0.15em] uppercase text-gray-900 mb-4">
+              <h4 className="mb-4 text-base font-bold uppercase tracking-[0.15em] text-gray-900">
+                {" "}
                 Connect
               </h4>
               <ul className="space-y-2.5">
@@ -274,7 +279,7 @@ export default function Footer() {
                       href={href}
                       target={external ? "_blank" : undefined}
                       rel={external ? "noopener noreferrer" : undefined}
-                      className="text-xs text-gray-500 hover:text-black transition-colors"
+                      className="text-base text-gray-500 transition-colors hover:text-black"
                     >
                       {label}
                     </a>
@@ -296,10 +301,11 @@ export default function Footer() {
 
             {/* ── Newsletter ── */}
             <div>
-              <h4 className="text-[11px] font-bold tracking-[0.15em] uppercase text-gray-900 mb-4">
+              <h4 className="mb-4 text-base font-bold uppercase tracking-[0.15em] text-gray-900">
+                {" "}
                 Newsletter
               </h4>
-              <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+              <p className="mb-3 text-base leading-relaxed text-gray-500">
                 New collections and exclusive offers, straight to your inbox.
               </p>
               <form onSubmit={handleNewsletterSubmit} className="flex gap-0">
@@ -309,11 +315,11 @@ export default function Footer() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="flex-1 px-3 py-2 border border-gray-200 border-r-0 rounded-l-lg text-xs focus:outline-none focus:border-black transition-colors placeholder-gray-400 min-w-0"
+                  className="min-w-0 flex-1 rounded-l-lg border border-r-0 border-gray-200 px-3 py-2 text-base placeholder-gray-400 transition-colors focus:border-black focus:outline-none"
                 />
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-black text-white text-xs font-semibold rounded-r-lg hover:bg-gray-800 transition-colors flex-shrink-0"
+                  className="flex-shrink-0 rounded-r-lg bg-black px-4 py-2 text-base font-semibold text-white transition-colors hover:bg-gray-800"
                 >
                   Join
                 </button>
@@ -325,28 +331,28 @@ export default function Footer() {
         {/* ── Bottom bar ── */}
         <div className="border-t border-gray-100">
           <div className="max-w-screen-xl mx-auto px-6 md:px-10 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-[11px] text-gray-400">
+            <p className="text-base text-gray-400">
               © {new Date().getFullYear()} Kankana Silks. All rights reserved.
             </p>
             <div className="flex items-center gap-4">
               <Link
                 href="/privacy"
-                className="text-[11px] text-gray-400 hover:text-black transition-colors"
+                className="text-base text-gray-400 transition-colors hover:text-black"
               >
                 Privacy
               </Link>
               <Link
                 href="/terms"
-                className="text-[11px] text-gray-400 hover:text-black transition-colors"
+                className="text-base text-gray-400 transition-colors hover:text-black"
               >
                 Terms
               </Link>
               {/* Mobile store locator shortcut */}
               <button
                 onClick={() => setStoreLocatorOpen(true)}
-                className="text-[11px] text-gray-400 hover:text-black transition-colors flex items-center gap-1"
+                className="flex items-center gap-1.5 text-base text-gray-400 transition-colors hover:text-black"
               >
-                <MapPin className="w-3 h-3" />
+                <MapPin className="h-4 w-4 transition-colors group-hover:text-black" />{" "}
                 Stores
               </button>
             </div>
