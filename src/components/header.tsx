@@ -37,6 +37,7 @@ function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeNav, setActiveNav] = useState("");
   const [activeSubNav, setActiveSubNav] = useState("");
+  const [isHeaderHovered, setIsHeaderHovered] = useState(false);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const openModal = useAuthModal((state) => state.openModal);
   const [showNav, setShowNav] = useState(true);
@@ -87,6 +88,29 @@ function Header() {
   const isCategoryPage =
     pathname?.match(/^\/shop\/[^/]+$/) || pathname?.match(/^\/[^/]+\/[^/]+$/);
 
+  // ✅ Only the homepage has a full-bleed hero sitting behind the header.
+  // Everywhere else the header should just be solid white from the start.
+  const hasHeroBehindHeader = pathname === "/";
+
+  /* -------------------- SCROLL STATE (Sabyasachi-style header) -------------------- */
+  const [isScrolled, setIsScrolled] = useState(!hasHeroBehindHeader);
+
+  useEffect(() => {
+    if (!hasHeroBehindHeader) {
+      setIsScrolled(true);
+      return;
+    }
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 40);
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [hasHeroBehindHeader]);
+
+  // When true, header should render as transparent/white-text overlay.
+  const isTransparent = hasHeroBehindHeader && !isScrolled;
+
   /* -------------------- CART API QUERY -------------------- */
   const { data: cartData } = useQuery({
     queryKey: ["cartApi", user?.id],
@@ -107,18 +131,9 @@ function Header() {
       return res.data;
     },
     enabled: !!user,
-    // placeholderData: {
-    //   id: "",
-    //   userId: "",
-    //   isPublic: false,
-    //   items: [],
-    //   totalItems: 0,
-    // },
   });
 
   /* -------------------- CALCULATE COUNTS -------------------- */
-  // isMounted guard: server renders 0 (no localStorage/API).
-  // Client reads real values after hydration — prevents SSR mismatch.
   const apiCartItems = cartData?.items ?? [];
   const cartItemsCount = isMounted
     ? user
@@ -142,7 +157,7 @@ function Header() {
     },
     enabled: !!user,
     staleTime: 1000 * 60 * 5,
-    placeholderData: [], // ✅ avoids null guard issues
+    placeholderData: [],
   });
 
   const addresses = addressesData || [];
@@ -274,15 +289,14 @@ function Header() {
   };
 
   /* -------------------- FETCH CATEGORIES -------------------- */
-  // ✅ 1hr staleTime — categories don't change often, no refetch on every visit
   const { data: categories = [], isLoading: loading } = useQuery({
     queryKey: ["categories-tree"],
     queryFn: async () => {
       return await categoryService.getCategoryTree();
     },
-    staleTime: 1000 * 60 * 60, // 1 hour
-    gcTime: 1000 * 60 * 60 * 24, // 24 hours in cache
-    placeholderData: [], // ✅ render nav bar immediately
+    staleTime: 1000 * 60 * 60,
+    gcTime: 1000 * 60 * 60 * 24,
+    placeholderData: [],
     retry: 1,
   });
 
@@ -308,6 +322,28 @@ function Header() {
     }
   };
 
+  const handleHeaderEnter = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+
+    setIsHeaderHovered(true);
+  };
+
+  const handleHeaderLeave = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+
+    hoverTimeoutRef.current = setTimeout(() => {
+      setIsHeaderHovered(false);
+      setHoveredCategory(null);
+      setUserMenuOpen(false);
+      setLocationModalOpen(false);
+    }, 100);
+  };
+
+  /* -------------------- SHOW/HIDE NAV BAR ON SCROLL DIRECTION -------------------- */
   useEffect(() => {
     let lastScrollY = window.scrollY;
     let ticking = false;
@@ -315,23 +351,15 @@ function Header() {
     const updateNavbar = () => {
       const currentScrollY = window.scrollY;
 
-      // Always show near top
       if (currentScrollY < 80) {
         setShowNav(true);
-      }
-      // Hide only after meaningful downward scroll
-      else if (currentScrollY > lastScrollY + 12) {
+      } else if (currentScrollY > lastScrollY + 12) {
         setShowNav(false);
-
-        // Close megamenu while hiding
         setHoveredCategory(null);
-
         if (hoverTimeoutRef.current) {
           clearTimeout(hoverTimeoutRef.current);
         }
-      }
-      // Show only after meaningful upward scroll
-      else if (currentScrollY < lastScrollY - 12) {
+      } else if (currentScrollY < lastScrollY - 12) {
         setShowNav(true);
       }
 
@@ -346,13 +374,8 @@ function Header() {
       }
     };
 
-    window.addEventListener("scroll", handleScroll, {
-      passive: true,
-    });
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   /* -------------------- GENERATE CATEGORY URL -------------------- */
@@ -368,13 +391,7 @@ function Header() {
   };
 
   const icons = [
-    {
-      name: "Home",
-      icon: Home,
-      type: "link",
-      url: "/",
-      requiresAuth: false,
-    },
+    { name: "Home", icon: Home, type: "link", url: "/", requiresAuth: false },
     {
       name: "Consultation",
       icon: Video,
@@ -414,19 +431,11 @@ function Header() {
     },
   ];
 
-  {
-    /* Navigation Bar */
-  }
   const navRef = useRef<HTMLElement>(null);
   const [navBottom, setNavBottom] = useState(140);
 
-  // ✅ Track nav bottom position dynamically
   useEffect(() => {
-    const updateNavBottom = () => {
-      if (navRef.current) {
-        // setNavBottom(navRef.current.getBoundingClientRect().bottom);
-      }
-    };
+    const updateNavBottom = () => {};
     updateNavBottom();
     window.addEventListener("resize", updateNavBottom);
     window.addEventListener("scroll", updateNavBottom, { passive: true });
@@ -436,14 +445,23 @@ function Header() {
     };
   }, [showNav]);
 
-  // ✅ Close dropdown on scroll
   useEffect(() => {
-    const close = () => setHoveredCategory(null);
-    window.addEventListener("scroll", close, { passive: true });
-    return () => window.removeEventListener("scroll", close);
+    const closeHeaderMenus = () => {
+      setHoveredCategory(null);
+      setUserMenuOpen(false);
+      setLocationModalOpen(false);
+      setIsHeaderHovered(false);
+    };
+
+    window.addEventListener("scroll", closeHeaderMenus, {
+      passive: true,
+    });
+
+    return () => {
+      window.removeEventListener("scroll", closeHeaderMenus);
+    };
   }, []);
 
-  // Find the currently hovered category object
   const activeCategory = categories.find((cat) => cat.id === hoveredCategory);
   const totalGrandchildren =
     activeCategory?.children?.reduce(
@@ -453,43 +471,71 @@ function Header() {
 
   const shouldUseGrid =
     (activeCategory?.children?.length || 0) > 4 || totalGrandchildren > 8;
+  const isHeaderWhite =
+    !hasHeroBehindHeader ||
+    isScrolled ||
+    isHeaderHovered ||
+    Boolean(hoveredCategory) ||
+    locationModalOpen ||
+    userMenuOpen;
 
   return (
     <>
       {/* ─────────────────────────────────────────────
-          DESKTOP HEADER
+          DESKTOP HEADER — always solid white,
+          no transparent/border styling
       ───────────────────────────────────────────── */}
       <motion.header
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.55, ease: "easeOut" }}
-        className="hidden md:block sticky top-0 z-40 bg-white"
+        onMouseEnter={handleHeaderEnter}
+        onMouseLeave={handleHeaderLeave}
+        className={`hidden md:block fixed inset-x-0 top-0 z-40 transition-all duration-300 ${
+          isHeaderWhite
+            ? "bg-white text-black shadow-sm"
+            : "bg-transparent text-white shadow-none"
+        }`}
       >
         {/* ── SINGLE COMPACT TOP BAR ── */}
         <div
-          className="flex items-center justify-between px-8 border-b border-gray-200"
-          style={{ height: "62px" }}
+          className="flex items-center justify-between px-8"
+          style={{ height: "70px" }}
         >
           {/* LEFT — Location */}
           <div className="relative flex items-center gap-6 w-[260px]">
             <div className="relative">
               <button
                 onClick={() => setLocationModalOpen((p) => !p)}
-                className="flex items-center gap-1.5 text-xs text-gray-600 hover:text-black transition-colors"
+                className={`flex items-center gap-1.5 text-sm transition-colors duration-300 ${
+                  isHeaderWhite
+                    ? "text-gray-700 hover:text-black"
+                    : "text-white"
+                }`}
               >
-                <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                <MapPin className="w-4 h-4 flex-shrink-0" />
                 <div className="flex flex-col items-start leading-tight">
-                  <span className="text-[10px] text-gray-400 uppercase tracking-wider">
+                  <span
+                    className={`text-[11px] uppercase tracking-wider ${
+                      isHeaderWhite ? "text-gray-400" : "text-white/70"
+                    }`}
+                  >
                     Deliver to
                   </span>
-                  <span className="font-semibold text-gray-900 text-xs">
+                  <span
+                    className={`font-semibold text-sm ${
+                      isHeaderWhite ? "text-gray-900" : "text-white"
+                    }`}
+                  >
                     {location
                       ? `${location.city || "Your Area"} – ${location.pincode}`
                       : "Select Location"}
                   </span>
                 </div>
                 <ChevronDown
-                  className={`w-3 h-3 text-gray-400 transition-transform duration-200 ${locationModalOpen ? "rotate-180" : ""}`}
+                  className={`w-3.5 h-3.5 transition-all duration-200 ${
+                    isHeaderWhite ? "text-gray-400" : "text-white/80"
+                  } ${locationModalOpen ? "rotate-180" : ""}`}
                 />
               </button>
 
@@ -650,7 +696,7 @@ function Header() {
           <div className="absolute left-1/2 -translate-x-1/2">
             <Link href="/">
               <motion.img
-                src="/image-removebg-preview.png"
+                src="/removed-bg-logo.png"
                 alt="Kankana Silks"
                 layoutId="desktop-logo"
                 transition={{
@@ -659,7 +705,13 @@ function Header() {
                   damping: 18,
                   mass: 0.6,
                 }}
-                className="h-14 lg:h-12 w-auto object-contain hidden md:block"
+                style={{
+                  mixBlendMode: isHeaderWhite ? "multiply" : "lighten",
+                  filter: isHeaderWhite
+                    ? "none"
+                    : "grayscale(1) invert(1) brightness(2.5) contrast(10)",
+                }}
+                className="hidden h-14 w-auto object-contain md:block lg:h-14"
               />
             </Link>
           </div>
@@ -669,13 +721,17 @@ function Header() {
             {/* Search */}
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 bg-gray-50 hover:bg-white hover:border-gray-400 transition-all text-xs text-gray-400 hover:text-gray-600 min-w-[150px]"
+              className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 text-sm min-w-[160px] ${
+                isHeaderWhite
+                  ? "border-gray-200 bg-gray-50 text-gray-500 hover:bg-white hover:border-gray-400 hover:text-gray-700"
+                  : "border-white/50 bg-black/10 text-white hover:bg-white/10 hover:border-white"
+              }`}
             >
-              <Search className="w-3.5 h-3.5 flex-shrink-0" />
+              <Search className="w-4 h-4 flex-shrink-0" />
               <span>Search…</span>
             </button>
             <div className="flex items-center justify-center gap-3 h-full">
-              {/* Cart */}
+              {/* Cart / Wishlist */}
               {icons
                 .filter((i) => ["Cart", "Wishlist"].includes(i.name))
                 .map((item) => {
@@ -689,11 +745,15 @@ function Header() {
                           if (item.requiresAuth) authGuard(item.onClick);
                           else item.onClick?.();
                         }}
-                        className="relative flex items-center justify-center w-9 h-9 text-gray-600 hover:text-black transition-colors"
+                        className={`relative flex items-center justify-center w-10 h-10 transition-colors duration-300 ${
+                          isHeaderWhite
+                            ? "text-gray-700 hover:text-black"
+                            : "text-white"
+                        }`}
                       >
-                        <Icon style={{ width: "18px", height: "18px" }} />
+                        <Icon style={{ width: "20px", height: "20px" }} />
                         {"badgeCount" in item && item.badgeCount! > 0 && (
-                          <span className="absolute -top-[0.1rem] -right-[0.1rem] bg-black text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-medium">
+                          <span className="absolute -top-[0.1rem] -right-[0.1rem] text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-medium bg-black text-white">
                             {item.badgeCount}
                           </span>
                         )}
@@ -736,15 +796,17 @@ function Header() {
                       "_blank",
                     )
                   }
-                  className="flex items-center justify-center w-9 h-9 text-gray-600 hover:text-black transition-colors"
+                  className={`flex items-center justify-center w-10 h-10 transition-colors duration-300 ${
+                    isHeaderWhite
+                      ? "text-gray-700 hover:text-black"
+                      : "text-white"
+                  }`}
                 >
-                  <MessageCircle style={{ width: "18px", height: "18px" }} />
+                  <MessageCircle style={{ width: "20px", height: "20px" }} />
                 </motion.button>
 
-                {/* Tooltip */}
                 <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-0.5 z-[50] whitespace-nowrap rounded-full bg-black/95 px-3 py-1.5 text-[10px] font-medium tracking-[0.08em] text-white opacity-0 shadow-lg transition-all duration-200 -translate-y-1 group-hover:translate-y-0 group-hover:opacity-100">
                   Connect on WhatsApp
-                  {/* Arrow pointing UP toward button */}
                   <span className="absolute left-1/2 -translate-x-1/2 bottom-full w-0 h-0 border-x-4 border-x-transparent border-b-4 border-b-black/95" />
                 </span>
               </div>
@@ -760,10 +822,13 @@ function Header() {
                     if (!user) openModal("login");
                     else setUserMenuOpen((p) => !p);
                   }}
-                  className="flex items-center justify-center gap-1 h-9 px-1 text-gray-600 hover:text-black transition-colors"
+                  className={`flex items-center justify-center gap-1 h-10 px-1 transition-colors duration-300 ${
+                    isHeaderWhite
+                      ? "text-gray-700 hover:text-black"
+                      : "text-white"
+                  }`}
                 >
-                  {!user && <User style={{ width: "18px", height: "18px" }} />}
-                  {/* Tooltip — only show when logged out (icon state) */}
+                  {!user && <User style={{ width: "20px", height: "20px" }} />}
                   {!user && (
                     <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-0.5 z-[50] whitespace-nowrap rounded-full bg-black/95 px-3 py-1.5 text-[10px] font-medium tracking-[0.08em] text-white opacity-0 shadow-lg transition-all duration-200 -translate-y-1 group-hover:translate-y-0 group-hover:opacity-100">
                       Sign In
@@ -772,10 +837,14 @@ function Header() {
                   )}
                   {user && (
                     <>
-                      <span className="text-xs font-semibold text-gray-900 hidden lg:block">
+                      <span
+                        className={`text-sm font-semibold hidden lg:block ${
+                          isHeaderWhite ? "text-gray-900" : "text-white"
+                        }`}
+                      >
                         {user.firstName}
                       </span>
-                      <ChevronDown className="w-3 h-3 text-gray-400" />
+                      <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
                     </>
                   )}
                 </button>
@@ -827,22 +896,17 @@ function Header() {
           </div>
         </div>
 
-        {/* ── NAV BAR — black & white, Sabyasachi style ── */}
+        {/* ── NAV BAR — Sabyasachi style ── */}
         <motion.nav
           ref={navRef}
           initial={false}
           animate={{
-            height: showNav ? 40 : 0,
+            height: showNav ? 48 : 0,
             opacity: showNav ? 1 : 0,
           }}
           transition={{
-            height: {
-              duration: 0.18,
-              ease: [0.22, 1, 0.36, 1],
-            },
-            opacity: {
-              duration: 0.12,
-            },
+            height: { duration: 0.18, ease: [0.22, 1, 0.36, 1] },
+            opacity: { duration: 0.12 },
           }}
           style={{
             willChange: "opacity",
@@ -850,21 +914,21 @@ function Header() {
             backfaceVisibility: "hidden",
             WebkitBackfaceVisibility: "hidden",
           }}
-          className="hidden md:block relative bg-white z-40"
+          className="hidden md:block relative z-40"
         >
-          <div className="overflow-hidden border-b border-gray-200">
-            <ul className="flex justify-center items-center gap-0 h-10">
+          <div className="overflow-hidden">
+            <ul className="flex justify-center items-center gap-0 h-12">
               {loading ? (
                 [80, 100, 72, 88, 96, 76].map((w, i) => (
                   <li key={i} className="px-5">
                     <div
-                      className="h-2.5 rounded-full bg-gray-100 animate-pulse"
+                      className="h-2.5 rounded-full animate-pulse bg-gray-100"
                       style={{ width: `${w}px` }}
                     />
                   </li>
                 ))
               ) : categories.length === 0 ? (
-                <li className="text-xs text-gray-400">
+                <li className="text-sm text-gray-400">
                   No categories available
                 </li>
               ) : (
@@ -881,35 +945,31 @@ function Header() {
                               navRef.current.getBoundingClientRect().bottom,
                             );
                         }}
-                        onMouseLeave={() => {
-                          hoverTimeoutRef.current = setTimeout(
-                            () => setHoveredCategory(null),
-                            80,
-                          );
-                        }}
+                        // onMouseLeave={() => {
+                        //   hoverTimeoutRef.current = setTimeout(
+                        //     () => setHoveredCategory(null),
+                        //     80,
+                        //   );
+                        // }}
                         className="relative h-full flex items-center"
                       >
                         <Link
                           href={getCategoryUrl(category.slug)}
-                          className={`relative flex items-center gap-1 px-5 h-10 text-[12px] font-medium tracking-[0.12em] uppercase transition-colors duration-150 ${
-                            hoveredCategory === category.id
-                              ? "text-black"
-                              : "text-gray-500 hover:text-black"
+                          className={`relative flex items-center gap-1 px-4 h-12 text-[14px] font-medium tracking-[0.1em] uppercase transition-colors duration-300 ${
+                            isHeaderWhite
+                              ? hoveredCategory === category.id
+                                ? "text-black"
+                                : "text-gray-600 hover:text-black"
+                              : "text-white hover:text-white"
                           }`}
                         >
                           {category.name}
-                          {category.children &&
-                            category.children.length > 0 && (
-                              <ChevronDown
-                                className={`w-2.5 h-2.5 transition-transform duration-200 ${hoveredCategory === category.id ? "rotate-180" : ""}`}
-                              />
-                            )}
                         </Link>
                         {/* Active underline */}
                         {hoveredCategory === category.id && (
                           <motion.div
                             layoutId="navUnderline"
-                            className="absolute bottom-0 left-5 right-5 h-[1.5px] bg-black"
+                            className="pointer-events-none absolute bottom-[2px] left-6 right-6 z-[60] h-[2px] bg-black"
                             transition={{
                               type: "spring",
                               stiffness: 500,
@@ -918,17 +978,6 @@ function Header() {
                           />
                         )}
                       </li>
-
-                      {/* Dot separator */}
-                      {index < categories.length - 1 && (
-                        <li
-                          key={`sep-${index}`}
-                          aria-hidden="true"
-                          className="flex items-center"
-                        >
-                          <span className="block w-[3px] h-[3px] rounded-full bg-gray-300" />
-                        </li>
-                      )}
                     </Fragment>
                   );
                 })
@@ -942,18 +991,18 @@ function Header() {
               <>
                 {/* Backdrop */}
                 <motion.div
+                  aria-hidden="true"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.18 }}
-                  className="absolute left-0 right-0 top-full h-screen z-40 bg-black/30"
-                  // style={{ top: navBottom }}
-                  onMouseEnter={() => {
-                    if (hoverTimeoutRef.current)
-                      clearTimeout(hoverTimeoutRef.current);
-                    setHoveredCategory(null);
-                  }}
-                  onClick={() => setHoveredCategory(null)}
+                  className="pointer-events-none absolute inset-x-0 top-full z-40 h-screen bg-black/30"
+                  // onMouseEnter={() => {
+                  //   if (hoverTimeoutRef.current)
+                  //     clearTimeout(hoverTimeoutRef.current);
+                  //   setHoveredCategory(null);
+                  // }}
+                  // onClick={() => setHoveredCategory(null)}
                 />
 
                 {/* Full-width dropdown panel */}
@@ -963,7 +1012,6 @@ function Header() {
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.18, ease: "easeOut" }}
                   className="absolute left-0 right-0 top-full z-50 bg-white border-t border-gray-200 shadow-xl"
-                  // style={{ top: navBottom }}
                   onMouseEnter={() => {
                     if (hoverTimeoutRef.current)
                       clearTimeout(hoverTimeoutRef.current);
@@ -976,20 +1024,17 @@ function Header() {
                   }}
                 >
                   <div className="max-w-screen-2xl mx-auto flex min-h-[420px] max-h-[420px]">
-                    {" "}
                     {activeCategory.children &&
                     activeCategory.children.length > 0 ? (
-                      /* ── CASE A: HAS CHILDREN (e.g. "What's New") ── */
                       <>
                         {/* Left sidebar */}
                         <div
-                          className={`border-r border-gray-100 min-h-full py-10 transition-all duration-300 transition-all duration-300 ${
+                          className={`border-r border-gray-100 min-h-full py-10 transition-all duration-300 ${
                             shouldUseGrid
                               ? "flex-1 pl-8 pr-16"
                               : "w-64 flex-shrink-0 px-8"
                           }`}
                         >
-                          {" "}
                           <div
                             className={`gap-10 ${
                               shouldUseGrid
@@ -1018,7 +1063,6 @@ function Header() {
                                 </Link>
                                 {sub.children && sub.children.length > 0 && (
                                   <div className="flex flex-col gap-3 ml-2 pl-4 border-l border-gray-100">
-                                    {" "}
                                     {sub.children.map((grandchild, gIdx) => (
                                       <motion.div
                                         key={grandchild.id}
@@ -1034,7 +1078,7 @@ function Header() {
                                           onClick={() =>
                                             setHoveredCategory(null)
                                           }
-                                          className="text-sm text-gray-500 hover:text-black transition-colors duration-150 whitespace-nowrap"
+                                          className="text-base text-gray-500 hover:text-black transition-colors duration-150 whitespace-nowrap"
                                         >
                                           {grandchild.name}
                                         </Link>
@@ -1056,7 +1100,7 @@ function Header() {
                           </div>
                         </div>
 
-                        {/* Right — image cards (only subcategories that have an image) */}
+                        {/* Right — image cards */}
                         <div className="flex-1 h-[420px] py-10 px-10 overflow-hidden flex items-start">
                           {(() => {
                             const withImages = activeCategory.children.filter(
@@ -1094,17 +1138,14 @@ function Header() {
                         </div>
                       </>
                     ) : (
-                      /* ── CASE B: NO CHILDREN — clean editorial 2-column (e.g. "Weddings") ── */
                       <motion.div
                         className="flex w-full h-[420px] overflow-hidden items-start"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.18 }}
                       >
-                        {/* Left — category image, full height */}
                         {activeCategory.image && (
                           <div className="relative w-56 h-68 mt-1 flex-shrink-0 overflow-hidden">
-                            {" "}
                             <Image
                               src={activeCategory.image}
                               alt={activeCategory.name}
@@ -1115,7 +1156,6 @@ function Header() {
                           </div>
                         )}
 
-                        {/* Right — title, clipped description, CTA */}
                         <div className="flex flex-col justify-center px-12 py-10">
                           <span className="block w-7 h-[1.5px] bg-[#c4a882] mb-5" />
 
@@ -1157,7 +1197,9 @@ function Header() {
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="md:hidden sticky top-0 z-40 bg-white shadow-md"
+        className={`md:hidden fixed top-0 left-0 right-0 z-40 transition-colors duration-500 ${
+          isTransparent ? "bg-transparent" : "bg-white shadow-md"
+        }`}
       >
         <div className="flex items-center justify-between px-4 py-3">
           <motion.button
@@ -1166,9 +1208,13 @@ function Header() {
             className="p-2"
           >
             {mobileMenuOpen ? (
-              <X className="w-6 h-6" />
+              <X
+                className={`w-6 h-6 ${isTransparent ? "text-white" : "text-black"}`}
+              />
             ) : (
-              <Menu className="w-6 h-6" />
+              <Menu
+                className={`w-6 h-6 ${isTransparent ? "text-white" : "text-black"}`}
+              />
             )}
           </motion.button>
 
@@ -1183,7 +1229,9 @@ function Header() {
                 damping: 18,
                 mass: 0.6,
               }}
-              className="h-9 w-auto object-contain block md:hidden"
+              className={`h-9 w-auto object-contain block md:hidden transition-all duration-500 ${
+                isTransparent ? "brightness-0 invert" : ""
+              }`}
             />
           </Link>
           <motion.button
@@ -1191,22 +1239,35 @@ function Header() {
             onClick={() => setIsSearchOpen(true)}
             className="p-2"
           >
-            <Search className="w-5 h-5" />
+            <Search
+              className={`w-5 h-5 ${isTransparent ? "text-white" : "text-black"}`}
+            />
           </motion.button>
         </div>
 
         <div
-          className={`px-4 py-2 border-t border-gray-100${isProductDetailPage || isCategoryPage ? " hidden" : ""}`}
+          className={`px-4 py-2 transition-colors duration-500 ${
+            isTransparent
+              ? "border-t border-white/20"
+              : "border-t border-gray-100"
+          }${isProductDetailPage || isCategoryPage ? " hidden" : ""}`}
         >
-          {" "}
           <button
             onClick={() => setLocationModalOpen(true)}
             className="flex items-center gap-2 text-sm"
           >
-            <MapPin className="w-4 h-4 text-gray-600" />
+            <MapPin
+              className={`w-4 h-4 ${isTransparent ? "text-white/90" : "text-gray-600"}`}
+            />
             <div className="flex flex-col items-start">
-              <span className="text-xs text-gray-500">Deliver to</span>
-              <span className="font-semibold text-gray-800">
+              <span
+                className={`text-xs ${isTransparent ? "text-white/70" : "text-gray-500"}`}
+              >
+                Deliver to
+              </span>
+              <span
+                className={`font-semibold ${isTransparent ? "text-white" : "text-gray-800"}`}
+              >
                 {location
                   ? `${location.city} - ${location.pincode}`
                   : "Select Location"}
@@ -1228,7 +1289,7 @@ function Header() {
             <div
               className="absolute inset-0 bg-black/50 z-10"
               onClick={(e) => {
-                e.stopPropagation(); // ✅ ADD THIS
+                e.stopPropagation();
                 setLocationModalOpen(false);
               }}
             />
@@ -1238,7 +1299,6 @@ function Header() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              // className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto z-20"
               className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto z-20"
               onClick={(e) => e.stopPropagation()}
             >
@@ -1510,7 +1570,6 @@ function Header() {
                           key={category.id}
                           className="border-b border-gray-200"
                         >
-                          {/* Main Category */}
                           <div className="flex items-center">
                             {(category.children?.length ?? 0) > 0 && (
                               <button
@@ -1520,10 +1579,7 @@ function Header() {
                                 className="flex h-12 w-10 shrink-0 items-center justify-center"
                               >
                                 <span className="relative h-4 w-4">
-                                  {/* Horizontal */}
                                   <span className="absolute left-0 top-1/2 h-[1.5px] w-4 -translate-y-1/2 bg-black" />
-
-                                  {/* Vertical */}
                                   {!isOpen && (
                                     <span className="absolute left-1/2 top-0 h-4 w-[1.5px] -translate-x-1/2 bg-black" />
                                   )}
@@ -1540,7 +1596,6 @@ function Header() {
                             </Link>
                           </div>
 
-                          {/* Children */}
                           <AnimatePresence initial={false}>
                             {isOpen && category.children && (
                               <motion.div
@@ -1558,7 +1613,6 @@ function Header() {
 
                                       return (
                                         <div key={sub.id}>
-                                          {/* Sub Category */}
                                           <div className="flex items-center">
                                             {(sub.children?.length ?? 0) >
                                               0 && (
@@ -1571,10 +1625,7 @@ function Header() {
                                                 className="mr-2 flex h-8 w-6 shrink-0 items-center justify-center"
                                               >
                                                 <span className="relative h-3 w-3">
-                                                  {/* Horizontal */}
                                                   <span className="absolute left-0 top-1/2 h-[1.5px] w-3 -translate-y-1/2 bg-black" />
-
-                                                  {/* Vertical */}
                                                   {!isSubOpen && (
                                                     <span className="absolute left-1/2 top-0 h-3 w-[1.5px] -translate-x-1/2 bg-black" />
                                                   )}
@@ -1593,7 +1644,6 @@ function Header() {
                                             </Link>
                                           </div>
 
-                                          {/* Grandchildren */}
                                           <AnimatePresence initial={false}>
                                             {isSubOpen &&
                                               sub.children &&
@@ -1644,7 +1694,6 @@ function Header() {
                                     })}
                                   </div>
 
-                                  {/* View All */}
                                   <Link
                                     href={getCategoryUrl(category.slug)}
                                     onClick={() => setMobileMenuOpen(false)}
