@@ -463,14 +463,22 @@ function Header() {
   }, []);
 
   const activeCategory = categories.find((cat) => cat.id === hoveredCategory);
+  const activeCategoryImages =
+    activeCategory?.children?.filter((sub) => Boolean(sub.image)) ?? [];
+  const hasCategoryImages = activeCategoryImages.length > 0;
+  const hasGrandchildren =
+    activeCategory?.children?.some(
+      (sub) => sub.children && sub.children.length > 0,
+    ) ?? false;
+  // Categories without grandchildren display vertically.
+  const useVerticalCategoryList = !hasGrandchildren;
   const totalGrandchildren =
     activeCategory?.children?.reduce(
       (acc, child) => acc + (child.children?.length || 0),
       0,
     ) ?? 0;
-
   const shouldUseGrid =
-    (activeCategory?.children?.length || 0) > 4 || totalGrandchildren > 8;
+    (activeCategory?.children?.length ?? 0) > 4 || totalGrandchildren > 8;
   const isHeaderWhite =
     !hasHeroBehindHeader ||
     isScrolled ||
@@ -899,97 +907,114 @@ function Header() {
         {/* ── NAV BAR — Sabyasachi style ── */}
         <motion.nav
           ref={navRef}
+          aria-label="Primary navigation"
           initial={false}
           animate={{
-            height: showNav ? 48 : 0,
+            height: showNav ? 56 : 0,
             opacity: showNav ? 1 : 0,
           }}
           transition={{
-            height: { duration: 0.18, ease: [0.22, 1, 0.36, 1] },
-            opacity: { duration: 0.12 },
+            height: {
+              duration: 0.2,
+              ease: [0.22, 1, 0.36, 1],
+            },
+            opacity: {
+              duration: 0.15,
+            },
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              setHoveredCategory(null);
+            }
           }}
           style={{
-            willChange: "opacity",
+            willChange: "height, opacity",
             transform: "translateZ(0)",
             backfaceVisibility: "hidden",
             WebkitBackfaceVisibility: "hidden",
           }}
-          className="hidden md:block relative z-40"
+          className="relative z-40 hidden overflow-visible md:block"
         >
-          <div className="overflow-hidden">
-            <ul className="flex justify-center items-center gap-0 h-12">
+          {/* Navigation links */}
+          <div className="h-14 overflow-hidden">
+            <ul className="flex h-14 items-center justify-center gap-2">
               {loading ? (
-                [80, 100, 72, 88, 96, 76].map((w, i) => (
-                  <li key={i} className="px-5">
+                [80, 100, 72, 88, 96, 76].map((width, index) => (
+                  <li key={index} className="px-5">
                     <div
-                      className="h-2.5 rounded-full animate-pulse bg-gray-100"
-                      style={{ width: `${w}px` }}
+                      className="h-3 animate-pulse rounded-full bg-gray-200/70"
+                      style={{ width: `${width}px` }}
                     />
                   </li>
                 ))
               ) : categories.length === 0 ? (
-                <li className="text-sm text-gray-400">
+                <li className="text-base text-gray-400">
                   No categories available
                 </li>
               ) : (
-                categories.map((category, index) => {
+                categories.map((category) => {
+                  const isActive = hoveredCategory === category.id;
+
                   return (
-                    <Fragment key={category.id}>
-                      <li
-                        onMouseEnter={() => {
-                          if (hoverTimeoutRef.current)
-                            clearTimeout(hoverTimeoutRef.current);
+                    <li
+                      key={category.id}
+                      onMouseEnter={() => {
+                        if (hoverTimeoutRef.current) {
+                          clearTimeout(hoverTimeoutRef.current);
+                        }
+
+                        setHoveredCategory(category.id);
+
+                        if (navRef.current) {
+                          setNavBottom(
+                            navRef.current.getBoundingClientRect().bottom,
+                          );
+                        }
+                      }}
+                      className="relative flex h-full items-center"
+                    >
+                      <Link
+                        href={getCategoryUrl(category.slug)}
+                        onFocus={() => {
                           setHoveredCategory(category.id);
-                          if (navRef.current)
-                            setNavBottom(
-                              navRef.current.getBoundingClientRect().bottom,
-                            );
                         }}
-                        // onMouseLeave={() => {
-                        //   hoverTimeoutRef.current = setTimeout(
-                        //     () => setHoveredCategory(null),
-                        //     80,
-                        //   );
-                        // }}
-                        className="relative h-full flex items-center"
+                        className={`relative flex h-14 items-center px-5 text-[15px] font-medium uppercase tracking-[0.12em] transition-colors duration-300 ${
+                          isHeaderWhite
+                            ? isActive
+                              ? "text-black"
+                              : "text-gray-600 hover:text-black"
+                            : "text-white hover:text-white"
+                        }`}
                       >
-                        <Link
-                          href={getCategoryUrl(category.slug)}
-                          className={`relative flex items-center gap-1 px-4 h-12 text-[14px] font-medium tracking-[0.1em] uppercase transition-colors duration-300 ${
-                            isHeaderWhite
-                              ? hoveredCategory === category.id
-                                ? "text-black"
-                                : "text-gray-600 hover:text-black"
-                              : "text-white hover:text-white"
+                        {category.name}
+                      </Link>
+
+                      {/* Active underline */}
+                      {isActive && (
+                        <motion.span
+                          layoutId="desktopNavUnderline"
+                          className={`pointer-events-none absolute inset-x-4 bottom-0 z-[60] h-[2px] ${
+                            isHeaderWhite ? "bg-black" : "bg-white"
                           }`}
-                        >
-                          {category.name}
-                        </Link>
-                        {/* Active underline */}
-                        {hoveredCategory === category.id && (
-                          <motion.div
-                            layoutId="navUnderline"
-                            className="pointer-events-none absolute bottom-[2px] left-6 right-6 z-[60] h-[2px] bg-black"
-                            transition={{
-                              type: "spring",
-                              stiffness: 500,
-                              damping: 40,
-                            }}
-                          />
-                        )}
-                      </li>
-                    </Fragment>
+                          transition={{
+                            type: "spring",
+                            stiffness: 500,
+                            damping: 42,
+                          }}
+                        />
+                      )}
+                    </li>
                   );
                 })
               )}
             </ul>
           </div>
 
-          {/* ── SABYASACHI-STYLE MEGAMENU ── */}
+          {/* ── MEGA MENU ── */}
           <AnimatePresence>
             {hoveredCategory && activeCategory && (
               <>
-                {/* Backdrop */}
+                {/* Page overlay */}
                 <motion.div
                   aria-hidden="true"
                   initial={{ opacity: 0 }}
@@ -997,192 +1022,263 @@ function Header() {
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.18 }}
                   className="pointer-events-none absolute inset-x-0 top-full z-40 h-screen bg-black/30"
-                  // onMouseEnter={() => {
-                  //   if (hoverTimeoutRef.current)
-                  //     clearTimeout(hoverTimeoutRef.current);
-                  //   setHoveredCategory(null);
-                  // }}
-                  // onClick={() => setHoveredCategory(null)}
                 />
 
-                {/* Full-width dropdown panel */}
+                {/* Dropdown */}
                 <motion.div
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.18, ease: "easeOut" }}
-                  className="absolute left-0 right-0 top-full z-50 bg-white border-t border-gray-200 shadow-xl"
-                  onMouseEnter={() => {
-                    if (hoverTimeoutRef.current)
-                      clearTimeout(hoverTimeoutRef.current);
+                  initial={{
+                    opacity: 0,
+                    y: -8,
                   }}
-                  onMouseLeave={() => {
-                    hoverTimeoutRef.current = setTimeout(
-                      () => setHoveredCategory(null),
-                      80,
-                    );
+                  animate={{
+                    opacity: 1,
+                    y: 0,
                   }}
+                  exit={{
+                    opacity: 0,
+                    y: -6,
+                  }}
+                  transition={{
+                    duration: 0.2,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                  className="absolute inset-x-0 top-full z-50 border-t border-gray-200 bg-white text-black shadow-xl"
                 >
-                  <div className="max-w-screen-2xl mx-auto flex min-h-[420px] max-h-[420px]">
+                  <div className="mx-auto w-full max-w-[1600px]">
                     {activeCategory.children &&
                     activeCategory.children.length > 0 ? (
-                      <>
-                        {/* Left sidebar */}
-                        <div
-                          className={`border-r border-gray-100 min-h-full py-10 transition-all duration-300 ${
-                            shouldUseGrid
-                              ? "flex-1 pl-8 pr-16"
-                              : "w-64 flex-shrink-0 px-8"
-                          }`}
-                        >
+                      <div
+                        className={`grid min-h-[390px] max-h-[calc(100vh-150px)] justify-start ${
+                          !hasCategoryImages
+                            ? "grid-cols-1"
+                            : useVerticalCategoryList
+                              ? activeCategoryImages.length === 1
+                                ? "grid-cols-[300px_240px]"
+                                : activeCategoryImages.length === 2
+                                  ? "grid-cols-[300px_420px]"
+                                  : "grid-cols-[300px_600px]"
+                              : "grid-cols-[minmax(0,1fr)_minmax(460px,640px)]"
+                        }`}
+                      >
+                        {/* ── LEFT CATEGORY CONTENT ── */}
+                        <section className="flex min-h-0 min-w-0 flex-col">
+                          {/* Scrollable links */}
                           <div
-                            className={`gap-10 ${
-                              shouldUseGrid
-                                ? "flex flex-row items-start"
-                                : "flex flex-col items-start"
+                            className={`min-h-0 flex-1 overflow-y-auto py-9 ${
+                              useVerticalCategoryList
+                                ? "px-10"
+                                : "px-8 lg:px-10"
                             }`}
                           >
-                            {activeCategory.children.map((sub, idx) => (
-                              <motion.div
-                                key={sub.id}
-                                className="min-w-[220px] flex-shrink-0"
-                                initial={{ opacity: 0, x: -8 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{
-                                  duration: 0.12,
-                                  delay: idx * 0.03,
-                                }}
-                              >
-                                <Link
-                                  href={getCategoryUrl(sub.slug)}
-                                  onClick={() => setHoveredCategory(null)}
-                                  className="group flex items-center gap-3 text-base font-semibold tracking-wide text-gray-800 hover:text-black transition-colors duration-150 mb-2"
+                            <div
+                              className={
+                                useVerticalCategoryList
+                                  ? "flex flex-col items-start gap-6"
+                                  : shouldUseGrid
+                                    ? "grid grid-cols-2 gap-x-8 gap-y-8 lg:grid-cols-4 xl:grid-cols-5"
+                                    : "grid grid-cols-1 gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-3"
+                              }
+                            >
+                              {activeCategory.children.map((sub, index) => (
+                                <motion.div
+                                  key={sub.id}
+                                  initial={{
+                                    opacity: 0,
+                                    y: 8,
+                                  }}
+                                  animate={{
+                                    opacity: 1,
+                                    y: 0,
+                                  }}
+                                  transition={{
+                                    duration: 0.16,
+                                    delay: index * 0.025,
+                                  }}
+                                  className={
+                                    useVerticalCategoryList
+                                      ? "w-full"
+                                      : "min-w-0"
+                                  }
                                 >
-                                  <span className="block w-0 group-hover:w-4 h-[1.5px] bg-black transition-all duration-200 ease-out flex-shrink-0" />
-                                  {sub.name}
-                                </Link>
-                                {sub.children && sub.children.length > 0 && (
-                                  <div className="flex flex-col gap-3 ml-2 pl-4 border-l border-gray-100">
-                                    {sub.children.map((grandchild, gIdx) => (
-                                      <motion.div
-                                        key={grandchild.id}
-                                        initial={{ opacity: 0, x: -6 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{
-                                          duration: 0.1,
-                                          delay: gIdx * 0.02,
-                                        }}
-                                      >
-                                        <Link
-                                          href={getCategoryUrl(grandchild.slug)}
-                                          onClick={() =>
-                                            setHoveredCategory(null)
-                                          }
-                                          className="text-base text-gray-500 hover:text-black transition-colors duration-150 whitespace-nowrap"
-                                        >
-                                          {grandchild.name}
-                                        </Link>
-                                      </motion.div>
-                                    ))}
-                                  </div>
-                                )}
-                              </motion.div>
-                            ))}
+                                  {/* Child category */}
+                                  <Link
+                                    href={getCategoryUrl(sub.slug)}
+                                    onClick={() => {
+                                      setHoveredCategory(null);
+                                    }}
+                                    className="group flex w-fit items-center gap-2 text-base font-semibold tracking-wide text-gray-900"
+                                  >
+                                    <span className="h-[1.5px] w-0 shrink-0 bg-black transition-all duration-200 group-hover:w-4" />
+
+                                    <span className="transition-colors duration-200 group-hover:text-black">
+                                      {sub.name}
+                                    </span>
+                                  </Link>
+
+                                  {/* Grandchildren */}
+                                  {sub.children && sub.children.length > 0 && (
+                                    <ul className="mt-3 flex flex-col gap-3 border-l border-gray-100 pl-4">
+                                      {sub.children.map(
+                                        (grandchild, grandchildIndex) => (
+                                          <motion.li
+                                            key={grandchild.id}
+                                            initial={{
+                                              opacity: 0,
+                                              x: -5,
+                                            }}
+                                            animate={{
+                                              opacity: 1,
+                                              x: 0,
+                                            }}
+                                            transition={{
+                                              duration: 0.12,
+                                              delay: grandchildIndex * 0.015,
+                                            }}
+                                          >
+                                            <Link
+                                              href={getCategoryUrl(
+                                                grandchild.slug,
+                                              )}
+                                              onClick={() => {
+                                                setHoveredCategory(null);
+                                              }}
+                                              className="block whitespace-nowrap text-base leading-relaxed text-gray-500 transition-colors duration-200 hover:text-black"
+                                            >
+                                              {grandchild.name}
+                                            </Link>
+                                          </motion.li>
+                                        ),
+                                      )}
+                                    </ul>
+                                  )}
+                                </motion.div>
+                              ))}
+                            </div>
                           </div>
-                          <div className="mt-8 pt-5 border-t border-gray-200">
+
+                          {/* View All — always visible */}
+                          <div className="shrink-0 border-t border-gray-200 bg-white px-10 py-5">
                             <Link
                               href={getCategoryUrl(activeCategory.slug)}
-                              onClick={() => setHoveredCategory(null)}
-                              className="text-xs font-bold text-black uppercase tracking-[0.15em] hover:underline underline-offset-4"
+                              onClick={() => {
+                                setHoveredCategory(null);
+                              }}
+                              className="group inline-flex items-center gap-3 text-sm font-bold uppercase tracking-[0.16em] text-black"
                             >
-                              View All →
+                              <span className="border-b border-transparent transition-colors duration-200 group-hover:border-black">
+                                View All
+                              </span>
+
+                              <span className="transition-transform duration-200 group-hover:translate-x-1">
+                                →
+                              </span>
                             </Link>
                           </div>
-                        </div>
+                        </section>
 
-                        {/* Right — image cards */}
-                        <div className="flex-1 h-[420px] py-10 px-10 overflow-hidden flex items-start">
-                          {(() => {
-                            const withImages = activeCategory.children.filter(
-                              (sub) => sub.image,
-                            );
-                            return withImages.length > 0 ? (
-                              <div className="flex flex-row items-start gap-10">
-                                {withImages.map((sub, idx) => (
-                                  <motion.div
-                                    key={sub.id}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{
-                                      duration: 0.15,
-                                      delay: idx * 0.04,
+                        {/* ── RIGHT IMAGE CONTENT ── */}
+                        {hasCategoryImages && (
+                          <aside className="min-h-0 overflow-y-auto border-l border-gray-100 px-6 py-8">
+                            <div
+                              className={`grid justify-start gap-4 ${
+                                activeCategoryImages.length === 1
+                                  ? "grid-cols-1"
+                                  : activeCategoryImages.length === 2
+                                    ? "grid-cols-2"
+                                    : "grid-cols-3"
+                              }`}
+                            >
+                              {activeCategoryImages.map((sub, index) => (
+                                <motion.article
+                                  key={sub.id}
+                                  initial={{
+                                    opacity: 0,
+                                    y: 10,
+                                  }}
+                                  animate={{
+                                    opacity: 1,
+                                    y: 0,
+                                  }}
+                                  transition={{
+                                    duration: 0.18,
+                                    delay: index * 0.04,
+                                  }}
+                                  className="w-[170px]"
+                                >
+                                  <Link
+                                    href={getCategoryUrl(sub.slug)}
+                                    onClick={() => {
+                                      setHoveredCategory(null);
                                     }}
-                                    className="flex flex-col items-start gap-3"
+                                    className="group block"
                                   >
-                                    <div className="relative w-[180px] h-[240px] overflow-hidden bg-[#f8f8f8] flex-shrink-0">
+                                    <div className="relative h-[230px] w-[170px] overflow-hidden bg-[#f7f7f7]">
                                       <Image
                                         src={sub.image!}
                                         alt={sub.name}
                                         fill
-                                        className="object-cover object-top"
+                                        sizes="170px"
+                                        className="object-cover object-top transition-transform duration-500 ease-out group-hover:scale-[1.035]"
                                       />
                                     </div>
-                                    <span className="text-sm font-semibold text-gray-800 tracking-wide uppercase">
+
+                                    <h3 className="mt-3 text-sm font-semibold uppercase tracking-[0.08em] text-gray-900">
                                       {sub.name}
-                                    </span>
-                                  </motion.div>
-                                ))}
-                              </div>
-                            ) : null;
-                          })()}
-                        </div>
-                      </>
+                                    </h3>
+                                  </Link>
+                                </motion.article>
+                              ))}
+                            </div>
+                          </aside>
+                        )}
+                      </div>
                     ) : (
-                      <motion.div
-                        className="flex w-full h-[420px] overflow-hidden items-start"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.18 }}
-                      >
+                      /* Category without children */
+                      <section className="flex min-h-[380px] items-stretch overflow-hidden">
                         {activeCategory.image && (
-                          <div className="relative w-56 h-68 mt-1 flex-shrink-0 overflow-hidden">
+                          <div className="relative w-[300px] shrink-0 overflow-hidden bg-gray-100">
                             <Image
                               src={activeCategory.image}
                               alt={activeCategory.name}
                               fill
+                              sizes="300px"
                               className="object-cover object-center"
                             />
-                            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/25 to-transparent" />
+
+                            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/30 to-transparent" />
                           </div>
                         )}
 
-                        <div className="flex flex-col justify-center px-12 py-10">
-                          <span className="block w-7 h-[1.5px] bg-[#c4a882] mb-5" />
+                        <div className="flex max-w-xl flex-col justify-center px-12 py-12">
+                          <span className="mb-5 block h-[2px] w-8 bg-[#c4a882]" />
 
-                          <h3 className="font-serif text-2xl font-light tracking-[0.22em] uppercase text-gray-900 mb-3">
+                          <h3 className="mb-4 font-serif text-3xl font-light uppercase tracking-[0.18em] text-gray-900">
                             {activeCategory.name}
                           </h3>
 
                           {activeCategory.description && (
-                            <p className="text-[13px] text-gray-500 leading-[1.85] line-clamp-3 max-w-sm">
+                            <p className="line-clamp-4 text-base leading-relaxed text-gray-500">
                               {activeCategory.description}
                             </p>
                           )}
 
                           <Link
                             href={getCategoryUrl(activeCategory.slug)}
-                            onClick={() => setHoveredCategory(null)}
-                            className="inline-flex items-center gap-2 mt-7 text-[11px] font-semibold uppercase tracking-[0.18em] text-black group w-fit"
+                            onClick={() => {
+                              setHoveredCategory(null);
+                            }}
+                            className="group mt-8 inline-flex w-fit items-center gap-3 text-sm font-semibold uppercase tracking-[0.16em] text-black"
                           >
-                            <span className="border-b border-transparent group-hover:border-black transition-all duration-200">
+                            <span className="border-b border-transparent transition-colors duration-200 group-hover:border-black">
                               Explore Collection
                             </span>
+
                             <span className="transition-transform duration-200 group-hover:translate-x-1">
                               →
                             </span>
                           </Link>
                         </div>
-                      </motion.div>
+                      </section>
                     )}
                   </div>
                 </motion.div>
