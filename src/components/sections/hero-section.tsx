@@ -1,82 +1,64 @@
 "use client";
 
-import {
-  motion,
-  useScroll,
-  useTransform,
-  AnimatePresence,
-} from "framer-motion";
-import { useRef, useState, useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
-import bannerService, { Banner, MediaType } from "@/lib/api/banner.api";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+
+import bannerService, { type Banner, MediaType } from "@/lib/api/banner.api";
+
+const AUTOPLAY_DELAY = 5000;
+const MIN_SWIPE_DISTANCE = 50;
 
 export default function HeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
-  const [enableScrollAnim, setEnableScrollAnim] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [isMounted, setIsMounted] = useState(false);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  /* ------------------ FETCH BANNERS ------------------ */
   const {
     data: banners = [],
-    isLoading: loading,
+    isLoading,
     isError,
-  } = useQuery({
+  } = useQuery<Banner[]>({
     queryKey: ["active-banners"],
     queryFn: () => bannerService.getActiveBanners(),
   });
 
-  /* ------------------ SCROLL ANIMATION ------------------ */
-  const { scrollYProgress } = useScroll(
-    isMounted && ref.current
-      ? {
-          target: ref,
-          offset: ["start start", "end center"],
-        }
-      : {},
-  );
-
-  const yTransform = useTransform(scrollYProgress, [0, 1], [0, 150]);
-  const y = enableScrollAnim ? yTransform : 0;
-
   useEffect(() => {
-    const run = () => setEnableScrollAnim(true);
-
-    if (typeof window !== "undefined") {
-      if ("requestIdleCallback" in window) {
-        (window as any).requestIdleCallback(run);
-      } else {
-        setTimeout(run, 1);
-      }
+    if (banners.length === 0) {
+      setCurrentSlide(0);
+      return;
     }
-  }, []);
 
-  /* ------------------ AUTOPLAY ------------------ */
+    setCurrentSlide((current) => (current >= banners.length ? 0 : current));
+  }, [banners.length]);
+
   useEffect(() => {
-    if (!autoPlay || banners.length === 0) return;
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % banners.length);
-    }, 5000);
-    return () => clearInterval(interval);
+    if (!autoPlay || banners.length <= 1) return;
+
+    const interval = window.setInterval(() => {
+      setCurrentSlide((current) => (current + 1) % banners.length);
+    }, AUTOPLAY_DELAY);
+
+    return () => window.clearInterval(interval);
   }, [autoPlay, banners.length]);
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % banners.length);
+    if (banners.length <= 1) return;
+
+    setCurrentSlide((current) => (current + 1) % banners.length);
     setAutoPlay(false);
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + banners.length) % banners.length);
+    if (banners.length <= 1) return;
+
+    setCurrentSlide(
+      (current) => (current - 1 + banners.length) % banners.length,
+    );
     setAutoPlay(false);
   };
 
@@ -84,67 +66,63 @@ export default function HeroSection() {
     setCurrentSlide(index);
     setAutoPlay(false);
   };
-  const minSwipeDistance = 50;
 
-  const onTouchStart = (e: React.TouchEvent) => {
+  const onTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
     setAutoPlay(false);
     setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
+    setTouchStart(event.targetTouches[0].clientX);
   };
 
-  const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
+  const onTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
+    setTouchEnd(event.targetTouches[0].clientX);
   };
 
   const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
+    if (touchStart === null || touchEnd === null) return;
 
     const distance = touchStart - touchEnd;
 
-    if (distance > minSwipeDistance) {
+    if (distance > MIN_SWIPE_DISTANCE) {
       nextSlide();
-    } else if (distance < -minSwipeDistance) {
+    } else if (distance < -MIN_SWIPE_DISTANCE) {
       prevSlide();
     }
+
+    setTouchStart(null);
+    setTouchEnd(null);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <section className="relative w-full h-screen overflow-hidden bg-gray-100 flex items-center justify-center">
+      <section className="relative flex h-[100svh] min-h-[640px] w-full items-center justify-center overflow-hidden bg-black">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-gray-300 border-t-black rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="mx-auto mb-4 h-11 w-11 animate-spin rounded-full border-4 border-white/25 border-t-white" />
+          <p className="text-sm text-white/70">Loading...</p>
         </div>
       </section>
     );
   }
 
-  if (banners.length === 0) {
+  if (isError || banners.length === 0) {
     return (
-      <section className="relative w-full h-screen overflow-hidden bg-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600">No banners available</p>
-        </div>
+      <section className="relative flex h-[100svh] min-h-[640px] w-full items-center justify-center overflow-hidden bg-black">
+        <p className="text-sm text-white/70">
+          {isError ? "Unable to load banners" : "No banners available"}
+        </p>
       </section>
     );
   }
+
+  const activeBanner = banners[currentSlide];
 
   return (
-    // ✅ h-screen (not min-h-screen) + -mt to pull the section under the
-    // fixed/transparent header, so it's truly full-bleed like Sabyasachi's hero.
     <section
-      ref={ref}
-      className="relative w-full h-screen overflow-hidden bg-background"
-      style={{ contain: "layout paint size" }}
+      className="relative h-[100svh] min-h-[640px] w-full overflow-hidden bg-black"
+      aria-roledescription="carousel"
+      aria-label="Promotional banners"
     >
-      {/* ------------------ BACKGROUND MEDIA ------------------ */}
       <div
-        className="
-    absolute inset-0 w-full h-full overflow-hidden
-    touch-pan-y
-    select-none
-    overscroll-x-contain
-  "
+        className="absolute inset-0 touch-pan-y select-none overscroll-x-contain"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -152,160 +130,115 @@ export default function HeroSection() {
         {banners.map((banner, index) => (
           <motion.div
             key={banner.id}
-            className="absolute inset-0 w-full h-full"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: index === currentSlide ? 1 : 0 }}
-            transition={{ duration: 0.8, ease: "easeInOut" }}
-            style={{ y }}
+            className="absolute inset-0"
+            initial={false}
+            animate={{
+              opacity: index === currentSlide ? 1 : 0,
+              visibility: index === currentSlide ? "visible" : "hidden",
+            }}
+            transition={{
+              opacity: {
+                duration: 0.85,
+                ease: "easeInOut",
+              },
+            }}
+            aria-hidden={index !== currentSlide}
           >
             {banner.type === MediaType.IMAGE ? (
               <Image
                 src={banner.url}
-                alt={banner.title}
+                alt={banner.title || "Promotional banner"}
                 fill
                 sizes="100vw"
                 priority={index === 0}
-                className="object-cover"
+                quality={90}
+                /*
+                 * Preserve the original proportions.
+                 * Never use object-fill here because that stretches faces.
+                 */
+                className="object-cover object-center"
               />
             ) : (
               <video
                 src={banner.url}
                 poster={banner.thumbnailUrl}
-                className="w-full h-full object-cover"
-                autoPlay
+                className="h-full w-full object-cover object-center"
+                autoPlay={index === currentSlide}
                 muted
                 loop
                 playsInline
-                preload="metadata"
+                preload={index === 0 ? "auto" : "metadata"}
               />
             )}
           </motion.div>
         ))}
-        {/* Slight darkening so white header text/logo stays readable */}
-        <div className="absolute inset-0 bg-black/20" />
       </div>
 
-      {/* ------------------ CONTENT ------------------ */}
-      <div className="relative z-10 flex h-full items-center justify-center px-4">
-        <motion.div
-          className="text-center max-w-4xl"
-          initial={{ opacity: 0, y: 70 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1 }}
-        >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentSlide}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.5 }}
-            >
-              <h1 className="text-6xl md:text-8xl font-light text-white mb-6 tracking-tight">
-                {banners[currentSlide]?.title || "Timeless Elegance"}
-              </h1>
+      <div className="relative z-10 flex h-full items-end justify-center px-5 pb-20 sm:px-8 sm:pb-24 lg:pb-20">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeBanner.id}
+            className="mx-auto max-w-5xl text-center"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.5 }}
+          >
+            <h1 className="text-3xl font-semibold uppercase leading-tight tracking-[0.12em] text-white drop-shadow-lg sm:text-4xl lg:text-5xl">
+              {activeBanner.title || "Timeless Elegance"}
+            </h1>
 
-              {banners[currentSlide]?.text && (
-                <p className="text-xl md:text-2xl text-white/90 font-light mb-12">
-                  {banners[currentSlide].text}
-                </p>
-              )}
+            {activeBanner.text && (
+              <p className="mx-auto mt-4 max-w-3xl text-sm font-light tracking-wide text-white/90 drop-shadow sm:text-base lg:text-lg">
+                {activeBanner.text}
+              </p>
+            )}
 
-              {banners[currentSlide]?.link && (
-                <Link href={banners[currentSlide].link!}>
-                  <button className="px-8 py-3 bg-white text-black font-medium rounded-full hover:scale-105 transition">
-                    Explore Collection
-                  </button>
-                </Link>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </motion.div>
+            {activeBanner.link && (
+              <Link
+                href={activeBanner.link}
+                className="mt-7 inline-flex min-w-40 items-center justify-center border border-white bg-black/15 px-8 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white backdrop-blur-sm transition-colors hover:bg-white hover:text-black sm:text-sm"
+              >
+                Explore Collection
+              </Link>
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
-      {/* ------------------ LUXURY NAVIGATION ------------------ */}
       {banners.length > 1 && (
         <>
-          {/* DESKTOP ONLY ARROWS */}
           <button
+            type="button"
             onClick={prevSlide}
-            className="
-        hidden md:flex
-        absolute left-6 top-1/2 -translate-y-1/2 z-30
-        w-14 h-14
-        items-center justify-center
-        rounded-full
-        bg-black/20
-        backdrop-blur-2xl
-        border border-white/10
-        shadow-[0_10px_40px_rgba(0,0,0,0.25)]
-        hover:bg-black/35
-        hover:scale-105
-        transition-all duration-500
-      "
+            className="absolute left-4 top-1/2 z-30 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/20 text-white backdrop-blur-md transition-all hover:bg-black/45 md:flex lg:left-8"
             aria-label="Previous slide"
           >
-            <ChevronLeft className="w-5 h-5 text-white" />
+            <ChevronLeft className="h-5 w-5" />
           </button>
 
           <button
+            type="button"
             onClick={nextSlide}
-            className="
-        hidden md:flex
-        absolute right-6 top-1/2 -translate-y-1/2 z-30
-        w-14 h-14
-        items-center justify-center
-        rounded-full
-        bg-black/20
-        backdrop-blur-2xl
-        border border-white/10
-        shadow-[0_10px_40px_rgba(0,0,0,0.25)]
-        hover:bg-black/35
-        hover:scale-105
-        transition-all duration-500
-      "
+            className="absolute right-4 top-1/2 z-30 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/20 text-white backdrop-blur-md transition-all hover:bg-black/45 md:flex lg:right-8"
             aria-label="Next slide"
           >
-            <ChevronRight className="w-5 h-5 text-white" />
+            <ChevronRight className="h-5 w-5" />
           </button>
 
-          {/* MOBILE SWIPE HINT */}
-          <div className="md:hidden absolute bottom-24 left-1/2 -translate-x-1/2 z-30">
-            <div
-              className="
-          px-4 py-1.5
-          rounded-full
-          bg-black/20
-          backdrop-blur-xl
-          border border-white/10
-        "
-            >
-              <p className="text-[10px] uppercase tracking-[0.25em] text-white/70">
-                Swipe
-              </p>
-            </div>
-          </div>
-
-          {/* PREMIUM DOTS */}
-          <div
-            className="
-        absolute bottom-10 left-1/2 -translate-x-1/2
-        z-30 flex items-center gap-2
-      "
-          >
-            {banners.map((_, index) => (
+          <div className="absolute bottom-7 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 sm:bottom-9">
+            {banners.map((banner, index) => (
               <button
-                key={index}
+                key={banner.id}
+                type="button"
                 onClick={() => goToSlide(index)}
-                className={`
-            rounded-full transition-all duration-500
-            ${
-              index === currentSlide
-                ? "w-10 h-[3px] bg-white"
-                : "w-2 h-2 bg-white/35"
-            }
-          `}
+                className={`rounded-full transition-all duration-300 ${
+                  index === currentSlide
+                    ? "h-[3px] w-10 bg-white"
+                    : "h-2 w-2 bg-white/40 hover:bg-white/70"
+                }`}
                 aria-label={`Go to slide ${index + 1}`}
+                aria-current={index === currentSlide}
               />
             ))}
           </div>

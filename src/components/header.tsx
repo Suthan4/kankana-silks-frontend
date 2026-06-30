@@ -943,7 +943,9 @@ function Header() {
                   <li key={index} className="px-5">
                     <div
                       className="h-3 animate-pulse rounded-full bg-gray-200/70"
-                      style={{ width: `${width}px` }}
+                      style={{
+                        width: `${width}px`,
+                      }}
                     />
                   </li>
                 ))
@@ -977,6 +979,12 @@ function Header() {
                         href={getCategoryUrl(category.slug)}
                         onFocus={() => {
                           setHoveredCategory(category.id);
+
+                          if (navRef.current) {
+                            setNavBottom(
+                              navRef.current.getBoundingClientRect().bottom,
+                            );
+                          }
                         }}
                         className={`relative flex h-14 items-center px-5 text-[15px] font-medium uppercase tracking-[0.12em] transition-colors duration-300 ${
                           isHeaderWhite
@@ -989,7 +997,6 @@ function Header() {
                         {category.name}
                       </Link>
 
-                      {/* Active underline */}
                       {isActive && (
                         <motion.span
                           layoutId="desktopNavUnderline"
@@ -1010,7 +1017,7 @@ function Header() {
             </ul>
           </div>
 
-          {/* ── MEGA MENU ── */}
+          {/* Mega menu */}
           <AnimatePresence>
             {hoveredCategory && activeCategory && (
               <>
@@ -1020,7 +1027,9 @@ function Header() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.18 }}
+                  transition={{
+                    duration: 0.18,
+                  }}
                   className="pointer-events-none absolute inset-x-0 top-full z-40 h-screen bg-black/30"
                 />
 
@@ -1042,41 +1051,61 @@ function Header() {
                     duration: 0.2,
                     ease: [0.22, 1, 0.36, 1],
                   }}
-                  className="absolute inset-x-0 top-full z-50 border-t border-gray-200 bg-white text-black shadow-xl"
+                  style={{
+                    maxHeight:
+                      navBottom > 0
+                        ? `calc(100dvh - ${navBottom}px)`
+                        : "calc(100dvh - 150px)",
+                  }}
+                  className="absolute inset-x-0 top-full z-50 overflow-hidden border-t border-gray-200 bg-white text-black shadow-xl"
                 >
-                  <div className="mx-auto w-full max-w-[1600px]">
+                  <div
+                    style={{
+                      maxHeight:
+                        navBottom > 0
+                          ? `calc(100dvh - ${navBottom}px)`
+                          : "calc(100dvh - 150px)",
+                    }}
+                    className="mx-auto w-full max-w-[1600px] overflow-hidden"
+                  >
                     {activeCategory.children &&
                     activeCategory.children.length > 0 ? (
                       <div
-                        className={`grid min-h-[390px] max-h-[calc(100vh-150px)] justify-start ${
+                        style={{
+                          maxHeight:
+                            navBottom > 0
+                              ? `calc(100dvh - ${navBottom}px)`
+                              : "calc(100dvh - 150px)",
+                        }}
+                        className={`grid overflow-hidden ${
                           !hasCategoryImages
                             ? "grid-cols-1"
                             : useVerticalCategoryList
-                              ? activeCategoryImages.length === 1
-                                ? "grid-cols-[300px_240px]"
-                                : activeCategoryImages.length === 2
-                                  ? "grid-cols-[300px_420px]"
-                                  : "grid-cols-[300px_600px]"
-                              : "grid-cols-[minmax(0,1fr)_minmax(460px,640px)]"
+                              ? "min-h-[445px] grid-cols-[280px_minmax(0,1fr)]"
+                              : "min-h-[445px] grid-cols-[minmax(380px,1fr)_minmax(700px,900px)]"
                         }`}
                       >
-                        {/* ── LEFT CATEGORY CONTENT ── */}
-                        <section className="flex min-h-0 min-w-0 flex-col">
-                          {/* Scrollable links */}
+                        {/* Left category section */}
+                        <section className="flex min-h-0 min-w-0 flex-col overflow-hidden">
+                          {/* Scrollable category links */}
                           <div
-                            className={`min-h-0 flex-1 overflow-y-auto py-9 ${
-                              useVerticalCategoryList
-                                ? "px-10"
-                                : "px-8 lg:px-10"
+                            className={`min-h-0 flex-1 overflow-y-auto ${
+                              !hasCategoryImages
+                                ? "px-10 py-7"
+                                : useVerticalCategoryList
+                                  ? "px-10 py-9"
+                                  : "px-8 py-9 lg:px-10"
                             }`}
                           >
                             <div
                               className={
-                                useVerticalCategoryList
-                                  ? "flex flex-col items-start gap-6"
-                                  : shouldUseGrid
-                                    ? "grid grid-cols-2 gap-x-8 gap-y-8 lg:grid-cols-4 xl:grid-cols-5"
-                                    : "grid grid-cols-1 gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-3"
+                                !hasCategoryImages
+                                  ? "grid grid-cols-2 items-start gap-x-10 gap-y-8 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+                                  : useVerticalCategoryList
+                                    ? "flex flex-col items-start gap-6"
+                                    : shouldUseGrid
+                                      ? "grid grid-cols-2 gap-x-8 gap-y-8 lg:grid-cols-3 xl:grid-cols-4"
+                                      : "grid grid-cols-1 gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-3"
                               }
                             >
                               {activeCategory.children.map((sub, index) => (
@@ -1095,7 +1124,7 @@ function Header() {
                                     delay: index * 0.025,
                                   }}
                                   className={
-                                    useVerticalCategoryList
+                                    useVerticalCategoryList && hasCategoryImages
                                       ? "w-full"
                                       : "min-w-0"
                                   }
@@ -1106,7 +1135,11 @@ function Header() {
                                     onClick={() => {
                                       setHoveredCategory(null);
                                     }}
-                                    className="group flex w-fit items-center gap-2 text-base font-semibold tracking-wide text-gray-900"
+                                    className={`group flex w-fit items-center gap-2 font-semibold tracking-wide text-gray-900 ${
+                                      !hasCategoryImages
+                                        ? "text-base"
+                                        : "text-base"
+                                    }`}
                                   >
                                     <span className="h-[1.5px] w-0 shrink-0 bg-black transition-all duration-200 group-hover:w-4" />
 
@@ -1117,7 +1150,13 @@ function Header() {
 
                                   {/* Grandchildren */}
                                   {sub.children && sub.children.length > 0 && (
-                                    <ul className="mt-3 flex flex-col gap-3 border-l border-gray-100 pl-4">
+                                    <ul
+                                      className={`flex flex-col border-l border-gray-100 pl-4 ${
+                                        !hasCategoryImages
+                                          ? "mt-3 gap-2.5"
+                                          : "mt-3 gap-3"
+                                      }`}
+                                    >
                                       {sub.children.map(
                                         (grandchild, grandchildIndex) => (
                                           <motion.li
@@ -1142,7 +1181,11 @@ function Header() {
                                               onClick={() => {
                                                 setHoveredCategory(null);
                                               }}
-                                              className="block whitespace-nowrap text-base leading-relaxed text-gray-500 transition-colors duration-200 hover:text-black"
+                                              className={`block text-gray-500 transition-colors duration-200 hover:text-black ${
+                                                !hasCategoryImages
+                                                  ? "text-base leading-6"
+                                                  : "whitespace-nowrap text-base leading-relaxed"
+                                              }`}
                                             >
                                               {grandchild.name}
                                             </Link>
@@ -1156,8 +1199,8 @@ function Header() {
                             </div>
                           </div>
 
-                          {/* View All — always visible */}
-                          <div className="shrink-0 border-t border-gray-200 bg-white px-10 py-5">
+                          {/* Always-visible View All */}
+                          <div className="sticky bottom-0 z-10 shrink-0 border-t border-gray-200 bg-white px-10 py-4">
                             <Link
                               href={getCategoryUrl(activeCategory.slug)}
                               onClick={() => {
@@ -1176,11 +1219,11 @@ function Header() {
                           </div>
                         </section>
 
-                        {/* ── RIGHT IMAGE CONTENT ── */}
+                        {/* Right portrait images */}
                         {hasCategoryImages && (
-                          <aside className="min-h-0 overflow-y-auto border-l border-gray-100 px-6 py-8">
+                          <aside className="min-h-0 overflow-y-auto border-l border-gray-200 px-6 py-8 lg:px-8 xl:px-10">
                             <div
-                              className={`grid justify-start gap-4 ${
+                              className={`grid w-fit content-start justify-start gap-x-5 gap-y-8 ${
                                 activeCategoryImages.length === 1
                                   ? "grid-cols-1"
                                   : activeCategoryImages.length === 2
@@ -1193,17 +1236,18 @@ function Header() {
                                   key={sub.id}
                                   initial={{
                                     opacity: 0,
-                                    y: 10,
+                                    y: 12,
                                   }}
                                   animate={{
                                     opacity: 1,
                                     y: 0,
                                   }}
                                   transition={{
-                                    duration: 0.18,
-                                    delay: index * 0.04,
+                                    duration: 0.22,
+                                    delay: index * 0.05,
+                                    ease: [0.22, 1, 0.36, 1],
                                   }}
-                                  className="w-[170px]"
+                                  className="w-[190px] lg:w-[210px] xl:w-[240px] 2xl:w-[250px]"
                                 >
                                   <Link
                                     href={getCategoryUrl(sub.slug)}
@@ -1212,17 +1256,17 @@ function Header() {
                                     }}
                                     className="group block"
                                   >
-                                    <div className="relative h-[230px] w-[170px] overflow-hidden bg-[#f7f7f7]">
+                                    <div className="relative aspect-[4/5] w-full overflow-hidden bg-[#f4f4f4]">
                                       <Image
                                         src={sub.image!}
                                         alt={sub.name}
                                         fill
-                                        sizes="170px"
-                                        className="object-cover object-top transition-transform duration-500 ease-out group-hover:scale-[1.035]"
+                                        sizes="(min-width: 1536px) 250px, (min-width: 1280px) 240px, (min-width: 1024px) 210px, 190px"
+                                        className="object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.025]"
                                       />
                                     </div>
 
-                                    <h3 className="mt-3 text-sm font-semibold uppercase tracking-[0.08em] text-gray-900">
+                                    <h3 className="mt-3 whitespace-normal text-[13px] font-semibold uppercase leading-[1.4] tracking-[0.09em] text-gray-900">
                                       {sub.name}
                                     </h3>
                                   </Link>
@@ -1234,22 +1278,30 @@ function Header() {
                       </div>
                     ) : (
                       /* Category without children */
-                      <section className="flex min-h-[380px] items-stretch overflow-hidden">
+                      <section
+                        style={{
+                          maxHeight:
+                            navBottom > 0
+                              ? `calc(100dvh - ${navBottom}px)`
+                              : "calc(100dvh - 150px)",
+                        }}
+                        className="flex min-h-[400px] items-stretch overflow-hidden"
+                      >
                         {activeCategory.image && (
-                          <div className="relative w-[300px] shrink-0 overflow-hidden bg-gray-100">
+                          <div className="relative w-[340px] shrink-0 overflow-hidden bg-gray-100">
                             <Image
                               src={activeCategory.image}
                               alt={activeCategory.name}
                               fill
-                              sizes="300px"
-                              className="object-cover object-center"
+                              sizes="340px"
+                              className="object-cover object-top transition-transform duration-700 hover:scale-[1.025]"
                             />
 
                             <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/30 to-transparent" />
                           </div>
                         )}
 
-                        <div className="flex max-w-xl flex-col justify-center px-12 py-12">
+                        <div className="flex max-w-xl flex-col justify-center overflow-y-auto px-12 py-12">
                           <span className="mb-5 block h-[2px] w-8 bg-[#c4a882]" />
 
                           <h3 className="mb-4 font-serif text-3xl font-light uppercase tracking-[0.18em] text-gray-900">
