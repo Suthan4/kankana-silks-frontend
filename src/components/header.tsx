@@ -1,5 +1,5 @@
 "use client";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageCircle,
@@ -46,7 +46,10 @@ function Header() {
   const [pincode, setPincode] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollRafRef = useRef<number | null>(null);
+  const lastScrollYRef = useRef(0);
+  const accumulatedScrollRef = useRef(0);
 
   // ✅ Prevents hydration mismatch: badge counts come from localStorage/API
   // which the server doesn't have. Only render counts after first client paint.
@@ -92,20 +95,81 @@ function Header() {
   // Everywhere else the header should just be solid white from the start.
   const hasHeroBehindHeader = pathname === "/";
 
-  /* -------------------- SCROLL STATE (Sabyasachi-style header) -------------------- */
+  /* -------------------- STABLE SCROLL STATE -------------------- */
   const [isScrolled, setIsScrolled] = useState(!hasHeroBehindHeader);
 
   useEffect(() => {
-    if (!hasHeroBehindHeader) {
-      setIsScrolled(true);
-      return;
-    }
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 40);
+    const getSafeScrollY = () => Math.max(0, window.scrollY);
+
+    lastScrollYRef.current = getSafeScrollY();
+    accumulatedScrollRef.current = 0;
+
+    setIsScrolled(!hasHeroBehindHeader || lastScrollYRef.current > 40);
+    setShowNav(lastScrollYRef.current < 80);
+
+    const updateHeader = () => {
+      const currentScrollY = getSafeScrollY();
+      const delta = currentScrollY - lastScrollYRef.current;
+
+      setIsScrolled(!hasHeroBehindHeader || currentScrollY > 40);
+
+      // Close open header overlays as soon as the page starts moving.
+      if (delta !== 0) {
+        setHoveredCategory(null);
+        setUserMenuOpen(false);
+        setLocationModalOpen(false);
+        setIsHeaderHovered(false);
+
+        if (hoverTimeoutRef.current) {
+          clearTimeout(hoverTimeoutRef.current);
+          hoverTimeoutRef.current = null;
+        }
+      }
+
+      if (currentScrollY < 80) {
+        accumulatedScrollRef.current = 0;
+        setShowNav(true);
+      } else if (delta !== 0) {
+        const previousDirection = Math.sign(accumulatedScrollRef.current);
+        const currentDirection = Math.sign(delta);
+
+        if (previousDirection !== 0 && previousDirection !== currentDirection) {
+          accumulatedScrollRef.current = 0;
+        }
+
+        accumulatedScrollRef.current += delta;
+
+        // MacBook trackpads emit many small momentum-scroll events.
+        // Accumulating them avoids rapid hide/show flicker.
+        if (accumulatedScrollRef.current >= 24) {
+          setShowNav(false);
+          accumulatedScrollRef.current = 0;
+        } else if (accumulatedScrollRef.current <= -24) {
+          setShowNav(true);
+          accumulatedScrollRef.current = 0;
+        }
+      }
+
+      lastScrollYRef.current = currentScrollY;
+      scrollRafRef.current = null;
     };
-    handleScroll();
+
+    const handleScroll = () => {
+      if (scrollRafRef.current !== null) return;
+
+      scrollRafRef.current = window.requestAnimationFrame(updateHeader);
+    };
+
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+
+      if (scrollRafRef.current !== null) {
+        window.cancelAnimationFrame(scrollRafRef.current);
+        scrollRafRef.current = null;
+      }
+    };
   }, [hasHeroBehindHeader]);
 
   // When true, header should render as transparent/white-text overlay.
@@ -343,41 +407,6 @@ function Header() {
     }, 100);
   };
 
-  /* -------------------- SHOW/HIDE NAV BAR ON SCROLL DIRECTION -------------------- */
-  useEffect(() => {
-    let lastScrollY = window.scrollY;
-    let ticking = false;
-
-    const updateNavbar = () => {
-      const currentScrollY = window.scrollY;
-
-      if (currentScrollY < 80) {
-        setShowNav(true);
-      } else if (currentScrollY > lastScrollY + 12) {
-        setShowNav(false);
-        setHoveredCategory(null);
-        if (hoverTimeoutRef.current) {
-          clearTimeout(hoverTimeoutRef.current);
-        }
-      } else if (currentScrollY < lastScrollY - 12) {
-        setShowNav(true);
-      }
-
-      lastScrollY = currentScrollY;
-      ticking = false;
-    };
-
-    const handleScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(updateNavbar);
-        ticking = true;
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   /* -------------------- GENERATE CATEGORY URL -------------------- */
   const getCategoryUrl = (slug: string) => {
     const queryParams = buildCategoryQuery(slug);
@@ -435,32 +464,19 @@ function Header() {
   const [navBottom, setNavBottom] = useState(140);
 
   useEffect(() => {
-    const updateNavBottom = () => {};
+    const updateNavBottom = () => {
+      if (navRef.current) {
+        setNavBottom(navRef.current.getBoundingClientRect().bottom);
+      }
+    };
+
     updateNavBottom();
     window.addEventListener("resize", updateNavBottom);
-    window.addEventListener("scroll", updateNavBottom, { passive: true });
+
     return () => {
       window.removeEventListener("resize", updateNavBottom);
-      window.removeEventListener("scroll", updateNavBottom);
     };
   }, [showNav]);
-
-  useEffect(() => {
-    const closeHeaderMenus = () => {
-      setHoveredCategory(null);
-      setUserMenuOpen(false);
-      setLocationModalOpen(false);
-      setIsHeaderHovered(false);
-    };
-
-    window.addEventListener("scroll", closeHeaderMenus, {
-      passive: true,
-    });
-
-    return () => {
-      window.removeEventListener("scroll", closeHeaderMenus);
-    };
-  }, []);
 
   const activeCategory = categories.find((cat) => cat.id === hoveredCategory);
   const activeCategoryImages =
@@ -494,12 +510,11 @@ function Header() {
           no transparent/border styling
       ───────────────────────────────────────────── */}
       <motion.header
-        initial={{ y: -80, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.55, ease: "easeOut" }}
+        data-testid="desktop-header"
+        initial={false}
         onMouseEnter={handleHeaderEnter}
         onMouseLeave={handleHeaderLeave}
-        className={`hidden md:block fixed inset-x-0 top-0 z-40 transition-all duration-300 ${
+        className={`fixed inset-x-0 top-0 z-40 hidden transition-[background-color,color,box-shadow] duration-200 md:block ${
           isHeaderWhite
             ? "bg-white text-black shadow-sm"
             : "bg-transparent text-white shadow-none"
@@ -508,7 +523,7 @@ function Header() {
         {/* ── SINGLE COMPACT TOP BAR ── */}
         <div
           className="flex items-center justify-between px-8"
-          style={{ height: "70px" }}
+          style={{ height: "65px" }}
         >
           {/* LEFT — Location */}
           <div className="relative flex items-center gap-6 w-[260px]">
@@ -702,24 +717,32 @@ function Header() {
 
           {/* CENTER — Logo */}
           <div className="absolute left-1/2 -translate-x-1/2">
-            <Link href="/">
-              <motion.img
+            <Link
+              href="/"
+              aria-label="Kankana Silks home"
+              className="relative block h-14 w-[180px]"
+            >
+              <Image
                 src="/removed-bg-logo.png"
                 alt="Kankana Silks"
-                layoutId="desktop-logo"
-                transition={{
-                  type: "spring",
-                  stiffness: 260,
-                  damping: 18,
-                  mass: 0.6,
-                }}
-                style={{
-                  mixBlendMode: isHeaderWhite ? "multiply" : "lighten",
-                  filter: isHeaderWhite
-                    ? "none"
-                    : "grayscale(1) invert(1) brightness(2.5) contrast(10)",
-                }}
-                className="hidden h-14 w-auto object-contain md:block lg:h-14"
+                fill
+                priority
+                sizes="180px"
+                className={`object-contain transition-opacity duration-150 ${
+                  isHeaderWhite ? "opacity-100" : "opacity-0"
+                }`}
+              />
+
+              <Image
+                src="/removed-bg-logo.png"
+                alt=""
+                aria-hidden="true"
+                fill
+                priority
+                sizes="180px"
+                className={`object-contain brightness-0 invert transition-opacity duration-150 ${
+                  isHeaderWhite ? "opacity-0" : "opacity-100"
+                }`}
               />
             </Link>
           </div>
@@ -729,7 +752,7 @@ function Header() {
             {/* Search */}
             <button
               onClick={() => setIsSearchOpen(true)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 text-sm min-w-[160px] ${
+              className={`flex min-w-[160px] items-center gap-2 rounded-full border px-4 py-2 text-sm transition-[background-color,border-color,color] duration-200 ${
                 isHeaderWhite
                   ? "border-gray-200 bg-gray-50 text-gray-500 hover:bg-white hover:border-gray-400 hover:text-gray-700"
                   : "border-white/50 bg-black/10 text-white hover:bg-white/10 hover:border-white"
@@ -907,20 +930,16 @@ function Header() {
         {/* ── NAV BAR — Sabyasachi style ── */}
         <motion.nav
           ref={navRef}
+          data-testid="desktop-nav"
           aria-label="Primary navigation"
           initial={false}
           animate={{
-            height: showNav ? 56 : 0,
             opacity: showNav ? 1 : 0,
+            y: showNav ? 0 : -6,
           }}
           transition={{
-            height: {
-              duration: 0.2,
-              ease: [0.22, 1, 0.36, 1],
-            },
-            opacity: {
-              duration: 0.15,
-            },
+            duration: 0.16,
+            ease: [0.22, 1, 0.36, 1],
           }}
           onKeyDown={(event) => {
             if (event.key === "Escape") {
@@ -928,16 +947,17 @@ function Header() {
             }
           }}
           style={{
-            willChange: "height, opacity",
-            transform: "translateZ(0)",
-            backfaceVisibility: "hidden",
-            WebkitBackfaceVisibility: "hidden",
+            height: showNav ? 42 : 0,
           }}
-          className="relative z-40 hidden overflow-visible md:block"
+          className={`relative z-40 hidden md:block ${
+            showNav
+              ? "pointer-events-auto overflow-visible"
+              : "pointer-events-none overflow-hidden"
+          }`}
         >
           {/* Navigation links */}
-          <div className="h-14 overflow-hidden">
-            <ul className="flex h-14 items-center justify-center gap-2">
+          <div className="h-10 overflow-hidden">
+            <ul className="flex h-10 items-center justify-center gap-2">
               {loading ? (
                 [80, 100, 72, 88, 96, 76].map((width, index) => (
                   <li key={index} className="px-5">
@@ -986,18 +1006,18 @@ function Header() {
                             );
                           }
                         }}
-                        className={`relative flex h-14 items-center px-5 text-[15px] font-medium uppercase tracking-[0.12em] transition-colors duration-300 ${
+                        className={`relative flex h-14 items-center px-5 text-sm font-medium uppercase tracking-[0.12em] transition-colors duration-300 ${
                           isHeaderWhite
                             ? isActive
                               ? "text-black"
-                              : "text-gray-600 hover:text-black"
+                              : "text-black hover:text-black"
                             : "text-white hover:text-white"
                         }`}
                       >
                         {category.name}
                       </Link>
 
-                      {isActive && (
+                      {/* {isActive && (
                         <motion.span
                           layoutId="desktopNavUnderline"
                           className={`pointer-events-none absolute inset-x-4 bottom-0 z-[60] h-[2px] ${
@@ -1009,7 +1029,29 @@ function Header() {
                             damping: 42,
                           }}
                         />
-                      )}
+                      )} */}
+                      <motion.span
+                        aria-hidden="true"
+                        initial={false}
+                        animate={{
+                          width: isActive ? "calc(100% - 32px)" : "10px",
+                          opacity: isActive ? 1 : 0.65,
+                        }}
+                        transition={{
+                          width: {
+                            duration: 0.28,
+                            ease: [0.22, 1, 0.36, 1],
+                          },
+                          opacity: {
+                            duration: 0.2,
+                          },
+                        }}
+                        className={`pointer-events-none absolute bottom-0 left-1/2 h-[2px] -translate-x-1/2 rounded-full ${
+                          isHeaderWhite
+                            ? "bg-black"
+                            : "bg-white shadow-[0_0_8px_rgba(255,255,255,0.65)]"
+                        }`}
+                      />
                     </li>
                   );
                 })
@@ -1342,11 +1384,9 @@ function Header() {
 
       {/* Mobile Header */}
       <motion.header
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6 }}
-        className={`md:hidden fixed top-0 left-0 right-0 z-40 transition-colors duration-500 ${
-          isTransparent ? "bg-transparent" : "bg-white shadow-md"
+        initial={false}
+        className={`fixed left-0 right-0 top-0 z-40 transition-[background-color,box-shadow] duration-200 md:hidden ${
+          isTransparent ? "bg-transparent shadow-none" : "bg-white shadow-md"
         }`}
       >
         <div className="flex items-center justify-between px-4 py-3">
@@ -1366,19 +1406,31 @@ function Header() {
             )}
           </motion.button>
 
-          <Link href="/">
-            <motion.img
+          <Link
+            href="/"
+            aria-label="Kankana Silks home"
+            className="relative block h-9 w-[120px]"
+          >
+            <Image
               src="/image-removebg-preview.png"
               alt="Kankana Silks"
-              layoutId="mobile-logo"
-              transition={{
-                type: "spring",
-                stiffness: 260,
-                damping: 18,
-                mass: 0.6,
-              }}
-              className={`h-9 w-auto object-contain block md:hidden transition-all duration-500 ${
-                isTransparent ? "brightness-0 invert" : ""
+              fill
+              priority
+              sizes="120px"
+              className={`object-contain transition-opacity duration-150 ${
+                isTransparent ? "opacity-0" : "opacity-100"
+              }`}
+            />
+
+            <Image
+              src="/image-removebg-preview.png"
+              alt=""
+              aria-hidden="true"
+              fill
+              priority
+              sizes="120px"
+              className={`object-contain brightness-0 invert transition-opacity duration-150 ${
+                isTransparent ? "opacity-100" : "opacity-0"
               }`}
             />
           </Link>
@@ -1738,7 +1790,7 @@ function Header() {
                             <Link
                               href={getCategoryUrl(category.slug)}
                               onClick={() => setMobileMenuOpen(false)}
-                              className="flex-1 py-4 text-[15px] font-medium uppercase tracking-[0.08em] text-black"
+                              className="flex-1 py-2 text-[15px] font-medium uppercase tracking-[0.08em] text-black"
                             >
                               {category.name}
                             </Link>

@@ -8,9 +8,9 @@ export default function LegalWithHeader({ children }: { children: ReactNode }) {
     <>
       <PolicyHeader />
       <main className="overflow-x-hidden">
-        <ScrollToTop/>
+        <ScrollToTop />
         {children}
-        </main>
+      </main>
       <Footer />
     </>
   );

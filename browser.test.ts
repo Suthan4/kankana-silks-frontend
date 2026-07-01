@@ -1,9 +1,20 @@
-import {test} from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-test("test browser",async({page}) =>{
-// await page.goto("http://localhost:3001/")
-await page.goto("https://qa.kankanasilks.com/")
+test("WebKit browser smoke test", async ({ page }) => {
+  page.on("crash", () => {
+    console.error("WEBKIT PAGE CRASHED");
+  });
 
-// keep browser open
-await page.pause()
-})
+  page.on("pageerror", (error) => {
+    console.error("PAGE ERROR:", error.message);
+  });
+
+  await page.goto("https://www.kankanasilks.com", {
+    waitUntil: "commit",
+    timeout: 60_000,
+  });
+
+  await expect(page).toHaveTitle(/Example Domain/i);
+
+  await page.pause();
+});
