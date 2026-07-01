@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "cross-env NEXT_PUBLIC_SITE_MODE=live next dev -p 3001",
     "test:safari": "npx playwright test --headed --browser=webkit",
+    "test:safari:manual": "playwright test browser.test.ts --project=desktop-safari --headed --debug",
     "build": "next build",
     "start": "cross-env NEXT_PUBLIC_SITE_MODE=coming-soon next start",
     "lint": "eslint"
@@ -38,7 +39,7 @@
     "zustand": "^5.0.9"
   },
   "devDependencies": {
-    "@playwright/test": "^1.58.2",
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^20",
