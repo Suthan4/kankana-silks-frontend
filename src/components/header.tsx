@@ -503,6 +503,8 @@ function Header() {
     locationModalOpen ||
     userMenuOpen;
 
+  console.log("categories", categories);
+
   return (
     <>
       {/* ─────────────────────────────────────────────
@@ -1330,16 +1332,16 @@ function Header() {
                         className="flex min-h-[400px] items-stretch overflow-hidden"
                       >
                         {activeCategory.image && (
-                          <div className="relative w-[340px] shrink-0 overflow-hidden bg-gray-100">
+                          <div className="relative aspect-[640/894] w-[340px] shrink-0 overflow-hidden bg-gray-100">
                             <Image
                               src={activeCategory.image}
                               alt={activeCategory.name}
                               fill
                               sizes="340px"
-                              className="object-cover object-top transition-transform duration-700 hover:scale-[1.025]"
+                              className="object-cover object-center transition-transform duration-700 hover:scale-[1.025]"
                             />
 
-                            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/30 to-transparent" />
+                            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/30 to-transparent" />
                           </div>
                         )}
 
