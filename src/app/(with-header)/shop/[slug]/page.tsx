@@ -17,11 +17,14 @@ interface Category {
   description?: string;
   image?: string;
   parentId?: string;
-  children?: Category[];
+  children: Category[];
   isActive: boolean;
   order: number;
   createdAt: string;
   updatedAt: string;
+  isRoot: boolean;
+  hasVideoConsultation: boolean;
+  videoPurchasingEnabled: boolean;
 }
 
 // Fetch category data (server-side) - Using axios without localStorage
