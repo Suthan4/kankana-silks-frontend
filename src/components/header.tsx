@@ -503,8 +503,6 @@ function Header() {
     locationModalOpen ||
     userMenuOpen;
 
-  console.log("categories", categories);
-
   return (
     <>
       {/* ─────────────────────────────────────────────
@@ -1414,25 +1412,25 @@ function Header() {
             className="relative block h-9 w-[120px]"
           >
             <Image
-              src="/image-removebg-preview.png"
+              src="/removed-bg-logo.png"
               alt="Kankana Silks"
               fill
               priority
-              sizes="120px"
+              sizes="180px"
               className={`object-contain transition-opacity duration-150 ${
-                isTransparent ? "opacity-0" : "opacity-100"
+                isHeaderWhite ? "opacity-100" : "opacity-0"
               }`}
             />
 
             <Image
-              src="/image-removebg-preview.png"
+              src="/removed-bg-logo.png"
               alt=""
               aria-hidden="true"
               fill
               priority
-              sizes="120px"
+              sizes="180px"
               className={`object-contain brightness-0 invert transition-opacity duration-150 ${
-                isTransparent ? "opacity-100" : "opacity-0"
+                isHeaderWhite ? "opacity-0" : "opacity-100"
               }`}
             />
           </Link>
