@@ -1330,16 +1330,16 @@ function Header() {
                         className="flex min-h-[400px] items-stretch overflow-hidden"
                       >
                         {activeCategory.image && (
-                          <div className="relative w-[340px] shrink-0 overflow-hidden bg-gray-100">
+                          <div className="relative aspect-[640/894] w-[340px] shrink-0 overflow-hidden bg-gray-100">
                             <Image
                               src={activeCategory.image}
                               alt={activeCategory.name}
                               fill
                               sizes="340px"
-                              className="object-cover object-top transition-transform duration-700 hover:scale-[1.025]"
+                              className="object-cover object-center transition-transform duration-700 hover:scale-[1.025]"
                             />
 
-                            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/30 to-transparent" />
+                            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/30 to-transparent" />
                           </div>
                         )}
 
@@ -1412,25 +1412,25 @@ function Header() {
             className="relative block h-9 w-[120px]"
           >
             <Image
-              src="/image-removebg-preview.png"
+              src="/removed-bg-logo.png"
               alt="Kankana Silks"
               fill
               priority
-              sizes="120px"
+              sizes="180px"
               className={`object-contain transition-opacity duration-150 ${
-                isTransparent ? "opacity-0" : "opacity-100"
+                isHeaderWhite ? "opacity-100" : "opacity-0"
               }`}
             />
 
             <Image
-              src="/image-removebg-preview.png"
+              src="/removed-bg-logo.png"
               alt=""
               aria-hidden="true"
               fill
               priority
-              sizes="120px"
+              sizes="180px"
               className={`object-contain brightness-0 invert transition-opacity duration-150 ${
-                isTransparent ? "opacity-100" : "opacity-0"
+                isHeaderWhite ? "opacity-0" : "opacity-100"
               }`}
             />
           </Link>
