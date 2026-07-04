@@ -192,8 +192,8 @@ export default function Footer() {
 
   const footerLinks = {
     Shop: [
-      { label: "About Us", href: "/about" },
-      { label: "Contact Us", href: "/contact" },
+      { label: "About Us", href: "/about-us" },
+      { label: "Contact Us", href: "/contact-us" },
       { label: "FAQ", href: "/faq" },
       { label: "Return & Refund Policy", href: "/return-policy" },
       { label: "Cancellation Policy", href: "/cancellation-policy" },
