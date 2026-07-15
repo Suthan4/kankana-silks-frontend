@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageCircle,
@@ -488,6 +488,41 @@ function Header() {
     ) ?? false;
   // Categories without grandchildren display vertically.
   const useVerticalCategoryList = !hasGrandchildren;
+  const balancedTextColumns = useMemo(() => {
+    const childCategories = activeCategory?.children ?? [];
+
+    if (hasCategoryImages || childCategories.length === 0) {
+      return [];
+    }
+
+    type CategoryItem = (typeof childCategories)[number];
+
+    const columnCount = Math.min(5, childCategories.length);
+
+    const columns: Array<{
+      items: CategoryItem[];
+      estimatedHeight: number;
+    }> = Array.from({ length: columnCount }, () => ({
+      items: [],
+      estimatedHeight: 0,
+    }));
+
+    childCategories.forEach((category) => {
+      const grandchildrenCount = category.children?.length ?? 0;
+
+      // Parent heading, children and spacing.
+      const estimatedCategoryHeight = 48 + grandchildrenCount * 36 + 28;
+
+      const shortestColumn = columns.reduce((shortest, current) =>
+        current.estimatedHeight < shortest.estimatedHeight ? current : shortest,
+      );
+
+      shortestColumn.items.push(category);
+      shortestColumn.estimatedHeight += estimatedCategoryHeight;
+    });
+
+    return columns.map((column) => column.items);
+  }, [activeCategory, hasCategoryImages]);
   const totalGrandchildren =
     activeCategory?.children?.reduce(
       (acc, child) => acc + (child.children?.length || 0),
@@ -1131,114 +1166,174 @@ function Header() {
                         <section className="flex min-h-0 min-w-0 flex-col overflow-hidden">
                           {/* Scrollable category links */}
                           <div
-                            className={`min-h-0 flex-1 overflow-y-auto ${
+                            className={
                               !hasCategoryImages
-                                ? "px-10 py-7"
+                                ? "h-[440px] overflow-y-auto px-8 py-7 lg:px-10 2xl:h-[470px]"
                                 : useVerticalCategoryList
-                                  ? "px-10 py-9"
-                                  : "px-8 py-9 lg:px-10"
-                            }`}
+                                  ? "min-h-0 flex-1 overflow-y-auto px-10 py-9"
+                                  : "min-h-0 flex-1 overflow-y-auto px-8 py-9 lg:px-10"
+                            }
                           >
-                            <div
-                              className={
-                                !hasCategoryImages
-                                  ? "grid grid-cols-2 items-start gap-x-10 gap-y-8 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
-                                  : useVerticalCategoryList
+                            {!hasCategoryImages ? (
+                              <div className="grid grid-cols-2 items-start gap-x-8 gap-y-8 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 xl:gap-x-10">
+                                {balancedTextColumns.map(
+                                  (column, columnIndex) => (
+                                    <div
+                                      key={`category-column-${columnIndex}`}
+                                      className="flex min-w-0 flex-col gap-7"
+                                    >
+                                      {column.map((sub, itemIndex) => (
+                                        <motion.div
+                                          key={sub.id}
+                                          initial={{
+                                            opacity: 0,
+                                            y: 8,
+                                          }}
+                                          animate={{
+                                            opacity: 1,
+                                            y: 0,
+                                          }}
+                                          transition={{
+                                            duration: 0.16,
+                                            delay:
+                                              (columnIndex + itemIndex) * 0.025,
+                                          }}
+                                          className="min-w-0"
+                                        >
+                                          {/* Parent category */}
+                                          <Link
+                                            href={getCategoryUrl(sub.slug)}
+                                            onClick={() => {
+                                              setHoveredCategory(null);
+                                            }}
+                                            className="group flex w-fit items-center gap-2 text-base font-semibold tracking-wide text-gray-900"
+                                          >
+                                            <span className="h-[1.5px] w-0 shrink-0 bg-black transition-all duration-200 group-hover:w-4" />
+
+                                            <span className="transition-colors duration-200 group-hover:text-black">
+                                              {sub.name}
+                                            </span>
+                                          </Link>
+
+                                          {/* Subcategories */}
+                                          {sub.children &&
+                                            sub.children.length > 0 && (
+                                              <ul className="mt-3 flex flex-col gap-2.5 border-l border-gray-100 pl-4">
+                                                {sub.children.map(
+                                                  (
+                                                    grandchild,
+                                                    grandchildIndex,
+                                                  ) => (
+                                                    <motion.li
+                                                      key={grandchild.id}
+                                                      initial={{
+                                                        opacity: 0,
+                                                        x: -5,
+                                                      }}
+                                                      animate={{
+                                                        opacity: 1,
+                                                        x: 0,
+                                                      }}
+                                                      transition={{
+                                                        duration: 0.12,
+                                                        delay:
+                                                          grandchildIndex *
+                                                          0.015,
+                                                      }}
+                                                    >
+                                                      <Link
+                                                        href={getCategoryUrl(
+                                                          grandchild.slug,
+                                                        )}
+                                                        onClick={() => {
+                                                          setHoveredCategory(
+                                                            null,
+                                                          );
+                                                        }}
+                                                        className="block text-[15px] leading-6 text-gray-500 transition-colors duration-200 hover:text-black"
+                                                      >
+                                                        {grandchild.name}
+                                                      </Link>
+                                                    </motion.li>
+                                                  ),
+                                                )}
+                                              </ul>
+                                            )}
+                                        </motion.div>
+                                      ))}
+                                    </div>
+                                  ),
+                                )}
+                              </div>
+                            ) : (
+                              <div
+                                className={
+                                  useVerticalCategoryList
                                     ? "flex flex-col items-start gap-6"
                                     : shouldUseGrid
                                       ? "grid grid-cols-2 gap-x-8 gap-y-8 lg:grid-cols-3 xl:grid-cols-4"
                                       : "grid grid-cols-1 gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-3"
-                              }
-                            >
-                              {activeCategory.children.map((sub, index) => (
-                                <motion.div
-                                  key={sub.id}
-                                  initial={{
-                                    opacity: 0,
-                                    y: 8,
-                                  }}
-                                  animate={{
-                                    opacity: 1,
-                                    y: 0,
-                                  }}
-                                  transition={{
-                                    duration: 0.16,
-                                    delay: index * 0.025,
-                                  }}
-                                  className={
-                                    useVerticalCategoryList && hasCategoryImages
-                                      ? "w-full"
-                                      : "min-w-0"
-                                  }
-                                >
-                                  {/* Child category */}
-                                  <Link
-                                    href={getCategoryUrl(sub.slug)}
-                                    onClick={() => {
-                                      setHoveredCategory(null);
+                                }
+                              >
+                                {activeCategory.children.map((sub, index) => (
+                                  <motion.div
+                                    key={sub.id}
+                                    initial={{
+                                      opacity: 0,
+                                      y: 8,
                                     }}
-                                    className={`group flex w-fit items-center gap-2 font-semibold tracking-wide text-gray-900 ${
-                                      !hasCategoryImages
-                                        ? "text-base"
-                                        : "text-base"
-                                    }`}
+                                    animate={{
+                                      opacity: 1,
+                                      y: 0,
+                                    }}
+                                    transition={{
+                                      duration: 0.16,
+                                      delay: index * 0.025,
+                                    }}
+                                    className={
+                                      useVerticalCategoryList
+                                        ? "w-full"
+                                        : "min-w-0"
+                                    }
                                   >
-                                    <span className="h-[1.5px] w-0 shrink-0 bg-black transition-all duration-200 group-hover:w-4" />
-
-                                    <span className="transition-colors duration-200 group-hover:text-black">
-                                      {sub.name}
-                                    </span>
-                                  </Link>
-
-                                  {/* Grandchildren */}
-                                  {sub.children && sub.children.length > 0 && (
-                                    <ul
-                                      className={`flex flex-col border-l border-gray-100 pl-4 ${
-                                        !hasCategoryImages
-                                          ? "mt-3 gap-2.5"
-                                          : "mt-3 gap-3"
-                                      }`}
+                                    <Link
+                                      href={getCategoryUrl(sub.slug)}
+                                      onClick={() => {
+                                        setHoveredCategory(null);
+                                      }}
+                                      className="group flex w-fit items-center gap-2 text-base font-semibold tracking-wide text-gray-900"
                                     >
-                                      {sub.children.map(
-                                        (grandchild, grandchildIndex) => (
-                                          <motion.li
-                                            key={grandchild.id}
-                                            initial={{
-                                              opacity: 0,
-                                              x: -5,
-                                            }}
-                                            animate={{
-                                              opacity: 1,
-                                              x: 0,
-                                            }}
-                                            transition={{
-                                              duration: 0.12,
-                                              delay: grandchildIndex * 0.015,
-                                            }}
-                                          >
-                                            <Link
-                                              href={getCategoryUrl(
-                                                grandchild.slug,
-                                              )}
-                                              onClick={() => {
-                                                setHoveredCategory(null);
-                                              }}
-                                              className={`block text-gray-500 transition-colors duration-200 hover:text-black ${
-                                                !hasCategoryImages
-                                                  ? "text-base leading-6"
-                                                  : "whitespace-nowrap text-base leading-relaxed"
-                                              }`}
-                                            >
-                                              {grandchild.name}
-                                            </Link>
-                                          </motion.li>
-                                        ),
+                                      <span className="h-[1.5px] w-0 shrink-0 bg-black transition-all duration-200 group-hover:w-4" />
+
+                                      <span className="transition-colors duration-200 group-hover:text-black">
+                                        {sub.name}
+                                      </span>
+                                    </Link>
+
+                                    {sub.children &&
+                                      sub.children.length > 0 && (
+                                        <ul className="mt-3 flex flex-col gap-3 border-l border-gray-100 pl-4">
+                                          {sub.children.map((grandchild) => (
+                                            <li key={grandchild.id}>
+                                              <Link
+                                                href={getCategoryUrl(
+                                                  grandchild.slug,
+                                                )}
+                                                onClick={() => {
+                                                  setHoveredCategory(null);
+                                                }}
+                                                className="block text-[15px] leading-6 text-gray-500 transition-colors duration-200 hover:text-black"
+                                              >
+                                                {grandchild.name}
+                                              </Link>
+                                            </li>
+                                          ))}
+                                        </ul>
                                       )}
-                                    </ul>
-                                  )}
-                                </motion.div>
-                              ))}
-                            </div>
+                                  </motion.div>
+                                ))}
+                              </div>
+                            )}
                           </div>
 
                           {/* Always-visible View All */}
