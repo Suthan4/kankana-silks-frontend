@@ -564,7 +564,7 @@ function Header() {
         >
           {/* LEFT — Location */}
           <div className="relative flex items-center gap-6 w-[260px]">
-            <div className="relative">
+            <div ref={locationRef} className="relative">
               <button
                 onClick={() => setLocationModalOpen((p) => !p)}
                 className={`flex items-center gap-1.5 text-sm transition-colors duration-300 ${
@@ -602,7 +602,6 @@ function Header() {
               <AnimatePresence>
                 {locationModalOpen && (
                   <motion.div
-                    ref={locationRef}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 8 }}
