@@ -481,7 +481,9 @@ function Header() {
   const activeCategory = categories.find((cat) => cat.id === hoveredCategory);
   const activeCategoryImages =
     activeCategory?.children?.filter((sub) => Boolean(sub.image)) ?? [];
-  const hasCategoryImages = activeCategoryImages.length > 0;
+  const hasCategoryImages =
+    activeCategoryImages.length > 0 &&
+    (activeCategory?.children?.length ?? 0) < 4;
   const hasGrandchildren =
     activeCategory?.children?.some(
       (sub) => sub.children && sub.children.length > 0,
