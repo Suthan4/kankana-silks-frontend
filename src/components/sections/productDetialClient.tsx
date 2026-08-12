@@ -37,7 +37,7 @@ import { formatMaskedPrice } from "@/lib/utils/priceMasked";
 import VideoConsultationModal from "../video-consultationModal";
 import WishlistButton from "../ui/WishlistButton";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { getColorHex } from "@/lib/utils/colorValidation";
+import { formatColorText } from "@/lib/utils/colorValidationwithText";
 import DOMPurify from "isomorphic-dompurify";
 import { ZoomGallery } from "../ui/ZoomGallery";
 
@@ -715,7 +715,7 @@ export default function ProductDetailsClient({
                               {attr.values.map((val) => {
                                 const isSelected =
                                   String(currentValue) === String(val);
-                                if (attr.key === "Color") {
+                                if (attr.key.toLowerCase() === "color") {
                                   return (
                                     <motion.button
                                       key={val}
@@ -724,26 +724,13 @@ export default function ProductDetailsClient({
                                       onClick={() =>
                                         handleSelectAnyAttribute(attr.key, val)
                                       }
-                                      className={`group relative px-3 py-1.5 border-2 rounded-lg font-medium transition text-xs flex items-center gap-1.5 ${isSelected ? "border-main-primary bg-main-primary text-main-secondary" : "border-gray-300 hover:border-gray-400"}`}
+                                      className={`px-3 py-1.5 border-2 rounded-lg font-medium transition text-xs ${
+                                        isSelected
+                                          ? "border-main-primary bg-main-primary text-main-secondary"
+                                          : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+                                      }`}
                                     >
-                                      <div
-                                        className="w-4 h-4 rounded-full border border-gray-300 shadow-sm"
-                                        style={{
-                                          backgroundColor: val.toLowerCase(),
-                                        }}
-                                        title={val}
-                                      />
-                                      <span className="capitalize">{val}</span>
-                                      {(() => {
-                                        const hex = getColorHex(val);
-                                        if (hex)
-                                          return (
-                                            <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-gray-900 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
-                                              {hex}
-                                            </div>
-                                          );
-                                        return null;
-                                      })()}
+                                      {formatColorText(val)}
                                     </motion.button>
                                   );
                                 }
