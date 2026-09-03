@@ -299,20 +299,18 @@ export default function HeroSection() {
             {activeBanner.text && (
               <p
                 className="
-                  mx-auto
-                  mt-2
-                  max-w-3xl
-                  text-xs
-                  font-light
-                  tracking-wide
-                  text-white/90
-                  drop-shadow
-
-                  sm:mt-4
-                  sm:text-base
-
-                  lg:text-lg
-                "
+      hidden
+      sm:block
+      mx-auto
+      mt-4
+      max-w-3xl
+      text-base
+      font-light
+      tracking-wide
+      text-white/90
+      drop-shadow
+      lg:text-lg
+    "
               >
                 {activeBanner.text}
               </p>
