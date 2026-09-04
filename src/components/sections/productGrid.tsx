@@ -292,7 +292,7 @@ function ProductGrid({ section }: { section: HomeSection }) {
                     </div>
 
                     {/* Stock indicator */}
-                    <div className="flex items-center gap-1.5 mt-2">
+                    {/* <div className="flex items-center gap-1.5 mt-2">
                       <div
                         className={`w-1.5 h-1.5 rounded-full ${
                           inStock ? "bg-green-500" : "bg-red-500"
@@ -301,7 +301,7 @@ function ProductGrid({ section }: { section: HomeSection }) {
                       <span className="text-xs opacity-60">
                         {inStock ? "In Stock" : "Out of Stock"}
                       </span>
-                    </div>
+                    </div> */}
                   </div>
                 </a>
               );

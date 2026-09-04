@@ -1484,7 +1484,7 @@ function Header() {
         initial={false}
         className="fixed left-0 right-0 top-0 z-40 bg-white shadow-md md:hidden"
       >
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center justify-between px-4 pt-3">
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -1512,34 +1512,57 @@ function Header() {
             />
           </Link>
 
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setIsSearchOpen(true)}
-            className="p-2"
-          >
-            <Search className="w-5 h-5 text-black" />
-          </motion.button>
+          {/* spacer to balance the hamburger so the logo stays centered */}
+          <div className="w-10" />
         </div>
 
+        {/* ── Fused location + search pill ── */}
         <div
-          className={`px-4 py-2 border-t border-gray-100 transition-colors duration-500${
-            isProductDetailPage || isCategoryPage ? " hidden" : ""
+          className={`px-4 pb-3 pt-2.5 transition-opacity duration-300 ${
+            isProductDetailPage || isCategoryPage ? "hidden" : ""
           }`}
         >
-          <button
-            onClick={() => setLocationModalOpen(true)}
-            className="flex items-center gap-2 text-sm"
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+            className="flex items-stretch overflow-hidden rounded-full border border-gray-200 bg-gray-50 shadow-sm"
           >
-            <MapPin className="w-4 h-4 text-gray-600" />
-            <div className="flex flex-col items-start">
-              <span className="text-xs text-gray-500">Deliver to</span>
-              <span className="font-semibold text-gray-800">
-                {location
-                  ? `${location.city} - ${location.pincode}`
-                  : "Select Location"}
+            {/* Location segment */}
+            <button
+              onClick={() => setLocationModalOpen(true)}
+              className="relative flex max-w-[42%] shrink-0 items-center gap-1.5 py-2.5 pl-3.5 pr-3 active:bg-gray-100"
+            >
+              <span className="relative flex-shrink-0">
+                <MapPin className="w-4 h-4 text-gray-600" />
+                {location?.isServiceable !== undefined && (
+                  <span
+                    className={`absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-white ${
+                      location.isServiceable ? "bg-green-500" : "bg-red-500"
+                    }`}
+                  />
+                )}
               </span>
-            </div>
-          </button>
+              <span className="truncate text-xs font-semibold text-gray-900">
+                {location ? location.pincode : "Set location"}
+              </span>
+              <ChevronDown className="w-3 h-3 flex-shrink-0 text-gray-400" />
+            </button>
+
+            {/* Divider */}
+            <div className="my-2 w-px bg-gray-200" />
+
+            {/* Search segment */}
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="flex flex-1 items-center gap-2 py-2.5 px-3 text-left active:bg-gray-100"
+            >
+              <Search className="w-4 h-4 flex-shrink-0 text-gray-400" />
+              <span className="truncate text-sm text-gray-400">
+                Search sarees, silks…
+              </span>
+            </button>
+          </motion.div>
         </div>
       </motion.header>
 

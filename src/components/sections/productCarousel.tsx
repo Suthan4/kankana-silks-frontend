@@ -112,6 +112,7 @@ export default function ProductCarousel({
           slidesPerView={1.05}
           centeredSlides={true}
           spaceBetween={12}
+          dir="rtl"
           className="px-3"
         >
           {products.map((product) => (
@@ -120,29 +121,6 @@ export default function ProductCarousel({
                 onClick={() => handleViewDetails(product)}
                 className="group relative bg-white border border-gray-200 shadow-sm overflow-hidden cursor-pointer transition-all active:scale-[0.99] flex h-64 rounded-none"
               >
-                {/* Left: Larger Image View (Sharp Corners) */}
-                <div className="relative w-[48%] shrink-0 bg-gray-50 overflow-hidden">
-                  <img
-                    src={product.media?.[0]?.url}
-                    alt={product.name}
-                    className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                  />
-
-                  {/* Wishlist Icon Overlay */}
-                  <div
-                    className="absolute top-2.5 left-2.5 z-10"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <WishlistButton
-                      productId={product.id}
-                      variant="icon"
-                      size="sm"
-                      className="bg-white/80 backdrop-blur-md shadow-sm p-1.5 hover:bg-white transition rounded-none"
-                    />
-                  </div>
-                </div>
-
                 {/* Right: Detailed Content Area (Sharp Corners) */}
                 <div className="w-[52%] p-4 flex flex-col justify-between bg-white">
                   <div>
@@ -179,6 +157,28 @@ export default function ProductCarousel({
                     >
                       Add to cart
                     </button>
+                  </div>
+                </div>
+                {/* Left: Larger Image View (Sharp Corners) */}
+                <div className="relative w-[48%] shrink-0 bg-gray-50 overflow-hidden">
+                  <img
+                    src={product.media?.[0]?.url}
+                    alt={product.name}
+                    className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+
+                  {/* Wishlist Icon Overlay */}
+                  <div
+                    className="absolute top-2.5 left-2.5 z-10"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <WishlistButton
+                      productId={product.id}
+                      variant="icon"
+                      size="sm"
+                      className="bg-white/80 backdrop-blur-md shadow-sm p-1.5 hover:bg-white transition rounded-none"
+                    />
                   </div>
                 </div>
               </div>

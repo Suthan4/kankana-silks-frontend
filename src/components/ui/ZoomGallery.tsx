@@ -4,6 +4,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
+import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
 
 interface ZoomGalleryProps {
@@ -46,6 +47,7 @@ export function ZoomGallery({
   const [isMobile, setIsMobile] = useState(false);
 
   const imageContainerRef = useRef<HTMLDivElement>(null);
+  const swiperRef = useRef<SwiperType | null>(null);
 
   // 🔥 FIX 1: Bigger lens (prevents pixel break)
   const LENS_SIZE = 200;
@@ -59,6 +61,16 @@ export function ZoomGallery({
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
+
+  // Keep the Swiper instance in sync whenever selectedImageIndex changes
+  // from outside a user swipe — thumbnail clicks, variant/color switches, etc.
+  useEffect(() => {
+    const swiper = swiperRef.current;
+    if (!swiper || swiper.destroyed) return;
+    if (swiper.activeIndex !== selectedImageIndex) {
+      swiper.slideTo(selectedImageIndex);
+    }
+  }, [selectedImageIndex]);
 
   useEffect(() => {
     const el = imageContainerRef.current;
@@ -144,61 +156,73 @@ export function ZoomGallery({
       {/* ================= MOBILE ================= */}
       <div className="md:hidden w-full">
         {/* Swipe Gallery */}
-        <Swiper
-          slidesPerView={1}
-          spaceBetween={0}
-          onSlideChange={(swiper) => setSelectedImageIndex(swiper.activeIndex)}
-          initialSlide={selectedImageIndex}
-          className="w-full"
-        >
-          {images.map((img, idx) => (
-            <SwiperSlide key={idx}>
-              <div className="relative w-full aspect-[3/4] bg-[#f8f5f2] overflow-hidden">
-                <Image
-                  src={img.url}
-                  alt={product.name}
-                  fill
-                  priority
-                  quality={100}
-                  sizes="100vw"
-                  className="object-cover"
-                />
-
-                {/* Discount Badge */}
-                {discount > 0 && !isOutOfStock && (
-                  <div className="absolute top-3 left-3 bg-main-primary text-main-secondary px-2.5 py-1 rounded-full text-xs font-semibold z-10">
-                    {discount}% OFF
-                  </div>
-                )}
-              </div>
-            </SwiperSlide>
-          ))}
-        </Swiper>
-
-        {/* Thumbnails */}
-        {images.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto px-4 py-3 scrollbar-hide bg-white">
+        <div className="relative">
+          <Swiper
+            onSwiper={(swiper) => {
+              swiperRef.current = swiper;
+            }}
+            slidesPerView={1}
+            spaceBetween={0}
+            onSlideChange={(swiper) => {
+              // Swipe originates from the user dragging — sync state to match.
+              if (swiper.activeIndex !== selectedImageIndex) {
+                setSelectedImageIndex(swiper.activeIndex);
+              }
+            }}
+            className="w-full"
+          >
             {images.map((img, idx) => (
-              <button
-                key={idx}
-                onClick={() => setSelectedImageIndex(idx)}
-                className={`relative w-16 h-20 rounded-xl overflow-hidden border-2 flex-shrink-0 transition-all ${
-                  selectedImageIndex === idx
-                    ? "border-black"
-                    : "border-gray-200"
-                }`}
-              >
-                <Image
-                  src={img.url}
-                  alt=""
-                  fill
-                  quality={100}
-                  className="object-cover"
-                />
-              </button>
+              <SwiperSlide key={idx}>
+                <div className="relative w-full aspect-[3/4] bg-[#f8f5f2] overflow-hidden">
+                  <Image
+                    src={img.url}
+                    alt={product.name}
+                    fill
+                    priority
+                    quality={100}
+                    sizes="100vw"
+                    className="object-cover"
+                  />
+
+                  {/* Discount Badge */}
+                  {discount > 0 && !isOutOfStock && (
+                    <div className="absolute top-9 left-3 bg-main-primary text-main-secondary px-2.5 py-1 rounded-full text-xs font-semibold z-10">
+                      {discount}% OFF
+                    </div>
+                  )}
+                </div>
+              </SwiperSlide>
             ))}
-          </div>
-        )}
+          </Swiper>
+
+          {/* Flipkart-style segmented progress bar */}
+          {images.length > 1 && (
+            <div className="absolute top-2 left-2 right-2 z-10 flex gap-1">
+              {images.map((_, idx) => (
+                <div
+                  key={idx}
+                  className="h-[3px] flex-1 rounded-full bg-white/40 overflow-hidden"
+                >
+                  <motion.div
+                    className="h-full bg-white"
+                    initial={false}
+                    animate={{
+                      width: idx <= selectedImageIndex ? "100%" : "0%",
+                    }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Slide counter badge */}
+          {images.length > 1 && (
+            <div className="absolute bottom-3 right-3 z-10 bg-black/60 text-white text-[11px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm">
+              {selectedImageIndex + 1} / {images.length}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ================= DESKTOP ================= */}
