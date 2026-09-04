@@ -98,7 +98,7 @@ export default function HeroSection() {
   // full-viewport height starting at the md breakpoint (tablet/desktop).
   if (isLoading) {
     return (
-      <section className="relative flex aspect-[16/10] h-auto w-full items-center justify-center overflow-hidden bg-black sm:aspect-auto sm:h-[75vh] sm:min-h-[480px] md:h-[100svh] md:min-h-[640px]">
+      <section className="relative mt-[108px] flex aspect-[16/10] h-auto w-full items-center justify-center overflow-hidden bg-black sm:mt-[108px] sm:aspect-auto sm:h-[75vh] sm:min-h-[480px] md:mt-0 md:h-[100svh] md:min-h-[640px]">
         <div className="text-center">
           <div className="mx-auto mb-4 h-11 w-11 animate-spin rounded-full border-4 border-white/25 border-t-white" />
           <p className="text-sm text-white/70">Loading...</p>
@@ -109,7 +109,7 @@ export default function HeroSection() {
 
   if (isError || banners.length === 0) {
     return (
-      <section className="relative flex aspect-[16/10] h-auto w-full items-center justify-center overflow-hidden bg-black sm:aspect-auto sm:h-[75vh] sm:min-h-[480px] md:h-[100svh] md:min-h-[640px]">
+      <section className="relative mt-[108px] flex aspect-[16/10] h-auto w-full items-center justify-center overflow-hidden bg-black sm:mt-[108px] sm:aspect-auto sm:h-[75vh] sm:min-h-[480px] md:mt-0 md:h-[100svh] md:min-h-[640px]">
         <p className="text-sm text-white/70">
           {isError ? "Unable to load banners" : "No banners available"}
         </p>
@@ -122,20 +122,23 @@ export default function HeroSection() {
   return (
     <section
       className="
-        relative
-        aspect-[16/10]
-        h-auto
-        w-full
-        overflow-hidden
-        bg-black
+    relative
+    mt-[108px]
+    aspect-[16/10]
+    h-auto
+    w-full
+    overflow-hidden
+    bg-black
 
-        sm:aspect-auto
-        sm:h-[75vh]
-        sm:min-h-[480px]
+    sm:mt-[108px]
+    sm:aspect-auto
+    sm:h-[75vh]
+    sm:min-h-[480px]
 
-        md:h-[100svh]
-        md:min-h-[640px]
-      "
+    md:mt-0
+    md:h-[100svh]
+    md:min-h-[640px]
+  "
       aria-roledescription="carousel"
       aria-label="Promotional banners"
     >
