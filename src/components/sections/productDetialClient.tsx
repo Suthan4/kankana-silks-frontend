@@ -115,6 +115,34 @@ export default function ProductDetailsClient({
     Array.isArray(product.variants) &&
     product.variants.length > 0;
 
+  const findVariantForAttr = (
+    attrKey: string,
+    attrValue: string,
+  ): ProductVariant | null => {
+    if (!product.variants?.length) return null;
+    return (
+      product.variants.find((v: ProductVariant) => {
+        if (attrKey === "Size" && v.size === attrValue) return true;
+        if (attrKey === "Color" && v.color === attrValue) return true;
+        if (attrKey === "Fabric" && v.fabric === attrValue) return true;
+        const vVal = getVariantAttrValue(v, attrKey);
+        return String(vVal) === String(attrValue);
+      }) ?? null
+    );
+  };
+
+  const getSwatchImage = (attrKey: string, attrValue: string): string => {
+    const variant = findVariantForAttr(attrKey, attrValue);
+    const img =
+      variant?.media?.find(
+        (m: { type: string; url: string }) => m.type === "IMAGE",
+      )?.url ??
+      product.media?.find(
+        (m: { type: string; url: string }) => m.type === "IMAGE",
+      )?.url;
+    return img ?? "/placeholder.jpg";
+  };
+
   useEffect(() => {
     if (hasVariants && product.variants?.length && !selectedVariant)
       setSelectedVariant(product.variants[0]);
@@ -707,14 +735,15 @@ export default function ProductDetailsClient({
                           <div key={attr.key} className="space-y-1.5">
                             <p className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
                               {attr.key}
-                              {attr.key === "Color" && (
+                              {/* {attr.key === "Color" && (
                                 <Palette className="h-3 h-3 text-purple-500" />
-                              )}
+                              )} */}
                             </p>
                             <div className="flex gap-2 flex-wrap">
                               {attr.values.map((val) => {
                                 const isSelected =
                                   String(currentValue) === String(val);
+
                                 if (attr.key.toLowerCase() === "color") {
                                   return (
                                     <motion.button
@@ -724,16 +753,41 @@ export default function ProductDetailsClient({
                                       onClick={() =>
                                         handleSelectAnyAttribute(attr.key, val)
                                       }
-                                      className={`px-3 py-1.5 border-2 rounded-lg font-medium transition text-xs ${
-                                        isSelected
-                                          ? "border-main-primary bg-main-primary text-main-secondary"
-                                          : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
-                                      }`}
+                                      className={`group relative flex flex-col items-center gap-1`}
                                     >
-                                      {formatColorText(val)}
+                                      <span
+                                        className={`relative block h-12 w-12 overflow-hidden rounded-full border-2 transition ${
+                                          isSelected
+                                            ? "border-main-primary ring-2 ring-main-primary/40"
+                                            : "border-gray-200 group-hover:border-gray-400"
+                                        }`}
+                                      >
+                                        <Image
+                                          src={getSwatchImage(attr.key, val)}
+                                          alt={formatColorText(val)}
+                                          fill
+                                          sizes="48px"
+                                          className="object-cover"
+                                        />
+                                        {isSelected && (
+                                          <span className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                            <Check className="w-4 h-4 text-white drop-shadow" />
+                                          </span>
+                                        )}
+                                      </span>
+                                      <span
+                                        className={`text-[10px] font-medium ${
+                                          isSelected
+                                            ? "text-gray-900"
+                                            : "text-gray-500"
+                                        }`}
+                                      >
+                                        {formatColorText(val)}
+                                      </span>
                                     </motion.button>
                                   );
                                 }
+
                                 return (
                                   <motion.button
                                     key={val}
@@ -742,7 +796,11 @@ export default function ProductDetailsClient({
                                     onClick={() =>
                                       handleSelectAnyAttribute(attr.key, val)
                                     }
-                                    className={`px-3 py-1.5 border-2 rounded-lg font-medium transition text-xs ${isSelected ? "border-main-primary bg-main-primary text-main-secondary" : "border-gray-300 hover:border-gray-400"}`}
+                                    className={`px-3 py-1.5 border-2 rounded-lg font-medium transition text-xs ${
+                                      isSelected
+                                        ? "border-main-primary bg-main-primary text-main-secondary"
+                                        : "border-gray-300 hover:border-gray-400"
+                                    }`}
                                   >
                                     {val}
                                   </motion.button>
