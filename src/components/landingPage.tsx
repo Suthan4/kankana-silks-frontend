@@ -174,7 +174,7 @@ export default function LandingPage() {
 
       {/* Only render the wrapper (and its padding) when there's something to show */}
       {orderedSections.length > 0 && (
-        <section className="py-4 sm:py-8 md:py-11">
+        <section className="sm:py-4 md:py-6">
           {orderedSections.map((section, index) => renderSection(section))}
         </section>
       )}

@@ -1479,11 +1479,10 @@ function Header() {
       </motion.header>
 
       {/* Mobile Header */}
+      {/* Mobile Header */}
       <motion.header
         initial={false}
-        className={`fixed left-0 right-0 top-0 z-40 transition-[background-color,box-shadow] duration-200 md:hidden ${
-          isTransparent ? "bg-transparent shadow-none" : "bg-white shadow-md"
-        }`}
+        className="fixed left-0 right-0 top-0 z-40 bg-white shadow-md md:hidden"
       >
         <div className="flex items-center justify-between px-4 py-3">
           <motion.button
@@ -1492,13 +1491,9 @@ function Header() {
             className="p-2"
           >
             {mobileMenuOpen ? (
-              <X
-                className={`w-6 h-6 ${isTransparent ? "text-white" : "text-black"}`}
-              />
+              <X className="w-6 h-6 text-black" />
             ) : (
-              <Menu
-                className={`w-6 h-6 ${isTransparent ? "text-white" : "text-black"}`}
-              />
+              <Menu className="w-6 h-6 text-black" />
             )}
           </motion.button>
 
@@ -1513,57 +1508,32 @@ function Header() {
               fill
               priority
               sizes="180px"
-              className={`object-contain transition-opacity duration-150 ${
-                isHeaderWhite ? "opacity-100" : "opacity-0"
-              }`}
-            />
-
-            <Image
-              src="/removed-bg-logo.png"
-              alt=""
-              aria-hidden="true"
-              fill
-              priority
-              sizes="180px"
-              className={`object-contain brightness-0 invert transition-opacity duration-150 ${
-                isHeaderWhite ? "opacity-0" : "opacity-100"
-              }`}
+              className="object-contain"
             />
           </Link>
+
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => setIsSearchOpen(true)}
             className="p-2"
           >
-            <Search
-              className={`w-5 h-5 ${isTransparent ? "text-white" : "text-black"}`}
-            />
+            <Search className="w-5 h-5 text-black" />
           </motion.button>
         </div>
 
         <div
-          className={`px-4 py-2 transition-colors duration-500 ${
-            isTransparent
-              ? "border-t border-white/20"
-              : "border-t border-gray-100"
-          }${isProductDetailPage || isCategoryPage ? " hidden" : ""}`}
+          className={`px-4 py-2 border-t border-gray-100 transition-colors duration-500${
+            isProductDetailPage || isCategoryPage ? " hidden" : ""
+          }`}
         >
           <button
             onClick={() => setLocationModalOpen(true)}
             className="flex items-center gap-2 text-sm"
           >
-            <MapPin
-              className={`w-4 h-4 ${isTransparent ? "text-white/90" : "text-gray-600"}`}
-            />
+            <MapPin className="w-4 h-4 text-gray-600" />
             <div className="flex flex-col items-start">
-              <span
-                className={`text-xs ${isTransparent ? "text-white/70" : "text-gray-500"}`}
-              >
-                Deliver to
-              </span>
-              <span
-                className={`font-semibold ${isTransparent ? "text-white" : "text-gray-800"}`}
-              >
+              <span className="text-xs text-gray-500">Deliver to</span>
+              <span className="font-semibold text-gray-800">
                 {location
                   ? `${location.city} - ${location.pincode}`
                   : "Select Location"}
