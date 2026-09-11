@@ -2,7 +2,7 @@
 
 import { HomeSection } from "@/lib/api/home-section.api";
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 
 interface AestheticFullImageProps {
   section: HomeSection;
@@ -58,37 +58,17 @@ export default function AestheticFullImage({
             />
           )}
 
-          {/* Gradient Overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
+          {/* Gradient Overlay for text readability — matches Banner carousel */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-black/10" />
         </div>
       ))}
 
-      {/* Content Overlay - Centered */}
-      <div className="relative z-10 h-full flex flex-col items-center justify-center px-4 md:px-8 text-center">
-        {/* Main Title */}
-        {/* {section.showTitle && section.title && (
-          <h1
-            className={`text-4xl md:text-6xl lg:text-7xl xl:text-8xl 
-                       font-light uppercase mb-6 md:mb-8
-                       transition-all duration-1000 ${
-                         isVisible
-                           ? "opacity-100 translate-y-0"
-                           : "opacity-0 translate-y-5"
-                       }`}
-            style={{
-              color: section.textColor || "#ffffff",
-              textShadow: "0 2px 20px rgba(0,0,0,0.3)",
-              letterSpacing: "0.2em",
-            }}
-          >
-            {displayTitle}
-          </h1>
-        )} */}
-
+      {/* Content Overlay - Bottom anchored, matches Banner carousel */}
+      <div className="absolute inset-x-0 bottom-8 sm:bottom-14 lg:bottom-16 z-10 px-6 sm:px-12 md:px-16 text-center flex flex-col items-center justify-center">
         {/* Subtitle / Overlay Text */}
         {((section.showSubtitle && section.subtitle) || section.title) && (
           <div
-            className={`max-w-3xl space-y-3 md:space-y-4 mb-8 md:mb-12
+            className={`max-w-3xl space-y-1.5 sm:space-y-2 mb-4 md:mb-6
                        transition-all duration-1000 delay-200 ${
                          isVisible
                            ? "opacity-100 translate-y-0"
@@ -96,26 +76,18 @@ export default function AestheticFullImage({
                        }`}
           >
             {section.title && (
-              <p
-                className="text-xl md:text-3xl lg:text-4xl font-light"
-                style={{
-                  color: "#ffffff",
-                  textShadow: "0 2px 15px rgba(0,0,0,0.5)",
-                  letterSpacing: "0.2em",
-                }}
+              <h1
+                className="text-xl sm:text-3xl lg:text-4xl font-extrabold uppercase tracking-wider text-white drop-shadow-lg line-clamp-1"
+                style={{ color: "#ffffff" }}
               >
                 {section.title}
-              </p>
+              </h1>
             )}
 
             {section.subtitle && (
               <p
-                className="text-sm md:text-base lg:text-lg font-light uppercase opacity-90"
-                style={{
-                  color: section.textColor || "#ffffff",
-                  textShadow: "0 2px 15px rgba(0,0,0,0.5)",
-                  letterSpacing: "0.15em",
-                }}
+                className="text-xs sm:text-sm lg:text-base text-white/90 font-light drop-shadow line-clamp-2"
+                style={{ color: section.textColor || undefined }}
               >
                 {section.subtitle}
               </p>
@@ -123,12 +95,8 @@ export default function AestheticFullImage({
 
             {section.showSubtitle && section.subtitle && !section.title && (
               <p
-                className="text-base md:text-xl lg:text-2xl font-light opacity-90"
-                style={{
-                  color: section.textColor || "#ffffff",
-                  textShadow: "0 2px 15px rgba(0,0,0,0.5)",
-                  letterSpacing: "0.05em",
-                }}
+                className="text-xs sm:text-sm lg:text-base text-white/90 font-light drop-shadow line-clamp-2"
+                style={{ color: section.textColor || undefined }}
               >
                 {section.subtitle}
               </p>
@@ -136,11 +104,11 @@ export default function AestheticFullImage({
           </div>
         )}
 
-        {/* CTA Buttons */}
+        {/* CTA Buttons — pill style, matches Banner carousel's "Shop Now" */}
         {section.ctaButtons && section.ctaButtons.length > 0 && (
           <div
-            className={`flex flex-wrap justify-center gap-4 md:gap-6
-                       transition-all rounded-sm duration-1000 delay-[400ms] ${
+            className={`flex flex-wrap justify-center gap-3 sm:gap-4
+                       transition-all duration-1000 delay-[400ms] ${
                          isVisible
                            ? "opacity-100 translate-y-0"
                            : "opacity-0 translate-y-5"
@@ -162,31 +130,30 @@ export default function AestheticFullImage({
                     rel={btn.openNewTab ? "noopener noreferrer" : undefined}
                     className={`
                       group relative overflow-hidden
-                      px-8 md:px-12 py-3 md:py-4 rounded-sm
-                      text-sm md:text-base font-light uppercase
-                      transition-all duration-500
+                      inline-flex items-center gap-1.5
+                      px-5 py-2 sm:px-6 sm:py-2.5 rounded-full
+                      text-xs font-semibold uppercase tracking-widest
+                      shadow-lg transition-all duration-200 transform hover:scale-105 active:scale-95
                       ${
                         isPrimary
-                          ? "bg-white text-black hover:bg-black hover:text-white border-2 border-white"
+                          ? "bg-white text-black hover:bg-neutral-100"
                           : isSecondary
-                            ? "bg-black text-white hover:bg-white hover:text-black border-2 border-white"
+                            ? "bg-black text-white hover:bg-neutral-900 border border-white/20"
                             : isOutline
                               ? "bg-transparent border-2 border-white text-white hover:bg-white hover:text-black"
                               : isText
                                 ? "bg-black/20 backdrop-blur-sm text-white hover:bg-white/20"
-                                : ""
+                                : "bg-white text-black hover:bg-neutral-100"
                       }
                     `}
-                    style={{
-                      letterSpacing: "0.2em",
-                    }}
                   >
                     {/* Shimmer effect on hover */}
                     <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
 
-                    <span className="relative z-10 flex items-center gap-2">
+                    <span className="relative z-10 flex items-center gap-1.5">
                       {btn.text}
-                      {btn.icon && <span className="text-lg">{btn.icon}</span>}
+                      {btn.icon && <span className="text-sm">{btn.icon}</span>}
+                      <ExternalLink className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     </span>
                   </a>
                 );
@@ -195,47 +162,48 @@ export default function AestheticFullImage({
         )}
       </div>
 
-      {/* Navigation Arrows (if multiple slides) */}
+      {/* Navigation Arrows (if multiple slides) — circular, matches Banner carousel */}
       {media.length > 1 && (
         <>
           <button
             onClick={prevSlide}
-            className="absolute left-4 md:left-8 top-1/2 z-20 -translate-y-1/2
-                       w-12 h-12 md:w-16 md:h-16
-                       flex items-center justify-center rounded-sm
-                       bg-white/10 hover:bg-white/20 backdrop-blur-sm
-                       border border-white/30 transition-all group"
             aria-label="Previous slide"
+            className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md border border-white/20 flex items-center justify-center shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-white/80 active:scale-95"
           >
-            <ChevronLeft className="w-6 h-6 md:w-8 md:h-8 text-white transition-transform group-hover:scale-110" />
+            <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
 
           <button
             onClick={nextSlide}
-            className="absolute right-4 md:right-8 top-1/2 z-20 -translate-y-1/2
-                       w-12 h-12 md:w-16 md:h-16
-                       flex items-center justify-center rounded-sm
-                       bg-white/10 hover:bg-white/20 backdrop-blur-sm
-                       border border-white/30 transition-all group"
             aria-label="Next slide"
+            className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md border border-white/20 flex items-center justify-center shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-white/80 active:scale-95"
           >
-            <ChevronRight className="w-6 h-6 md:w-8 md:h-8 text-white transition-transform group-hover:scale-110" />
+            <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
 
-          {/* Slide Indicators */}
-          <div className="absolute bottom-8 md:bottom-12 left-1/2 z-20 -translate-x-1/2 flex gap-2 md:gap-3">
-            {media.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentSlide(index)}
-                className={`h-2 md:h-3 rounded-full transition-all duration-300 ${
-                  index === currentSlide
-                    ? "bg-white w-8 md:w-12"
-                    : "bg-white/40 w-2 md:w-3 hover:bg-white/60"
-                }`}
-                aria-label={`Go to slide ${index + 1}`}
-              />
-            ))}
+          {/* Slide Indicators — pill dot bar, matches Banner carousel */}
+          <div
+            className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/85 backdrop-blur-md shadow-md border border-white/40"
+            role="tablist"
+            aria-label="Slide pagination"
+          >
+            {media.map((_, index) => {
+              const isActive = index === currentSlide;
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => setCurrentSlide(index)}
+                  aria-label={`Go to slide ${index + 1}`}
+                  aria-current={isActive ? "true" : undefined}
+                  className={`transition-all duration-300 rounded-full focus:outline-none focus:ring-2 focus:ring-black ${
+                    isActive
+                      ? "w-7 sm:w-8 h-2.5 bg-black"
+                      : "w-2.5 h-2.5 bg-gray-400 hover:bg-gray-700"
+                  }`}
+                />
+              );
+            })}
           </div>
         </>
       )}

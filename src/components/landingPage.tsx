@@ -16,6 +16,8 @@ import CategoryShowcase from "./sections/Categoryshowcase";
 import MediaGridSection from "./sections/mediaGridSection";
 import { useQuery } from "@tanstack/react-query";
 import AestheticFullImage from "./sections/aestheticFullImage";
+import BannerSection from "./sections/bannerSection";
+import bannerService, { Banner } from "@/lib/api/banner.api";
 
 export default function LandingPage() {
   const {
@@ -27,6 +29,14 @@ export default function LandingPage() {
     queryKey: ["home-sections-active"],
     queryFn: () => homeSectionService.getActiveSections(),
   });
+  const {
+    data: banners_data = [],
+    isLoading: isBannerLoading,
+    isError: isBannerError,
+  } = useQuery<Banner[]>({
+    queryKey: ["active-banners"],
+    queryFn: () => bannerService.getActiveBanners(),
+  });
 
   const getDisplayTitle = (section: HomeSection) => {
     if (section.type === SectionType.CUSTOM && section.customTypeName) {
@@ -36,8 +46,7 @@ export default function LandingPage() {
   };
 
   /**
-   * SUPER SIMPLE: Just check what content exists and render it
-   * NO type restrictions - just render based on data
+   * Render section based on layout and data
    */
   const renderSection = (section: HomeSection) => {
     const layout = section.layout?.trim().toLowerCase();
@@ -58,12 +67,32 @@ export default function LandingPage() {
       );
     }
 
-    const hasProducts = section.products?.length > 0;
-    const hasCategories = section.categories?.length > 0;
-    const hasMedia = section.media?.length > 0;
+    // ✅ Banner Hero Section Carousel
+    if (layout === "banner") {
+      return (
+        <BannerSection
+          key={`banner-${section.id}`}
+          section={sectionWithTitle}
+        />
+      );
+    }
+
+    const hasProducts = section.products && section.products.length > 0;
+    const hasCategories = section.categories && section.categories.length > 0;
+    const hasMedia = section.media && section.media.length > 0;
+
+    // Slider / Hero Slider
+    if (layout === "slider" || section.type === SectionType.HERO_SLIDER) {
+      if (hasMedia) {
+        return <HeroSlider key={section.id} section={sectionWithTitle} />;
+      }
+      if (hasProducts) {
+        return <BannerSection key={section.id} section={sectionWithTitle} />;
+      }
+    }
 
     // Products
-    if (hasProducts || layout != "aesthetic-fullscreen") {
+    if (hasProducts) {
       if (layout === "carousel") {
         return (
           <ProductCarousel
@@ -83,7 +112,7 @@ export default function LandingPage() {
     }
 
     // Categories
-    if (hasCategories || layout != "aesthetic-fullscreen") {
+    if (hasCategories) {
       return (
         <CategoryShowcase
           key={section.id}
@@ -100,11 +129,7 @@ export default function LandingPage() {
     }
 
     // Media
-    if (hasMedia && layout != "aesthetic-fullscreen") {
-      if (layout === "slider") {
-        return <HeroSlider key={section.id} section={sectionWithTitle} />;
-      }
-
+    if (hasMedia) {
       return <MediaGridSection key={section.id} section={sectionWithTitle} />;
     }
 
@@ -170,11 +195,18 @@ export default function LandingPage() {
 
   return (
     <main className="min-h-screen">
-      <HeroSection />
+      {banners_data?.length > 0 && (
+        <HeroSection
+          banners={banners_data}
+          isLoading={isBannerLoading}
+          isError={isBannerError}
+          error={error}
+        />
+      )}
 
       {/* Only render the wrapper (and its padding) when there's something to show */}
       {orderedSections.length > 0 && (
-        <section className="sm:py-4 md:py-6">
+        <section className="">
           {orderedSections.map((section, index) => renderSection(section))}
         </section>
       )}

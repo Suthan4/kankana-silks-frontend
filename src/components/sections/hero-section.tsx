@@ -12,20 +12,23 @@ import bannerService, { type Banner, MediaType } from "@/lib/api/banner.api";
 const AUTOPLAY_DELAY = 5000;
 const MIN_SWIPE_DISTANCE = 50;
 
-export default function HeroSection() {
+interface IHeroSection {
+  banners: Banner[];
+  isError: boolean;
+  isLoading: boolean;
+  error: Error | null;
+}
+
+export default function HeroSection({
+  banners,
+  isError,
+  isLoading,
+  error,
+}: IHeroSection) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
-
-  const {
-    data: banners = [],
-    isLoading,
-    isError,
-  } = useQuery<Banner[]>({
-    queryKey: ["active-banners"],
-    queryFn: () => bannerService.getActiveBanners(),
-  });
 
   useEffect(() => {
     if (banners.length === 0) {
