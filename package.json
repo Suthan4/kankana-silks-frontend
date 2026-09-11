@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "cross-env NEXT_PUBLIC_SITE_MODE=live next dev -p 3001",
+    "dev": "cross-env NEXT_PUBLIC_SITE_MODE=live next dev -p 5174",
     "test:safari": "npx playwright test --headed --browser=webkit",
     "test:safari:manual": "playwright test browser.test.ts --project=desktop-safari --headed --debug",
     "build": "next build",

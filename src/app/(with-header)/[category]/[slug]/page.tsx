@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const images =
-    product.media
+    product?.media
       ?.filter((m: any) => m.type === "IMAGE")
       .map((m: any) => ({
         url: m.url,

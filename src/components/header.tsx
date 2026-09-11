@@ -32,6 +32,7 @@ import { useRouter } from "next/navigation";
 import UnifiedSearchModal from "./unifiedSearchModal";
 import { cartApi } from "@/lib/api/cart.api";
 import { wishlistApi } from "@/lib/api/wishlist.api";
+import { useMobileHeaderScroll } from "@/hooks/useMobileHeaderScroll";
 
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -73,6 +74,7 @@ function Header() {
   const pathname = usePathname();
 
   const { user } = useAuthModal();
+  const showSearchRow = useMobileHeaderScroll();
   useOnClickOutside(userMenuRef, () => setUserMenuOpen(false));
   useOnClickOutside(locationRef, () => {
     if (window.innerWidth >= 768) setLocationModalOpen(false);

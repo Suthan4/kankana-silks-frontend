@@ -1,7 +1,7 @@
 "use client";
 
 import { Product } from "@/lib/api/home-section.api";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ShoppingCart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import WishlistButton from "../ui/WishlistButton";
@@ -36,6 +36,18 @@ export default function ProductCarousel({
 }) {
   const [index, setIndex] = useState(0);
   const swiperRef = useRef<SwiperType | null>(null);
+  useEffect(() => {
+    setIndex((currentIndex) => {
+      if (!products.length) return 0;
+
+      return Math.min(currentIndex, products.length - 1);
+    });
+  }, [products]);
+  // Always keep index inside products range
+  const safeIndex =
+    products.length > 0 ? Math.min(Math.max(index, 0), products.length - 1) : 0;
+
+  const currentProduct = products[safeIndex];
 
   const router = useRouter();
   const { addItem: addToLocalCart } = useCartStore();
@@ -43,7 +55,8 @@ export default function ProductCarousel({
 
   if (!products?.length) return null;
 
-  const currentProduct = products[index];
+  console.log("currentProduct", currentProduct);
+  console.log("products", products);
 
   const next = () => swiperRef.current?.slideNext();
   const prev = () => swiperRef.current?.slidePrev();
@@ -190,93 +203,367 @@ export default function ProductCarousel({
         <div className="carousel-pagination flex justify-center gap-1.5 mt-3" />
       </div>
 
-      {/* DESKTOP: split layout with arrows */}
-      <div className="hidden md:block max-w-7xl mx-auto px-4">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-          <div className="relative group">
-            <div className="aspect-[2/3] rounded-2xl overflow-hidden bg-gray-100">
-              <img
-                src={currentProduct.media?.[0]?.url}
-                alt={currentProduct.name}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-              />
+      {/* DESKTOP: Compact Premium Product Showcase */}
+      <div className="hidden md:block w-full">
+        <div className="max-w-6xl xl:max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="grid grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-10 lg:gap-14 xl:gap-20 items-center">
+            {/* ================= IMAGE ================= */}
+            <div className="relative group">
+              <div className="relative w-full h-[min(68vh,620px)] rounded-2xl overflow-hidden bg-[#f7f7f5]">
+                {currentProduct?.media?.[0]?.url ? (
+                  <img
+                    key={currentProduct.id}
+                    src={currentProduct.media[0].url}
+                    alt={currentProduct.name || "Product"}
+                    className="
+                w-full
+                h-full
+                object-contain
+                transition-all
+                duration-500
+                ease-out
+                group-hover:scale-[1.015]
+              "
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-sm text-gray-400">
+                    No image available
+                  </div>
+                )}
+
+                {/* Soft image overlay */}
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/[0.04] via-transparent to-transparent" />
+
+                {/* ================= PREVIOUS ================= */}
+                <button
+                  type="button"
+                  aria-label="Previous product"
+                  onClick={() => {
+                    setIndex((i) => (i <= 0 ? products.length - 1 : i - 1));
+                  }}
+                  className="
+              absolute
+              left-4
+              top-1/2
+              -translate-y-1/2
+              z-10
+
+              w-10
+              h-10
+
+              flex
+              items-center
+              justify-center
+
+              rounded-full
+              bg-white/90
+              backdrop-blur-sm
+
+              text-gray-900
+              text-xl
+
+              shadow-sm
+              border
+              border-black/5
+
+              transition-all
+              duration-200
+
+              hover:bg-white
+              hover:scale-105
+              active:scale-95
+            "
+                >
+                  ‹
+                </button>
+
+                {/* ================= NEXT ================= */}
+                <button
+                  type="button"
+                  aria-label="Next product"
+                  onClick={() => {
+                    setIndex((i) => (i >= products.length - 1 ? 0 : i + 1));
+                  }}
+                  className="
+              absolute
+              right-4
+              top-1/2
+              -translate-y-1/2
+              z-10
+
+              w-10
+              h-10
+
+              flex
+              items-center
+              justify-center
+
+              rounded-full
+              bg-white/90
+              backdrop-blur-sm
+
+              text-gray-900
+              text-xl
+
+              shadow-sm
+              border
+              border-black/5
+
+              transition-all
+              duration-200
+
+              hover:bg-white
+              hover:scale-105
+              active:scale-95
+            "
+                >
+                  ›
+                </button>
+
+                {/* ================= WISHLIST ================= */}
+                <div className="absolute top-4 right-4 z-10">
+                  <WishlistButton
+                    productId={currentProduct?.id}
+                    variant="icon"
+                    size="md"
+                    className="
+                bg-white/95
+                backdrop-blur-sm
+                shadow-sm
+                border
+                border-black/5
+                hover:bg-white
+                transition
+              "
+                  />
+                </div>
+
+                {/* Product counter */}
+                {products.length > 1 && (
+                  <div
+                    className="
+              absolute
+              bottom-4
+              left-4
+              z-10
+
+              px-3
+              py-1.5
+
+              rounded-full
+              bg-white/90
+              backdrop-blur-sm
+
+              text-[11px]
+              font-medium
+              tracking-wide
+              text-gray-700
+
+              shadow-sm
+            "
+                  >
+                    {safeIndex + 1} / {products.length}
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent rounded-2xl" />
+            {/* ================= PRODUCT DETAILS ================= */}
+            <div className="flex flex-col justify-center">
+              {/* Category */}
+              <p
+                className="
+          text-[11px]
+          uppercase
+          tracking-[0.22em]
+          text-gray-400
+          mb-3
+        "
+              >
+                {currentProduct?.category?.name || "Collection"}
+              </p>
 
-            <button
-              onClick={() =>
-                setIndex((i) => (i - 1 + products.length) % products.length)
-              }
-              className="flex absolute left-4 top-1/2 -translate-y-1/2 bg-white/70 px-3 py-2 rounded-full opacity-0 group-hover:opacity-100 transition"
-            >
-              ‹
-            </button>
-            <button
-              onClick={() => setIndex((i) => (i + 1) % products.length)}
-              className="flex absolute right-4 top-1/2 -translate-y-1/2 bg-white/70 px-3 py-2 rounded-full opacity-0 group-hover:opacity-100 transition"
-            >
-              ›
-            </button>
+              {/* Product title */}
+              <h3
+                className="
+          text-3xl
+          lg:text-4xl
+          xl:text-5xl
 
-            <div className="absolute top-4 right-4">
-              <WishlistButton
-                productId={currentProduct.id}
-                variant="icon"
-                size="md"
-                className="bg-white shadow"
-              />
-            </div>
-          </div>
+          font-semibold
+          tracking-tight
+          leading-[1.08]
 
-          <div className="space-y-6">
-            <p className="text-xs uppercase tracking-widest text-gray-400">
-              {currentProduct.category?.name}
-            </p>
-            <h3 className="text-2xl md:text-5xl font-semibold leading-tight">
-              {currentProduct.name}
-            </h3>
-            <p className="text-sm md:text-base text-gray-600 line-clamp-2">
-              {currentProduct.description?.replace(/<[^>]+>/g, "")}
-            </p>
-            <div className="flex items-center gap-3">
-              <span className="text-2xl md:text-3xl font-medium">
-                ₹{currentProduct.sellingPrice}
-              </span>
-              {currentProduct.basePrice !== currentProduct.sellingPrice && (
-                <span className="text-gray-400 line-through">
-                  ₹{currentProduct.basePrice}
-                </span>
+          text-gray-950
+
+          max-w-xl
+        "
+              >
+                {currentProduct?.name}
+              </h3>
+
+              {/* Description */}
+              {currentProduct?.description && (
+                <p
+                  className="
+            mt-4
+            max-w-xl
+
+            text-sm
+            lg:text-[15px]
+
+            leading-7
+            text-gray-500
+
+            line-clamp-3
+          "
+                >
+                  {currentProduct.description.replace(/<[^>]+>/g, "")}
+                </p>
               )}
-            </div>
-            <div className="flex items-center gap-4 pt-4">
-              <button
-                onClick={() => handleViewDetails(currentProduct)}
-                className="bg-black text-white px-6 py-3 rounded-full text-sm hover:opacity-80 transition"
+
+              {/* Price */}
+              <div className="flex items-baseline gap-3 mt-6">
+                <span
+                  className="
+            text-2xl
+            lg:text-3xl
+
+            font-medium
+            tracking-tight
+            text-gray-950
+          "
+                >
+                  ₹{currentProduct?.sellingPrice}
+                </span>
+
+                {currentProduct?.basePrice !== currentProduct?.sellingPrice && (
+                  <span
+                    className="
+              text-sm
+              lg:text-base
+              text-gray-400
+              line-through
+            "
+                  >
+                    ₹{currentProduct?.basePrice}
+                  </span>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div
+                className="
+          flex
+          items-center
+          gap-3
+          mt-7
+        "
               >
-                View Product
-              </button>
-              <button
-                onClick={() => handleAddToCart(currentProduct)}
-                className="flex items-center gap-2 text-sm text-gray-700 hover:text-black transition"
-              >
-                <ShoppingCart size={18} />
-                Add
-              </button>
+                <button
+                  type="button"
+                  onClick={() => handleViewDetails(currentProduct)}
+                  className="
+              inline-flex
+              items-center
+              justify-center
+
+              bg-black
+              text-white
+
+              px-7
+              py-3
+
+              rounded-full
+
+              text-sm
+              font-medium
+
+              transition-all
+              duration-200
+
+              hover:bg-gray-800
+              hover:scale-[1.02]
+              active:scale-[0.98]
+            "
+                >
+                  View Product
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleAddToCart(currentProduct)}
+                  className="
+              inline-flex
+              items-center
+              gap-2
+
+              px-5
+              py-3
+
+              rounded-full
+
+              border
+              border-gray-200
+
+              text-sm
+              font-medium
+              text-gray-700
+
+              transition-all
+              duration-200
+
+              hover:border-gray-400
+              hover:text-black
+              hover:bg-gray-50
+              active:scale-[0.98]
+            "
+                >
+                  <ShoppingCart size={17} strokeWidth={1.8} />
+                  Add to cart
+                </button>
+              </div>
+
+              {/* Divider */}
+              <div className="w-full max-w-xl h-px bg-gray-100 mt-8" />
+
+              {/* Product navigation */}
+              <div className="flex items-center gap-3 mt-5">
+                <span
+                  className="
+            text-[11px]
+            uppercase
+            tracking-[0.18em]
+            text-gray-400
+            mr-2
+          "
+                >
+                  Explore
+                </span>
+
+                {products.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    aria-label={`View product ${i + 1}`}
+                    onClick={() => setIndex(i)}
+                    className={`
+                h-1.5
+                rounded-full
+                transition-all
+                duration-300
+
+                ${
+                  i === safeIndex
+                    ? "w-8 bg-black"
+                    : "w-2 bg-gray-300 hover:bg-gray-500"
+                }
+              `}
+                  />
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-
-        <div className="flex justify-center gap-2 mt-10">
-          {products.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setIndex(i)}
-              className={`h-1.5 rounded-full transition-all ${
-                i === index ? "w-6 bg-black" : "w-2 bg-gray-300"
-              }`}
-            />
-          ))}
         </div>
       </div>
     </section>
