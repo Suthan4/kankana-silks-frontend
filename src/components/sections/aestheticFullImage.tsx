@@ -42,11 +42,29 @@ export default function AestheticFullImage({
           }`}
         >
           {item.type === "IMAGE" ? (
-            <img
-              src={item.url}
-              alt={displayTitle}
-              className="w-full h-full object-cover object-center"
-            />
+            <picture className="w-full h-full block">
+              {/* Mobile Viewport (< 768px) */}
+              <source
+                media="(max-width: 767px)"
+                srcSet={
+                  ("mobileUrl" in item && item.mobileUrl)
+                    ? item.mobileUrl
+                    : item.url
+                }
+              />
+              {/* Desktop Viewport (>= 768px) */}
+              <source
+                media="(min-width: 768px)"
+                srcSet={item.url}
+              />
+              {/* Fallback Image */}
+              <img
+                src={item.url}
+                alt={displayTitle || "Hero Banner"}
+                className="w-full h-full object-cover object-center"
+                loading="eager"
+              />
+            </picture>
           ) : (
             <video
               src={item.url}

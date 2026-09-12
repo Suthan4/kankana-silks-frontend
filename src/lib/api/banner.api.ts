@@ -10,6 +10,7 @@ export interface Banner {
   title: string;
   type: MediaType;
   url: string;
+  mobileUrl?: string | null;
   key?: string;
   thumbnailUrl?: string;
   link?: string;
