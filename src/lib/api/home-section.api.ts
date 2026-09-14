@@ -31,6 +31,7 @@ export interface SectionMedia {
   sectionId: string;
   type: "IMAGE" | "VIDEO";
   url: string;
+  mobileUrl?: string | null;
   thumbnailUrl?: string | null;
   title?: string | null;
   altText?: string | null;
@@ -84,7 +85,7 @@ export interface HomeSection {
   isActive: boolean;
   order: number;
   limit: number;
-  layout: "grid" | "carousel" | "masonry" | "slider" | "aesthetic-fullscreen";
+  layout: "grid" | "carousel" | "masonry" | "slider" | "banner" | "aesthetic-fullscreen";
   columns: number;
   backgroundColor: string;
   textColor: string;

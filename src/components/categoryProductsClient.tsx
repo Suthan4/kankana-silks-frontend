@@ -166,7 +166,7 @@ export default function CategoryProductsClient({
     "Gray",
   ];
   const sizes = ["S", "M", "L", "XL", "Free Size"];
-
+  console.log("category", category);
   const updateFilters = useCallback(
     (updates: Record<string, string | number | boolean | null>) => {
       const params = new URLSearchParams(searchParams.toString());
@@ -370,6 +370,11 @@ export default function CategoryProductsClient({
   const canAddToCart = (product: Product) => !isProductUnavailable(product);
   const isProductOutOfStock = (product: Product) =>
     (product.stock?.[0]?.quantity ?? 0) === 0;
+  console.log(
+    "isProductOutOfStock",
+    isProductOutOfStock,
+    products?.[0]?.stock?.[0]?.quantity,
+  );
 
   const handleAddToCart = (product: Product) => {
     if (!canAddToCart(product)) {

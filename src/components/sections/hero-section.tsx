@@ -176,27 +176,65 @@ export default function HeroSection({
             aria-hidden={index !== currentSlide}
           >
             {banner.type === MediaType.IMAGE ? (
-              <Image
-                src={banner.url}
-                alt={banner.title || "Promotional banner"}
-                fill
-                sizes="100vw"
-                priority={index === 0}
-                quality={90}
-                className="
-                  h-full
-                  w-full
-                  object-cover
-
-                  /* Mobile: landscape aspect-[16/10] frame crops top/
-                     bottom rather than the sides, so bias slightly up
-                     to keep faces in frame */
-                  object-[50%_25%]
-
-                  /* Tablet + Desktop */
-                  md:object-center
-                "
-              />
+              banner.mobileUrl ? (
+                <>
+                  {/* Desktop view image */}
+                  <Image
+                    src={banner.url}
+                    alt={banner.title || "Promotional banner"}
+                    fill
+                    sizes="100vw"
+                    priority={index === 0}
+                    quality={90}
+                    className="
+                      hidden md:block
+                      h-full
+                      w-full
+                      object-cover
+                      object-center
+                    "
+                  />
+                  {/* Mobile view image */}
+                  <Image
+                    src={banner.mobileUrl}
+                    alt={banner.title || "Promotional banner"}
+                    fill
+                    sizes="100vw"
+                    priority={index === 0}
+                    quality={90}
+                    className="
+                      block md:hidden
+                      h-full
+                      w-full
+                      object-cover
+                      object-[50%_25%]
+                    "
+                  />
+                </>
+              ) : (
+                <picture className="w-full h-full block">
+                  {/* Mobile Viewport (< 768px) */}
+                  <source
+                    media="(max-width: 767px)"
+                    srcSet={banner.mobileUrl || banner.url}
+                  />
+                  {/* Desktop Viewport (>= 768px) */}
+                  <source media="(min-width: 768px)" srcSet={banner.url} />
+                  {/* Fallback Image */}
+                  <img
+                    src={banner.url}
+                    alt={banner.title || "Promotional banner"}
+                    className="
+                      h-full
+                      w-full
+                      object-cover
+                      object-[50%_25%]
+                      md:object-center
+                    "
+                    loading="eager"
+                  />
+                </picture>
+              )
             ) : (
               <video
                 src={banner.url}
