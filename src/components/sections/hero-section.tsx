@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -175,26 +176,65 @@ export default function HeroSection({
             aria-hidden={index !== currentSlide}
           >
             {banner.type === MediaType.IMAGE ? (
-              {/* Hero Banner Image */}
-              <picture className="w-full h-full block">
-                {/* Mobile Viewport (< 768px) */}
-                <source
-                  media="(max-width: 767px)"
-                  srcSet={banner.mobileUrl || banner.url}
-                />
-                {/* Desktop Viewport (>= 768px) */}
-                <source
-                  media="(min-width: 768px)"
-                  srcSet={banner.url}
-                />
-                {/* Fallback Image */}
-                <img
-                  src={banner.url}
-                  alt={banner.title || "Hero Banner"}
-                  className="w-full h-full object-cover object-center"
-                  loading="eager"
-                />
-              </picture>
+              banner.mobileUrl ? (
+                <>
+                  {/* Desktop view image */}
+                  <Image
+                    src={banner.url}
+                    alt={banner.title || "Promotional banner"}
+                    fill
+                    sizes="100vw"
+                    priority={index === 0}
+                    quality={90}
+                    className="
+                      hidden md:block
+                      h-full
+                      w-full
+                      object-cover
+                      object-center
+                    "
+                  />
+                  {/* Mobile view image */}
+                  <Image
+                    src={banner.mobileUrl}
+                    alt={banner.title || "Promotional banner"}
+                    fill
+                    sizes="100vw"
+                    priority={index === 0}
+                    quality={90}
+                    className="
+                      block md:hidden
+                      h-full
+                      w-full
+                      object-cover
+                      object-[50%_25%]
+                    "
+                  />
+                </>
+              ) : (
+                <picture className="w-full h-full block">
+                  {/* Mobile Viewport (< 768px) */}
+                  <source
+                    media="(max-width: 767px)"
+                    srcSet={banner.mobileUrl || banner.url}
+                  />
+                  {/* Desktop Viewport (>= 768px) */}
+                  <source media="(min-width: 768px)" srcSet={banner.url} />
+                  {/* Fallback Image */}
+                  <img
+                    src={banner.url}
+                    alt={banner.title || "Promotional banner"}
+                    className="
+                      h-full
+                      w-full
+                      object-cover
+                      object-[50%_25%]
+                      md:object-center
+                    "
+                    loading="eager"
+                  />
+                </picture>
+              )
             ) : (
               <video
                 src={banner.url}

@@ -34,52 +34,58 @@ export default function AestheticFullImage({
   return (
     <section className="relative w-full h-[70vh] md:h-screen overflow-hidden">
       {/* Background Images/Videos */}
-      {media.map((item, index) => (
-        <div
-          key={item.id ?? index}
-          className={`absolute inset-0 transition-opacity duration-1000 ${
-            index === currentSlide ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          {item.type === "IMAGE" ? (
-            <picture className="w-full h-full block">
-              {/* Mobile Viewport (< 768px) */}
-              <source
-                media="(max-width: 767px)"
-                srcSet={
-                  ("mobileUrl" in item && item.mobileUrl)
+      {media.map((item, index) => {
+        console.log("item", item);
+        return (
+          <div
+            key={item.id ?? index}
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              index === currentSlide ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            {item.type === "IMAGE" ? (
+              (() => {
+                const imageUrl = typeof item.url === "string" ? item.url : "";
+                const mobileImageUrl =
+                  "mobileUrl" in item && typeof item.mobileUrl === "string"
                     ? item.mobileUrl
-                    : item.url
-                }
-              />
-              {/* Desktop Viewport (>= 768px) */}
-              <source
-                media="(min-width: 768px)"
-                srcSet={item.url}
-              />
-              {/* Fallback Image */}
-              <img
-                src={item.url}
-                alt={displayTitle || "Hero Banner"}
-                className="w-full h-full object-cover object-center"
-                loading="eager"
-              />
-            </picture>
-          ) : (
-            <video
-              src={item.url}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full h-full object-cover"
-            />
-          )}
+                    : imageUrl;
 
-          {/* Gradient Overlay for text readability — matches Banner carousel */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-black/10" />
-        </div>
-      ))}
+                return (
+                  <picture className="w-full h-full block">
+                    {/* Mobile Viewport (< 768px) */}
+                    <source
+                      media="(max-width: 767px)"
+                      srcSet={mobileImageUrl}
+                    />
+                    {/* Desktop Viewport (>= 768px) */}
+                    <source media="(min-width: 768px)" srcSet={imageUrl} />
+                    {/* Fallback Image */}
+                    <img
+                      src={imageUrl}
+                      alt={displayTitle || "Hero Banner"}
+                      className="w-full h-full object-cover object-center"
+                      loading="eager"
+                    />
+                  </picture>
+                );
+              })()
+            ) : (
+              <video
+                src={typeof item.url === "string" ? item.url : ""}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
+            )}
+
+            {/* Gradient Overlay for text readability — matches Banner carousel */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-black/10" />
+          </div>
+        );
+      })}
 
       {/* Content Overlay - Bottom anchored, matches Banner carousel */}
       <div className="absolute inset-x-0 bottom-8 sm:bottom-14 lg:bottom-16 z-10 px-6 sm:px-12 md:px-16 text-center flex flex-col items-center justify-center">
