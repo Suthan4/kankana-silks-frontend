@@ -1,6 +1,7 @@
 // src/utils/generateReceipt.ts
 import jsPDF from "jspdf";
 import type { Order } from "@/lib/api/order.api";
+import { extractVariantAttributes } from "./variant.utils";
 
 export const generateOrderReceipt = (order: Order) => {
   const doc = new jsPDF();
@@ -105,25 +106,26 @@ export const generateOrderReceipt = (order: Order) => {
   yPos += 8;
   doc.setFont("helvetica", "normal");
   order.items.forEach((item) => {
-    const itemName = item.productName.substring(0, 35);
+    const rawName = item.product?.name || item.productName || "Product";
+    const itemName = rawName.length > 35 ? `${rawName.substring(0, 32)}...` : rawName;
+    const quantity = item.quantity ?? 1;
+    const price = Number(item.price ?? 0);
+    const itemTotal = item.total ?? price * quantity;
+
     doc.text(itemName, 18, yPos);
-    doc.text(item.quantity.toString(), pageWidth - 80, yPos);
-    doc.text(`₹${item.price.toFixed(2)}`, pageWidth - 60, yPos);
-    doc.text(`₹${item.total.toFixed(2)}`, pageWidth - 30, yPos, {
+    doc.text(quantity.toString(), pageWidth - 80, yPos);
+    doc.text(`₹${price.toFixed(2)}`, pageWidth - 60, yPos);
+    doc.text(`₹${itemTotal.toFixed(2)}`, pageWidth - 30, yPos, {
       align: "right",
     });
 
-    if (item.variant) {
-      yPos += 4;
+    const variantAttrs = extractVariantAttributes(item.variant);
+    if (variantAttrs.length > 0) {
       doc.setFontSize(8);
-      const variantText = [
-        item.variant.size && `Size: ${item.variant.size}`,
-        item.variant.color && `Color: ${item.variant.color}`,
-        item.variant.fabric && `Fabric: ${item.variant.fabric}`,
-      ]
-        .filter(Boolean)
-        .join(" | ");
-      doc.text(variantText, 18, yPos);
+      variantAttrs.forEach((attr) => {
+        yPos += 4;
+        doc.text(`${attr.key}: ${attr.value}`, 18, yPos);
+      });
       doc.setFontSize(10);
     }
 

@@ -14,10 +14,21 @@ export interface OrderItem {
   price: number;
   total: number;
   image?: string;
+  product?: {
+    id: string;
+    name: string;
+    slug?: string;
+    media?: Array<{
+      url: string;
+      thumbnailUrl?: string;
+    }>;
+  };
   variant?: {
+    id?: string;
     size?: string;
     color?: string;
     fabric?: string;
+    attributes?: Record<string, any> | Array<{ key: string; value: any }> | string | null;
   };
 }
 

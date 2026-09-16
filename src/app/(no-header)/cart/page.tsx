@@ -29,6 +29,7 @@ import { cartApi } from "@/lib/api/cart.api";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { shippingApi } from "@/lib/api/shipping.api";
 import { addressApi } from "@/lib/api/addresses.api";
+import { extractVariantAttributes } from "@/lib/utils/variant.utils";
 
 const normalizeAttributes = (attrs: any) => {
   if (!attrs) return [];
@@ -504,35 +505,27 @@ export default function CartPage() {
                                     {item.product?.name}
                                   </h3>
                                 </Link>
-                                {item?.variant && (
-                                  <div className="flex flex-wrap gap-1.5 mt-1">
-                                    {item.variant.color && (
-                                      <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600">
-                                        {item.variant.color}
-                                      </span>
-                                    )}
-                                    {item.variant.size && (
-                                      <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600">
-                                        Size: {item.variant.size}
-                                      </span>
-                                    )}
-                                    {item.variant.fabric && (
-                                      <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600">
-                                        {item.variant.fabric}
-                                      </span>
-                                    )}
-                                    {normalizeAttributes(
-                                      item.variant.attributes,
-                                    ).map((attr) => (
-                                      <span
-                                        key={attr.key}
-                                        className="text-xs bg-main-primary text-main-secondary px-2 py-0.5 rounded border border-main-primary"
-                                      >
-                                        {attr.key}: <b>{attr.value}</b>
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
+                                {(() => {
+                                  const variantAttrs = extractVariantAttributes(
+                                    item?.variant,
+                                  );
+                                  if (variantAttrs.length === 0) return null;
+                                  return (
+                                    <div className="flex flex-wrap gap-1.5 mt-1">
+                                      {variantAttrs.map(({ key, value }) => (
+                                        <span
+                                          key={key}
+                                          className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600 font-medium"
+                                        >
+                                          {key}:{" "}
+                                          <span className="text-gray-900 font-semibold">
+                                            {value}
+                                          </span>
+                                        </span>
+                                      ))}
+                                    </div>
+                                  );
+                                })()}
                                 {stockQty > 0 && stockQty <= 5 && (
                                   <p className="text-xs text-red-500 mt-1 font-medium">
                                     ⚠️ Only {stockQty} left in stock

@@ -16,6 +16,7 @@ import { useOrders } from "@/hooks/useOrders";
 import { orderApi } from "@/lib/api/order.api";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { extractVariantAttributes } from "@/lib/utils/variant.utils";
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -275,27 +276,27 @@ export default function OrdersPage() {
                         </div>
 
                         {/* Variant Chips */}
-                        {firstItem?.variant?.attributes &&
-                          Object.keys(firstItem.variant.attributes).length >
-                            0 && (
+                        {(() => {
+                          const variantAttrs = extractVariantAttributes(
+                            firstItem?.variant,
+                          );
+                          if (variantAttrs.length === 0) return null;
+                          return (
                             <div className="flex flex-wrap gap-2 mt-2">
-                              {Object.entries(firstItem.variant.attributes).map(
-                                ([key, value]) => (
-                                  <span
-                                    key={key}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-white border border-gray-200 text-gray-700 shadow-sm"
-                                  >
-                                    <span className="text-gray-500">
-                                      {key}:
-                                    </span>
-                                    <span className="text-gray-900 font-semibold">
-                                      {String(value)}
-                                    </span>
+                              {variantAttrs.map(({ key, value }) => (
+                                <span
+                                  key={key}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-white border border-gray-200 text-gray-700 shadow-sm"
+                                >
+                                  <span className="text-gray-500">{key}:</span>
+                                  <span className="text-gray-900 font-semibold">
+                                    {value}
                                   </span>
-                                ),
-                              )}
+                                </span>
+                              ))}
                             </div>
-                          )}
+                          );
+                        })()}
 
                         <div className="text-xs text-gray-500 mt-2">
                           {order.items.length} item(s)
