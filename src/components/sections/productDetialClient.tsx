@@ -17,6 +17,7 @@ import {
   Video,
   AlertCircle,
   Palette,
+  Loader2,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -31,6 +32,7 @@ import { shipmentApi } from "@/lib/api/shipment.api";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { toast } from "sonner";
 import { useCartStore } from "@/store/useCartStore";
+import { useCartDrawer } from "@/store/useCartDrawer";
 import { useRouter } from "next/navigation";
 import ProductRequestModal from "@/components/productRequestModal";
 import { formatMaskedPrice } from "@/lib/utils/priceMasked";
@@ -85,6 +87,7 @@ export default function ProductDetailsClient({
 }: ProductDetailsClientProps) {
   const { user, openModal } = useAuthModal();
   const { addItem: addToLocalCart } = useCartStore();
+  const { open: openCartDrawer } = useCartDrawer();
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -474,9 +477,11 @@ export default function ProductDetailsClient({
         });
     },
     onSuccess: () => {
-      if (user) queryClient.invalidateQueries({ queryKey: ["cartApi"] });
+      if (user) {
+        queryClient.invalidateQueries({ queryKey: ["cartApi"] });
+      }
       toast.success("Added to cart");
-      router.push("/cart");
+      openCartDrawer();
     },
     onError: () => toast.error("Failed to add to cart"),
   });
@@ -955,11 +960,22 @@ export default function ProductDetailsClient({
                         onClick={() =>
                           handleAddToCart(product, selectedVariant)
                         }
-                        disabled={availableStock === 0 || loading}
+                        disabled={
+                          availableStock === 0 || addToCartMutation.isPending
+                        }
                         className="flex-1 bg-gray-900 text-white py-3 rounded-xl font-semibold shadow hover:shadow-md transition flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <ShoppingCart className="w-4 h-4" />
-                        {loading ? "Adding..." : "Add to Cart"}
+                        {addToCartMutation.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Adding...</span>
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingCart className="w-4 h-4" />
+                            <span>Add to Cart</span>
+                          </>
+                        )}
                       </motion.button>
                       <motion.button
                         whileHover={{ scale: 1.02 }}
@@ -1055,10 +1071,19 @@ export default function ProductDetailsClient({
                 whileTap={{ scale: 0.97 }}
                 onClick={() => handleAddToCart(product, selectedVariant)}
                 disabled={availableStock === 0 || addToCartMutation.isPending}
-                className="flex-1 bg-gray-900 text-white py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-gray-900 text-white py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
-                <ShoppingCart className="w-4 h-4" />
-                {addToCartMutation.isPending ? "Adding..." : "Add to Cart"}
+                {addToCartMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Adding to Cart...</span>
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="w-4 h-4" />
+                    <span>Add to Cart</span>
+                  </>
+                )}
               </motion.button>
 
               {/* Buy Now */}

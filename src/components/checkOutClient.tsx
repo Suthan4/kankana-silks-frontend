@@ -1104,15 +1104,20 @@ export default function CheckoutClient() {
                               );
                             })()}
                             {stockQty > 0 && stockQty <= 5 && (
-                              <p className="text-[10px] text-red-500 mt-1 font-medium">
-                                ⚠️ Only {stockQty} left in stock
-                              </p>
+                              <div className="mt-1">
+                                <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded">
+                                  <span className="w-1 h-1 rounded-full bg-amber-500 shrink-0" />
+                                  Only {stockQty} left in stock
+                                </span>
+                              </div>
                             )}
 
                             {stockQty === 0 && (
-                              <p className="text-[10px] text-red-600 mt-1 font-bold">
-                                ❌ Out of stock
-                              </p>
+                              <div className="mt-1">
+                                <span className="inline-flex items-center text-[10px] font-medium text-red-700 bg-red-50 border border-red-200/70 px-1.5 py-0.5 rounded">
+                                  Out of stock
+                                </span>
+                              </div>
                             )}
                             <div className="flex items-center justify-between mt-2">
                               <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-full px-1.5 py-0.5">

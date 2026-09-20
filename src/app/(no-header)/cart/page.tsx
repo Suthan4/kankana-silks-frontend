@@ -527,9 +527,19 @@ export default function CartPage() {
                                   );
                                 })()}
                                 {stockQty > 0 && stockQty <= 5 && (
-                                  <p className="text-xs text-red-500 mt-1 font-medium">
-                                    ⚠️ Only {stockQty} left in stock
-                                  </p>
+                                  <div className="mt-1">
+                                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                                      Only {stockQty} left in stock
+                                    </span>
+                                  </div>
+                                )}
+                                {stockQty === 0 && (
+                                  <div className="mt-1">
+                                    <span className="inline-flex items-center text-xs font-medium text-red-700 bg-red-50 border border-red-200/70 px-2 py-0.5 rounded-md">
+                                      Out of stock
+                                    </span>
+                                  </div>
                                 )}
                               </div>
                               <button

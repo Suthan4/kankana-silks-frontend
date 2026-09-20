@@ -9,11 +9,15 @@ import { useAuthModal } from "@/store/useAuthModalStore";
 import { WishlistItem } from "@/lib/api/wishlist.api";
 import { cartApi } from "@/lib/api/cart.api";
 import { useCartStore } from "@/store/useCartStore";
+import { useCartDrawer } from "@/store/useCartDrawer";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function WishlistPage() {
   const router = useRouter();
   const { user, openModal } = useAuthModal();
   const { addItem: addToLocalCart } = useCartStore();
+  const { open: openCartDrawer } = useCartDrawer();
+  const queryClient = useQueryClient();
 
   const {
     items,
@@ -124,10 +128,12 @@ export default function WishlistPage() {
             productId: product.id,
             quantity: 1,
           });
+          await queryClient.invalidateQueries({ queryKey: ["cartApi"] });
         } catch {}
       }
 
       toast.success("Added to cart");
+      openCartDrawer();
     } catch (err: any) {
       toast.error(err.message || "Failed to add to cart");
     } finally {

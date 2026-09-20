@@ -7,8 +7,10 @@ import { useRouter } from "next/navigation";
 import WishlistButton from "../ui/WishlistButton";
 import { toast } from "sonner";
 import { useCartStore } from "@/store/useCartStore";
+import { useCartDrawer } from "@/store/useCartDrawer";
 import { cartApi } from "@/lib/api/cart.api";
 import { useAuthModal } from "@/store/useAuthModalStore";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
@@ -51,7 +53,9 @@ export default function ProductCarousel({
 
   const router = useRouter();
   const { addItem: addToLocalCart } = useCartStore();
+  const { open: openCartDrawer } = useCartDrawer();
   const { user } = useAuthModal();
+  const queryClient = useQueryClient();
 
   if (!products?.length) return null;
 
@@ -90,14 +94,16 @@ export default function ProductCarousel({
         variant: null,
       });
 
-      toast.success("Added to cart");
-
       if (user) {
         await cartApi.addToCart({
           productId: product.id,
           quantity: 1,
         });
+        await queryClient.invalidateQueries({ queryKey: ["cartApi"] });
       }
+
+      toast.success("Added to cart");
+      openCartDrawer();
     } catch {
       toast.error("Failed to add");
     }
