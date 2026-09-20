@@ -26,6 +26,7 @@ import { orderApi } from "@/lib/api/order.api";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { toast } from "sonner";
+import { extractVariantAttributes } from "@/lib/utils/variant.utils";
 
 export default function OrderDetailsPage() {
   const router = useRouter();
@@ -475,13 +476,16 @@ export default function OrderDetailsPage() {
           <h3 className="font-semibold mb-4">Order Items</h3>
           <div className="space-y-4">
             {order.items.map((item: any) => {
-              const productName = item?.product?.name ?? "Product";
+              const productName =
+                item?.product?.name ?? item?.productName ?? "Product";
               const productImage =
                 item?.product?.media?.[0]?.thumbnailUrl ||
                 item?.product?.media?.[0]?.url ||
+                item?.image ||
                 "/images/placeholder.png";
               const qty = Number(item?.quantity ?? 0);
               const unitPrice = Number(item?.price ?? 0);
+              const variantAttrs = extractVariantAttributes(item?.variant);
 
               return (
                 <div
@@ -498,19 +502,19 @@ export default function OrderDetailsPage() {
                   </div>
                   <div className="flex-1">
                     <h4 className="font-semibold mb-1">{productName}</h4>
-                    {item?.variant?.attributes && (
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {Object.entries(item.variant.attributes).map(
-                          ([k, v]) => (
-                            <span
-                              key={k}
-                              className="text-xs bg-white px-2 py-1 rounded-full border"
-                            >
-                              {k}:{" "}
-                              <span className="font-semibold">{String(v)}</span>
+                    {variantAttrs.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {variantAttrs.map(({ key, value }) => (
+                          <span
+                            key={key}
+                            className="text-xs bg-white border border-gray-200 px-2 py-0.5 rounded-full text-gray-700 font-medium"
+                          >
+                            {key}:{" "}
+                            <span className="font-semibold text-gray-900">
+                              {value}
                             </span>
-                          ),
-                        )}
+                          </span>
+                        ))}
                       </div>
                     )}
                     <div className="flex items-center justify-between">

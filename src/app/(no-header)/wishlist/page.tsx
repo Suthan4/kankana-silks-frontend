@@ -17,6 +17,7 @@ import Image from "next/image";
 
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { useCartStore } from "@/store/useCartStore";
+import { useCartDrawer } from "@/store/useCartDrawer";
 import { cartApi } from "@/lib/api/cart.api";
 import { useWishlist } from "@/hooks/useWishlist";
 import { ProtectedRoute } from "@/components/auth/protectedRoutes";
@@ -27,6 +28,7 @@ export default function WishlistPage() {
   const router = useRouter();
   const { user, openModal } = useAuthModal();
   const { addItem: addToLocalCart } = useCartStore();
+  const { open: openCartDrawer } = useCartDrawer();
   const queryClient = useQueryClient();
 
   const {
@@ -89,7 +91,7 @@ export default function WishlistPage() {
       await queryClient.refetchQueries({ queryKey: ["cartApi", user?.id] });
       await removeFromWishlist(item.id);
       toast.success("Added to cart");
-      router.push("/cart");
+      openCartDrawer();
     },
     onError: (err, product, context) => {
       if (context?.previousCart) {

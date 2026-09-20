@@ -23,6 +23,7 @@ interface AuthModalState {
   closeModal: () => void;
   setMode: (mode: "login" | "register" | "forgot") => void;
   setAuth: (token: string, user: User, refreshToken?: string) => void;
+  setTokens: (accessToken: string, refreshToken?: string) => void;
   setUser: (user: User) => void;
   logout: () => void;
   handlePostLoginRedirect: () => void;
@@ -55,16 +56,23 @@ export const authModalStore = create<AuthModalState>()(
       setMode: (mode) => set({ mode }),
 
       setAuth: (accessToken, user, refreshToken) => {
-        set({
+        set((state) => ({
           accessToken,
           user,
-          refreshToken: refreshToken || undefined,
-        });
+          refreshToken: refreshToken !== undefined ? (refreshToken || null) : (state.refreshToken ?? null),
+        }));
 
         // Handle post-login redirects after setting auth
         setTimeout(() => {
           get().handlePostLoginRedirect();
         }, 100);
+      },
+
+      setTokens: (accessToken, refreshToken) => {
+        set((state) => ({
+          accessToken,
+          refreshToken: refreshToken !== undefined ? (refreshToken || null) : (state.refreshToken ?? null),
+        }));
       },
 
       setUser: (user) => set({ user }),

@@ -1,8 +1,28 @@
 import { authModalStore } from "@/store/useAuthModalStore";
 import axios, { AxiosInstance, AxiosError } from "axios";
+import { Mutex } from "async-mutex";
 import { getAccessToken, getRefreshToken } from "../utils/authToken";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+const getApiBaseUrl = (): string => {
+  const url = API_BASE_URL || "";
+  return url.endsWith("/") ? url.slice(0, -1) : url;
+};
+
+// Shared mutex across all BaseApiService instances to prevent duplicate concurrent refresh requests
+const refreshMutex = new Mutex();
+
+const isAuthEndpoint = (url?: string): boolean => {
+  if (!url) return false;
+  return (
+    url.includes("/auth/login") ||
+    url.includes("/auth/refresh-token") ||
+    url.includes("/auth/register") ||
+    url.includes("/auth/forgot-password") ||
+    url.includes("/auth/reset-password")
+  );
+};
 
 export type UserRole = "SUPERADMIN" | "ADMIN" | "USER";
 export interface User {
@@ -17,11 +37,6 @@ export interface User {
 export class BaseApiService {
   public api: AxiosInstance;
   private onAuthFailure: () => void;
-  private isRefreshing = false;
-  private failedQueue: Array<{
-    resolve: (value?: any) => void;
-    reject: (reason?: any) => void;
-  }> = [];
 
   constructor(onAuthFailure: () => void) {
     this.onAuthFailure = onAuthFailure;
@@ -35,18 +50,6 @@ export class BaseApiService {
     this.setupInterceptors();
   }
 
-  private processQueue(error: any, token: string | null = null) {
-    this.failedQueue.forEach((prom) => {
-      if (error) {
-        prom.reject(error);
-      } else {
-        prom.resolve(token);
-      }
-    });
-
-    this.failedQueue = [];
-  }
-
   private setupInterceptors() {
     // Request interceptor
     this.api.interceptors.request.use(
@@ -54,7 +57,13 @@ export class BaseApiService {
         const token = getAccessToken();
 
         if (token) {
+          if (!config.headers) {
+            config.headers = {} as any;
+          }
           config.headers.Authorization = `Bearer ${token}`;
+          if (typeof config.headers.set === "function") {
+            config.headers.set("Authorization", `Bearer ${token}`);
+          }
         }
         return config;
       },
@@ -67,53 +76,37 @@ export class BaseApiService {
       async (error: AxiosError) => {
         const originalRequest = error.config as any;
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
-          if (this.isRefreshing) {
-            // If already refreshing, queue this request
-            return new Promise((resolve, reject) => {
-              this.failedQueue.push({ resolve, reject });
-            })
-              .then((token) => {
-                originalRequest.headers.Authorization = `Bearer ${token}`;
-                return this.api(originalRequest);
-              })
-              .catch((err) => {
-                return Promise.reject(err);
-              });
-          }
-
+        if (
+          error.response?.status === 401 &&
+          originalRequest &&
+          !originalRequest._retry &&
+          !isAuthEndpoint(originalRequest.url)
+        ) {
           originalRequest._retry = true;
-          this.isRefreshing = true;
 
-          try {
-            const refreshToken = getRefreshToken();
+          // If another request is already refreshing, wait for it to complete
+          if (refreshMutex.isLocked()) {
+            await refreshMutex.waitForUnlock();
 
-            if (!refreshToken) {
-              throw new Error("No refresh token");
+            const refreshedToken = getAccessToken();
+            if (refreshedToken) {
+              if (originalRequest.headers) {
+                originalRequest.headers.Authorization = `Bearer ${refreshedToken}`;
+                if (typeof originalRequest.headers.set === "function") {
+                  originalRequest.headers.set(
+                    "Authorization",
+                    `Bearer ${refreshedToken}`
+                  );
+                }
+              }
+              return this.api(originalRequest);
             }
 
-            const response = await axios.post(
-              `${API_BASE_URL}/auth/refresh-token`,
-              { refreshToken }
-            );
-
-            const { accessToken } = response.data.data;
-
-            // Update Zustand store properly
-            const authState = authModalStore.getState();
-            authState.setAuth(accessToken, authState.user!);
-
-            this.processQueue(null, accessToken);
-
-            originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-            return this.api(originalRequest);
-          } catch (refreshError) {
-            this.processQueue(refreshError, null);
-            this.clearAuthAndRedirect();
-            return Promise.reject(refreshError);
-          } finally {
-            this.isRefreshing = false;
+            return Promise.reject(error);
           }
+
+          // Acquire the mutex for the single refresh-token operation
+          const release = await refreshMutex.acquire();
         }
 
         return Promise.reject(error);
@@ -123,14 +116,14 @@ export class BaseApiService {
 
   private clearAuthAndRedirect() {
     // Clear all auth data
-      const { user } = authModalStore.getState();
+    const { user } = authModalStore.getState();
 
-      authModalStore.getState().logout();
+    authModalStore.getState().logout();
 
-      // ✅ Only trigger modal if user was actually logged in before
-      if (user) {
-        this.onAuthFailure();
-      }
+    // ✅ Only trigger modal if user was actually logged in before
+    if (user) {
+      this.onAuthFailure();
+    }
   }
 
   async register(data: {

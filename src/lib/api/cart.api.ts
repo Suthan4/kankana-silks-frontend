@@ -23,7 +23,9 @@ export interface CartItem {
     color?: string;
     fabric?: string;
     price: number;
-    
+    sellingPrice?: number;
+    basePrice?: number;
+    attributes?: Record<string, any> | Array<{ key: string; value: any }> | string | null;
   };
 }
 

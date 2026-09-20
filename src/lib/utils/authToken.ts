@@ -1,5 +1,11 @@
+import { authModalStore } from "@/store/useAuthModalStore";
+
 export function getAccessToken(): string | null {
   try {
+    const storeToken = authModalStore.getState().accessToken;
+    if (storeToken) return storeToken;
+
+    if (typeof window === "undefined") return null;
     const raw = localStorage.getItem("auth-modal-storage");
     if (!raw) return null;
 
@@ -12,6 +18,10 @@ export function getAccessToken(): string | null {
 
 export function getRefreshToken(): string | null {
   try {
+    const storeRefreshToken = authModalStore.getState().refreshToken;
+    if (storeRefreshToken) return storeRefreshToken;
+
+    if (typeof window === "undefined") return null;
     const raw = localStorage.getItem("auth-modal-storage");
     if (!raw) return null;
 

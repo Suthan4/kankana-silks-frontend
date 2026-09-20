@@ -47,6 +47,7 @@ import { cartApi } from "@/lib/api/cart.api";
 import { shippingApi } from "@/lib/api/shipping.api";
 import confetti from "canvas-confetti";
 import PaymentLogos from "./paymentLogos";
+import { extractVariantAttributes } from "@/lib/utils/variant.utils";
 
 declare global {
   interface Window {
@@ -271,6 +272,28 @@ export default function CheckoutClient() {
   const [showSuccess, setShowSuccess] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const isPaymentHandledRef = useRef(false);
+
+  const handleSuccessfulOrderCleanup = async () => {
+    if (!isBuyNowMode) {
+      clearCart();
+      if (user) {
+        try {
+          await cartApi.clearCart();
+        } catch (err) {
+          console.warn("Failed to clear cart on server:", err);
+        }
+        queryClient.setQueryData(["cartApi", user.id], {
+          items: [],
+          totalItems: 0,
+          subtotal: 0,
+        });
+        await queryClient.invalidateQueries({ queryKey: ["cartApi"] });
+      }
+    } else {
+      sessionStorage.removeItem("buyNowItem");
+    }
+  };
 
   const createOrderMutation = useCreateOrder();
   const verifyPaymentMutation = useVerifyPayment();
@@ -838,6 +861,9 @@ export default function CheckoutClient() {
         },
         theme: { color: "#000000" },
         handler: async function (response: any) {
+          if (isPaymentHandledRef.current) return;
+          isPaymentHandledRef.current = true;
+
           try {
             setProcessingStep(3);
             const result = await verifyPaymentMutation.mutateAsync({
@@ -845,8 +871,7 @@ export default function CheckoutClient() {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
             });
-            if (!isBuyNowMode) clearCart();
-            else sessionStorage.removeItem("buyNowItem");
+            await handleSuccessfulOrderCleanup();
             setIsProcessing(false);
             setShowSuccess(true);
             setTimeout(() => {
@@ -855,6 +880,7 @@ export default function CheckoutClient() {
               );
             }, 1800);
           } catch (error) {
+            isPaymentHandledRef.current = false;
             console.error("Payment verification error:", error);
             toast.error("Payment verification failed");
           } finally {
@@ -929,8 +955,7 @@ export default function CheckoutClient() {
       const response = await initiatePaymentMutation.mutateAsync(orderDTO);
       setProcessingStep(2);
       if (paymentMethod === "COD") {
-        if (!isBuyNowMode) clearCart();
-        else sessionStorage.removeItem("buyNowItem");
+        await handleSuccessfulOrderCleanup();
         setProcessingStep(3);
         setIsProcessing(false);
         setShowSuccess(true);
@@ -1060,40 +1085,39 @@ export default function CheckoutClient() {
                             <p className="font-semibold text-gray-900 text-xs line-clamp-1">
                               {item.product?.name || item.name}
                             </p>
-                            {item?.variant && (
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {item.variant.size && (
-                                  <span className="text-xs bg-white border border-gray-200 px-1.5 py-0.5 rounded text-gray-600">
-                                    Size: {item.variant.size}
-                                  </span>
-                                )}
-                                {item.variant.color && (
-                                  <span className="text-xs bg-white border border-gray-200 px-1.5 py-0.5 rounded text-gray-600">
-                                    {item.variant.color}
-                                  </span>
-                                )}
-                                {normalizeAttributes(
-                                  item.variant.attributes,
-                                ).map((attr) => (
-                                  <span
-                                    key={attr.key}
-                                    className="text-xs bg-main-primary text-main-secondary px-1.5 py-0.5 rounded border border-main-primary"
-                                  >
-                                    {attr.key}: <b>{attr.value}</b>
-                                  </span>
-                                ))}
-                              </div>
-                            )}
+                            {(() => {
+                              const variantAttrs = extractVariantAttributes(
+                                item?.variant,
+                              );
+                              if (variantAttrs.length === 0) return null;
+                              return (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {variantAttrs.map(({ key, value }) => (
+                                    <span
+                                      key={key}
+                                      className="text-xs bg-white border border-gray-200 px-1.5 py-0.5 rounded text-gray-600"
+                                    >
+                                      {key}: <b>{value}</b>
+                                    </span>
+                                  ))}
+                                </div>
+                              );
+                            })()}
                             {stockQty > 0 && stockQty <= 5 && (
-                              <p className="text-[10px] text-red-500 mt-1 font-medium">
-                                ⚠️ Only {stockQty} left in stock
-                              </p>
+                              <div className="mt-1">
+                                <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded">
+                                  <span className="w-1 h-1 rounded-full bg-amber-500 shrink-0" />
+                                  Only {stockQty} left in stock
+                                </span>
+                              </div>
                             )}
 
                             {stockQty === 0 && (
-                              <p className="text-[10px] text-red-600 mt-1 font-bold">
-                                ❌ Out of stock
-                              </p>
+                              <div className="mt-1">
+                                <span className="inline-flex items-center text-[10px] font-medium text-red-700 bg-red-50 border border-red-200/70 px-1.5 py-0.5 rounded">
+                                  Out of stock
+                                </span>
+                              </div>
                             )}
                             <div className="flex items-center justify-between mt-2">
                               <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-full px-1.5 py-0.5">

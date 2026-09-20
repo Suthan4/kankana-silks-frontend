@@ -5,7 +5,9 @@ import { useState } from "react";
 import { Heart, ShoppingCart } from "lucide-react";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { useCartStore } from "@/store/useCartStore";
+import { useCartDrawer } from "@/store/useCartDrawer";
 import { cartApi } from "@/lib/api/cart.api";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import WishlistButton from "@/components/ui/WishlistButton";
 
@@ -16,6 +18,8 @@ function ProductGrid({ section }: { section: HomeSection }) {
 
   const { user, openModal } = useAuthModal();
   const { addItem: addToLocalCart } = useCartStore();
+  const { open: openCartDrawer } = useCartDrawer();
+  const queryClient = useQueryClient();
 
   if (!section.products || section.products.length === 0) return null;
 
@@ -87,11 +91,14 @@ function ProductGrid({ section }: { section: HomeSection }) {
       };
 
       addToLocalCart(cartItem);
-      toast.success("Added to cart");
 
       if (user) {
         await cartApi.addToCart({ productId: product.id, quantity: 1 });
+        await queryClient.invalidateQueries({ queryKey: ["cartApi"] });
       }
+
+      toast.success("Added to cart");
+      openCartDrawer();
     } catch (error: any) {
       toast.error(error.message || "Failed to add to cart");
     } finally {
