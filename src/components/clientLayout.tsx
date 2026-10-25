@@ -34,6 +34,8 @@ export default function ClientLayout({
     "/cancellation-policy",
     "/product-details-appearance",
     "/shipping-policy",
+    "/privacy-policy",
+    "/terms-and-conditions",
   ];
   const hideHeader = hideHeaderRoutes.includes(pathname);
 
