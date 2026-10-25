@@ -99,12 +99,9 @@ export const metadata: Metadata = {
       },
     ],
   },
-  // verification: {
-  //   google: "your-google-verification-code",
-  //   // yandex: "your-yandex-verification-code",
-  //   // bing: "your-bing-verification-code",
-  // },
-  // },
+  verification: {
+    google: "LOBCN_AXXBSJCm0vx8QIIls3kO3IITZGFat5IXAQb1g",
+  },
 };
 
 export default function RootLayout({
