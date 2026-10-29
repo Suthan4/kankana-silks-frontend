@@ -112,7 +112,6 @@ export default function CartPage() {
     [user?.id, apiItems, items],
   );
   const deliveryPin = user?.id ? addressData?.pincode : deliveryPincode;
-  console.log("apiItems", apiItems);
   const totalItems = useMemo(
     () => displayItems.reduce((sum: number, i: any) => sum + i.quantity, 0),
     [displayItems],
@@ -184,7 +183,8 @@ export default function CartPage() {
       return response.data;
     },
     enabled: !!deliveryPin && displayItems.length > 0,
-    staleTime: 0,
+    staleTime: 15_000,
+    refetchOnWindowFocus: false,
   });
 
   // Reset courier when shipping data changes so stale selection isn't kept
@@ -515,8 +515,6 @@ export default function CartPage() {
                 <AnimatePresence mode="popLayout">
                   {displayItems.map((item: any, index: number) => {
                     const stockQty = getStockQty(item);
-                    console.log("item-cart", item);
-                    console.log("stockQty", stockQty);
 
                     return (
                       <motion.div
