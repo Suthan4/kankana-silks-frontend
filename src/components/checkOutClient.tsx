@@ -84,16 +84,21 @@ const normalizeAttributes = (attrs: any) => {
 
 const getCheckoutStockQty = (item: any): number => {
   if (Array.isArray(item?.variant?.stock) && item.variant.stock.length > 0) {
-    return Number(item.variant.stock[0].quantity);
+    const quantity = Number(item.variant.stock[0].quantity);
+    return Number.isFinite(quantity) && quantity >= 0 ? quantity : 0;
   }
   if (Array.isArray(item?.product?.stock) && item.product.stock.length > 0) {
     if (item.variantId) {
       const matchingStock = item.product.stock.find(
         (stock: any) => String(stock.variantId ?? "") === String(item.variantId),
       );
-      if (matchingStock) return Number(matchingStock.quantity);
+      if (matchingStock) {
+        const quantity = Number(matchingStock.quantity);
+        return Number.isFinite(quantity) && quantity >= 0 ? quantity : 0;
+      }
     }
-    return Number(item.product.stock[0].quantity);
+    const quantity = Number(item.product.stock[0].quantity);
+    return Number.isFinite(quantity) && quantity >= 0 ? quantity : 0;
   }
   return 0;
 };
@@ -1157,7 +1162,7 @@ export default function CheckoutClient() {
                         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                         <div>
                           <p className="font-semibold">Some items need attention before checkout</p>
-                          <p className="mt-1">One or more products are missing valid details, a variant, or a price. Remove those items and add them again from the product page.</p>
+                          <p className="mt-1">One or more products have missing details, an invalid price or variant, or a quantity above available stock. Remove unavailable items or reduce their quantity before continuing.</p>
                         </div>
                       </div>
                     )}
