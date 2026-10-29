@@ -717,7 +717,7 @@ export default function CheckoutClient() {
       );
     setSelectedCourier(cheapest);
     setCourierPreference("CHEAPEST");
-  }, [shippingData, selectedCourier?.courier_company_id]);
+  }, [shippingData, selectedCourier]);
 
   const getStockQty = (item: any) => getCheckoutStockQty(item);
 
@@ -853,9 +853,9 @@ export default function CheckoutClient() {
       toast.error(err?.message || "Failed to update quantity");
     },
     onSettled: () => {
+      // The new cart signature selects fresh shipping/order-preview/coupon
+      // query keys. Only sync the canonical cart here to avoid duplicate calls.
       queryClient.invalidateQueries({ queryKey: ["cartApi", user?.id] });
-      queryClient.invalidateQueries({ queryKey: ["orderPreview"] });
-      queryClient.invalidateQueries({ queryKey: ["applicableCoupons"] });
     },
   });
 
