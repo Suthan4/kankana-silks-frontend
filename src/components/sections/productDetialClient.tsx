@@ -489,6 +489,10 @@ export default function ProductDetailsClient({
     product: Product,
     variant?: ProductVariant | null,
   ) => {
+    if (product.hasVariants && !variant) {
+      toast.error("Please select product options before adding to cart.");
+      return;
+    }
     if (isOutOfStock && !allowOutOfStockOrders) {
       toast.error("This product is currently unavailable");
       return;
