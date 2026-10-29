@@ -310,10 +310,11 @@ export default function CategoryProductsClient({
               size: variant.size,
               color: variant.color,
               fabric: variant.fabric,
-              stock: variant.stock?.map((stock: any) => ({
-                ...stock,
-                lowStockThreshold: stock.lowStockThreshold ?? 0,
-              })) ?? [],
+              stock:
+                variant.stock?.map((stock: any) => ({
+                  ...stock,
+                  lowStockThreshold: stock.lowStockThreshold ?? 0,
+                })) ?? [],
             }
           : null,
       };
@@ -377,19 +378,19 @@ export default function CategoryProductsClient({
     // variant has inventory data and none can be purchased, keep the existing
     // Out of Stock card action instead of showing Add to Cart.
     const variants = product.hasVariants ? (product.variants ?? []) : [];
+    const allVariantsHaveInventory =
+      variants.length > 0 &&
+      variants.every(
+        (variant) => Array.isArray(variant.stock) && variant.stock.length > 0,
+      );
 
-    if (variants.length > 0) {
-      // Variant inventory is the source of truth whenever variants are present.
-      // Missing inventory is treated conservatively as unavailable rather than
-      // accidentally falling back to a stale parent-level stock row.
+    if (allVariantsHaveInventory) {
+      // When variant inventory is known, it is the source of truth for the card.
       return variants.every((variant) => {
+        const qty = Number(variant.stock?.[0]?.quantity ?? 0);
+        const threshold = Number(variant.stock?.[0]?.lowStockThreshold ?? 0);
+        if (qty <= 0) return true;
         if (allowOut) return false;
-        const stockRow = Array.isArray(variant.stock) ? variant.stock[0] : undefined;
-        if (!stockRow) return true;
-        const qtyValue = Number(stockRow.quantity);
-        const thresholdValue = Number(stockRow.lowStockThreshold ?? 0);
-        const qty = Number.isFinite(qtyValue) ? Math.max(0, qtyValue) : 0;
-        const threshold = Number.isFinite(thresholdValue) ? Math.max(0, thresholdValue) : 0;
         return qty <= threshold;
       });
     }
@@ -397,8 +398,8 @@ export default function CategoryProductsClient({
     // Preserve the existing simple-product and fallback inventory rules.
     const qty = Number(product.stock?.[0]?.quantity ?? 0);
     const threshold = Number(product.stock?.[0]?.lowStockThreshold ?? 0);
-    if (allowOut) return false;
     if (qty <= 0) return true;
+    if (allowOut) return false;
     if (qty <= threshold) return true;
     return false;
   };
@@ -413,10 +414,13 @@ export default function CategoryProductsClient({
       );
       // Only mask the parent price when all variant inventory is known and
       // confirms every variant is out of stock. Unknown data should not hide prices.
-      return everyVariantHasStock && product.variants.every((variant) => {
-        const qty = Number(variant.stock?.[0]?.quantity ?? 0);
-        return Number.isFinite(qty) && qty <= 0;
-      });
+      return (
+        everyVariantHasStock &&
+        product.variants.every((variant) => {
+          const qty = Number(variant.stock?.[0]?.quantity ?? 0);
+          return Number.isFinite(qty) && qty <= 0;
+        })
+      );
     }
     return Number(product.stock?.[0]?.quantity ?? 0) <= 0;
   };
@@ -1039,29 +1043,30 @@ ${
                         });
                         return;
                       }
-                      const newQty = cartItem.quantity + 1;
+                      const newQty = Number(cartItem.quantity) + 1;
                       if (user)
                         updateQtyMutation.mutate({
-                          itemId: cartItem.id,
+                          itemId: String(cartItem.id),
                           quantity: newQty,
                         });
-                      else updateQuantityLocal(cartItem.id, newQty);
+                      else updateQuantityLocal(String(cartItem.id), newQty);
                     };
 
                     const handleDecrease = () => {
                       if (!cartItem) return;
-                      const newQty = cartItem.quantity - 1;
+                      const newQty = Number(cartItem.quantity) - 1;
                       if (newQty <= 0) {
-                        if (user) removeItemMutation.mutate(cartItem.id);
-                        else removeItemLocal(cartItem.id);
+                        if (user)
+                          removeItemMutation.mutate(String(cartItem.id));
+                        else removeItemLocal(String(cartItem.id));
                         return;
                       }
                       if (user)
                         updateQtyMutation.mutate({
-                          itemId: cartItem.id,
+                          itemId: String(cartItem.id),
                           quantity: newQty,
                         });
-                      else updateQuantityLocal(cartItem.id, newQty);
+                      else updateQuantityLocal(String(cartItem.id), newQty);
                     };
 
                     return (
@@ -1174,7 +1179,7 @@ hover:bg-white
                                 >
                                   View Options
                                 </button>
-                              ) : cartItem && cartItem.quantity > 0 ? (
+                              ) : cartItem && Number(cartItem.quantity) > 0 ? (
                                 <div className="flex items-center border border-gray-200">
                                   <button
                                     onClick={handleDecrease}
@@ -1205,7 +1210,9 @@ hover:bg-white
                                   aria-busy={addToCartMutation.isPending}
                                   className="w-full py-2.5 bg-black text-white text-xs tracking-widest uppercase hover:bg-gray-900 transition-colors disabled:cursor-wait disabled:opacity-70"
                                 >
-                                  {addToCartMutation.isPending ? "Adding..." : "Add to Cart"}
+                                  {addToCartMutation.isPending
+                                    ? "Adding..."
+                                    : "Add to Cart"}
                                 </button>
                               )
                             ) : (

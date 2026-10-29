@@ -165,8 +165,11 @@ export default function ProductDetailsClient({
 
   // Use the selected variant's stock as the source of truth for variants.
   // This avoids a zero-stock parent record blocking a variant that has stock.
-  const activeVariant = selectedVariant ?? (hasVariants ? product.variants?.[0] : undefined);
-  const activeStockRow = hasVariants ? activeVariant?.stock?.[0] : product.stock?.[0];
+  const activeVariant =
+    selectedVariant ?? (hasVariants ? product.variants?.[0] : undefined);
+  const activeStockRow = hasVariants
+    ? activeVariant?.stock?.[0]
+    : product.stock?.[0];
   const rawAvailableStock = Number(activeStockRow?.quantity ?? 0);
   const rawStockThreshold = Number(activeStockRow?.lowStockThreshold ?? 0);
   const availableStock = Number.isFinite(rawAvailableStock)
@@ -945,7 +948,7 @@ export default function ProductDetailsClient({
               <div className="hidden md:block flex-none pt-3 space-y-2.5 border-t border-gray-200 mt-2">
                 {/* Action Buttons */}
                 <div className="flex gap-2.5">
-                  {isOutOfStock && !allowOutOfStockOrders ? (
+                  {isOutOfStock || !allowOutOfStockOrders ? (
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -962,7 +965,10 @@ export default function ProductDetailsClient({
                         onClick={() =>
                           handleAddToCart(product, selectedVariant)
                         }
-                        disabled={(availableStock === 0 && !allowOutOfStockOrders) || addToCartMutation.isPending}
+                        disabled={
+                          (availableStock === 0 && !allowOutOfStockOrders) ||
+                          addToCartMutation.isPending
+                        }
                         className="flex-1 bg-gray-900 text-white py-3 rounded-xl font-semibold shadow hover:shadow-md transition flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {addToCartMutation.isPending ? (
@@ -981,7 +987,7 @@ export default function ProductDetailsClient({
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={handleBuyNow}
-                        disabled={(isOutOfStock && !allowOutOfStockOrders)}
+                        disabled={isOutOfStock && !allowOutOfStockOrders}
                         className="flex-1 bg-main-primary text-main-secondary py-3 rounded-xl font-semibold shadow hover:shadow-md transition flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Zap className="w-4 h-4" /> Buy Now
@@ -1052,7 +1058,7 @@ export default function ProductDetailsClient({
           className="flex items-center gap-2 px-4 pb-4 pt-1"
           style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
         >
-          {isOutOfStock && !allowOutOfStockOrders ? (
+          {isOutOfStock || !allowOutOfStockOrders ? (
             /* Out of stock — Request button full width */
             <motion.button
               whileTap={{ scale: 0.97 }}
@@ -1068,7 +1074,10 @@ export default function ProductDetailsClient({
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={() => handleAddToCart(product, selectedVariant)}
-                disabled={(isOutOfStock && !allowOutOfStockOrders) || addToCartMutation.isPending}
+                disabled={
+                  (isOutOfStock && !allowOutOfStockOrders) ||
+                  addToCartMutation.isPending
+                }
                 className="flex-1 bg-gray-900 text-white py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {addToCartMutation.isPending ? (
@@ -1088,7 +1097,7 @@ export default function ProductDetailsClient({
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={handleBuyNow}
-                disabled={(isOutOfStock && !allowOutOfStockOrders)}
+                disabled={isOutOfStock && !allowOutOfStockOrders}
                 className="flex-1 bg-main-primary text-main-secondary py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Zap className="w-4 h-4" />
