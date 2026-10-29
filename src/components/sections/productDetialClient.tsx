@@ -949,7 +949,7 @@ export default function ProductDetailsClient({
               <div className="hidden md:block flex-none pt-3 space-y-2.5 border-t border-gray-200 mt-2">
                 {/* Action Buttons */}
                 <div className="flex gap-2.5">
-                  {isOutOfStock && !allowOutOfStockOrders ? (
+                  {isOutOfStock || !allowOutOfStockOrders ? (
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -1003,7 +1003,7 @@ export default function ProductDetailsClient({
                 </div>
 
                 {/* Trust badges */}
-                <div className="grid grid-cols-3 gap-2">
+                {/* <div className="grid grid-cols-3 gap-2">
                   {[{ icon: Shield, label: "Secure Payment" }].map(
                     ({ icon: Icon, label }) => (
                       <div
@@ -1017,7 +1017,7 @@ export default function ProductDetailsClient({
                       </div>
                     ),
                   )}
-                </div>
+                </div> */}
               </div>
             </motion.div>
           </div>
