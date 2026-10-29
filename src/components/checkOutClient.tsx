@@ -1889,8 +1889,12 @@ export default function CheckoutClient() {
                           Subtotal ({displayItems.length} item
                           {displayItems.length !== 1 ? "s" : ""})
                         </span>
-                        {isLoadingPreview ? (
+                        {invalidCartItems.length > 0 ? (
+                          <span className="font-semibold text-red-700">Fix cart items</span>
+                        ) : isLoadingPreview ? (
                           <div className="h-4 w-16 bg-gray-200 animate-pulse rounded" />
+                        ) : !orderPreview ? (
+                          <span className="text-gray-400">—</span>
                         ) : (
                           <span className="font-semibold text-gray-900">
                             ₹{subtotal.toLocaleString()}
@@ -1919,8 +1923,12 @@ export default function CheckoutClient() {
                             {estimatedDelivery}
                           </span>
                         </div>
-                        {isLoadingPreview ? (
+                        {invalidCartItems.length > 0 ? (
+                          <span className="text-gray-400">—</span>
+                        ) : isLoadingPreview ? (
                           <div className="h-4 w-12 bg-gray-200 animate-pulse rounded" />
+                        ) : !orderPreview ? (
+                          <span className="text-gray-400">—</span>
                         ) : (
                           <span
                             className={`font-semibold ${shippingCost === 0 ? "text-green-600" : "text-gray-900"}`}
@@ -1961,8 +1969,12 @@ export default function CheckoutClient() {
                       <span className="font-bold text-gray-900 text-sm">
                         Total
                       </span>
-                      {isLoadingPreview ? (
+                      {invalidCartItems.length > 0 ? (
+                        <span className="text-sm font-semibold text-red-700">Fix cart items</span>
+                      ) : isLoadingPreview ? (
                         <div className="h-7 w-28 bg-gray-200 animate-pulse rounded" />
+                      ) : !orderPreview ? (
+                        <span className="max-w-40 text-right text-xs text-gray-500">Select an address and courier to calculate</span>
                       ) : (
                         <div className="text-right">
                           <span className="text-2xl font-bold text-gray-900">
@@ -2005,6 +2017,8 @@ export default function CheckoutClient() {
                         displayItems.length === 0 ||
                         invalidCartItems.length > 0 ||
                         !selectedAddress ||
+                        !selectedCourier ||
+                        !orderPreview ||
                         isProcessing ||
                         !user ||
                         isLoadingPreview ||
@@ -2022,9 +2036,15 @@ export default function CheckoutClient() {
                             ? "Processing..."
                             : !user
                               ? "Login to Place Order"
-                              : isLoadingPreview
-                                ? "Calculating..."
-                                : `Place Order — ₹${total.toLocaleString()}`}
+                              : !selectedAddress
+                                ? "Add delivery address"
+                                : !selectedCourier
+                                  ? "Select courier"
+                                  : isLoadingPreview
+                                    ? "Calculating..."
+                                    : isErrorOrderPreview || !orderPreview
+                                      ? "Check delivery details"
+                                      : `Place Order — ₹${total.toLocaleString()}`}
                     </motion.button>
                   </div>
                 </div>
