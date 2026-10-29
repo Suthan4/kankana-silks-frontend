@@ -229,7 +229,11 @@ export default function MiniCartDrawer() {
     }
 
     const stockQty = getStockQty(item);
-    if (stockQty > 0 && newQty > stockQty) {
+    if (
+      item.product?.allowOutOfStockOrders !== true &&
+      stockQty > 0 &&
+      newQty > stockQty
+    ) {
       toast.error(`Only ${stockQty} item(s) available in stock`);
       return;
     }
@@ -351,7 +355,9 @@ export default function MiniCartDrawer() {
                   const imageUrl = getItemImage(item);
                   const stockQty = getStockQty(item);
                   const isMaxStock =
-                    stockQty > 0 && Number(item.quantity) >= stockQty;
+                    item.product?.allowOutOfStockOrders !== true &&
+                    stockQty > 0 &&
+                    Number(item.quantity) >= stockQty;
                   const variantAttrs = item?.variant
                     ? extractVariantAttributes(item.variant)
                     : [];
