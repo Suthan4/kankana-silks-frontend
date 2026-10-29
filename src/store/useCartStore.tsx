@@ -150,6 +150,9 @@ export const useCartStore = create<CartState>()(
 
           const targetProductId = normalizeId(target.productId ?? target.product?.id);
           const targetVariantId = normalizeId(target.variantId ?? target.variant?.id);
+          if (!targetProductId) {
+            return { items: state.items.filter((item) => normalizeId(item.id) !== normalizeId(id)) };
+          }
           return {
             items: state.items.filter((item) =>
               normalizeId(item.productId ?? item.product?.id) !== targetProductId ||
