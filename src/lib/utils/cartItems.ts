@@ -72,8 +72,3 @@ export function mergeCartLinesForStorage<T extends CartLineLike>(items: readonly
   return mergeCartLines(items).map(({ _duplicateIds: _ignored, ...item }) => item as T);
 }
 
-/** Local guest-cart IDs are UUIDs; the backend cart uses numeric Prisma IDs. */
-export function isPersistedCartLine(item: CartLineLike): boolean {
-  if (String((item as any).cartId ?? "") === "local") return false;
-  return /^\\d+$/.test(String(item.id));
-}
