@@ -30,6 +30,7 @@ import { useAuthModal } from "@/store/useAuthModalStore";
 import { shippingApi } from "@/lib/api/shipping.api";
 import { addressApi } from "@/lib/api/addresses.api";
 import { extractVariantAttributes } from "@/lib/utils/variant.utils";
+import { mergeCartLines } from "@/lib/utils/cartItems";
 
 const normalizeAttributes = (attrs: any) => {
   if (!attrs) return [];
@@ -100,10 +101,15 @@ export default function CartPage() {
     queryKey: ["cartApi", user?.id],
     queryFn: async () => (await cartApi.getCart()).data,
     enabled: !!user,
+    staleTime: 15_000,
+    refetchOnWindowFocus: false,
   });
 
   const apiItems = cartData?.items ?? [];
-  const displayItems = user?.id ? (apiItems.length ? apiItems : items) : items;
+  const displayItems = useMemo(
+    () => mergeCartLines(user?.id ? apiItems : items),
+    [user?.id, apiItems, items],
+  );
   const deliveryPin = user?.id ? addressData?.pincode : deliveryPincode;
   console.log("apiItems", apiItems);
   const totalItems = useMemo(
@@ -147,16 +153,16 @@ export default function CartPage() {
 
     // 2. Product stock
     if (item?.product?.stock?.length > 0) {
-      // if variantId exists → match
+      // Variant rows must match the selected variant. Do not accidentally use
+      // another variant's inventory when this variant has no stock record.
       if (item.variantId) {
         const match = item.product.stock.find(
-          (s: any) => s.variantId === item.variantId,
+          (s: any) => String(s.variantId ?? "") === String(item.variantId),
         );
-        if (match) return Number(match.quantity);
+        return match ? Number(match.quantity) || 0 : 0;
       }
 
-      // ❗ if NO variant → take first stock
-      return Number(item.product.stock[0].quantity);
+      return Number(item.product.stock[0].quantity) || 0;
     }
 
     return 0;
