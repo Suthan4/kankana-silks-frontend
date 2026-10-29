@@ -384,8 +384,8 @@ export default function CategoryProductsClient({
       return variants.every((variant) => {
         const qty = Number(variant.stock?.[0]?.quantity ?? 0);
         const threshold = Number(variant.stock?.[0]?.lowStockThreshold ?? 0);
-        if (qty <= 0) return true;
         if (allowOut) return false;
+        if (qty <= 0) return true;
         return qty <= threshold;
       });
     }
@@ -393,8 +393,8 @@ export default function CategoryProductsClient({
     // Preserve the existing simple-product and fallback inventory rules.
     const qty = Number(product.stock?.[0]?.quantity ?? 0);
     const threshold = Number(product.stock?.[0]?.lowStockThreshold ?? 0);
-    if (qty <= 0) return true;
     if (allowOut) return false;
+    if (qty <= 0) return true;
     if (qty <= threshold) return true;
     return false;
   };
@@ -1194,15 +1194,18 @@ hover:bg-white
                                 </div>
                               ) : (
                                 <button
+                                  type="button"
                                   onClick={() =>
                                     addToCartMutation.mutate({
                                       product,
                                       variant: selectedVariant,
                                     })
                                   }
-                                  className="w-full py-2.5 bg-black text-white text-xs tracking-widest uppercase hover:bg-gray-900 transition-colors"
+                                  disabled={addToCartMutation.isPending}
+                                  aria-busy={addToCartMutation.isPending}
+                                  className="w-full py-2.5 bg-black text-white text-xs tracking-widest uppercase hover:bg-gray-900 transition-colors disabled:cursor-wait disabled:opacity-70"
                                 >
-                                  Add to Cart
+                                  {addToCartMutation.isPending ? "Adding..." : "Add to Cart"}
                                 </button>
                               )
                             ) : (
