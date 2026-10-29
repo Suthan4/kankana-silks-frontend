@@ -1036,13 +1036,13 @@ export default function ProductDetailsClient({
             <span className="text-lg font-bold text-gray-900">
               {isOutOfStock
                 ? formatMaskedPrice(displayPrice)
-                : `₹${displayPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                : `₹${displayPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             </span>
             {discount > 0 && (
               <span className="text-xs text-gray-400 line-through">
                 {isOutOfStock
                   ? formatMaskedPrice(basePrice)
-                  : `₹${basePrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                  : `₹${basePrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               </span>
             )}
           </div>
