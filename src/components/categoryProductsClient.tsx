@@ -365,11 +365,32 @@ export default function CategoryProductsClient({
   const removeItemLocal = useCartStore((state) => state.removeItem);
 
   const isProductUnavailable = (product: Product) => {
-    const qty = product.stock?.[0]?.quantity ?? 0;
-    const threshold = product.stock?.[0]?.lowStockThreshold ?? 0;
     const allowOut = product.allowOutOfStockOrders ?? false;
+
+    // Variable-product cards must respect their variant inventory. If every
+    // variant has inventory data and none can be purchased, keep the existing
+    // Out of Stock card action instead of showing Add to Cart.
+    const variants = product.hasVariants ? (product.variants ?? []) : [];
+    const allVariantsHaveInventory =
+      variants.length > 0 &&
+      variants.every((variant) => Array.isArray(variant.stock) && variant.stock.length > 0);
+
+    if (allVariantsHaveInventory) {
+      // When variant inventory is known, it is the source of truth for the card.
+      return variants.every((variant) => {
+        const qty = Number(variant.stock?.[0]?.quantity ?? 0);
+        const threshold = Number(variant.stock?.[0]?.lowStockThreshold ?? 0);
+        if (qty <= 0) return true;
+        if (allowOut) return false;
+        return qty <= threshold;
+      });
+    }
+
+    // Preserve the existing simple-product and fallback inventory rules.
+    const qty = Number(product.stock?.[0]?.quantity ?? 0);
+    const threshold = Number(product.stock?.[0]?.lowStockThreshold ?? 0);
+    if (qty <= 0) return true;
     if (allowOut) return false;
-    if (qty === 0) return true;
     if (qty <= threshold) return true;
     return false;
   };
