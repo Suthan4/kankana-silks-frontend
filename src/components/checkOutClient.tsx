@@ -1170,11 +1170,14 @@ export default function CheckoutClient() {
                       const stockQty = getStockQty(item);
                       const unitPrice = getUnitPrice(item);
                       const validationIssue = getCheckoutItemIssue(item);
-                      const itemName = item?.product?.name?.trim() || item?.name?.trim() || "Unavailable product";
+                      const itemName =
+                        (typeof item?.product?.name === "string" ? item.product.name.trim() : "") ||
+                        (typeof item?.name === "string" ? item.name.trim() : "") ||
+                        "Unavailable product";
 
                       return (
                         <div
-                          key={`${item.productId}-${item.variantId}-${index}`}
+                          key={`${item?.productId ?? "missing"}-${item?.variantId ?? "default"}-${index}`}
                           className="flex gap-2.5 p-2.5 bg-gray-50 rounded-lg relative"
                         >
                           <button
@@ -1182,8 +1185,8 @@ export default function CheckoutClient() {
                             aria-label={`Remove ${itemName} from checkout`}
                             onClick={() =>
                               user?.id
-                                ? removeItemMutation.mutate(item.id)
-                                : removeItem(item.id)
+                                ? removeItemMutation.mutate(item?.id)
+                                : item?.id ? removeItem(item.id) : clearCart()
                             }
                             className="absolute top-2 right-2 p-1 hover:bg-red-50 rounded transition"
                           >
@@ -1251,7 +1254,7 @@ export default function CheckoutClient() {
                             <div className="flex items-center justify-between mt-2">
                               <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-full px-1.5 py-0.5">
                                 <button
-                                  disabled={isBuyNowMode || item.quantity <= 1}
+                                  disabled={isBuyNowMode || Number(item?.quantity) <= 1}
                                   onClick={() => {
                                     if (item.quantity > 1 && user?.id)
                                       updateQtyMutation.mutate({
@@ -1267,7 +1270,7 @@ export default function CheckoutClient() {
                                   {item.quantity}
                                 </span>
                                 <button
-                                  disabled={item.product?.allowOutOfStockOrders !== true && item.quantity >= stockQty}
+                                  disabled={item?.product?.allowOutOfStockOrders !== true && Number(item?.quantity) >= stockQty}
                                   onClick={() =>
                                     user?.id &&
                                     updateQtyMutation.mutate({
