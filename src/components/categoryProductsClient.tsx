@@ -27,6 +27,7 @@ import { Category } from "@/lib/api/category.api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCartStore } from "@/store/useCartStore";
 import { formatMaskedPrice } from "@/lib/utils/priceMasked";
+import { mergeCartLines } from "@/lib/utils/cartItems";
 import { getColorHex, isValidCSSColor } from "@/lib/utils/colorValidation";
 import { useWishlist } from "@/hooks/useWishlist";
 import SortDropdown from "./customDropdown";
@@ -316,7 +317,7 @@ export default function CategoryProductsClient({
             }
           : null,
       };
-      addToLocalCart(cartItem);
+      if (!user) addToLocalCart(cartItem);
       if (user) {
         await cartApi.addToCart({
           productId: product.id,
@@ -351,6 +352,8 @@ export default function CategoryProductsClient({
     queryKey: ["cartApi", user?.id],
     queryFn: async () => (await cartApi.getCart()).data,
     enabled: !!user,
+    staleTime: 15_000,
+    refetchOnWindowFocus: false,
   });
 
   const removeItemMutation = useMutation({
@@ -360,7 +363,10 @@ export default function CategoryProductsClient({
   });
 
   const cartItems = useCartStore((state) => state.items);
-  const effectiveCartItems = user ? (cartData?.items ?? []) : cartItems;
+  const effectiveCartItems = useMemo(
+    () => mergeCartLines(user ? (cartData?.items ?? []) : cartItems),
+    [user, cartData?.items, cartItems],
+  );
   const updateQuantityLocal = useCartStore((state) => state.updateQuantity);
   const removeItemLocal = useCartStore((state) => state.removeItem);
 
@@ -371,17 +377,19 @@ export default function CategoryProductsClient({
     // variant has inventory data and none can be purchased, keep the existing
     // Out of Stock card action instead of showing Add to Cart.
     const variants = product.hasVariants ? (product.variants ?? []) : [];
-    const allVariantsHaveInventory =
-      variants.length > 0 &&
-      variants.every((variant) => Array.isArray(variant.stock) && variant.stock.length > 0);
 
-    if (allVariantsHaveInventory) {
-      // When variant inventory is known, it is the source of truth for the card.
+    if (variants.length > 0) {
+      // Variant inventory is the source of truth whenever variants are present.
+      // Missing inventory is treated conservatively as unavailable rather than
+      // accidentally falling back to a stale parent-level stock row.
       return variants.every((variant) => {
-        const qty = Number(variant.stock?.[0]?.quantity ?? 0);
-        const threshold = Number(variant.stock?.[0]?.lowStockThreshold ?? 0);
-        if (qty <= 0) return true;
         if (allowOut) return false;
+        const stockRow = Array.isArray(variant.stock) ? variant.stock[0] : undefined;
+        if (!stockRow) return true;
+        const qtyValue = Number(stockRow.quantity);
+        const thresholdValue = Number(stockRow.lowStockThreshold ?? 0);
+        const qty = Number.isFinite(qtyValue) ? Math.max(0, qtyValue) : 0;
+        const threshold = Number.isFinite(thresholdValue) ? Math.max(0, thresholdValue) : 0;
         return qty <= threshold;
       });
     }
@@ -389,8 +397,8 @@ export default function CategoryProductsClient({
     // Preserve the existing simple-product and fallback inventory rules.
     const qty = Number(product.stock?.[0]?.quantity ?? 0);
     const threshold = Number(product.stock?.[0]?.lowStockThreshold ?? 0);
-    if (qty <= 0) return true;
     if (allowOut) return false;
+    if (qty <= 0) return true;
     if (qty <= threshold) return true;
     return false;
   };
@@ -403,19 +411,15 @@ export default function CategoryProductsClient({
       const everyVariantHasStock = product.variants.every(
         (variant) => Array.isArray(variant.stock) && variant.stock.length > 0,
       );
-      if (everyVariantHasStock) {
-        return product.variants.every(
-          (variant) => Number(variant.stock?.[0]?.quantity ?? 0) <= 0,
-        );
-      }
+      // Only mask the parent price when all variant inventory is known and
+      // confirms every variant is out of stock. Unknown data should not hide prices.
+      return everyVariantHasStock && product.variants.every((variant) => {
+        const qty = Number(variant.stock?.[0]?.quantity ?? 0);
+        return Number.isFinite(qty) && qty <= 0;
+      });
     }
     return Number(product.stock?.[0]?.quantity ?? 0) <= 0;
   };
-  console.log(
-    "isProductOutOfStock",
-    isProductOutOfStock,
-    products?.[0]?.stock?.[0]?.quantity,
-  );
 
   const handleAddToCart = (product: Product) => {
     if (!canAddToCart(product)) {
@@ -1190,15 +1194,18 @@ hover:bg-white
                                 </div>
                               ) : (
                                 <button
+                                  type="button"
                                   onClick={() =>
                                     addToCartMutation.mutate({
                                       product,
                                       variant: selectedVariant,
                                     })
                                   }
-                                  className="w-full py-2.5 bg-black text-white text-xs tracking-widest uppercase hover:bg-gray-900 transition-colors"
+                                  disabled={addToCartMutation.isPending}
+                                  aria-busy={addToCartMutation.isPending}
+                                  className="w-full py-2.5 bg-black text-white text-xs tracking-widest uppercase hover:bg-gray-900 transition-colors disabled:cursor-wait disabled:opacity-70"
                                 >
-                                  Add to Cart
+                                  {addToCartMutation.isPending ? "Adding..." : "Add to Cart"}
                                 </button>
                               )
                             ) : (
