@@ -82,6 +82,21 @@ const normalizeAttributes = (attrs: any) => {
   return [];
 };
 
+const getCheckoutStockQty = (item: any): number => {
+  if (Array.isArray(item?.variant?.stock) && item.variant.stock.length > 0) {
+    return Number(item.variant.stock[0].quantity);
+  }
+  if (Array.isArray(item?.product?.stock) && item.product.stock.length > 0) {
+    if (item.variantId) {
+      const matchingStock = item.product.stock.find(
+        (stock: any) => String(stock.variantId ?? "") === String(item.variantId),
+      );
+      if (matchingStock) return Number(matchingStock.quantity);
+    }
+    return Number(item.product.stock[0].quantity);
+  }
+  return 0;
+};
 const getCheckoutItemIssue = (item: any): string | null => {
   if (!item || typeof item !== "object") {
     return "This cart entry is invalid. Remove it and add the product again.";
@@ -492,11 +507,15 @@ export default function CheckoutClient() {
       ? apiItems
       : cartItems;
   const invalidCartItems = displayItems
-    .map((item: any, index: number) => ({
-      item,
-      index,
-      message: getCheckoutItemIssue(item),
-    }))
+    .map((item: any, index: number) => {
+      const productIssue = getCheckoutItemIssue(item);
+      const stockQty = getCheckoutStockQty(item);
+      const quantity = Number(item?.quantity);
+      const stockIssue = !productIssue && quantity > stockQty && item?.product?.allowOutOfStockOrders !== true
+        ? `${item?.product?.name || "This product"} has only ${stockQty} item(s) available. Reduce the quantity or remove it.`
+        : null;
+      return { item, index, message: productIssue ?? stockIssue };
+    })
     .filter((entry) => entry.message !== null);
   const isCheckoutInitializing =
     !isCartHydrated ||
@@ -626,28 +645,7 @@ export default function CheckoutClient() {
     }
   }, [shippingData]);
 
-  const getStockQty = (item: any) => {
-    // 1. Variant stock
-    if (item?.variant?.stock?.length > 0) {
-      return Number(item.variant.stock[0].quantity);
-    }
-
-    // 2. Product stock
-    if (item?.product?.stock?.length > 0) {
-      // if variantId exists → match
-      if (item.variantId) {
-        const match = item.product.stock.find(
-          (s: any) => s.variantId === item.variantId,
-        );
-        if (match) return Number(match.quantity);
-      }
-
-      // ❗ if NO variant → take first stock
-      return Number(item.product.stock[0].quantity);
-    }
-
-    return 0;
-  };
+  const getStockQty = (item: any) => getCheckoutStockQty(item);
 
   const getUnitPrice = (item: any) =>
     Number(
