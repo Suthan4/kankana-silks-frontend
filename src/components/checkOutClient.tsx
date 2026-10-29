@@ -46,6 +46,7 @@ import {
 } from "@/hooks/useOrders";
 import { couponApi, type Coupon } from "@/lib/api/coupon.api";
 import { cartApi } from "@/lib/api/cart.api";
+import { getCartItemStockQty as getCheckoutStockQty } from "@/lib/utils/cartStock";
 import { shippingApi } from "@/lib/api/shipping.api";
 import confetti from "canvas-confetti";
 import PaymentLogos from "./paymentLogos";
@@ -82,26 +83,6 @@ const normalizeAttributes = (attrs: any) => {
   return [];
 };
 
-const getCheckoutStockQty = (item: any): number => {
-  if (Array.isArray(item?.variant?.stock) && item.variant.stock.length > 0) {
-    const quantity = Number(item.variant.stock[0].quantity);
-    return Number.isFinite(quantity) && quantity >= 0 ? quantity : 0;
-  }
-  if (Array.isArray(item?.product?.stock) && item.product.stock.length > 0) {
-    if (item.variantId) {
-      const matchingStock = item.product.stock.find(
-        (stock: any) =>
-          String(stock.variantId ?? "") === String(item.variantId),
-      );
-      if (!matchingStock) return 0;
-      const quantity = Number(matchingStock.quantity);
-      return Number.isFinite(quantity) && quantity >= 0 ? quantity : 0;
-    }
-    const quantity = Number(item.product.stock[0].quantity);
-    return Number.isFinite(quantity) && quantity >= 0 ? quantity : 0;
-  }
-  return 0;
-};
 const getCheckoutItemIssue = (item: any): string | null => {
   if (!item || typeof item !== "object") {
     return "This cart entry is invalid. Remove it and add the product again.";
@@ -337,6 +318,7 @@ export default function CheckoutClient() {
     applyCoupon,
     removeCoupon,
     removeItem,
+    updateQuantity,
   } = useCartStore();
 
   const [isCartHydrated, setIsCartHydrated] = useState(false);
@@ -558,12 +540,27 @@ export default function CheckoutClient() {
     (isBuyNowMode && !buyNowItem);
   const addresses = addressesData || [];
 
+  const shippingCartSignature = useMemo(
+    () =>
+      displayItems
+        .map((item: any) =>
+          [
+            item?.productId ?? item?.product?.id ?? "missing",
+            item?.variantId ?? item?.variant?.id ?? "simple",
+            item?.quantity ?? "invalid",
+          ].join(":"),
+        )
+        .sort()
+        .join("|"),
+    [displayItems],
+  );
+
   const {
     data: shippingData,
     isLoading: isLoadingShipping,
     refetch: refetchShipping,
   } = useQuery({
-    queryKey: ["cartShipping", selectedAddress?.pincode],
+    queryKey: ["cartShipping", selectedAddress?.pincode, shippingCartSignature],
     queryFn: async () => {
       if (
         !selectedAddress?.pincode ||
@@ -575,9 +572,11 @@ export default function CheckoutClient() {
         deliveryPincode: selectedAddress?.pincode,
         selectedCourierCompanyId: selectedCourier?.courier_company_id,
         cartItems: displayItems.map((item: any) => ({
-          productId: item.productId,
-          ...(item.variantId ? { variantId: item.variantId } : {}),
-          quantity: item.quantity,
+          productId: item.productId ?? item.product?.id,
+          ...((item.variantId ?? item.variant?.id)
+            ? { variantId: item.variantId ?? item.variant?.id }
+            : {}),
+          quantity: Number(item.quantity),
         })),
       });
       return response.data;
@@ -613,7 +612,7 @@ export default function CheckoutClient() {
       displayItems
         .map(
           (item: any) =>
-            `${item?.productId ?? item?.product?.id ?? "missing"}-${item?.quantity ?? "invalid"}`,
+            `${item?.productId ?? item?.product?.id ?? "missing"}:${item?.variantId ?? item?.variant?.id ?? "simple"}:${item?.quantity ?? "invalid"}`,
         )
         .join(","),
     ],
@@ -691,14 +690,36 @@ export default function CheckoutClient() {
   useEffect(() => {
     if (!shippingData) return;
     const couriers = shippingData.availableCouriers || [];
-    if (couriers.length > 0) {
-      const cheapest = couriers.reduce((min: any, curr: any) =>
+    if (couriers.length === 0) {
+      setSelectedCourier(null);
+      return;
+    }
+
+    const currentCourier = selectedCourier
+      ? couriers.find(
+          (courier: any) =>
+            Number(courier.courier_company_id) ===
+            Number(selectedCourier.courier_company_id),
+        )
+      : null;
+
+    if (currentCourier) {
+      setSelectedCourier(currentCourier);
+      return;
+    }
+
+    const cheapest =
+      couriers.find(
+        (courier: any) =>
+          Number(courier.courier_company_id) ===
+          Number(shippingData.cheapestCourier?.courier_company_id),
+      ) ??
+      couriers.reduce((min: any, curr: any) =>
         curr.freight_charge < min.freight_charge ? curr : min,
       );
-      setSelectedCourier(cheapest);
-      setCourierPreference("CHEAPEST");
-    }
-  }, [shippingData]);
+    setSelectedCourier(cheapest);
+    setCourierPreference("CHEAPEST");
+  }, [shippingData, selectedCourier?.courier_company_id]);
 
   const getStockQty = (item: any) => getCheckoutStockQty(item);
 
@@ -716,7 +737,7 @@ export default function CheckoutClient() {
     isLoading: isLoadingCoupons,
     refetch: refetchCoupons,
   } = useQuery({
-    queryKey: ["applicableCoupons", subtotal, displayItems.length],
+    queryKey: ["applicableCoupons", subtotal, displayItems.length, shippingCartSignature],
     queryFn: async () => {
       if (
         !user ||
