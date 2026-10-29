@@ -285,10 +285,12 @@ export function ZoomGallery({
         <div className="relative flex-1">
           <div
             ref={imageContainerRef}
-            className="relative w-full h-full rounded-xl overflow-hidden bg-white cursor-crosshair"
-            onMouseEnter={() => !isMobile && setIsHovering(true)}
+            className={`relative w-full h-full rounded-xl overflow-hidden bg-white ${isMainImageLoaded ? "cursor-zoom-in" : "cursor-default"}`}
+            onMouseEnter={() => {
+              if (!isMobile && isMainImageLoaded) setIsHovering(true);
+            }}
             onMouseLeave={() => setIsHovering(false)}
-            onMouseMove={handleMouseMove}
+            onMouseMove={isMainImageLoaded ? handleMouseMove : undefined}
           >
             {images.length > 0 && (
               <>
