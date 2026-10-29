@@ -286,6 +286,9 @@ export default function CategoryProductsClient({
           name: product.name,
           slug: product.slug,
           categoryId: product.categoryId,
+          isActive: product.isActive,
+          hasVariants: product.hasVariants ?? false,
+          allowOutOfStockOrders: product.allowOutOfStockOrders ?? false,
           sellingPrice: Number(product.sellingPrice),
           basePrice: Number(product.basePrice),
           media: [
@@ -306,6 +309,10 @@ export default function CategoryProductsClient({
               size: variant.size,
               color: variant.color,
               fabric: variant.fabric,
+              stock: variant.stock?.map((stock: any) => ({
+                ...stock,
+                lowStockThreshold: stock.lowStockThreshold ?? 0,
+              })) ?? [],
             }
           : null,
       };
@@ -361,8 +368,8 @@ export default function CategoryProductsClient({
     const qty = product.stock?.[0]?.quantity ?? 0;
     const threshold = product.stock?.[0]?.lowStockThreshold ?? 0;
     const allowOut = product.allowOutOfStockOrders ?? false;
-    if (qty === 0) return true;
     if (allowOut) return false;
+    if (qty === 0) return true;
     if (qty <= threshold) return true;
     return false;
   };
