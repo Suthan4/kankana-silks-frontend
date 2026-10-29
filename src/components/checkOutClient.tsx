@@ -573,7 +573,7 @@ export default function CheckoutClient() {
       buyNowItem?.variantId,
       buyNowItem?.quantity,
       displayItems
-        .map((item: any) => `${item.productId}-${item.quantity}`)
+        .map((item: any) => `${item?.productId ?? item?.product?.id ?? "missing"}-${item?.quantity ?? "invalid"}`)
         .join(","),
     ],
     queryFn: async () => {
