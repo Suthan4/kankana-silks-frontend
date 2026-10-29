@@ -735,7 +735,7 @@ export default function CategoryProductsClient({
               {category.name}
             </h1>
             <span className="text-xs text-gray-400 tracking-wide">
-              {total > 0 ? `${total} pieces` : ""}
+              {total > 0 ? `${total} sarees` : ""}
             </span>
           </div>
 
