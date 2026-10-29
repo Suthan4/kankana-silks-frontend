@@ -177,17 +177,17 @@ export default function ProductDetailsClient({
   const allowOutOfStockOrders = product.allowOutOfStockOrders ?? false;
 
   const displayPrice =
-    hasVariants && selectedVariant
+    hasVariants && activeVariant
       ? Number(
-          selectedVariant.sellingPrice ??
-            selectedVariant.price ??
+          activeVariant.sellingPrice ??
+            activeVariant.price ??
             product.sellingPrice,
         )
       : Number(product.sellingPrice);
 
   const basePrice =
-    hasVariants && selectedVariant
-      ? Number(selectedVariant.basePrice ?? product.basePrice)
+    hasVariants && activeVariant
+      ? Number(activeVariant.basePrice ?? product.basePrice)
       : Number(product.basePrice);
 
   const discount =
