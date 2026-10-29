@@ -150,10 +150,7 @@ export default function CartPage() {
   );
   const getStockQty = (item: any) => getCartItemStockQty(item);
 
-  const {
-    data: shippingData,
-    isLoading: isLoadingShipping,
-  } = useQuery({
+  const { data: shippingData, isLoading: isLoadingShipping } = useQuery({
     queryKey: ["cartShipping", deliveryPin, shippingCartItems],
     queryFn: async () => {
       if (!deliveryPin || displayItems.length === 0) return null;
@@ -358,11 +355,17 @@ export default function CartPage() {
       await queryClient.cancelQueries({ queryKey });
       const previousCart = queryClient.getQueryData<any>(queryKey);
       if (previousCart?.items) {
-        const target = previousCart.items.find((item: any) => String(item.id) === String(itemId));
+        const target = previousCart.items.find(
+          (item: any) => String(item.id) === String(itemId),
+        );
         let items = previousCart.items;
         if (target) {
-          const productId = String(target.productId ?? target.product?.id ?? "");
-          const variantId = String(target.variantId ?? target.variant?.id ?? "");
+          const productId = String(
+            target.productId ?? target.product?.id ?? "",
+          );
+          const variantId = String(
+            target.variantId ?? target.variant?.id ?? "",
+          );
           let kept = false;
           items = previousCart.items.flatMap((item: any) => {
             const sameLine =
@@ -375,20 +378,29 @@ export default function CartPage() {
           });
         }
         const subtotal = items.reduce((sum: number, item: any) => {
-          const price = Number(item.variant?.sellingPrice ?? item.variant?.price ?? item.product?.sellingPrice ?? 0);
+          const price = Number(
+            item.variant?.sellingPrice ??
+              item.variant?.price ??
+              item.product?.sellingPrice ??
+              0,
+          );
           return sum + price * Number(item.quantity || 0);
         }, 0);
         queryClient.setQueryData(queryKey, {
           ...previousCart,
           items,
-          totalItems: items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0),
+          totalItems: items.reduce(
+            (sum: number, item: any) => sum + Number(item.quantity || 0),
+            0,
+          ),
           subtotal,
         });
       }
       return { previousCart, queryKey };
     },
     onError: (err: any, _variables, context) => {
-      if (context?.previousCart) queryClient.setQueryData(context.queryKey, context.previousCart);
+      if (context?.previousCart)
+        queryClient.setQueryData(context.queryKey, context.previousCart);
       toast.error(err?.message || "Failed to update quantity");
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["cartApi"] }),
@@ -401,22 +413,37 @@ export default function CartPage() {
       await queryClient.cancelQueries({ queryKey });
       const previousCart = queryClient.getQueryData<any>(queryKey);
       if (previousCart?.items) {
-        const target = previousCart.items.find((item: any) => String(item.id) === String(itemId));
+        const target = previousCart.items.find(
+          (item: any) => String(item.id) === String(itemId),
+        );
         if (target) {
-          const productId = String(target.productId ?? target.product?.id ?? "");
-          const variantId = String(target.variantId ?? target.variant?.id ?? "");
-          const items = previousCart.items.filter((item: any) =>
-            String(item.productId ?? item.product?.id ?? "") !== productId ||
-            String(item.variantId ?? item.variant?.id ?? "") !== variantId,
+          const productId = String(
+            target.productId ?? target.product?.id ?? "",
+          );
+          const variantId = String(
+            target.variantId ?? target.variant?.id ?? "",
+          );
+          const items = previousCart.items.filter(
+            (item: any) =>
+              String(item.productId ?? item.product?.id ?? "") !== productId ||
+              String(item.variantId ?? item.variant?.id ?? "") !== variantId,
           );
           const subtotal = items.reduce((sum: number, item: any) => {
-            const price = Number(item.variant?.sellingPrice ?? item.variant?.price ?? item.product?.sellingPrice ?? 0);
+            const price = Number(
+              item.variant?.sellingPrice ??
+                item.variant?.price ??
+                item.product?.sellingPrice ??
+                0,
+            );
             return sum + price * Number(item.quantity || 0);
           }, 0);
           queryClient.setQueryData(queryKey, {
             ...previousCart,
             items,
-            totalItems: items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0),
+            totalItems: items.reduce(
+              (sum: number, item: any) => sum + Number(item.quantity || 0),
+              0,
+            ),
             subtotal,
           });
         }
@@ -425,7 +452,8 @@ export default function CartPage() {
     },
     onSuccess: () => toast.success("Item removed"),
     onError: (err: any, _itemId, context) => {
-      if (context?.previousCart) queryClient.setQueryData(context.queryKey, context.previousCart);
+      if (context?.previousCart)
+        queryClient.setQueryData(context.queryKey, context.previousCart);
       toast.error(err?.message || "Failed to remove item");
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["cartApi"] }),
@@ -459,7 +487,11 @@ export default function CartPage() {
 
   if (isLoadingCartApi) {
     return (
-      <div role="status" aria-live="polite" className="h-screen flex flex-col items-center justify-center gap-3 text-gray-500">
+      <div
+        role="status"
+        aria-live="polite"
+        className="h-screen flex flex-col items-center justify-center gap-3 text-gray-500"
+      >
         <Loader2 className="w-8 h-8 animate-spin" />
         <p className="text-sm">Loading your cart…</p>
       </div>
@@ -472,9 +504,14 @@ export default function CartPage() {
   if (user?.id && isCartError && !cartData) {
     return (
       <div className="h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 flex items-center justify-center p-4">
-        <div role="alert" className="max-w-md rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+        <div
+          role="alert"
+          className="max-w-md rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm"
+        >
           <ShoppingBag className="mx-auto mb-4 h-10 w-10 text-gray-400" />
-          <h2 className="mb-2 text-xl font-bold text-gray-900">We couldn’t load your cart</h2>
+          <h2 className="mb-2 text-xl font-bold text-gray-900">
+            We couldn’t load your cart
+          </h2>
           <p className="mb-6 text-sm text-gray-500">
             Your items haven’t been removed. Please try again.
           </p>
@@ -687,8 +724,8 @@ export default function CartPage() {
                                       : updateQuantity(item.id, n);
                                   }}
                                   disabled={
-                                    item?.product?.allowOutOfStockOrders !== true &&
-                                    item.quantity >= stockQty
+                                    item?.product?.allowOutOfStockOrders !==
+                                      true || item.quantity >= stockQty
                                   }
                                   className="w-7 h-7 flex items-center justify-center text-white bg-gray-900 rounded-full hover:bg-gray-700 transition disabled:opacity-40"
                                 >
