@@ -471,7 +471,7 @@ export default function ProductDetailsClient({
             }
           : undefined,
       };
-      addToLocalCart(cartItem);
+      if (!user) addToLocalCart(cartItem);
       if (user)
         await cartApi.addToCart({
           productId: product.id,
