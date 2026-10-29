@@ -65,7 +65,7 @@ export default function CategoryProductsClient({
     | "popularity-desc"
     | "name-asc"
   >(() => {
-    const sortByParam = searchParams.get("sortBy") || "createdAt";
+    const sortByParam = searchParams.get("sortBy") || "price";
     const sortOrderParam = searchParams.get("sortOrder") || "desc";
     return `${sortByParam}-${sortOrderParam}` as any;
   });
@@ -213,7 +213,7 @@ export default function CategoryProductsClient({
     if (maxPrice && maxPrice > 0 && maxPrice < 100000)
       params.maxPrice = maxPrice;
 
-    params.sortBy = (searchParams.get("sortBy") || "createdAt") as any;
+    params.sortBy = (searchParams.get("sortBy") || "price") as any;
     params.sortOrder = (searchParams.get("sortOrder") || "desc") as any;
 
     const color = searchParams.get("color");
@@ -1102,11 +1102,15 @@ hover:bg-white
                           {/* Price row */}
                           <div className="mt-1.5 flex items-baseline gap-2">
                             <span className="text-sm font-medium text-black tracking-tight">
-                              ₹{displayPrice.toLocaleString("en-IN")}
+                              {isOutOfStock
+                                ? formatMaskedPrice(displayPrice)
+                                : `₹${displayPrice.toLocaleString("en-IN")}`}
                             </span>
                             {basePrice > displayPrice && (
                               <span className="text-xs text-gray-400 line-through">
-                                ₹{basePrice.toLocaleString("en-IN")}
+                                {isOutOfStock
+                                  ? formatMaskedPrice(basePrice)
+                                  : `₹${basePrice.toLocaleString("en-IN")}`}
                               </span>
                             )}
                           </div>
