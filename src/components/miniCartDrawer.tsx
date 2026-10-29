@@ -174,11 +174,52 @@ export default function MiniCartDrawer() {
 
   const removeItemMutation = useMutation({
     mutationFn: async (itemId: string) => await cartApi.removeFromCart(itemId),
+    onMutate: async (itemId) => {
+      const queryKey = ["cartApi", user?.id];
+      await queryClient.cancelQueries({ queryKey });
+      const previousCart = queryClient.getQueryData<any>(queryKey);
+      if (previousCart?.items) {
+        const target = previousCart.items.find(
+          (item: any) => String(item.id) === String(itemId),
+        );
+        if (target) {
+          const productId = String(target.productId ?? target.product?.id ?? "");
+          const variantId = String(target.variantId ?? target.variant?.id ?? "");
+          const items = previousCart.items.filter((item: any) =>
+            String(item.productId ?? item.product?.id ?? "") !== productId ||
+            String(item.variantId ?? item.variant?.id ?? "") !== variantId,
+          );
+          const subtotal = items.reduce((sum: number, item: any) => {
+            const unitPrice = Number(
+              item.variant?.sellingPrice ??
+                item.variant?.price ??
+                item.product?.sellingPrice ??
+                0,
+            );
+            return sum + unitPrice * Number(item.quantity || 0);
+          }, 0);
+          queryClient.setQueryData(queryKey, {
+            ...previousCart,
+            items,
+            totalItems: items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0),
+            subtotal,
+          });
+        }
+      }
+      return { previousCart, queryKey };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cartApi"] });
       toast.success("Item removed");
     },
-    onError: () => toast.error("Failed to remove item"),
+    onError: (_error, _itemId, context) => {
+      if (context?.previousCart) {
+        queryClient.setQueryData(context.queryKey, context.previousCart);
+      }
+      toast.error("Failed to remove item. Please try again.");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["cartApi"] });
+    },
   });
 
   const handleUpdateQuantity = (item: any, newQty: number) => {
@@ -378,7 +419,7 @@ export default function MiniCartDrawer() {
                                   Number(item.quantity) - 1,
                                 )
                               }
-                              disabled={Number(item.quantity) <= 1}
+                              disabled={Number(item.quantity) <= 1 || updateQuantityMutation.isPending}
                               aria-label="Decrease quantity"
                               className="p-1 sm:p-1.5 text-gray-500 hover:text-black transition disabled:opacity-30 disabled:cursor-not-allowed"
                             >
@@ -394,7 +435,7 @@ export default function MiniCartDrawer() {
                                   Number(item.quantity) + 1,
                                 )
                               }
-                              disabled={isMaxStock || stockQty === 0}
+                              disabled={isMaxStock || (stockQty === 0 && item.product?.allowOutOfStockOrders !== true) || updateQuantityMutation.isPending}
                               aria-label="Increase quantity"
                               className="p-1 sm:p-1.5 text-gray-500 hover:text-black transition disabled:opacity-30 disabled:cursor-not-allowed"
                             >
@@ -411,6 +452,7 @@ export default function MiniCartDrawer() {
                             </span>
                             <button
                               onClick={() => handleRemove(item)}
+                              disabled={removeItemMutation.isPending}
                               aria-label="Remove item"
                               className="text-gray-400 hover:text-red-500 transition p-1"
                             >
