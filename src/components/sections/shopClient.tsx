@@ -92,7 +92,7 @@ export default function ShopClient({ categories }: ShopClientProps) {
           {/* Right — piece count */}
           {totalProducts > 0 && (
             <p className="text-[11px] tracking-widest text-gray-400 uppercase">
-              {totalProducts.toLocaleString()} pieces
+              {totalProducts.toLocaleString()} Sarees
             </p>
           )}
         </div>
@@ -168,7 +168,7 @@ export default function ShopClient({ categories }: ShopClientProps) {
                     <div className="flex items-center gap-4 flex-shrink-0">
                       {category._count?.products ? (
                         <span className="text-[10px] tracking-widest uppercase text-gray-400 hidden sm:block">
-                          {category._count.products} pieces
+                          {category._count.products} Sarees
                         </span>
                       ) : null}
                       <span className="text-gray-300 group-hover:text-black group-hover:translate-x-1 inline-block transition-all duration-300">
@@ -215,7 +215,7 @@ export default function ShopClient({ categories }: ShopClientProps) {
                       {/* Piece count — top right */}
                       {category._count?.products ? (
                         <div className="absolute top-3 right-3 bg-white/95 px-2 py-0.5 text-[9px] tracking-widest uppercase text-gray-600">
-                          {category._count.products} pieces
+                          {category._count.products} Sarees
                         </div>
                       ) : null}
 

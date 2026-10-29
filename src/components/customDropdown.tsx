@@ -3,9 +3,9 @@ import { useState, useRef, useEffect } from "react";
 import { ChevronDown, Check } from "lucide-react";
 
 const options = [
-  { label: "Featured", value: "createdAt-desc" },
-  { label: "Price: Low to High", value: "price-asc" },
   { label: "Price: High to Low", value: "price-desc" },
+  { label: "Price: Low to High", value: "price-asc" },
+  { label: "Featured", value: "createdAt-desc" },
   { label: "Most Popular", value: "popularity-desc" },
 ];
 
