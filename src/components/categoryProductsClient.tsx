@@ -375,8 +375,21 @@ export default function CategoryProductsClient({
   };
 
   const canAddToCart = (product: Product) => !isProductUnavailable(product);
-  const isProductOutOfStock = (product: Product) =>
-    (product.stock?.[0]?.quantity ?? 0) === 0;
+  const isProductOutOfStock = (product: Product) => {
+    // For variable products, mask the parent price only when every variant
+    // has known inventory and all variants are out of stock.
+    if (product.hasVariants && product.variants?.length) {
+      const everyVariantHasStock = product.variants.every(
+        (variant) => Array.isArray(variant.stock) && variant.stock.length > 0,
+      );
+      if (everyVariantHasStock) {
+        return product.variants.every(
+          (variant) => Number(variant.stock?.[0]?.quantity ?? 0) <= 0,
+        );
+      }
+    }
+    return Number(product.stock?.[0]?.quantity ?? 0) <= 0;
+  };
   console.log(
     "isProductOutOfStock",
     isProductOutOfStock,
