@@ -706,7 +706,7 @@ export default function CartPage() {
                                       : updateQuantity(item.id, n);
                                   }}
                                   disabled={item.quantity <= 1}
-                                  className="w-7 h-7 flex items-center justify-center text-gray-600 hover:text-gray-900 transition disabled:opacity-40"
+                                  className="w-7 h-7 flex items-center justify-center text-gray-600 hover:text-gray-900 transition disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                   <Minus className="w-3.5 h-3.5" />
                                 </button>
@@ -727,7 +727,7 @@ export default function CartPage() {
                                     item?.product?.allowOutOfStockOrders !==
                                       true || item.quantity >= stockQty
                                   }
-                                  className="w-7 h-7 flex items-center justify-center text-white bg-gray-900 rounded-full hover:bg-gray-700 transition disabled:opacity-40"
+                                  className="w-7 h-7 flex items-center justify-center text-white bg-gray-900 rounded-full hover:bg-gray-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                   <Plus className="w-3.5 h-3.5" />
                                 </button>
