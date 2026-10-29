@@ -290,7 +290,14 @@ export function ZoomGallery({
               if (!isMobile && isMainImageLoaded) setIsHovering(true);
             }}
             onMouseLeave={() => setIsHovering(false)}
-            onMouseMove={isMainImageLoaded ? handleMouseMove : undefined}
+            onMouseMove={
+              isMainImageLoaded
+                ? (event) => {
+                    if (!isMobile) setIsHovering(true);
+                    handleMouseMove(event);
+                  }
+                : undefined
+            }
           >
             {images.length > 0 && (
               <>
