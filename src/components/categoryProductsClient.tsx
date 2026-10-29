@@ -376,14 +376,14 @@ export default function CategoryProductsClient({
       variants.every((variant) => Array.isArray(variant.stock) && variant.stock.length > 0);
 
     if (allVariantsHaveInventory) {
-      const allVariantsUnavailable = variants.every((variant) => {
+      // When variant inventory is known, it is the source of truth for the card.
+      return variants.every((variant) => {
         const qty = Number(variant.stock?.[0]?.quantity ?? 0);
         const threshold = Number(variant.stock?.[0]?.lowStockThreshold ?? 0);
         if (qty <= 0) return true;
         if (allowOut) return false;
         return qty <= threshold;
       });
-      if (allVariantsUnavailable) return true;
     }
 
     // Preserve the existing simple-product and fallback inventory rules.
