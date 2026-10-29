@@ -114,10 +114,10 @@ export default function MiniCartDrawer() {
         const match = item.product.stock.find(
           (s: any) => s.variantId === item.variantId,
         );
-        if (match) return Number(match.quantity) || 0;
+        return match ? Number(match.quantity) || 0 : 0;
       }
 
-      // if NO variant → take first stock
+      // Simple products use their product-level inventory.
       return Number(item.product.stock[0].quantity) || 0;
     }
 
