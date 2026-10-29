@@ -105,6 +105,14 @@ export function ZoomGallery({
     [],
   );
 
+  // Reset zoom immediately when the active image changes; dimensions are
+  // recalculated only after that image's own onLoad handler fires.
+  useEffect(() => {
+    setIsHovering(false);
+    setLensPos({ x: 0, y: 0 });
+    setRenderedRect({ x: 0, y: 0, w: 0, h: 0 });
+  }, [activeImageUrl]);
+
   // The displayed main image owns loading state. Do not issue a second
   // hidden Image request just to prepare zoom dimensions.
   useEffect(() => {
@@ -124,12 +132,6 @@ export function ZoomGallery({
       computeRenderedRect(w, h, containerSize.w, containerSize.h),
     );
   }, [activeImageUrl, loadedImageUrl, containerSize, computeRenderedRect]);
-
-  useEffect(() => {
-    setIsHovering(false);
-    setLensPos({ x: 0, y: 0 });
-    setRenderedRect({ x: 0, y: 0, w: 0, h: 0 });
-  }, [activeImageUrl]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!isMainImageLoaded) return;
