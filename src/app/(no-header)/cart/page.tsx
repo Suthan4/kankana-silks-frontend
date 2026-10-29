@@ -31,6 +31,7 @@ import { shippingApi } from "@/lib/api/shipping.api";
 import { addressApi } from "@/lib/api/addresses.api";
 import { extractVariantAttributes } from "@/lib/utils/variant.utils";
 import { mergeCartLines } from "@/lib/utils/cartItems";
+import { getCartItemStockQty } from "@/lib/utils/cartStock";
 
 const normalizeAttributes = (attrs: any) => {
   if (!attrs) return [];
@@ -147,28 +148,8 @@ export default function CartPage() {
       })),
     [displayItems],
   );
-  const getStockQty = (item: any) => {
-    // 1. Variant stock
-    if (item?.variant?.stock?.length > 0) {
-      return Number(item.variant.stock[0].quantity);
-    }
+  const getStockQty = (item: any) => getCartItemStockQty(item);
 
-    // 2. Product stock
-    if (item?.product?.stock?.length > 0) {
-      // Variant rows must match the selected variant. Do not accidentally use
-      // another variant's inventory when this variant has no stock record.
-      if (item.variantId) {
-        const match = item.product.stock.find(
-          (s: any) => String(s.variantId ?? "") === String(item.variantId),
-        );
-        return match ? Number(match.quantity) || 0 : 0;
-      }
-
-      return Number(item.product.stock[0].quantity) || 0;
-    }
-
-    return 0;
-  };
   const {
     data: shippingData,
     isLoading: isLoadingShipping,
@@ -195,14 +176,36 @@ export default function CartPage() {
   }, [deliveryPin]);
 
   useEffect(() => {
-    if (
-      shippingData &&
-      shippingData.availableCouriers?.length > 0 &&
-      !selectedCourier
-    ) {
-      setSelectedCourier(shippingData.cheapestCourier);
+    if (!shippingData) return;
+    const couriers = shippingData.availableCouriers ?? [];
+    if (couriers.length === 0) {
+      setSelectedCourier(null);
+      return;
     }
-  }, [shippingData, selectedCourier]);
+
+    const currentCourier = selectedCourier
+      ? couriers.find(
+          (courier: any) =>
+            Number(courier.courier_company_id) ===
+            Number(selectedCourier.courier_company_id),
+        )
+      : null;
+    if (currentCourier) {
+      setSelectedCourier(currentCourier);
+      return;
+    }
+
+    const cheapest =
+      couriers.find(
+        (courier: any) =>
+          Number(courier.courier_company_id) ===
+          Number(shippingData.cheapestCourier?.courier_company_id),
+      ) ??
+      couriers.reduce((min: any, curr: any) =>
+        curr.freight_charge < min.freight_charge ? curr : min,
+      );
+    setSelectedCourier(cheapest);
+  }, [shippingData, selectedCourier?.courier_company_id]);
 
   const {
     data: applicableCouponsData,
@@ -636,10 +639,12 @@ export default function CartPage() {
                               <button
                                 onClick={() =>
                                   user?.id
-                                    ? removeItemMutation.mutate(item.id)
-                                    : removeItem(item.id)
+                                    ? removeItemMutation.mutate(String(item.id))
+                                    : removeItem(String(item.id))
                                 }
-                                className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition flex-shrink-0"
+                                disabled={removeItemMutation.isPending}
+                                aria-busy={removeItemMutation.isPending}
+                                className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition flex-shrink-0 disabled:cursor-wait disabled:opacity-50"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -683,7 +688,8 @@ export default function CartPage() {
                                       : updateQuantity(item.id, n);
                                   }}
                                   disabled={
-                                    stockQty === 0 || item.quantity >= stockQty
+                                    item?.product?.allowOutOfStockOrders !== true &&
+                                    item.quantity >= stockQty
                                   }
                                   className="w-7 h-7 flex items-center justify-center text-white bg-gray-900 rounded-full hover:bg-gray-700 transition disabled:opacity-40"
                                 >
