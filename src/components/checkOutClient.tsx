@@ -1994,6 +1994,8 @@ export default function CheckoutClient() {
                     </div>
 
                     {!isLoadingPreview &&
+                      !invalidCartItems.length &&
+                      !!orderPreview &&
                       (couponDiscount > 0 || isFreeShipping) && (
                         <div className="flex flex-wrap gap-1.5 mb-3">
                           {couponDiscount > 0 && (
