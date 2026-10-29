@@ -167,8 +167,14 @@ export default function ProductDetailsClient({
   // This avoids a zero-stock parent record blocking a variant that has stock.
   const activeVariant = selectedVariant ?? (hasVariants ? product.variants?.[0] : undefined);
   const activeStockRow = hasVariants ? activeVariant?.stock?.[0] : product.stock?.[0];
-  const availableStock = Math.max(0, Number(activeStockRow?.quantity ?? 0));
-  const stockThreshold = Math.max(0, Number(activeStockRow?.lowStockThreshold ?? 0));
+  const rawAvailableStock = Number(activeStockRow?.quantity ?? 0);
+  const rawStockThreshold = Number(activeStockRow?.lowStockThreshold ?? 0);
+  const availableStock = Number.isFinite(rawAvailableStock)
+    ? Math.max(0, rawAvailableStock)
+    : 0;
+  const stockThreshold = Number.isFinite(rawStockThreshold)
+    ? Math.max(0, rawStockThreshold)
+    : 0;
   const isOutOfStock = availableStock <= stockThreshold;
 
   const hasVideoConsultation = product.hasVideoConsultation ?? false;
