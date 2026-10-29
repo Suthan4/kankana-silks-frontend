@@ -1,8 +1,16 @@
 "use client";
-import { useState, useRef, useCallback, useEffect } from "react";
+
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Expand,
+  X,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
@@ -18,13 +26,6 @@ interface ZoomGalleryProps {
   isOutOfStock: boolean;
 }
 
-interface RenderedImageRect {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
-
 export function ZoomGallery({
   images,
   selectedImageIndex,
@@ -35,41 +36,36 @@ export function ZoomGallery({
   discount,
   isOutOfStock,
 }: ZoomGalleryProps) {
-  const [isHovering, setIsHovering] = useState(false);
-  const [lensPos, setLensPos] = useState({ x: 0, y: 0 });
-  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
-  const [renderedRect, setRenderedRect] = useState<RenderedImageRect>({
-    x: 0,
-    y: 0,
-    w: 0,
-    h: 0,
-  });
   const [isMobile, setIsMobile] = useState(false);
-  const [loadedImageUrl, setLoadedImageUrl] = useState<string | null>(null);
-  const naturalImageSizeRef = useRef({ w: 0, h: 0 });
+  const [loadedImageUrls, setLoadedImageUrls] = useState<string[]>([]);
+  const [isHoverZoomed, setIsHoverZoomed] = useState(false);
+  const [hoverOrigin, setHoverOrigin] = useState("50% 50%");
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [isLightboxZoomed, setIsLightboxZoomed] = useState(false);
 
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const swiperRef = useRef<SwiperType | null>(null);
-  const activeImageUrl = images[selectedImageIndex]?.url;
+  const zoomTriggerRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const lightboxRef = useRef<HTMLDivElement>(null);
+
+  const activeImage = images?.[selectedImageIndex] ?? images?.[0] ?? null;
+  const activeImageUrl = activeImage?.url ?? null;
   const isMainImageLoaded =
-    Boolean(activeImageUrl) && loadedImageUrl === activeImageUrl &&
-    renderedRect.w > 0 && renderedRect.h > 0;
-
-  // 🔥 FIX 1: Bigger lens (prevents pixel break)
-  const LENS_SIZE = 200;
-
-  // 🔥 FIX 2: Limit zoom scale
-  const MAX_ZOOM = 2.2;
+    Boolean(activeImageUrl) && loadedImageUrls.includes(activeImageUrl);
+  const safeSelectedIndex = Math.min(
+    Math.max(selectedImageIndex, 0),
+    Math.max(images.length - 1, 0),
+  );
 
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
+    const updateViewport = () => setIsMobile(window.innerWidth < 768);
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+    return () => window.removeEventListener("resize", updateViewport);
   }, []);
 
-  // Keep the Swiper instance in sync whenever selectedImageIndex changes
-  // from outside a user swipe — thumbnail clicks, variant/color switches, etc.
+  // Keep swipe position in sync with thumbnail selection and variant changes.
   useEffect(() => {
     const swiper = swiperRef.current;
     if (!swiper || swiper.destroyed) return;
@@ -78,111 +74,117 @@ export function ZoomGallery({
     }
   }, [selectedImageIndex]);
 
+  // Reset transient zoom states whenever the active product image changes.
   useEffect(() => {
-    const el = imageContainerRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect;
-      setContainerSize({ w: width, h: height });
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  const computeRenderedRect = useCallback(
-    (natW: number, natH: number, cW: number, cH: number): RenderedImageRect => {
-      const scale = Math.max(cW / natW, cH / natH);
-      const rendW = natW * scale;
-      const rendH = natH * scale;
-
-      return {
-        x: (cW - rendW) / 2,
-        y: 0,
-        w: rendW,
-        h: rendH,
-      };
-    },
-    [],
-  );
-
-  // Reset zoom immediately when the active image changes; dimensions are
-  // recalculated only after that image's own onLoad handler fires.
-  useEffect(() => {
-    setIsHovering(false);
-    setLensPos({ x: 0, y: 0 });
-    setRenderedRect({ x: 0, y: 0, w: 0, h: 0 });
+    setIsHoverZoomed(false);
+    setHoverOrigin("50% 50%");
+    setIsLightboxZoomed(false);
   }, [activeImageUrl]);
 
-  // The displayed main image owns loading state. Do not issue a second
-  // hidden Image request just to prepare zoom dimensions.
-  useEffect(() => {
-    const { w, h } = naturalImageSizeRef.current;
-    if (
-      !activeImageUrl ||
-      loadedImageUrl !== activeImageUrl ||
-      !containerSize.w ||
-      !containerSize.h ||
-      !w ||
-      !h
-    ) {
-      return;
-    }
-
-    setRenderedRect(
-      computeRenderedRect(w, h, containerSize.w, containerSize.h),
+  // The image itself controls the loading flag; no duplicate preload request.
+  const handleMainImageLoad = useCallback((imageUrl: string | null) => {
+    if (!imageUrl) return;
+    setLoadedImageUrls((current) =>
+      current.includes(imageUrl) ? current : [...current, imageUrl],
     );
-  }, [activeImageUrl, loadedImageUrl, containerSize, computeRenderedRect]);
+  }, []);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isMainImageLoaded) return;
-    const container = imageContainerRef.current;
-    if (!container) return;
+  const handleMainImageError = useCallback((imageUrl: string | null) => {
+    setLoadedImageUrls((current) => current.filter((url) => url !== imageUrl));
+    setIsHoverZoomed(false);
+    setIsLightboxZoomed(false);
+  }, []);
 
-    const rect = container.getBoundingClientRect();
-    const lensWidth = Math.min(LENS_SIZE, rect.width);
-    const lensHeight = Math.min(LENS_SIZE, rect.height);
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    const lensX = Math.min(
-      Math.max(x - lensWidth / 2, 0),
-      Math.max(rect.width - lensWidth, 0),
-    );
-    const lensY = Math.min(
-      Math.max(y - lensHeight / 2, 0),
-      Math.max(rect.height - lensHeight, 0),
-    );
-
-    setLensPos({ x: lensX, y: lensY });
-  }, [isMainImageLoaded]);
-
-  // 🔥 FIX 3: Controlled zoom (prevents blur)
-  const lensWidth = Math.min(LENS_SIZE, containerSize.w);
-  const lensHeight = Math.min(LENS_SIZE, containerSize.h);
-  const zoomScale = Math.min(
-    containerSize.w / Math.max(lensWidth, 1),
-    containerSize.h / Math.max(lensHeight, 1),
-    MAX_ZOOM,
+  const handleHoverMove = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if (!isMainImageLoaded) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const x = Math.max(0, Math.min(100, ((event.clientX - rect.left) / rect.width) * 100));
+      const y = Math.max(0, Math.min(100, ((event.clientY - rect.top) / rect.height) * 100));
+      setHoverOrigin(`${x}% ${y}%`);
+    },
+    [isMainImageLoaded],
   );
 
-  const bgW = renderedRect.w * zoomScale;
-  const bgH = renderedRect.h * zoomScale;
+  const openLightbox = useCallback(() => {
+    if (!isMainImageLoaded || !activeImageUrl) return;
+    setIsHoverZoomed(false);
+    setIsLightboxZoomed(false);
+    setIsLightboxOpen(true);
+  }, [activeImageUrl, isMainImageLoaded]);
 
-  // Keep the center of the lens centered in the zoom preview for a clearer,
-  // less jumpy magnification.
-  const bgX =
-    containerSize.w / 2 -
-    (lensPos.x + lensWidth / 2 - renderedRect.x) * zoomScale;
-  const bgY =
-    containerSize.h / 2 -
-    (lensPos.y + lensHeight / 2 - renderedRect.y) * zoomScale;
+  const closeLightbox = useCallback(() => {
+    setIsLightboxOpen(false);
+    setIsLightboxZoomed(false);
+    window.requestAnimationFrame(() => zoomTriggerRef.current?.focus());
+  }, []);
+
+  useEffect(() => {
+    if (!isLightboxOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Tab") {
+        const focusable = lightboxRef.current?.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), [href], [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusable?.length) {
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+          }
+        }
+        return;
+      }
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeLightbox();
+      } else if (event.key === "ArrowLeft" && images.length > 1) {
+        event.preventDefault();
+        prevImage();
+      } else if (event.key === "ArrowRight" && images.length > 1) {
+        event.preventDefault();
+        nextImage();
+      } else if (event.key === "+" || event.key === "=") {
+        event.preventDefault();
+        setIsLightboxZoomed(true);
+      } else if (event.key === "-") {
+        event.preventDefault();
+        setIsLightboxZoomed(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    closeButtonRef.current?.focus();
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isLightboxOpen, images.length, prevImage, nextImage, closeLightbox]);
+
+  if (!images?.length) {
+    return (
+      <div className="flex min-h-[320px] w-full items-center justify-center rounded-xl bg-[#f8f5f2] text-sm text-stone-500">
+        Product image unavailable
+      </div>
+    );
+  }
 
   return (
     <>
-      {/* ================= MOBILE ================= */}
-      <div className="md:hidden w-full">
-        {/* Swipe Gallery */}
-        <div className="relative">
+      {/* Mobile: swipe first, tap the zoom control to open the dedicated viewer. */}
+      <div className="w-full md:hidden">
+        <div className="relative overflow-hidden rounded-2xl bg-[#f8f5f2]">
           <Swiper
             onSwiper={(swiper) => {
               swiperRef.current = swiper;
@@ -190,7 +192,6 @@ export function ZoomGallery({
             slidesPerView={1}
             spaceBetween={0}
             onSlideChange={(swiper) => {
-              // Swipe originates from the user dragging — sync state to match.
               if (swiper.activeIndex !== selectedImageIndex) {
                 setSelectedImageIndex(swiper.activeIndex);
               }
@@ -199,83 +200,88 @@ export function ZoomGallery({
           >
             {images.map((img, idx) => (
               <SwiperSlide key={img.id ?? img.url ?? idx}>
-                <div className="relative w-full aspect-[3/4] bg-[#f8f5f2] overflow-hidden">
+                <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#f8f5f2]">
                   <Image
                     src={img.url}
-                    alt={product.name}
+                    alt={product?.name ?? "Product image"}
                     fill
                     priority={idx === selectedImageIndex}
-                    quality={100}
+                    quality={95}
                     sizes="100vw"
-                    className="object-cover"
+                    className="object-cover object-top"
+                    onLoad={() => handleMainImageLoad(img.url)}
+                    onError={() => handleMainImageError(img.url)}
                   />
 
-                  {/* Discount Badge */}
-                  {discount > 0 && !isOutOfStock && (
-                    <div className="absolute top-9 left-3 bg-main-primary text-main-secondary px-2.5 py-1 rounded-full text-xs font-semibold z-10">
+                  {idx === selectedImageIndex && discount > 0 && !isOutOfStock && (
+                    <div className="absolute left-3 top-9 z-10 rounded-full bg-main-primary px-2.5 py-1 text-xs font-semibold text-main-secondary">
                       {discount}% OFF
                     </div>
+                  )}
+
+                  {idx === selectedImageIndex && (
+                    <button
+                      type="button"
+                      aria-label="Open image zoom viewer"
+                      onClick={openLightbox}
+                      disabled={!isMainImageLoaded}
+                      className="absolute bottom-3 right-3 z-20 inline-flex h-10 items-center gap-2 rounded-full border border-white/70 bg-white/95 px-3 text-xs font-medium text-stone-900 shadow-sm backdrop-blur transition hover:bg-white disabled:cursor-wait disabled:opacity-60"
+                    >
+                      <Expand className="h-4 w-4" />
+                      View details
+                    </button>
                   )}
                 </div>
               </SwiperSlide>
             ))}
           </Swiper>
 
-          {/* Flipkart-style segmented progress bar */}
           {images.length > 1 && (
-            <div className="absolute top-2 left-2 right-2 z-10 flex gap-1">
+            <div className="pointer-events-none absolute left-3 right-3 top-3 z-10 flex gap-1">
               {images.map((_, idx) => (
                 <div
                   key={idx}
-                  className="h-[3px] flex-1 rounded-full bg-white/40 overflow-hidden"
+                  className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/50"
                 >
                   <motion.div
-                    className="h-full bg-white"
+                    className="h-full bg-stone-900"
                     initial={false}
-                    animate={{
-                      width: idx <= selectedImageIndex ? "100%" : "0%",
-                    }}
-                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    animate={{ width: idx <= safeSelectedIndex ? "100%" : "0%" }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
                   />
                 </div>
               ))}
             </div>
           )}
 
-          {/* Slide counter badge */}
           {images.length > 1 && (
-            <div className="absolute bottom-3 right-3 z-10 bg-black/60 text-white text-[11px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm">
-              {selectedImageIndex + 1} / {images.length}
+            <div className="absolute bottom-4 left-3 z-10 rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur">
+              {safeSelectedIndex + 1} / {images.length}
             </div>
           )}
         </div>
       </div>
 
-      {/* ================= DESKTOP ================= */}
-      <motion.div
-        className="hidden md:flex gap-2 w-full"
-        style={{ height: "clamp(320px, 55vw, 620px)" }}
-      >
-        {/* Thumbnails */}
-        {images?.length > 1 && (
-          <div className="flex flex-col gap-2 w-[70px] overflow-y-auto">
+      {/* Desktop: contained hover zoom, never a floating panel over product details. */}
+      <div className="hidden w-full gap-3 md:flex" style={{ height: "clamp(360px, 48vw, 650px)" }}>
+        {images.length > 1 && (
+          <div className="flex w-[72px] shrink-0 flex-col gap-2 overflow-y-auto pr-1">
             {images.map((img, idx) => (
               <button
-                key={img.id}
+                type="button"
+                key={img.id ?? img.url ?? idx}
                 onClick={() => setSelectedImageIndex(idx)}
-                className={`relative rounded-lg overflow-hidden border-2 ${
-                  selectedImageIndex === idx
-                    ? "border-main-secondary"
-                    : "border-transparent opacity-60"
-                }`}
+                aria-label={`View product image ${idx + 1}`}
+                aria-pressed={safeSelectedIndex === idx}
+                className={`relative h-[92px] w-[64px] shrink-0 overflow-hidden rounded-lg border-2 bg-[#f8f5f2] transition ${safeSelectedIndex === idx ? "border-stone-900 opacity-100" : "border-transparent opacity-65 hover:opacity-100"}`}
               >
                 <Image
                   src={img.url}
                   alt=""
-                  width={70}
-                  height={90}
-                  quality={100}
-                  unoptimized
+                  fill
+                  sizes="64px"
+                  quality={80}
+                  loading="lazy"
                   className="object-cover object-top"
                 />
               </button>
@@ -283,110 +289,213 @@ export function ZoomGallery({
           </div>
         )}
 
-        {/* Main Image */}
-        <div className="relative flex-1">
+        <div className="relative min-w-0 flex-1">
           <div
             ref={imageContainerRef}
-            className={`relative w-full h-full rounded-xl overflow-hidden bg-white ${isMainImageLoaded ? "cursor-zoom-in" : "cursor-default"}`}
+            className="group relative h-full w-full overflow-hidden rounded-2xl bg-[#f8f5f2]"
             onMouseEnter={() => {
-              if (!isMobile && isMainImageLoaded) setIsHovering(true);
+              if (isMainImageLoaded && !isMobile) setIsHoverZoomed(true);
             }}
-            onMouseLeave={() => setIsHovering(false)}
-            onMouseMove={
-              isMainImageLoaded
-                ? (event) => {
-                    if (!isMobile) setIsHovering(true);
-                    handleMouseMove(event);
-                  }
-                : undefined
-            }
+            onMouseLeave={() => setIsHoverZoomed(false)}
+            onMouseMove={(event) => {
+              if (isMainImageLoaded && !isMobile) {
+                setIsHoverZoomed(true);
+                handleHoverMove(event);
+              }
+            }}
           >
-            {images.length > 0 && (
-              <>
-                <Image
-                  src={images[selectedImageIndex].url}
-                  alt={product.name}
-                  fill
-                  priority
-                  quality={100}
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover object-top"
-                  onLoad={(event) => {
-                    const image = event.currentTarget;
-                    naturalImageSizeRef.current = {
-                      w: image.naturalWidth,
-                      h: image.naturalHeight,
-                    };
-                    setLoadedImageUrl(activeImageUrl ?? null);
-                  }}
-                  onError={() => {
-                    setLoadedImageUrl(null);
-                    setIsHovering(false);
-                  }}
-                />
+            {activeImageUrl && (
+              <Image
+                key={activeImageUrl}
+                src={activeImageUrl}
+                alt={product?.name ?? "Product image"}
+                fill
+                priority
+                quality={95}
+                sizes="(max-width: 768px) 100vw, 48vw"
+                className="select-none object-cover object-top transition-transform duration-200 ease-out will-change-transform"
+                style={{
+                  transform: isHoverZoomed && isMainImageLoaded ? "scale(1.45)" : "scale(1)",
+                  transformOrigin: hoverOrigin,
+                }}
+                onLoad={() => handleMainImageLoad(activeImageUrl)}
+                onError={() => handleMainImageError(activeImageUrl)}
+                draggable={false}
+              />
+            )}
 
-                {isHovering && isMainImageLoaded && (
-                  <div
-                    className="absolute border-2 border-yellow-400 rounded-md pointer-events-none"
-                    style={{
-                      width: lensWidth,
-                      height: lensHeight,
-                      left: lensPos.x,
-                      top: lensPos.y,
-                    }}
-                  />
-                )}
-              </>
+            {discount > 0 && !isOutOfStock && (
+              <div className="pointer-events-none absolute left-4 top-4 z-10 rounded-full bg-main-primary px-3 py-1.5 text-xs font-semibold text-main-secondary shadow-sm">
+                {discount}% OFF
+              </div>
             )}
 
             {images.length > 1 && (
               <>
                 <button
-                  onClick={prevImage}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full"
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    prevImage();
+                  }}
+                  aria-label="Previous product image"
+                  className="absolute left-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-white/90 text-stone-900 shadow-sm backdrop-blur transition hover:scale-105 hover:bg-white"
                 >
-                  <ChevronLeft size={16} />
+                  <ChevronLeft className="h-5 w-5" />
                 </button>
-
                 <button
-                  onClick={nextImage}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full"
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    nextImage();
+                  }}
+                  aria-label="Next product image"
+                  className="absolute right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-white/90 text-stone-900 shadow-sm backdrop-blur transition hover:scale-105 hover:bg-white"
                 >
-                  <ChevronRight size={16} />
+                  <ChevronRight className="h-5 w-5" />
                 </button>
               </>
             )}
 
-            {discount > 0 && !isOutOfStock && (
-              <div className="absolute top-3 left-3 bg-main-primary text-main-secondary px-2 py-1 text-xs rounded-full">
-                {discount}% OFF
-              </div>
-            )}
-          </div>
+            <button
+              ref={zoomTriggerRef}
+              type="button"
+              onClick={openLightbox}
+              aria-label="Open fullscreen product image viewer"
+              disabled={!isMainImageLoaded}
+              className="absolute bottom-4 right-4 z-20 inline-flex h-10 items-center gap-2 rounded-full border border-white/70 bg-white/95 px-3.5 text-xs font-medium text-stone-900 shadow-sm backdrop-blur transition hover:bg-white disabled:cursor-wait disabled:opacity-60"
+            >
+              <Expand className="h-4 w-4" />
+              Full view
+            </button>
 
-          <AnimatePresence>
-            {isHovering && isMainImageLoaded && (
-              <motion.div
-                className="fixed border shadow-xl rounded-xl overflow-hidden"
-                style={{
-                  top:
-                    imageContainerRef.current?.getBoundingClientRect().top ?? 0,
-                  left:
-                    (imageContainerRef.current?.getBoundingClientRect().right ??
-                      0) + 10,
-                  width: containerSize.w,
-                  height: containerSize.h,
-                  backgroundImage: isMainImageLoaded ? `url(${activeImageUrl})` : "none",
-                  backgroundRepeat: "no-repeat",
-                  backgroundSize: `${bgW}px ${bgH}px`,
-                  backgroundPosition: `${bgX}px ${bgY}px`,
-                  zIndex: 9999,
-                }}
-              />
-            )}
-          </AnimatePresence>
+            <div className="pointer-events-none absolute bottom-4 left-4 z-10 hidden rounded-full bg-black/50 px-3 py-1.5 text-[11px] text-white opacity-0 backdrop-blur transition-opacity duration-200 group-hover:opacity-100 lg:block">
+              Hover to inspect details
+            </div>
+          </div>
         </div>
-      </motion.div>
+      </div>
+
+      {/* Dedicated lightbox: the zoomed image stays inside the viewport and no
+          longer overlaps the product actions, sticky bar, or details section. */}
+      <AnimatePresence>
+        {isLightboxOpen && activeImageUrl && (
+          <motion.div
+            key="product-image-lightbox"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Image viewer for ${product?.name ?? "product"}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) closeLightbox();
+            }}
+            ref={lightboxRef}
+            className="fixed inset-0 z-[10000] flex flex-col bg-[#121212]/[0.97] text-white backdrop-blur-md"
+          >
+            <header className="relative z-10 flex min-h-[68px] items-center justify-between gap-4 border-b border-white/10 px-4 py-3 sm:px-7">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium sm:text-base">
+                  {product?.name ?? "Product image"}
+                </p>
+                <p className="mt-0.5 text-xs text-white/55">
+                  {safeSelectedIndex + 1} of {images.length}
+                  {isLightboxZoomed ? " · Zoomed in" : " · Full image"}
+                </p>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsLightboxZoomed((value) => !value)}
+                  aria-label={isLightboxZoomed ? "Zoom out" : "Zoom in"}
+                  title={isLightboxZoomed ? "Zoom out" : "Zoom in"}
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+                >
+                  {isLightboxZoomed ? <ZoomOut className="h-5 w-5" /> : <ZoomIn className="h-5 w-5" />}
+                </button>
+                <button
+                  ref={closeButtonRef}
+                  type="button"
+                  onClick={closeLightbox}
+                  aria-label="Close image viewer"
+                  title="Close (Esc)"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </header>
+
+            <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden px-3 py-4 sm:px-16 sm:py-5">
+              {images.length > 1 && (
+                <button
+                  type="button"
+                  onClick={prevImage}
+                  aria-label="Previous image"
+                  className="absolute left-2 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-white/10 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 sm:left-5 sm:h-12 sm:w-12"
+                >
+                  <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+                </button>
+              )}
+
+              <div className="relative h-full w-full max-w-6xl overflow-hidden">
+                <Image
+                  key={`lightbox-${activeImageUrl}`}
+                  src={activeImageUrl}
+                  alt={product?.name ?? "Product image"}
+                  fill
+                  priority
+                  quality={100}
+                  sizes="100vw"
+                  className={`select-none object-contain transition-transform duration-200 ease-out ${isLightboxZoomed ? "cursor-zoom-out" : "cursor-zoom-in"}`}
+                  style={{ transform: isLightboxZoomed ? "scale(1.8)" : "scale(1)" }}
+                  onClick={() => setIsLightboxZoomed((value) => !value)}
+                  draggable={false}
+                />
+              </div>
+
+              {images.length > 1 && (
+                <button
+                  type="button"
+                  onClick={nextImage}
+                  aria-label="Next image"
+                  className="absolute right-2 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-white/10 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 sm:right-5 sm:h-12 sm:w-12"
+                >
+                  <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
+                </button>
+              )}
+            </div>
+
+            {images.length > 1 && (
+              <footer className="flex shrink-0 items-center justify-center gap-2 overflow-x-auto border-t border-white/10 px-4 py-3">
+                {images.map((img, idx) => (
+                  <button
+                    type="button"
+                    key={img.id ?? img.url ?? idx}
+                    onClick={() => setSelectedImageIndex(idx)}
+                    aria-label={`Open image ${idx + 1}`}
+                    aria-pressed={safeSelectedIndex === idx}
+                    className={`relative h-14 w-11 shrink-0 overflow-hidden rounded-md border-2 transition sm:h-16 sm:w-12 ${safeSelectedIndex === idx ? "border-white opacity-100" : "border-white/15 opacity-55 hover:opacity-100"}`}
+                  >
+                    <Image
+                      src={img.url}
+                      alt=""
+                      fill
+                      sizes="48px"
+                      quality={75}
+                      loading="lazy"
+                      className="object-cover object-top"
+                    />
+                  </button>
+                ))}
+              </footer>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

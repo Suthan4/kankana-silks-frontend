@@ -165,20 +165,17 @@ export default function ProductDetailsClient({
 
   // Use the selected variant's stock as the source of truth for variants.
   // This avoids a zero-stock parent record blocking a variant that has stock.
-  const activeVariant =
-    selectedVariant ?? (hasVariants ? product.variants?.[0] : undefined);
-  const activeStockRow = hasVariants
-    ? activeVariant?.stock?.[0]
-    : product.stock?.[0];
-  const rawAvailableStock = Number(activeStockRow?.quantity ?? 0);
-  const rawStockThreshold = Number(activeStockRow?.lowStockThreshold ?? 0);
-  const availableStock = Number.isFinite(rawAvailableStock)
-    ? Math.max(0, rawAvailableStock)
-    : 0;
-  const stockThreshold = Number.isFinite(rawStockThreshold)
-    ? Math.max(0, rawStockThreshold)
-    : 0;
-  const isOutOfStock = availableStock <= stockThreshold;
+  const availableStock = hasVariants
+    ? (selectedVariant?.stock?.[0]?.quantity ?? 0)
+    : (product.stock?.[0]?.quantity ?? 0);
+
+  const isOutOfStock =
+    availableStock === 0 ||
+    (hasVariants &&
+      (selectedVariant?.stock?.[0]?.quantity ?? 0) <
+        (selectedVariant?.stock?.[0]?.lowStockThreshold ?? 0)) ||
+    (product.stock?.[0]?.quantity ?? 0) <
+      (product.stock?.[0]?.lowStockThreshold ?? 0);
 
   const hasVideoConsultation = product.hasVideoConsultation ?? false;
   const videoPurchasingEnabled = product.videoPurchasingEnabled ?? false;
@@ -186,17 +183,17 @@ export default function ProductDetailsClient({
   const allowOutOfStockOrders = product.allowOutOfStockOrders ?? false;
 
   const displayPrice =
-    hasVariants && activeVariant
+    hasVariants && selectedVariant
       ? Number(
-          activeVariant.sellingPrice ??
-            activeVariant.price ??
+          selectedVariant.sellingPrice ??
+            selectedVariant.price ??
             product.sellingPrice,
         )
       : Number(product.sellingPrice);
 
   const basePrice =
-    hasVariants && activeVariant
-      ? Number(activeVariant.basePrice ?? product.basePrice)
+    hasVariants && selectedVariant
+      ? Number(selectedVariant.basePrice ?? product.basePrice)
       : Number(product.basePrice);
 
   const discount =
