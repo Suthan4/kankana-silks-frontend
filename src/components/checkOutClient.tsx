@@ -804,26 +804,143 @@ export default function CheckoutClient() {
       itemId: string;
       quantity: number;
     }) => await cartApi.updateCartItem(itemId, { quantity }),
-    onSuccess: async () => {
-      await refetchCartApi();
-      await queryClient.invalidateQueries({ queryKey: ["orderPreview"] });
-      await refetchPreview();
+    onMutate: async ({ itemId, quantity }) => {
+      const queryKey = ["cartApi", user?.id];
+      await queryClient.cancelQueries({ queryKey });
+      const previousCart = queryClient.getQueryData<any>(queryKey);
+      if (previousCart?.items) {
+        const target = previousCart.items.find(
+          (item: any) => String(item.id) === String(itemId),
+        );
+        let items = previousCart.items;
+        if (target) {
+          const productId = String(target.productId ?? target.product?.id ?? "");
+          const variantId = String(target.variantId ?? target.variant?.id ?? "");
+          let kept = false;
+          items = previousCart.items.flatMap((item: any) => {
+            const sameLine =
+              String(item.productId ?? item.product?.id ?? "") === productId &&
+              String(item.variantId ?? item.variant?.id ?? "") === variantId;
+            if (!sameLine) return [item];
+            if (kept) return [];
+            kept = true;
+            return [{ ...item, quantity }];
+          });
+        }
+        const subtotal = items.reduce((sum: number, item: any) => {
+          const price = Number(
+            item.variant?.sellingPrice ??
+              item.variant?.price ??
+              item.product?.sellingPrice ??
+              0,
+          );
+          return sum + price * Number(item.quantity || 0);
+        }, 0);
+        queryClient.setQueryData(queryKey, {
+          ...previousCart,
+          items,
+          totalItems: items.reduce(
+            (sum: number, item: any) => sum + Number(item.quantity || 0),
+            0,
+          ),
+          subtotal,
+        });
+      }
+      return { previousCart, queryKey };
     },
-    onError: (err: any) =>
-      toast.error(err?.message || "Failed to update quantity"),
+    onError: (err: any, _variables, context) => {
+      if (context?.previousCart) {
+        queryClient.setQueryData(context.queryKey, context.previousCart);
+      }
+      toast.error(err?.message || "Failed to update quantity");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["cartApi", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["orderPreview"] });
+      queryClient.invalidateQueries({ queryKey: ["applicableCoupons"] });
+    },
   });
 
   const removeItemMutation = useMutation({
     mutationFn: async (itemId: string) => await cartApi.removeFromCart(itemId),
-    onSuccess: async () => {
-      toast.success("Item removed");
-      await refetchCartApi();
-      await queryClient.invalidateQueries({ queryKey: ["orderPreview"] });
-      await refetchPreview();
-      await refetchCoupons();
+    onMutate: async (itemId) => {
+      const queryKey = ["cartApi", user?.id];
+      await queryClient.cancelQueries({ queryKey });
+      const previousCart = queryClient.getQueryData<any>(queryKey);
+      if (previousCart?.items) {
+        const target = previousCart.items.find(
+          (item: any) => String(item.id) === String(itemId),
+        );
+        if (target) {
+          const productId = String(target.productId ?? target.product?.id ?? "");
+          const variantId = String(target.variantId ?? target.variant?.id ?? "");
+          const items = previousCart.items.filter(
+            (item: any) =>
+              String(item.productId ?? item.product?.id ?? "") !== productId ||
+              String(item.variantId ?? item.variant?.id ?? "") !== variantId,
+          );
+          const subtotal = items.reduce((sum: number, item: any) => {
+            const price = Number(
+              item.variant?.sellingPrice ??
+                item.variant?.price ??
+                item.product?.sellingPrice ??
+                0,
+            );
+            return sum + price * Number(item.quantity || 0);
+          }, 0);
+          queryClient.setQueryData(queryKey, {
+            ...previousCart,
+            items,
+            totalItems: items.reduce(
+              (sum: number, item: any) => sum + Number(item.quantity || 0),
+              0,
+            ),
+            subtotal,
+          });
+        }
+      }
+      return { previousCart, queryKey };
     },
-    onError: (err: any) => toast.error(err?.message || "Failed to remove item"),
+    onSuccess: () => {
+      toast.success("Item removed");
+    },
+    onError: (err: any, _itemId, context) => {
+      if (context?.previousCart) {
+        queryClient.setQueryData(context.queryKey, context.previousCart);
+      }
+      toast.error(err?.message || "Failed to remove item");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["cartApi", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["orderPreview"] });
+      queryClient.invalidateQueries({ queryKey: ["applicableCoupons"] });
+    },
   });
+
+  const handleRemoveCheckoutItem = (item: any) => {
+    if (isBuyNowMode) {
+      sessionStorage.removeItem("buyNowItem");
+      setBuyNowItem(null);
+      router.push("/cart");
+      return;
+    }
+
+    if (user?.id) {
+      if (item?.id === undefined || item?.id === null || String(item.id).trim() === "") {
+        toast.error("Unable to remove this item. Please refresh your cart and try again.");
+        return;
+      }
+      removeItemMutation.mutate(String(item.id));
+      return;
+    }
+
+    if (item?.id !== undefined && item?.id !== null) {
+      removeItem(String(item.id));
+      return;
+    }
+
+    toast.error("Unable to remove this item. Please refresh your cart and try again.");
+  };
 
   const validateCouponMutation = useMutation({
     mutationFn: async (code: string) => {
@@ -1289,14 +1406,10 @@ export default function CheckoutClient() {
                           <button
                             type="button"
                             aria-label={`Remove ${itemName} from checkout`}
-                            onClick={() =>
-                              user?.id
-                                ? removeItemMutation.mutate(item?.id)
-                                : item?.id
-                                  ? removeItem(item.id)
-                                  : clearCart()
-                            }
-                            className="absolute top-2 right-2 p-1 hover:bg-red-50 rounded transition"
+                            onClick={() => handleRemoveCheckoutItem(item)}
+                            disabled={removeItemMutation.isPending}
+                            aria-busy={removeItemMutation.isPending}
+                            className="absolute top-2 right-2 p-1 hover:bg-red-50 rounded transition disabled:cursor-wait disabled:opacity-50"
                           >
                             <Trash2 className="w-3.5 h-3.5 text-red-500" />
                           </button>
@@ -1370,11 +1483,15 @@ export default function CheckoutClient() {
                                     isBuyNowMode || Number(item?.quantity) <= 1
                                   }
                                   onClick={() => {
-                                    if (item.quantity > 1 && user?.id)
+                                    if (item.quantity <= 1 || isBuyNowMode) return;
+                                    if (user?.id) {
                                       updateQtyMutation.mutate({
-                                        itemId: item.id,
+                                        itemId: String(item.id),
                                         quantity: item.quantity - 1,
                                       });
+                                    } else if (item?.id != null) {
+                                      updateQuantity(String(item.id), item.quantity - 1);
+                                    }
                                   }}
                                   className="w-5 h-5 flex items-center justify-center text-gray-600 disabled:opacity-40 text-sm"
                                 >
@@ -1388,13 +1505,20 @@ export default function CheckoutClient() {
                                     item?.product?.allowOutOfStockOrders !==
                                       true && Number(item?.quantity) >= stockQty
                                   }
-                                  onClick={() =>
-                                    user?.id &&
-                                    updateQtyMutation.mutate({
-                                      itemId: item.id,
-                                      quantity: item.quantity + 1,
-                                    })
-                                  }
+                                  onClick={() => {
+                                    if (
+                                      item?.product?.allowOutOfStockOrders !== true &&
+                                      Number(item.quantity) >= stockQty
+                                    ) return;
+                                    if (user?.id) {
+                                      updateQtyMutation.mutate({
+                                        itemId: String(item.id),
+                                        quantity: item.quantity + 1,
+                                      });
+                                    } else if (item?.id != null) {
+                                      updateQuantity(String(item.id), item.quantity + 1);
+                                    }
+                                  }}
                                   className="w-5 h-5 flex items-center justify-center bg-gray-900 text-white rounded-full disabled:opacity-40 text-sm"
                                 >
                                   +
