@@ -97,6 +97,8 @@ export default function CartPage() {
   const {
     data: cartData,
     isLoading: isLoadingCartApi,
+    isError: isCartError,
+    error: cartError,
     refetch: refetchCartApi,
   } = useQuery({
     queryKey: ["cartApi", user?.id],
@@ -455,8 +457,33 @@ export default function CartPage() {
 
   if (isLoadingCartApi) {
     return (
-      <div className="h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+      <div role="status" aria-live="polite" className="h-screen flex flex-col items-center justify-center gap-3 text-gray-500">
+        <Loader2 className="w-8 h-8 animate-spin" />
+        <p className="text-sm">Loading your cart…</p>
+      </div>
+    );
+  }
+
+  // A rejected cart request must settle into a recoverable state, rather than
+  // silently presenting an empty cart. Refresh-token failure is handled by the
+  // shared API interceptor, which clears the expired session and opens sign-in.
+  if (user?.id && isCartError && !cartData) {
+    return (
+      <div className="h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 flex items-center justify-center p-4">
+        <div role="alert" className="max-w-md rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+          <ShoppingBag className="mx-auto mb-4 h-10 w-10 text-gray-400" />
+          <h2 className="mb-2 text-xl font-bold text-gray-900">We couldn’t load your cart</h2>
+          <p className="mb-6 text-sm text-gray-500">
+            Your items haven’t been removed. Please try again.
+          </p>
+          <button
+            type="button"
+            onClick={() => void refetchCartApi()}
+            className="inline-flex items-center justify-center rounded-full bg-black px-6 py-3 text-sm font-semibold text-white transition hover:bg-gray-800"
+          >
+            Try again
+          </button>
+        </div>
       </div>
     );
   }
