@@ -92,10 +92,9 @@ const getCheckoutStockQty = (item: any): number => {
       const matchingStock = item.product.stock.find(
         (stock: any) => String(stock.variantId ?? "") === String(item.variantId),
       );
-      if (matchingStock) {
-        const quantity = Number(matchingStock.quantity);
-        return Number.isFinite(quantity) && quantity >= 0 ? quantity : 0;
-      }
+      if (!matchingStock) return 0;
+      const quantity = Number(matchingStock.quantity);
+      return Number.isFinite(quantity) && quantity >= 0 ? quantity : 0;
     }
     const quantity = Number(item.product.stock[0].quantity);
     return Number.isFinite(quantity) && quantity >= 0 ? quantity : 0;
