@@ -368,8 +368,8 @@ export default function CategoryProductsClient({
     const qty = product.stock?.[0]?.quantity ?? 0;
     const threshold = product.stock?.[0]?.lowStockThreshold ?? 0;
     const allowOut = product.allowOutOfStockOrders ?? false;
-    if (allowOut) return false;
     if (qty === 0) return true;
+    if (allowOut) return false;
     if (qty <= threshold) return true;
     return false;
   };
