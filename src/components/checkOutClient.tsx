@@ -504,7 +504,6 @@ export default function CheckoutClient() {
   const {
     data: cartData,
     isLoading: isLoadingCartApi,
-    refetch: refetchCartApi,
   } = useQuery({
     queryKey: ["cartApi", user?.id],
     queryFn: async () => (await cartApi.getCart()).data,
@@ -558,7 +557,6 @@ export default function CheckoutClient() {
   const {
     data: shippingData,
     isLoading: isLoadingShipping,
-    refetch: refetchShipping,
   } = useQuery({
     queryKey: ["cartShipping", selectedAddress?.pincode, shippingCartSignature],
     queryFn: async () => {
@@ -1480,7 +1478,9 @@ export default function CheckoutClient() {
                               <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-full px-1.5 py-0.5">
                                 <button
                                   disabled={
-                                    isBuyNowMode || Number(item?.quantity) <= 1
+                                    isBuyNowMode ||
+                                    updateQtyMutation.isPending ||
+                                    Number(item?.quantity) <= 1
                                   }
                                   onClick={() => {
                                     if (item.quantity <= 1 || isBuyNowMode) return;
@@ -1502,8 +1502,9 @@ export default function CheckoutClient() {
                                 </span>
                                 <button
                                   disabled={
-                                    item?.product?.allowOutOfStockOrders !==
-                                      true && Number(item?.quantity) >= stockQty
+                                    updateQtyMutation.isPending ||
+                                    (item?.product?.allowOutOfStockOrders !== true &&
+                                      Number(item?.quantity) >= stockQty)
                                   }
                                   onClick={() => {
                                     if (
