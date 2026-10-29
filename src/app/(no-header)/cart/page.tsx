@@ -23,7 +23,7 @@ import Image from "next/image";
 import { useCartStore } from "@/store/useCartStore";
 import { useRouter } from "next/navigation";
 import { toast } from "@/store/useToastStore";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { couponApi, type Coupon } from "@/lib/api/coupon.api";
 import { cartApi } from "@/lib/api/cart.api";
 import { useAuthModal } from "@/store/useAuthModalStore";
@@ -59,6 +59,7 @@ const normalizeAttributes = (attrs: any) => {
 export default function CartPage() {
   const router = useRouter();
   const { user } = useAuthModal();
+  const queryClient = useQueryClient();
 
   const {
     items,
@@ -348,23 +349,69 @@ export default function CartPage() {
       itemId: string;
       quantity: number;
     }) => await cartApi.updateCartItem(itemId, { quantity }),
-    onSuccess: async () => {
-      await refetchCartApi();
-      // Refetch shipping when quantity changes (affects chargeable weight)
-      await refetchShipping();
+    onMutate: async ({ itemId, quantity }) => {
+      const queryKey = ["cartApi", user?.id];
+      await queryClient.cancelQueries({ queryKey });
+      const previousCart = queryClient.getQueryData<any>(queryKey);
+      if (previousCart?.items) {
+        const items = previousCart.items.map((item: any) =>
+          String(item.id) === String(itemId) ? { ...item, quantity } : item,
+        );
+        const subtotal = items.reduce((sum: number, item: any) => {
+          const price = Number(item.variant?.sellingPrice ?? item.variant?.price ?? item.product?.sellingPrice ?? 0);
+          return sum + price * Number(item.quantity || 0);
+        }, 0);
+        queryClient.setQueryData(queryKey, {
+          ...previousCart,
+          items,
+          totalItems: items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0),
+          subtotal,
+        });
+      }
+      return { previousCart, queryKey };
     },
-    onError: (err: any) =>
-      toast.error(err?.message || "Failed to update quantity"),
+    onError: (err: any, _variables, context) => {
+      if (context?.previousCart) queryClient.setQueryData(context.queryKey, context.previousCart);
+      toast.error(err?.message || "Failed to update quantity");
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["cartApi"] }),
   });
 
   const removeItemMutation = useMutation({
     mutationFn: async (itemId: string) => await cartApi.removeFromCart(itemId),
-    onSuccess: async () => {
-      toast.success("Item removed");
-      await refetchCartApi();
-      await refetchShipping();
+    onMutate: async (itemId) => {
+      const queryKey = ["cartApi", user?.id];
+      await queryClient.cancelQueries({ queryKey });
+      const previousCart = queryClient.getQueryData<any>(queryKey);
+      if (previousCart?.items) {
+        const target = previousCart.items.find((item: any) => String(item.id) === String(itemId));
+        if (target) {
+          const productId = String(target.productId ?? target.product?.id ?? "");
+          const variantId = String(target.variantId ?? target.variant?.id ?? "");
+          const items = previousCart.items.filter((item: any) =>
+            String(item.productId ?? item.product?.id ?? "") !== productId ||
+            String(item.variantId ?? item.variant?.id ?? "") !== variantId,
+          );
+          const subtotal = items.reduce((sum: number, item: any) => {
+            const price = Number(item.variant?.sellingPrice ?? item.variant?.price ?? item.product?.sellingPrice ?? 0);
+            return sum + price * Number(item.quantity || 0);
+          }, 0);
+          queryClient.setQueryData(queryKey, {
+            ...previousCart,
+            items,
+            totalItems: items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0),
+            subtotal,
+          });
+        }
+      }
+      return { previousCart, queryKey };
     },
-    onError: (err: any) => toast.error(err?.message || "Failed to remove item"),
+    onSuccess: () => toast.success("Item removed"),
+    onError: (err: any, _itemId, context) => {
+      if (context?.previousCart) queryClient.setQueryData(context.queryKey, context.previousCart);
+      toast.error(err?.message || "Failed to remove item");
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["cartApi"] }),
   });
 
   const handleApplyCoupon = (code: string) => {
