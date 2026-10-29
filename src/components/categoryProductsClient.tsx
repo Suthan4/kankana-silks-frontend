@@ -65,7 +65,7 @@ export default function CategoryProductsClient({
     | "popularity-desc"
     | "name-asc"
   >(() => {
-    const sortByParam = searchParams.get("sortBy") || "createdAt";
+    const sortByParam = searchParams.get("sortBy") || "price";
     const sortOrderParam = searchParams.get("sortOrder") || "desc";
     return `${sortByParam}-${sortOrderParam}` as any;
   });
@@ -213,7 +213,7 @@ export default function CategoryProductsClient({
     if (maxPrice && maxPrice > 0 && maxPrice < 100000)
       params.maxPrice = maxPrice;
 
-    params.sortBy = (searchParams.get("sortBy") || "createdAt") as any;
+    params.sortBy = (searchParams.get("sortBy") || "price") as any;
     params.sortOrder = (searchParams.get("sortOrder") || "desc") as any;
 
     const color = searchParams.get("color");
@@ -286,6 +286,9 @@ export default function CategoryProductsClient({
           name: product.name,
           slug: product.slug,
           categoryId: product.categoryId,
+          isActive: product.isActive,
+          hasVariants: product.hasVariants ?? false,
+          allowOutOfStockOrders: product.allowOutOfStockOrders ?? false,
           sellingPrice: Number(product.sellingPrice),
           basePrice: Number(product.basePrice),
           media: [
@@ -306,6 +309,10 @@ export default function CategoryProductsClient({
               size: variant.size,
               color: variant.color,
               fabric: variant.fabric,
+              stock: variant.stock?.map((stock: any) => ({
+                ...stock,
+                lowStockThreshold: stock.lowStockThreshold ?? 0,
+              })) ?? [],
             }
           : null,
       };
@@ -361,15 +368,28 @@ export default function CategoryProductsClient({
     const qty = product.stock?.[0]?.quantity ?? 0;
     const threshold = product.stock?.[0]?.lowStockThreshold ?? 0;
     const allowOut = product.allowOutOfStockOrders ?? false;
-    if (qty === 0) return true;
     if (allowOut) return false;
+    if (qty === 0) return true;
     if (qty <= threshold) return true;
     return false;
   };
 
   const canAddToCart = (product: Product) => !isProductUnavailable(product);
-  const isProductOutOfStock = (product: Product) =>
-    (product.stock?.[0]?.quantity ?? 0) === 0;
+  const isProductOutOfStock = (product: Product) => {
+    // For variable products, mask the parent price only when every variant
+    // has known inventory and all variants are out of stock.
+    if (product.hasVariants && product.variants?.length) {
+      const everyVariantHasStock = product.variants.every(
+        (variant) => Array.isArray(variant.stock) && variant.stock.length > 0,
+      );
+      if (everyVariantHasStock) {
+        return product.variants.every(
+          (variant) => Number(variant.stock?.[0]?.quantity ?? 0) <= 0,
+        );
+      }
+    }
+    return Number(product.stock?.[0]?.quantity ?? 0) <= 0;
+  };
   console.log(
     "isProductOutOfStock",
     isProductOutOfStock,
@@ -1102,11 +1122,15 @@ hover:bg-white
                           {/* Price row */}
                           <div className="mt-1.5 flex items-baseline gap-2">
                             <span className="text-sm font-medium text-black tracking-tight">
-                              ₹{displayPrice.toLocaleString("en-IN")}
+                              {isOutOfStock
+                                ? formatMaskedPrice(displayPrice)
+                                : `₹${displayPrice.toLocaleString("en-IN")}`}
                             </span>
                             {basePrice > displayPrice && (
                               <span className="text-xs text-gray-400 line-through">
-                                ₹{basePrice.toLocaleString("en-IN")}
+                                {isOutOfStock
+                                  ? formatMaskedPrice(basePrice)
+                                  : `₹${basePrice.toLocaleString("en-IN")}`}
                               </span>
                             )}
                           </div>

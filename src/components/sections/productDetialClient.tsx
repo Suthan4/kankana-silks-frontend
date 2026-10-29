@@ -167,13 +167,11 @@ export default function ProductDetailsClient({
     ? (selectedVariant?.stock?.[0]?.quantity ?? 0)
     : (product.stock?.[0]?.quantity ?? 0);
 
+  const selectedStockThreshold = hasVariants
+    ? (selectedVariant?.stock?.[0]?.lowStockThreshold ?? 0)
+    : (product.stock?.[0]?.lowStockThreshold ?? 0);
   const isOutOfStock =
-    availableStock === 0 ||
-    (hasVariants &&
-      (selectedVariant?.stock?.[0]?.quantity ?? 0) <
-        (selectedVariant?.stock?.[0]?.lowStockThreshold ?? 0)) ||
-    (product.stock?.[0]?.quantity ?? 0) <
-      (product.stock?.[0]?.lowStockThreshold ?? 0);
+    availableStock === 0 || availableStock < selectedStockThreshold;
 
   const hasVideoConsultation = product.hasVideoConsultation ?? false;
   const videoPurchasingEnabled = product.videoPurchasingEnabled ?? false;
@@ -441,6 +439,9 @@ export default function ProductDetailsClient({
           name: product.name,
           slug: product.slug,
           categoryId: product.categoryId,
+          isActive: product.isActive,
+          hasVariants: product.hasVariants ?? false,
+          allowOutOfStockOrders: product.allowOutOfStockOrders ?? false,
           sellingPrice: Number(product.sellingPrice),
           basePrice: Number(product.basePrice),
           media: [
@@ -486,21 +487,11 @@ export default function ProductDetailsClient({
     onError: () => toast.error("Failed to add to cart"),
   });
 
-  const canAddToCart = (product: Product) => {
-    const availableStock = product.stock?.[0]?.quantity ?? 0;
-    const lowStockThreshold = product.stock?.[0]?.lowStockThreshold ?? 0;
-    const allowOutOfStockOrders = product.allowOutOfStockOrders ?? false;
-    if (availableStock === 0) return false;
-    if (allowOutOfStockOrders) return true;
-    if (availableStock <= lowStockThreshold) return false;
-    return true;
-  };
-
   const handleAddToCart = (
     product: Product,
     variant?: ProductVariant | null,
   ) => {
-    if (!canAddToCart(product)) {
+    if (!allowOutOfStockOrders && isOutOfStock) {
       toast.error("This product is currently unavailable");
       return;
     }
@@ -508,11 +499,11 @@ export default function ProductDetailsClient({
   };
 
   const handleBuyNow = async () => {
-    if (availableStock === 0) {
+    if (isOutOfStock && !allowOutOfStockOrders) {
       toast.error("Product is out of stock");
       return;
     }
-    if (quantity > availableStock) {
+    if (quantity > availableStock && !allowOutOfStockOrders) {
       toast.error(`Only ${availableStock} items available`);
       return;
     }
@@ -530,6 +521,9 @@ export default function ProductDetailsClient({
         name: product.name,
         slug: product.slug,
         categoryId: product.categoryId,
+        isActive: product.isActive,
+        hasVariants: product.hasVariants ?? false,
+        allowOutOfStockOrders: product.allowOutOfStockOrders ?? false,
         sellingPrice: Number(product.sellingPrice),
         basePrice: Number(product.basePrice),
         media: [
@@ -650,7 +644,7 @@ export default function ProductDetailsClient({
                   </p>
 
                   <div className="flex items-baseline gap-2.5 mt-2">
-                    {isOutOfStock && !allowOutOfStockOrders ? (
+                    {isOutOfStock ? (
                       <>
                         <span className="text-3xl font-bold text-gray-900">
                           {formatMaskedPrice(displayPrice)}
@@ -981,7 +975,7 @@ export default function ProductDetailsClient({
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={handleBuyNow}
-                        disabled={availableStock === 0}
+                        disabled={isOutOfStock && !allowOutOfStockOrders}
                         className="flex-1 bg-main-primary text-main-secondary py-3 rounded-xl font-semibold shadow hover:shadow-md transition flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Zap className="w-4 h-4" /> Buy Now
@@ -1028,17 +1022,15 @@ export default function ProductDetailsClient({
         <div className="flex items-center justify-between px-4 pt-2.5 pb-1">
           <div className="flex items-baseline gap-2">
             <span className="text-lg font-bold text-gray-900">
-              {isOutOfStock && !allowOutOfStockOrders
+              {isOutOfStock
                 ? formatMaskedPrice(displayPrice)
-                : `₹${displayPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                : `₹${displayPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
             </span>
-            {discount > 0 && !isOutOfStock && (
+            {discount > 0 && (
               <span className="text-xs text-gray-400 line-through">
-                ₹
-                {basePrice.toLocaleString("en-IN", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+                {isOutOfStock
+                  ? formatMaskedPrice(basePrice)
+                  : `₹${basePrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
               </span>
             )}
           </div>
@@ -1070,7 +1062,7 @@ export default function ProductDetailsClient({
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={() => handleAddToCart(product, selectedVariant)}
-                disabled={availableStock === 0 || addToCartMutation.isPending}
+                disabled={(isOutOfStock && !allowOutOfStockOrders) || addToCartMutation.isPending}
                 className="flex-1 bg-gray-900 text-white py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {addToCartMutation.isPending ? (
@@ -1090,7 +1082,7 @@ export default function ProductDetailsClient({
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={handleBuyNow}
-                disabled={availableStock === 0}
+                disabled={isOutOfStock && !allowOutOfStockOrders}
                 className="flex-1 bg-main-primary text-main-secondary py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Zap className="w-4 h-4" />
