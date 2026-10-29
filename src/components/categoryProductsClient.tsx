@@ -352,6 +352,8 @@ export default function CategoryProductsClient({
     queryKey: ["cartApi", user?.id],
     queryFn: async () => (await cartApi.getCart()).data,
     enabled: !!user,
+    staleTime: 15_000,
+    refetchOnWindowFocus: false,
   });
 
   const removeItemMutation = useMutation({
