@@ -27,6 +27,7 @@ import { Category } from "@/lib/api/category.api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCartStore } from "@/store/useCartStore";
 import { formatMaskedPrice } from "@/lib/utils/priceMasked";
+import { mergeCartLines } from "@/lib/utils/cartItems";
 import { getColorHex, isValidCSSColor } from "@/lib/utils/colorValidation";
 import { useWishlist } from "@/hooks/useWishlist";
 import SortDropdown from "./customDropdown";
@@ -316,7 +317,7 @@ export default function CategoryProductsClient({
             }
           : null,
       };
-      addToLocalCart(cartItem);
+      if (!user) addToLocalCart(cartItem);
       if (user) {
         await cartApi.addToCart({
           productId: product.id,
@@ -360,7 +361,10 @@ export default function CategoryProductsClient({
   });
 
   const cartItems = useCartStore((state) => state.items);
-  const effectiveCartItems = user ? (cartData?.items ?? []) : cartItems;
+  const effectiveCartItems = useMemo(
+    () => mergeCartLines(user ? (cartData?.items ?? []) : cartItems),
+    [user, cartData?.items, cartItems],
+  );
   const updateQuantityLocal = useCartStore((state) => state.updateQuantity);
   const removeItemLocal = useCartStore((state) => state.removeItem);
 
