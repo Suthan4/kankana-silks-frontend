@@ -5,7 +5,7 @@
  * Examples:
  * 72999   -> "xx,x99"
  * 127999  -> "x,xx,x99"
- * 1299    -> "xx99"
+ * 1299    -> "x,x99"
  * 99      -> "99"
  */
 export function maskPrice(price: number | string): string {
