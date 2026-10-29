@@ -69,6 +69,8 @@ export function mergeCartLines<T extends CartLineLike>(
 
 /** Remove the UI-only duplicate-ID metadata before persisting cart lines. */
 export function mergeCartLinesForStorage<T extends CartLineLike>(items: readonly T[]): T[] {
-  return mergeCartLines(items).map(({ _duplicateIds: _ignored, ...item }) => item as T);
+  return mergeCartLines(items).map(
+    ({ _duplicateIds: _ignored, ...item }) => item as unknown as T,
+  );
 }
 
