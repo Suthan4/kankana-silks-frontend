@@ -108,7 +108,7 @@ const getCheckoutItemIssue = (item: any): string | null => {
   }
 
   const product = item.product;
-  const productId = item.productId ?? product?.id;
+  const productId = item.productId;
   if (productId === undefined || productId === null || !String(productId).trim()) {
     return "The product reference is missing. Remove this item and add the product again.";
   }
@@ -224,7 +224,9 @@ const ProcessingOverlay = ({ step }: { step: 1 | 2 | 3 }) => {
     <div className="fixed inset-0 z-[9999] bg-white/5 backdrop-blur-sm flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 w-[320px]">
         <div className="flex flex-col items-center gap-5">
-          <div className="w-14 h-14 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-stone-100 text-stone-900">
+            <Loader2 className="h-8 w-8 animate-spin" aria-hidden="true" />
+          </div>
           <div className="text-center">
             <p className="text-lg font-bold text-gray-900">
               Processing your order
@@ -239,12 +241,12 @@ const ProcessingOverlay = ({ step }: { step: 1 | 2 | 3 }) => {
               return (
                 <div key={label} className="flex items-center gap-2 text-sm">
                   {current < step && (
-                    <span className="text-green-600 font-bold">✔</span>
+                    <Check className="h-4 w-4 text-green-600" aria-hidden="true" />
                   )}
                   {current === step && (
-                    <span className="animate-pulse text-gray-900">⏳</span>
+                    <Loader2 className="h-4 w-4 animate-spin text-stone-900" aria-hidden="true" />
                   )}
-                  {current > step && <span className="text-gray-300">•</span>}
+                  {current > step && <span className="h-1.5 w-1.5 rounded-full bg-gray-300" aria-hidden="true" />}
                   <span
                     className={
                       current <= step
@@ -1169,7 +1171,7 @@ export default function CheckoutClient() {
                     {displayItems.map((item: any, index: number) => {
                       const stockQty = getStockQty(item);
                       const unitPrice = getUnitPrice(item);
-                      const validationIssue = getCheckoutItemIssue(item);
+                      const validationIssue = invalidCartItems.find((entry) => entry.index === index)?.message;
                       const itemName =
                         (typeof item?.product?.name === "string" ? item.product.name.trim() : "") ||
                         (typeof item?.name === "string" ? item.name.trim() : "") ||
