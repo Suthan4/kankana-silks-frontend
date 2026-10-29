@@ -25,6 +25,9 @@ export interface CartItemAPIShape {
     sellingPrice: string | number;
     basePrice: string | number;
     categoryId: string;
+    isActive?: boolean;
+    hasVariants?: boolean;
+    allowOutOfStockOrders?: boolean;
 
     media?: { url: string; altText?: string; isActive?: boolean }[];
     stock?: { quantity: number }[];

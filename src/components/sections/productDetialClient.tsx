@@ -441,6 +441,9 @@ export default function ProductDetailsClient({
           name: product.name,
           slug: product.slug,
           categoryId: product.categoryId,
+          isActive: product.isActive,
+          hasVariants: product.hasVariants ?? false,
+          allowOutOfStockOrders: product.allowOutOfStockOrders ?? false,
           sellingPrice: Number(product.sellingPrice),
           basePrice: Number(product.basePrice),
           media: [
@@ -530,6 +533,9 @@ export default function ProductDetailsClient({
         name: product.name,
         slug: product.slug,
         categoryId: product.categoryId,
+        isActive: product.isActive,
+        hasVariants: product.hasVariants ?? false,
+        allowOutOfStockOrders: product.allowOutOfStockOrders ?? false,
         sellingPrice: Number(product.sellingPrice),
         basePrice: Number(product.basePrice),
         media: [
@@ -650,7 +656,7 @@ export default function ProductDetailsClient({
                   </p>
 
                   <div className="flex items-baseline gap-2.5 mt-2">
-                    {isOutOfStock && !allowOutOfStockOrders ? (
+                    {isOutOfStock ? (
                       <>
                         <span className="text-3xl font-bold text-gray-900">
                           {formatMaskedPrice(displayPrice)}
@@ -1028,17 +1034,15 @@ export default function ProductDetailsClient({
         <div className="flex items-center justify-between px-4 pt-2.5 pb-1">
           <div className="flex items-baseline gap-2">
             <span className="text-lg font-bold text-gray-900">
-              {isOutOfStock && !allowOutOfStockOrders
+              {isOutOfStock
                 ? formatMaskedPrice(displayPrice)
                 : `₹${displayPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             </span>
-            {discount > 0 && !isOutOfStock && (
+            {discount > 0 && (
               <span className="text-xs text-gray-400 line-through">
-                ₹
-                {basePrice.toLocaleString("en-IN", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+                {isOutOfStock
+                  ? formatMaskedPrice(basePrice)
+                  : `₹${basePrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               </span>
             )}
           </div>
