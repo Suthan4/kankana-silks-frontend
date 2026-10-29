@@ -501,10 +501,7 @@ export default function CheckoutClient() {
     enabled: !!user,
   });
 
-  const {
-    data: cartData,
-    isLoading: isLoadingCartApi,
-  } = useQuery({
+  const { data: cartData, isLoading: isLoadingCartApi } = useQuery({
     queryKey: ["cartApi", user?.id],
     queryFn: async () => (await cartApi.getCart()).data,
     enabled: !!user,
@@ -554,10 +551,7 @@ export default function CheckoutClient() {
     [displayItems],
   );
 
-  const {
-    data: shippingData,
-    isLoading: isLoadingShipping,
-  } = useQuery({
+  const { data: shippingData, isLoading: isLoadingShipping } = useQuery({
     queryKey: ["cartShipping", selectedAddress?.pincode, shippingCartSignature],
     queryFn: async () => {
       if (
@@ -735,7 +729,12 @@ export default function CheckoutClient() {
     isLoading: isLoadingCoupons,
     refetch: refetchCoupons,
   } = useQuery({
-    queryKey: ["applicableCoupons", subtotal, displayItems.length, shippingCartSignature],
+    queryKey: [
+      "applicableCoupons",
+      subtotal,
+      displayItems.length,
+      shippingCartSignature,
+    ],
     queryFn: async () => {
       if (
         !user ||
@@ -812,8 +811,12 @@ export default function CheckoutClient() {
         );
         let items = previousCart.items;
         if (target) {
-          const productId = String(target.productId ?? target.product?.id ?? "");
-          const variantId = String(target.variantId ?? target.variant?.id ?? "");
+          const productId = String(
+            target.productId ?? target.product?.id ?? "",
+          );
+          const variantId = String(
+            target.variantId ?? target.variant?.id ?? "",
+          );
           let kept = false;
           items = previousCart.items.flatMap((item: any) => {
             const sameLine =
@@ -870,8 +873,12 @@ export default function CheckoutClient() {
           (item: any) => String(item.id) === String(itemId),
         );
         if (target) {
-          const productId = String(target.productId ?? target.product?.id ?? "");
-          const variantId = String(target.variantId ?? target.variant?.id ?? "");
+          const productId = String(
+            target.productId ?? target.product?.id ?? "",
+          );
+          const variantId = String(
+            target.variantId ?? target.variant?.id ?? "",
+          );
           const items = previousCart.items.filter(
             (item: any) =>
               String(item.productId ?? item.product?.id ?? "") !== productId ||
@@ -924,8 +931,14 @@ export default function CheckoutClient() {
     }
 
     if (user?.id) {
-      if (item?.id === undefined || item?.id === null || String(item.id).trim() === "") {
-        toast.error("Unable to remove this item. Please refresh your cart and try again.");
+      if (
+        item?.id === undefined ||
+        item?.id === null ||
+        String(item.id).trim() === ""
+      ) {
+        toast.error(
+          "Unable to remove this item. Please refresh your cart and try again.",
+        );
         return;
       }
       removeItemMutation.mutate(String(item.id));
@@ -937,7 +950,9 @@ export default function CheckoutClient() {
       return;
     }
 
-    toast.error("Unable to remove this item. Please refresh your cart and try again.");
+    toast.error(
+      "Unable to remove this item. Please refresh your cart and try again.",
+    );
   };
 
   const validateCouponMutation = useMutation({
@@ -1483,14 +1498,18 @@ export default function CheckoutClient() {
                                     Number(item?.quantity) <= 1
                                   }
                                   onClick={() => {
-                                    if (item.quantity <= 1 || isBuyNowMode) return;
+                                    if (item.quantity <= 1 || isBuyNowMode)
+                                      return;
                                     if (user?.id) {
                                       updateQtyMutation.mutate({
                                         itemId: String(item.id),
                                         quantity: item.quantity - 1,
                                       });
                                     } else if (item?.id != null) {
-                                      updateQuantity(String(item.id), item.quantity - 1);
+                                      updateQuantity(
+                                        String(item.id),
+                                        item.quantity - 1,
+                                      );
                                     }
                                   }}
                                   className="w-5 h-5 flex items-center justify-center text-gray-600 disabled:opacity-40 text-sm"
@@ -1504,25 +1523,31 @@ export default function CheckoutClient() {
                                   disabled={
                                     isBuyNowMode ||
                                     updateQtyMutation.isPending ||
-                                    (item?.product?.allowOutOfStockOrders !== true &&
-                                      Number(item?.quantity) >= stockQty)
+                                    item?.product?.allowOutOfStockOrders !==
+                                      true ||
+                                    Number(item?.quantity) >= stockQty
                                   }
                                   onClick={() => {
                                     if (isBuyNowMode) return;
                                     if (
-                                      item?.product?.allowOutOfStockOrders !== true &&
+                                      item?.product?.allowOutOfStockOrders !==
+                                        true ||
                                       Number(item.quantity) >= stockQty
-                                    ) return;
+                                    )
+                                      return;
                                     if (user?.id) {
                                       updateQtyMutation.mutate({
                                         itemId: String(item.id),
                                         quantity: item.quantity + 1,
                                       });
                                     } else if (item?.id != null) {
-                                      updateQuantity(String(item.id), item.quantity + 1);
+                                      updateQuantity(
+                                        String(item.id),
+                                        item.quantity + 1,
+                                      );
                                     }
                                   }}
-                                  className="w-5 h-5 flex items-center justify-center bg-gray-900 text-white rounded-full disabled:opacity-40 text-sm"
+                                  className="w-5 h-5 flex items-center justify-center bg-gray-900 text-white rounded-full disabled:opacity-40  text-sm"
                                 >
                                   +
                                 </button>
