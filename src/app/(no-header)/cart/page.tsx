@@ -205,7 +205,7 @@ export default function CartPage() {
         curr.freight_charge < min.freight_charge ? curr : min,
       );
     setSelectedCourier(cheapest);
-  }, [shippingData, selectedCourier?.courier_company_id]);
+  }, [shippingData, selectedCourier]);
 
   const {
     data: applicableCouponsData,
