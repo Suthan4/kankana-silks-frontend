@@ -51,66 +51,124 @@ export class BaseApiService {
   }
 
   private setupInterceptors() {
-    // Request interceptor
+    const setAuthorizationHeader = (request: any, token: string) => {
+      if (!request.headers) request.headers = {} as any;
+      if (typeof request.headers.set === "function") {
+        request.headers.set("Authorization", `Bearer ${token}`);
+      } else {
+        request.headers.Authorization = `Bearer ${token}`;
+      }
+    };
+
+    const getRequestToken = (request: any): string | null => {
+      const value =
+        request?.headers?.get?.("Authorization") ??
+        request?.headers?.Authorization ??
+        request?.headers?.authorization;
+      if (typeof value !== "string") return null;
+      return value.replace(/^Bearer\\s+/i, "").trim() || null;
+    };
+
+    // Always attach the latest access token from persisted auth state.
     this.api.interceptors.request.use(
       (config) => {
         const token = getAccessToken();
-
-        if (token) {
-          if (!config.headers) {
-            config.headers = {} as any;
-          }
-          config.headers.Authorization = `Bearer ${token}`;
-          if (typeof config.headers.set === "function") {
-            config.headers.set("Authorization", `Bearer ${token}`);
-          }
-        }
+        if (token) setAuthorizationHeader(config, token);
         return config;
       },
-      (error) => Promise.reject(error)
+      (error) => Promise.reject(error),
     );
 
-    // Response interceptor
+    // On 401, refresh once and retry the failed API request. Always release the
+    // mutex: without this, a failed request could lock every subsequent API call.
     this.api.interceptors.response.use(
       (response) => response,
       async (error: AxiosError) => {
         const originalRequest = error.config as any;
 
         if (
-          error.response?.status === 401 &&
-          originalRequest &&
-          !originalRequest._retry &&
-          !isAuthEndpoint(originalRequest.url)
+          error.response?.status !== 401 ||
+          !originalRequest ||
+          isAuthEndpoint(originalRequest.url)
         ) {
-          originalRequest._retry = true;
+          return Promise.reject(error);
+        }
 
-          // If another request is already refreshing, wait for it to complete
-          if (refreshMutex.isLocked()) {
-            await refreshMutex.waitForUnlock();
+        const failedWithToken = getRequestToken(originalRequest);
+        const latestAccessToken = getAccessToken();
 
-            const refreshedToken = getAccessToken();
-            if (refreshedToken) {
-              if (originalRequest.headers) {
-                originalRequest.headers.Authorization = `Bearer ${refreshedToken}`;
-                if (typeof originalRequest.headers.set === "function") {
-                  originalRequest.headers.set(
-                    "Authorization",
-                    `Bearer ${refreshedToken}`
-                  );
-                }
-              }
-              return this.api(originalRequest);
-            }
+        // Another request may already have refreshed the token while this one
+        // was in flight, so reuse that token rather than rotate twice.
+        if (
+          latestAccessToken &&
+          latestAccessToken !== failedWithToken &&
+          !originalRequest._freshTokenRetry
+        ) {
+          originalRequest._freshTokenRetry = true;
+          setAuthorizationHeader(originalRequest, latestAccessToken);
+          return this.api(originalRequest);
+        }
 
+        if (originalRequest._retry || originalRequest._freshTokenRetry) {
+          this.clearAuthAndRedirect();
+          return Promise.reject(error);
+        }
+
+        if (refreshMutex.isLocked()) {
+          await refreshMutex.waitForUnlock();
+
+          const tokenAfterRefresh = getAccessToken();
+          if (tokenAfterRefresh && tokenAfterRefresh !== failedWithToken) {
+            originalRequest._freshTokenRetry = true;
+            setAuthorizationHeader(originalRequest, tokenAfterRefresh);
+            return this.api(originalRequest);
+          }
+
+          if (!getRefreshToken()) this.clearAuthAndRedirect();
+          return Promise.reject(error);
+        }
+
+        originalRequest._retry = true;
+        const release = await refreshMutex.acquire();
+
+        try {
+          // Recheck after acquiring the lock in case another request refreshed
+          // the token immediately before we acquired it.
+          const tokenAfterAcquire = getAccessToken();
+          if (tokenAfterAcquire && tokenAfterAcquire !== failedWithToken) {
+            originalRequest._freshTokenRetry = true;
+            setAuthorizationHeader(originalRequest, tokenAfterAcquire);
+            return this.api(originalRequest);
+          }
+
+          const refreshToken = getRefreshToken();
+          if (!refreshToken) {
+            this.clearAuthAndRedirect();
             return Promise.reject(error);
           }
 
-          // Acquire the mutex for the single refresh-token operation
-          const release = await refreshMutex.acquire();
-        }
+          const refreshResponse = await this.refreshToken(refreshToken);
+          const tokenPayload = refreshResponse?.data?.data;
+          const newAccessToken = tokenPayload?.accessToken;
+          const newRefreshToken = tokenPayload?.refreshToken;
 
-        return Promise.reject(error);
-      }
+          if (!newAccessToken || typeof newAccessToken !== "string") {
+            throw new Error("Session refresh did not return a valid access token.");
+          }
+
+          authModalStore
+            .getState()
+            .setTokens(newAccessToken, newRefreshToken ?? refreshToken);
+
+          setAuthorizationHeader(originalRequest, newAccessToken);
+          return this.api(originalRequest);
+        } catch (refreshError) {
+          this.clearAuthAndRedirect();
+          return Promise.reject(refreshError);
+        } finally {
+          release();
+        }
+      },
     );
   }
 
@@ -154,9 +212,17 @@ export class BaseApiService {
   }
 
   async refreshToken(refreshToken: string) {
-    return this.api.post("/auth/refresh-token", {
-      refreshToken,
-    });
+    // Use an independent, bounded request so the refresh flow does not depend
+    // on the normal API interceptor and can never hold the mutex indefinitely.
+    const baseUrl = getApiBaseUrl();
+    return axios.post(
+      `${baseUrl}/auth/refresh-token`,
+      { refreshToken },
+      {
+        timeout: 10_000,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
   async resetPassword(token: string, password: string) {
     return this.api.post("/auth/reset-password", {
