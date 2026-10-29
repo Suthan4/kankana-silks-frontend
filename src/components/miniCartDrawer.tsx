@@ -161,15 +161,40 @@ export default function MiniCartDrawer() {
       itemId: string;
       quantity: number;
     }) => {
-      if (quantity <= 0) {
-        return await cartApi.removeFromCart(itemId);
-      }
+      if (quantity <= 0) return await cartApi.removeFromCart(itemId);
       return await cartApi.updateCartItem(itemId, { quantity });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cartApi"] });
+    onMutate: async ({ itemId, quantity }) => {
+      const queryKey = ["cartApi", user?.id];
+      await queryClient.cancelQueries({ queryKey });
+      const previousCart = queryClient.getQueryData<any>(queryKey);
+      if (previousCart?.items) {
+        const items = previousCart.items.map((item: any) =>
+          String(item.id) === String(itemId) ? { ...item, quantity } : item,
+        );
+        const subtotal = items.reduce((sum: number, item: any) => {
+          const unitPrice = Number(
+            item.variant?.sellingPrice ??
+              item.variant?.price ??
+              item.product?.sellingPrice ??
+              0,
+          );
+          return sum + unitPrice * Number(item.quantity || 0);
+        }, 0);
+        queryClient.setQueryData(queryKey, {
+          ...previousCart,
+          items,
+          totalItems: items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0),
+          subtotal,
+        });
+      }
+      return { previousCart, queryKey };
     },
-    onError: () => toast.error("Failed to update quantity"),
+    onError: (_error, _variables, context) => {
+      if (context?.previousCart) queryClient.setQueryData(context.queryKey, context.previousCart);
+      toast.error("Failed to update quantity. Please try again.");
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["cartApi"] }),
   });
 
   const removeItemMutation = useMutation({
