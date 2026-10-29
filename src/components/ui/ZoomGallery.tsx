@@ -47,6 +47,7 @@ export function ZoomGallery({
   const swiperRef = useRef<SwiperType | null>(null);
   const zoomTriggerRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const lightboxRef = useRef<HTMLDivElement>(null);
 
   const activeImage = images?.[selectedImageIndex] ?? images?.[0] ?? null;
   const activeImageUrl = activeImage?.url ?? null;
@@ -123,6 +124,24 @@ export function ZoomGallery({
     document.body.style.overflow = "hidden";
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Tab") {
+        const focusable = lightboxRef.current?.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), [href], [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusable?.length) {
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+          }
+        }
+        return;
+      }
+
       if (event.key === "Escape") {
         event.preventDefault();
         closeLightbox();
@@ -184,7 +203,6 @@ export function ZoomGallery({
                     alt={product?.name ?? "Product image"}
                     fill
                     priority={idx === selectedImageIndex}
-                    loading={idx === selectedImageIndex ? "eager" : "lazy"}
                     quality={95}
                     sizes="100vw"
                     className="object-cover object-top"
@@ -375,6 +393,7 @@ export function ZoomGallery({
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) closeLightbox();
             }}
+            ref={lightboxRef}
             className="fixed inset-0 z-[10000] flex flex-col bg-[#121212]/[0.97] text-white backdrop-blur-md"
           >
             <header className="relative z-10 flex min-h-[68px] items-center justify-between gap-4 border-b border-white/10 px-4 py-3 sm:px-7">
