@@ -417,11 +417,6 @@ export default function CategoryProductsClient({
     }
     return Number(product.stock?.[0]?.quantity ?? 0) <= 0;
   };
-  console.log(
-    "isProductOutOfStock",
-    isProductOutOfStock,
-    products?.[0]?.stock?.[0]?.quantity,
-  );
 
   const handleAddToCart = (product: Product) => {
     if (!canAddToCart(product)) {
