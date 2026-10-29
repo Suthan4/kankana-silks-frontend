@@ -90,7 +90,8 @@ const getCheckoutStockQty = (item: any): number => {
   if (Array.isArray(item?.product?.stock) && item.product.stock.length > 0) {
     if (item.variantId) {
       const matchingStock = item.product.stock.find(
-        (stock: any) => String(stock.variantId ?? "") === String(item.variantId),
+        (stock: any) =>
+          String(stock.variantId ?? "") === String(item.variantId),
       );
       if (!matchingStock) return 0;
       const quantity = Number(matchingStock.quantity);
@@ -108,10 +109,19 @@ const getCheckoutItemIssue = (item: any): string | null => {
 
   const product = item.product;
   const productId = item.productId;
-  if (productId === undefined || productId === null || !String(productId).trim()) {
+  if (
+    productId === undefined ||
+    productId === null ||
+    !String(productId).trim()
+  ) {
     return "The product reference is missing. Remove this item and add the product again.";
   }
-  if (!product || typeof product !== "object" || product.id === undefined || product.id === null) {
+  if (
+    !product ||
+    typeof product !== "object" ||
+    product.id === undefined ||
+    product.id === null
+  ) {
     return "Product details are no longer available. Remove this item and add it again.";
   }
   if (String(product.id) !== String(productId)) {
@@ -124,7 +134,10 @@ const getCheckoutItemIssue = (item: any): string | null => {
     return "The product name is missing. Remove this item and add the product again.";
   }
 
-  if (item.variantId && (!item.variant || String(item.variant.id) !== String(item.variantId))) {
+  if (
+    item.variantId &&
+    (!item.variant || String(item.variant.id) !== String(item.variantId))
+  ) {
     return "The selected variant is no longer available. Remove this item and select a variant again.";
   }
   if (product.hasVariants === true && !item.variantId) {
@@ -240,12 +253,23 @@ const ProcessingOverlay = ({ step }: { step: 1 | 2 | 3 }) => {
               return (
                 <div key={label} className="flex items-center gap-2 text-sm">
                   {current < step && (
-                    <Check className="h-4 w-4 text-green-600" aria-hidden="true" />
+                    <Check
+                      className="h-4 w-4 text-green-600"
+                      aria-hidden="true"
+                    />
                   )}
                   {current === step && (
-                    <Loader2 className="h-4 w-4 animate-spin text-stone-900" aria-hidden="true" />
+                    <Loader2
+                      className="h-4 w-4 animate-spin text-stone-900"
+                      aria-hidden="true"
+                    />
                   )}
-                  {current > step && <span className="h-1.5 w-1.5 rounded-full bg-gray-300" aria-hidden="true" />}
+                  {current > step && (
+                    <span
+                      className="h-1.5 w-1.5 rounded-full bg-gray-300"
+                      aria-hidden="true"
+                    />
+                  )}
                   <span
                     className={
                       current <= step
@@ -321,7 +345,9 @@ export default function CheckoutClient() {
       setIsCartHydrated(true);
       return;
     }
-    return useCartStore.persist.onFinishHydration(() => setIsCartHydrated(true));
+    return useCartStore.persist.onFinishHydration(() =>
+      setIsCartHydrated(true),
+    );
   }, []);
 
   // ─── Accordion State ──────────────────────────────────────────────────────
@@ -517,12 +543,15 @@ export default function CheckoutClient() {
       const productIssue = getCheckoutItemIssue(item);
       const stockQty = getCheckoutStockQty(item);
       const quantity = Number(item?.quantity);
-      const stockIssue = !productIssue && quantity > stockQty && item?.product?.allowOutOfStockOrders !== true
-        ? `${item?.product?.name || "This product"} has only ${stockQty} item(s) available. Reduce the quantity or remove it.`
-        : null;
+      const stockIssue =
+        !productIssue &&
+        quantity > stockQty &&
+        item?.product?.allowOutOfStockOrders !== true
+          ? `${item?.product?.name || "This product"} has only ${stockQty} item(s) available. Reduce the quantity or remove it.`
+          : null;
       return { item, index, message: productIssue ?? stockIssue };
     })
-    .filter((entry) => entry.message !== null);
+    .filter((entry: { message: string | null }) => entry.message !== null);
   const isCheckoutInitializing =
     !isCartHydrated ||
     (!!user && isLoadingCartApi) ||
@@ -536,7 +565,12 @@ export default function CheckoutClient() {
   } = useQuery({
     queryKey: ["cartShipping", selectedAddress?.pincode],
     queryFn: async () => {
-      if (!selectedAddress?.pincode || displayItems.length === 0 || invalidCartItems.length > 0) return null;
+      if (
+        !selectedAddress?.pincode ||
+        displayItems.length === 0 ||
+        invalidCartItems.length > 0
+      )
+        return null;
       const response = await shippingApi.getCartShippingRates({
         deliveryPincode: selectedAddress?.pincode,
         selectedCourierCompanyId: selectedCourier?.courier_company_id,
@@ -548,7 +582,10 @@ export default function CheckoutClient() {
       });
       return response.data;
     },
-    enabled: !!selectedAddress?.pincode && displayItems.length > 0 && invalidCartItems.length === 0,
+    enabled:
+      !!selectedAddress?.pincode &&
+      displayItems.length > 0 &&
+      invalidCartItems.length === 0,
     staleTime: 0,
   });
 
@@ -574,11 +611,19 @@ export default function CheckoutClient() {
       buyNowItem?.variantId,
       buyNowItem?.quantity,
       displayItems
-        .map((item: any) => `${item?.productId ?? item?.product?.id ?? "missing"}-${item?.quantity ?? "invalid"}`)
+        .map(
+          (item: any) =>
+            `${item?.productId ?? item?.product?.id ?? "missing"}-${item?.quantity ?? "invalid"}`,
+        )
         .join(","),
     ],
     queryFn: async () => {
-      if (!selectedAddress || displayItems.length === 0 || invalidCartItems.length > 0) return null;
+      if (
+        !selectedAddress ||
+        displayItems.length === 0 ||
+        invalidCartItems.length > 0
+      )
+        return null;
       const orderItems =
         isBuyNowMode && buyNowItem
           ? [
@@ -597,7 +642,11 @@ export default function CheckoutClient() {
       });
       return response.data;
     },
-    enabled: !!selectedAddress && !!selectedCourier && displayItems.length > 0 && invalidCartItems.length === 0,
+    enabled:
+      !!selectedAddress &&
+      !!selectedCourier &&
+      displayItems.length > 0 &&
+      invalidCartItems.length === 0,
     staleTime: 0,
     gcTime: 0,
   });
@@ -669,7 +718,13 @@ export default function CheckoutClient() {
   } = useQuery({
     queryKey: ["applicableCoupons", subtotal, displayItems.length],
     queryFn: async () => {
-      if (!user || displayItems.length === 0 || invalidCartItems.length > 0 || !orderPreview || subtotal <= 0)
+      if (
+        !user ||
+        displayItems.length === 0 ||
+        invalidCartItems.length > 0 ||
+        !orderPreview ||
+        subtotal <= 0
+      )
         return { data: [] };
       const cartItems = displayItems.map((item: any) => ({
         productId: item.productId,
@@ -683,7 +738,11 @@ export default function CheckoutClient() {
       });
     },
     enabled:
-      !!user && displayItems.length > 0 && invalidCartItems.length === 0 && !!orderPreview && subtotal > 0,
+      !!user &&
+      displayItems.length > 0 &&
+      invalidCartItems.length === 0 &&
+      !!orderPreview &&
+      subtotal > 0,
   });
 
   const availableCoupons = useMemo(
@@ -993,7 +1052,10 @@ export default function CheckoutClient() {
     }
     if (invalidCartItems.length > 0) {
       setOpenSections((previous) => ({ ...previous, items: true }));
-      toast.error(invalidCartItems[0].message || "Remove invalid cart items before checkout.");
+      toast.error(
+        invalidCartItems[0].message ||
+          "Remove invalid cart items before checkout.",
+      );
       return;
     }
     if (!user) {
@@ -1082,11 +1144,16 @@ export default function CheckoutClient() {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-stone-100 text-stone-700">
             <PackageX className="h-7 w-7" />
           </div>
-          <h1 className="mt-5 text-xl font-semibold text-stone-950">Your checkout is empty</h1>
+          <h1 className="mt-5 text-xl font-semibold text-stone-950">
+            Your checkout is empty
+          </h1>
           <p className="mt-2 text-sm leading-6 text-stone-500">
             Add an available product to your cart before continuing to checkout.
           </p>
-          <Link href="/cart" className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-stone-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-stone-800">
+          <Link
+            href="/cart"
+            className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-stone-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-stone-800"
+          >
             <ArrowLeft className="h-4 w-4" /> Return to cart
           </Link>
         </div>
@@ -1159,21 +1226,38 @@ export default function CheckoutClient() {
                 >
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {invalidCartItems.length > 0 && (
-                      <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+                      <div
+                        role="alert"
+                        className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800"
+                      >
                         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                         <div>
-                          <p className="font-semibold">Some items need attention before checkout</p>
-                          <p className="mt-1">One or more products have missing details, an invalid price or variant, or a quantity above available stock. Remove unavailable items or reduce their quantity before continuing.</p>
+                          <p className="font-semibold">
+                            Some items need attention before checkout
+                          </p>
+                          <p className="mt-1">
+                            One or more products have missing details, an
+                            invalid price or variant, or a quantity above
+                            available stock. Remove unavailable items or reduce
+                            their quantity before continuing.
+                          </p>
                         </div>
                       </div>
                     )}
                     {displayItems.map((item: any, index: number) => {
                       const stockQty = getStockQty(item);
                       const unitPrice = getUnitPrice(item);
-                      const validationIssue = invalidCartItems.find((entry) => entry.index === index)?.message;
+                      const validationIssue = invalidCartItems.find(
+                        (entry: { index: number; message: string }) =>
+                          entry.index === index,
+                      )?.message;
                       const itemName =
-                        (typeof item?.product?.name === "string" ? item.product.name.trim() : "") ||
-                        (typeof item?.name === "string" ? item.name.trim() : "") ||
+                        (typeof item?.product?.name === "string"
+                          ? item.product.name.trim()
+                          : "") ||
+                        (typeof item?.name === "string"
+                          ? item.name.trim()
+                          : "") ||
                         "Unavailable product";
 
                       return (
@@ -1187,7 +1271,9 @@ export default function CheckoutClient() {
                             onClick={() =>
                               user?.id
                                 ? removeItemMutation.mutate(item?.id)
-                                : item?.id ? removeItem(item.id) : clearCart()
+                                : item?.id
+                                  ? removeItem(item.id)
+                                  : clearCart()
                             }
                             className="absolute top-2 right-2 p-1 hover:bg-red-50 rounded transition"
                           >
@@ -1214,8 +1300,12 @@ export default function CheckoutClient() {
                               {itemName}
                             </p>
                             {validationIssue && (
-                              <p role="alert" className="mt-1 text-[10px] leading-4 text-red-700">
-                                {validationIssue} Remove this item and add the product again before continuing.
+                              <p
+                                role="alert"
+                                className="mt-1 text-[10px] leading-4 text-red-700"
+                              >
+                                {validationIssue} Remove this item and add the
+                                product again before continuing.
                               </p>
                             )}
                             {(() => {
@@ -1255,7 +1345,9 @@ export default function CheckoutClient() {
                             <div className="flex items-center justify-between mt-2">
                               <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-full px-1.5 py-0.5">
                                 <button
-                                  disabled={isBuyNowMode || Number(item?.quantity) <= 1}
+                                  disabled={
+                                    isBuyNowMode || Number(item?.quantity) <= 1
+                                  }
                                   onClick={() => {
                                     if (item.quantity > 1 && user?.id)
                                       updateQtyMutation.mutate({
@@ -1271,7 +1363,10 @@ export default function CheckoutClient() {
                                   {item.quantity}
                                 </span>
                                 <button
-                                  disabled={item?.product?.allowOutOfStockOrders !== true && Number(item?.quantity) >= stockQty}
+                                  disabled={
+                                    item?.product?.allowOutOfStockOrders !==
+                                      true && Number(item?.quantity) >= stockQty
+                                  }
                                   onClick={() =>
                                     user?.id &&
                                     updateQtyMutation.mutate({
@@ -1286,7 +1381,9 @@ export default function CheckoutClient() {
                               </div>
                               <p className="font-bold text-xs text-gray-900">
                                 {Number.isFinite(unitPrice) && unitPrice > 0
-                                  ? formatMoney(unitPrice * Number(item.quantity))
+                                  ? formatMoney(
+                                      unitPrice * Number(item.quantity),
+                                    )
                                   : "Price unavailable"}
                               </p>
                             </div>
@@ -1890,7 +1987,9 @@ export default function CheckoutClient() {
                           {displayItems.length !== 1 ? "s" : ""})
                         </span>
                         {invalidCartItems.length > 0 ? (
-                          <span className="font-semibold text-red-700">Fix cart items</span>
+                          <span className="font-semibold text-red-700">
+                            Fix cart items
+                          </span>
                         ) : isLoadingPreview ? (
                           <div className="h-4 w-16 bg-gray-200 animate-pulse rounded" />
                         ) : !orderPreview ? (
@@ -1970,11 +2069,15 @@ export default function CheckoutClient() {
                         Total
                       </span>
                       {invalidCartItems.length > 0 ? (
-                        <span className="text-sm font-semibold text-red-700">Fix cart items</span>
+                        <span className="text-sm font-semibold text-red-700">
+                          Fix cart items
+                        </span>
                       ) : isLoadingPreview ? (
                         <div className="h-7 w-28 bg-gray-200 animate-pulse rounded" />
                       ) : !orderPreview ? (
-                        <span className="max-w-40 text-right text-xs text-gray-500">Select an address and courier to calculate</span>
+                        <span className="max-w-40 text-right text-xs text-gray-500">
+                          Select an address and courier to calculate
+                        </span>
                       ) : (
                         <div className="text-right">
                           <span className="text-2xl font-bold text-gray-900">
@@ -2047,10 +2150,10 @@ export default function CheckoutClient() {
                                   : isLoadingPreview
                                     ? "Calculating..."
                                     : isErrorOrderPreview || !orderPreview
-                                    ? "Check delivery details"
-                                    : subtotal <= 0 || total <= 0
-                                      ? "Verify order total"
-                                      : `Place Order — ₹${total.toLocaleString()}`}
+                                      ? "Check delivery details"
+                                      : subtotal <= 0 || total <= 0
+                                        ? "Verify order total"
+                                        : `Place Order — ₹${total.toLocaleString()}`}
                     </motion.button>
                   </div>
                 </div>

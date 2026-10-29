@@ -1024,13 +1024,13 @@ export default function ProductDetailsClient({
             <span className="text-lg font-bold text-gray-900">
               {isOutOfStock
                 ? formatMaskedPrice(displayPrice)
-                : `₹${displayPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                : `₹${displayPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             </span>
             {discount > 0 && (
               <span className="text-xs text-gray-400 line-through">
                 {isOutOfStock
                   ? formatMaskedPrice(basePrice)
-                  : `₹${basePrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                  : `₹${basePrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               </span>
             )}
           </div>
@@ -1062,7 +1062,10 @@ export default function ProductDetailsClient({
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={() => handleAddToCart(product, selectedVariant)}
-                disabled={(isOutOfStock && !allowOutOfStockOrders) || addToCartMutation.isPending}
+                disabled={
+                  (isOutOfStock && !allowOutOfStockOrders) ||
+                  addToCartMutation.isPending
+                }
                 className="flex-1 bg-gray-900 text-white py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {addToCartMutation.isPending ? (
