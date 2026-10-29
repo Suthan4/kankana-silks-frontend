@@ -225,9 +225,18 @@ export class BaseApiService {
   }
 
   async refreshToken(refreshToken: string) {
-    return this.api.post("/auth/refresh-token", {
-      refreshToken,
-    });
+    // Keep refresh recovery independent from the normal API interceptor and
+    // bounded in time. A hung refresh request must never leave the shared
+    // refresh mutex locked forever.
+    const baseUrl = getApiBaseUrl();
+    return axios.post(
+      `${baseUrl}/auth/refresh-token`,
+      { refreshToken },
+      {
+        timeout: 10_000,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
   async resetPassword(token: string, password: string) {
     return this.api.post("/auth/reset-password", {
