@@ -15,7 +15,7 @@ export const buildCategoryQuery = (slug: string): ProductQueryParams => ({
   limit: 12,
 
   // sorting defaults
-  sortBy: "createdAt",
+  sortBy: "price",
   sortOrder: "desc",
 
   // optional filters (keep undefined unless needed)
