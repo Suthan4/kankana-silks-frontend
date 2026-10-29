@@ -46,6 +46,7 @@ import {
 } from "@/hooks/useOrders";
 import { couponApi, type Coupon } from "@/lib/api/coupon.api";
 import { cartApi } from "@/lib/api/cart.api";
+import { getCartItemStockQty as getCheckoutStockQty } from "@/lib/utils/cartStock";
 import { shippingApi } from "@/lib/api/shipping.api";
 import confetti from "canvas-confetti";
 import PaymentLogos from "./paymentLogos";
@@ -82,26 +83,6 @@ const normalizeAttributes = (attrs: any) => {
   return [];
 };
 
-const getCheckoutStockQty = (item: any): number => {
-  if (Array.isArray(item?.variant?.stock) && item.variant.stock.length > 0) {
-    const quantity = Number(item.variant.stock[0].quantity);
-    return Number.isFinite(quantity) && quantity >= 0 ? quantity : 0;
-  }
-  if (Array.isArray(item?.product?.stock) && item.product.stock.length > 0) {
-    if (item.variantId) {
-      const matchingStock = item.product.stock.find(
-        (stock: any) =>
-          String(stock.variantId ?? "") === String(item.variantId),
-      );
-      if (!matchingStock) return 0;
-      const quantity = Number(matchingStock.quantity);
-      return Number.isFinite(quantity) && quantity >= 0 ? quantity : 0;
-    }
-    const quantity = Number(item.product.stock[0].quantity);
-    return Number.isFinite(quantity) && quantity >= 0 ? quantity : 0;
-  }
-  return 0;
-};
 const getCheckoutItemIssue = (item: any): string | null => {
   if (!item || typeof item !== "object") {
     return "This cart entry is invalid. Remove it and add the product again.";
@@ -337,6 +318,7 @@ export default function CheckoutClient() {
     applyCoupon,
     removeCoupon,
     removeItem,
+    updateQuantity,
   } = useCartStore();
 
   const [isCartHydrated, setIsCartHydrated] = useState(false);
@@ -522,7 +504,6 @@ export default function CheckoutClient() {
   const {
     data: cartData,
     isLoading: isLoadingCartApi,
-    refetch: refetchCartApi,
   } = useQuery({
     queryKey: ["cartApi", user?.id],
     queryFn: async () => (await cartApi.getCart()).data,
@@ -558,12 +539,26 @@ export default function CheckoutClient() {
     (isBuyNowMode && !buyNowItem);
   const addresses = addressesData || [];
 
+  const shippingCartSignature = useMemo(
+    () =>
+      displayItems
+        .map((item: any) =>
+          [
+            item?.productId ?? item?.product?.id ?? "missing",
+            item?.variantId ?? item?.variant?.id ?? "simple",
+            item?.quantity ?? "invalid",
+          ].join(":"),
+        )
+        .sort()
+        .join("|"),
+    [displayItems],
+  );
+
   const {
     data: shippingData,
     isLoading: isLoadingShipping,
-    refetch: refetchShipping,
   } = useQuery({
-    queryKey: ["cartShipping", selectedAddress?.pincode],
+    queryKey: ["cartShipping", selectedAddress?.pincode, shippingCartSignature],
     queryFn: async () => {
       if (
         !selectedAddress?.pincode ||
@@ -575,9 +570,11 @@ export default function CheckoutClient() {
         deliveryPincode: selectedAddress?.pincode,
         selectedCourierCompanyId: selectedCourier?.courier_company_id,
         cartItems: displayItems.map((item: any) => ({
-          productId: item.productId,
-          ...(item.variantId ? { variantId: item.variantId } : {}),
-          quantity: item.quantity,
+          productId: item.productId ?? item.product?.id,
+          ...((item.variantId ?? item.variant?.id)
+            ? { variantId: item.variantId ?? item.variant?.id }
+            : {}),
+          quantity: Number(item.quantity),
         })),
       });
       return response.data;
@@ -613,7 +610,7 @@ export default function CheckoutClient() {
       displayItems
         .map(
           (item: any) =>
-            `${item?.productId ?? item?.product?.id ?? "missing"}-${item?.quantity ?? "invalid"}`,
+            `${item?.productId ?? item?.product?.id ?? "missing"}:${item?.variantId ?? item?.variant?.id ?? "simple"}:${item?.quantity ?? "invalid"}`,
         )
         .join(","),
     ],
@@ -691,14 +688,36 @@ export default function CheckoutClient() {
   useEffect(() => {
     if (!shippingData) return;
     const couriers = shippingData.availableCouriers || [];
-    if (couriers.length > 0) {
-      const cheapest = couriers.reduce((min: any, curr: any) =>
+    if (couriers.length === 0) {
+      setSelectedCourier(null);
+      return;
+    }
+
+    const currentCourier = selectedCourier
+      ? couriers.find(
+          (courier: any) =>
+            Number(courier.courier_company_id) ===
+            Number(selectedCourier.courier_company_id),
+        )
+      : null;
+
+    if (currentCourier) {
+      setSelectedCourier(currentCourier);
+      return;
+    }
+
+    const cheapest =
+      couriers.find(
+        (courier: any) =>
+          Number(courier.courier_company_id) ===
+          Number(shippingData.cheapestCourier?.courier_company_id),
+      ) ??
+      couriers.reduce((min: any, curr: any) =>
         curr.freight_charge < min.freight_charge ? curr : min,
       );
-      setSelectedCourier(cheapest);
-      setCourierPreference("CHEAPEST");
-    }
-  }, [shippingData]);
+    setSelectedCourier(cheapest);
+    setCourierPreference("CHEAPEST");
+  }, [shippingData, selectedCourier]);
 
   const getStockQty = (item: any) => getCheckoutStockQty(item);
 
@@ -716,7 +735,7 @@ export default function CheckoutClient() {
     isLoading: isLoadingCoupons,
     refetch: refetchCoupons,
   } = useQuery({
-    queryKey: ["applicableCoupons", subtotal, displayItems.length],
+    queryKey: ["applicableCoupons", subtotal, displayItems.length, shippingCartSignature],
     queryFn: async () => {
       if (
         !user ||
@@ -783,26 +802,143 @@ export default function CheckoutClient() {
       itemId: string;
       quantity: number;
     }) => await cartApi.updateCartItem(itemId, { quantity }),
-    onSuccess: async () => {
-      await refetchCartApi();
-      await queryClient.invalidateQueries({ queryKey: ["orderPreview"] });
-      await refetchPreview();
+    onMutate: async ({ itemId, quantity }) => {
+      const queryKey = ["cartApi", user?.id];
+      await queryClient.cancelQueries({ queryKey });
+      const previousCart = queryClient.getQueryData<any>(queryKey);
+      if (previousCart?.items) {
+        const target = previousCart.items.find(
+          (item: any) => String(item.id) === String(itemId),
+        );
+        let items = previousCart.items;
+        if (target) {
+          const productId = String(target.productId ?? target.product?.id ?? "");
+          const variantId = String(target.variantId ?? target.variant?.id ?? "");
+          let kept = false;
+          items = previousCart.items.flatMap((item: any) => {
+            const sameLine =
+              String(item.productId ?? item.product?.id ?? "") === productId &&
+              String(item.variantId ?? item.variant?.id ?? "") === variantId;
+            if (!sameLine) return [item];
+            if (kept) return [];
+            kept = true;
+            return [{ ...item, quantity }];
+          });
+        }
+        const subtotal = items.reduce((sum: number, item: any) => {
+          const price = Number(
+            item.variant?.sellingPrice ??
+              item.variant?.price ??
+              item.product?.sellingPrice ??
+              0,
+          );
+          return sum + price * Number(item.quantity || 0);
+        }, 0);
+        queryClient.setQueryData(queryKey, {
+          ...previousCart,
+          items,
+          totalItems: items.reduce(
+            (sum: number, item: any) => sum + Number(item.quantity || 0),
+            0,
+          ),
+          subtotal,
+        });
+      }
+      return { previousCart, queryKey };
     },
-    onError: (err: any) =>
-      toast.error(err?.message || "Failed to update quantity"),
+    onError: (err: any, _variables, context) => {
+      if (context?.previousCart) {
+        queryClient.setQueryData(context.queryKey, context.previousCart);
+      }
+      toast.error(err?.message || "Failed to update quantity");
+    },
+    onSettled: () => {
+      // The new cart signature selects fresh shipping/order-preview/coupon
+      // query keys. Only sync the canonical cart here to avoid duplicate calls.
+      queryClient.invalidateQueries({ queryKey: ["cartApi", user?.id] });
+    },
   });
 
   const removeItemMutation = useMutation({
     mutationFn: async (itemId: string) => await cartApi.removeFromCart(itemId),
-    onSuccess: async () => {
-      toast.success("Item removed");
-      await refetchCartApi();
-      await queryClient.invalidateQueries({ queryKey: ["orderPreview"] });
-      await refetchPreview();
-      await refetchCoupons();
+    onMutate: async (itemId) => {
+      const queryKey = ["cartApi", user?.id];
+      await queryClient.cancelQueries({ queryKey });
+      const previousCart = queryClient.getQueryData<any>(queryKey);
+      if (previousCart?.items) {
+        const target = previousCart.items.find(
+          (item: any) => String(item.id) === String(itemId),
+        );
+        if (target) {
+          const productId = String(target.productId ?? target.product?.id ?? "");
+          const variantId = String(target.variantId ?? target.variant?.id ?? "");
+          const items = previousCart.items.filter(
+            (item: any) =>
+              String(item.productId ?? item.product?.id ?? "") !== productId ||
+              String(item.variantId ?? item.variant?.id ?? "") !== variantId,
+          );
+          const subtotal = items.reduce((sum: number, item: any) => {
+            const price = Number(
+              item.variant?.sellingPrice ??
+                item.variant?.price ??
+                item.product?.sellingPrice ??
+                0,
+            );
+            return sum + price * Number(item.quantity || 0);
+          }, 0);
+          queryClient.setQueryData(queryKey, {
+            ...previousCart,
+            items,
+            totalItems: items.reduce(
+              (sum: number, item: any) => sum + Number(item.quantity || 0),
+              0,
+            ),
+            subtotal,
+          });
+        }
+      }
+      return { previousCart, queryKey };
     },
-    onError: (err: any) => toast.error(err?.message || "Failed to remove item"),
+    onSuccess: () => {
+      toast.success("Item removed");
+    },
+    onError: (err: any, _itemId, context) => {
+      if (context?.previousCart) {
+        queryClient.setQueryData(context.queryKey, context.previousCart);
+      }
+      toast.error(err?.message || "Failed to remove item");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["cartApi", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["orderPreview"] });
+      queryClient.invalidateQueries({ queryKey: ["applicableCoupons"] });
+    },
   });
+
+  const handleRemoveCheckoutItem = (item: any) => {
+    if (isBuyNowMode) {
+      sessionStorage.removeItem("buyNowItem");
+      setBuyNowItem(null);
+      router.push("/cart");
+      return;
+    }
+
+    if (user?.id) {
+      if (item?.id === undefined || item?.id === null || String(item.id).trim() === "") {
+        toast.error("Unable to remove this item. Please refresh your cart and try again.");
+        return;
+      }
+      removeItemMutation.mutate(String(item.id));
+      return;
+    }
+
+    if (item?.id !== undefined && item?.id !== null) {
+      removeItem(String(item.id));
+      return;
+    }
+
+    toast.error("Unable to remove this item. Please refresh your cart and try again.");
+  };
 
   const validateCouponMutation = useMutation({
     mutationFn: async (code: string) => {
@@ -1268,14 +1404,10 @@ export default function CheckoutClient() {
                           <button
                             type="button"
                             aria-label={`Remove ${itemName} from checkout`}
-                            onClick={() =>
-                              user?.id
-                                ? removeItemMutation.mutate(item?.id)
-                                : item?.id
-                                  ? removeItem(item.id)
-                                  : clearCart()
-                            }
-                            className="absolute top-2 right-2 p-1 hover:bg-red-50 rounded transition"
+                            onClick={() => handleRemoveCheckoutItem(item)}
+                            disabled={removeItemMutation.isPending}
+                            aria-busy={removeItemMutation.isPending}
+                            className="absolute top-2 right-2 p-1 hover:bg-red-50 rounded transition disabled:cursor-wait disabled:opacity-50"
                           >
                             <Trash2 className="w-3.5 h-3.5 text-red-500" />
                           </button>
@@ -1346,14 +1478,20 @@ export default function CheckoutClient() {
                               <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-full px-1.5 py-0.5">
                                 <button
                                   disabled={
-                                    isBuyNowMode || Number(item?.quantity) <= 1
+                                    isBuyNowMode ||
+                                    updateQtyMutation.isPending ||
+                                    Number(item?.quantity) <= 1
                                   }
                                   onClick={() => {
-                                    if (item.quantity > 1 && user?.id)
+                                    if (item.quantity <= 1 || isBuyNowMode) return;
+                                    if (user?.id) {
                                       updateQtyMutation.mutate({
-                                        itemId: item.id,
+                                        itemId: String(item.id),
                                         quantity: item.quantity - 1,
                                       });
+                                    } else if (item?.id != null) {
+                                      updateQuantity(String(item.id), item.quantity - 1);
+                                    }
                                   }}
                                   className="w-5 h-5 flex items-center justify-center text-gray-600 disabled:opacity-40 text-sm"
                                 >
@@ -1364,16 +1502,26 @@ export default function CheckoutClient() {
                                 </span>
                                 <button
                                   disabled={
-                                    item?.product?.allowOutOfStockOrders !==
-                                      true && Number(item?.quantity) >= stockQty
+                                    isBuyNowMode ||
+                                    updateQtyMutation.isPending ||
+                                    (item?.product?.allowOutOfStockOrders !== true &&
+                                      Number(item?.quantity) >= stockQty)
                                   }
-                                  onClick={() =>
-                                    user?.id &&
-                                    updateQtyMutation.mutate({
-                                      itemId: item.id,
-                                      quantity: item.quantity + 1,
-                                    })
-                                  }
+                                  onClick={() => {
+                                    if (isBuyNowMode) return;
+                                    if (
+                                      item?.product?.allowOutOfStockOrders !== true &&
+                                      Number(item.quantity) >= stockQty
+                                    ) return;
+                                    if (user?.id) {
+                                      updateQtyMutation.mutate({
+                                        itemId: String(item.id),
+                                        quantity: item.quantity + 1,
+                                      });
+                                    } else if (item?.id != null) {
+                                      updateQuantity(String(item.id), item.quantity + 1);
+                                    }
+                                  }}
                                   className="w-5 h-5 flex items-center justify-center bg-gray-900 text-white rounded-full disabled:opacity-40 text-sm"
                                 >
                                   +
