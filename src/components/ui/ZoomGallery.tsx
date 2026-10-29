@@ -196,13 +196,13 @@ export function ZoomGallery({
             className="w-full"
           >
             {images.map((img, idx) => (
-              <SwiperSlide key={idx}>
+              <SwiperSlide key={img.id ?? img.url ?? idx}>
                 <div className="relative w-full aspect-[3/4] bg-[#f8f5f2] overflow-hidden">
                   <Image
                     src={img.url}
                     alt={product.name}
                     fill
-                    priority
+                    priority={idx === selectedImageIndex}
                     quality={100}
                     sizes="100vw"
                     className="object-cover"
