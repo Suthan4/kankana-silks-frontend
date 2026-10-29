@@ -21,6 +21,8 @@ import {
   Info,
   Star,
   Phone,
+  AlertCircle,
+  PackageX,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -48,6 +50,7 @@ import { shippingApi } from "@/lib/api/shipping.api";
 import confetti from "canvas-confetti";
 import PaymentLogos from "./paymentLogos";
 import { extractVariantAttributes } from "@/lib/utils/variant.utils";
+import CheckoutLoadingState from "@/components/checkoutLoadingState";
 
 declare global {
   interface Window {
@@ -77,6 +80,55 @@ const normalizeAttributes = (attrs: any) => {
     }
   }
   return [];
+};
+
+const getCheckoutItemIssue = (item: any): string | null => {
+  if (!item || typeof item !== "object") {
+    return "This cart entry is invalid. Remove it and add the product again.";
+  }
+
+  const product = item.product;
+  const productId = item.productId ?? product?.id;
+  if (productId === undefined || productId === null || !String(productId).trim()) {
+    return "The product reference is missing. Remove this item and add the product again.";
+  }
+  if (!product || typeof product !== "object" || product.id === undefined || product.id === null) {
+    return "Product details are no longer available. Remove this item and add it again.";
+  }
+  if (String(product.id) !== String(productId)) {
+    return "The product details do not match this cart item. Remove it and add the product again.";
+  }
+  if (product.isActive === false) {
+    return "This product is no longer available for purchase. Remove it from your cart.";
+  }
+  if (typeof product.name !== "string" || !product.name.trim()) {
+    return "The product name is missing. Remove this item and add the product again.";
+  }
+
+  if (item.variantId && (!item.variant || String(item.variant.id) !== String(item.variantId))) {
+    return "The selected variant is no longer available. Remove this item and select a variant again.";
+  }
+  if (product.hasVariants === true && !item.variantId) {
+    return "A variant must be selected before checkout. Return to the product page and choose an option.";
+  }
+
+  const quantity = Number(item.quantity);
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    return "The quantity is invalid. Remove this item and add it again.";
+  }
+
+  const price = Number(
+    item.variant?.sellingPrice ??
+      item.variant?.price ??
+      product.sellingPrice ??
+      item.price ??
+      Number.NaN,
+  );
+  if (!Number.isFinite(price) || price <= 0) {
+    return "The price could not be verified. Remove this item and add the product again.";
+  }
+
+  return null;
 };
 
 // ─── Accordion Section Component ─────────────────────────────────────────────
@@ -239,7 +291,17 @@ export default function CheckoutClient() {
     clearCart,
     applyCoupon,
     removeCoupon,
+    removeItem,
   } = useCartStore();
+
+  const [isCartHydrated, setIsCartHydrated] = useState(false);
+  useEffect(() => {
+    if (useCartStore.persist.hasHydrated()) {
+      setIsCartHydrated(true);
+      return;
+    }
+    return useCartStore.persist.onFinishHydration(() => setIsCartHydrated(true));
+  }, []);
 
   // ─── Accordion State ──────────────────────────────────────────────────────
   const [openSections, setOpenSections] = useState<
@@ -422,8 +484,24 @@ export default function CheckoutClient() {
   });
 
   const apiItems = cartData?.items ?? [];
-  const displayItems =
-    isBuyNowMode && buyNowItem ? [buyNowItem] : user ? apiItems : cartItems;
+  const displayItems = isBuyNowMode
+    ? buyNowItem
+      ? [buyNowItem]
+      : []
+    : user
+      ? apiItems
+      : cartItems;
+  const invalidCartItems = displayItems
+    .map((item: any, index: number) => ({
+      item,
+      index,
+      message: getCheckoutItemIssue(item),
+    }))
+    .filter((entry) => entry.message !== null);
+  const isCheckoutInitializing =
+    !isCartHydrated ||
+    (!!user && isLoadingCartApi) ||
+    (isBuyNowMode && !buyNowItem);
   const addresses = addressesData || [];
 
   const {
@@ -433,7 +511,7 @@ export default function CheckoutClient() {
   } = useQuery({
     queryKey: ["cartShipping", selectedAddress?.pincode],
     queryFn: async () => {
-      if (!selectedAddress?.pincode || displayItems.length === 0) return null;
+      if (!selectedAddress?.pincode || displayItems.length === 0 || invalidCartItems.length > 0) return null;
       const response = await shippingApi.getCartShippingRates({
         deliveryPincode: selectedAddress?.pincode,
         selectedCourierCompanyId: selectedCourier?.courier_company_id,
@@ -445,7 +523,7 @@ export default function CheckoutClient() {
       });
       return response.data;
     },
-    enabled: !!selectedAddress?.pincode && displayItems.length > 0,
+    enabled: !!selectedAddress?.pincode && displayItems.length > 0 && invalidCartItems.length === 0,
     staleTime: 0,
   });
 
@@ -475,7 +553,7 @@ export default function CheckoutClient() {
         .join(","),
     ],
     queryFn: async () => {
-      if (!selectedAddress) return null;
+      if (!selectedAddress || displayItems.length === 0 || invalidCartItems.length > 0) return null;
       const orderItems =
         isBuyNowMode && buyNowItem
           ? [
@@ -494,7 +572,7 @@ export default function CheckoutClient() {
       });
       return response.data;
     },
-    enabled: !!selectedAddress && !!selectedCourier,
+    enabled: !!selectedAddress && !!selectedCourier && displayItems.length > 0 && invalidCartItems.length === 0,
     staleTime: 0,
     gcTime: 0,
   });
@@ -577,7 +655,7 @@ export default function CheckoutClient() {
         item?.variant?.price ??
         item?.product?.sellingPrice ??
         item?.price ??
-        0,
+        Number.NaN,
     );
 
   const {
@@ -587,7 +665,7 @@ export default function CheckoutClient() {
   } = useQuery({
     queryKey: ["applicableCoupons", subtotal, displayItems.length],
     queryFn: async () => {
-      if (!user || displayItems.length === 0 || !orderPreview || subtotal <= 0)
+      if (!user || displayItems.length === 0 || invalidCartItems.length > 0 || !orderPreview || subtotal <= 0)
         return { data: [] };
       const cartItems = displayItems.map((item: any) => ({
         productId: item.productId,
@@ -601,7 +679,7 @@ export default function CheckoutClient() {
       });
     },
     enabled:
-      !!user && displayItems.length > 0 && !!orderPreview && subtotal > 0,
+      !!user && displayItems.length > 0 && invalidCartItems.length === 0 && !!orderPreview && subtotal > 0,
   });
 
   const availableCoupons = useMemo(
@@ -904,6 +982,16 @@ export default function CheckoutClient() {
   };
 
   const handlePlaceOrder = async () => {
+    if (displayItems.length === 0) {
+      toast.error("Your cart is empty.");
+      router.push("/cart");
+      return;
+    }
+    if (invalidCartItems.length > 0) {
+      setOpenSections((previous) => ({ ...previous, items: true }));
+      toast.error(invalidCartItems[0].message || "Remove invalid cart items before checkout.");
+      return;
+    }
     if (!user) {
       toast.error("Please login to place order");
       openModal("login");
@@ -919,7 +1007,9 @@ export default function CheckoutClient() {
     }
     // ✅ STOCK VALIDATION (ADD HERE)
     const invalidItem = displayItems.find(
-      (item: any) => item.quantity > getStockQty(item),
+      (item: any) =>
+        Number(item.quantity) > getStockQty(item) &&
+        item.product?.allowOutOfStockOrders !== true,
     );
 
     if (invalidItem) {
@@ -979,7 +1069,26 @@ export default function CheckoutClient() {
 
   const formatMoney = (value: number) => `₹${Number(value || 0).toFixed(2)}`;
 
-  if (displayItems.length === 0) return null;
+  if (isCheckoutInitializing) return <CheckoutLoadingState />;
+
+  if (displayItems.length === 0) {
+    return (
+      <main className="min-h-[70vh] bg-[#faf9f6] px-4 py-12 flex items-center justify-center">
+        <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-stone-100 text-stone-700">
+            <PackageX className="h-7 w-7" />
+          </div>
+          <h1 className="mt-5 text-xl font-semibold text-stone-950">Your checkout is empty</h1>
+          <p className="mt-2 text-sm leading-6 text-stone-500">
+            Add an available product to your cart before continuing to checkout.
+          </p>
+          <Link href="/cart" className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-stone-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-stone-800">
+            <ArrowLeft className="h-4 w-4" /> Return to cart
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   // ─── Badge helpers ────────────────────────────────────────────────────────
   const itemsBadge = `${displayItems.length} item${displayItems.length !== 1 ? "s" : ""}`;
