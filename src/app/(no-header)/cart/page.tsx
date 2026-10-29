@@ -153,7 +153,6 @@ export default function CartPage() {
   const {
     data: shippingData,
     isLoading: isLoadingShipping,
-    refetch: refetchShipping,
   } = useQuery({
     queryKey: ["cartShipping", deliveryPin, shippingCartItems],
     queryFn: async () => {
