@@ -12,6 +12,7 @@ import { useAuthModal } from "@/store/useAuthModalStore";
 import { toast } from "sonner";
 import { useEffect, useState, useMemo } from "react";
 import { extractVariantAttributes } from "@/lib/utils/variant.utils";
+import { mergeCartLines } from "@/lib/utils/cartItems";
 
 export default function MiniCartDrawer() {
   const { isOpen, close } = useCartDrawer();
@@ -62,18 +63,21 @@ export default function MiniCartDrawer() {
   }, [isOpen, close]);
 
   /* -------------------- FETCH CART -------------------- */
-  const { data: cartData } = useQuery({
+  const { data: cartData, isLoading: isCartLoading } = useQuery({
     queryKey: ["cartApi", user?.id],
     queryFn: async () => (await cartApi.getCart()).data,
     enabled: !!user,
+    staleTime: 15_000,
+    refetchOnWindowFocus: false,
   });
 
+  // Never mix stale guest rows with a signed-in server cart. Normalize legacy
+  // duplicate product/variant rows so the drawer shows one line and summed qty.
   const apiItems = cartData?.items ?? [];
-  const displayItems = user
-    ? apiItems.length
-      ? apiItems
-      : localItems
-    : localItems;
+  const displayItems = useMemo(
+    () => mergeCartLines(user ? apiItems : localItems),
+    [user, apiItems, localItems],
+  );
 
   /* -------------------- PRICE & ITEM HELPERS -------------------- */
   const getItemPrice = (item: any): number => {
@@ -276,7 +280,13 @@ export default function MiniCartDrawer() {
 
             {/* BODY / ITEMS LIST */}
             <div className="flex-1 overflow-y-auto px-5 py-3 divide-y divide-gray-100">
-              {displayItems.length === 0 ? (
+              {displayItems.length === 0 && user && isCartLoading ? (
+                <div role="status" aria-live="polite" className="flex flex-col items-center justify-center h-full py-16 text-center">
+                  <ShoppingBag className="w-7 h-7 text-gray-400 mb-3" />
+                  <p className="text-sm font-medium text-gray-800">Refreshing your bag…</p>
+                  <p className="text-xs text-gray-500 mt-1">This should only take a moment.</p>
+                </div>
+              ) : displayItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full py-16 text-center">
                   <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 mb-4">
                     <ShoppingBag className="w-8 h-8" />
