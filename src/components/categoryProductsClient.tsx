@@ -27,6 +27,7 @@ import { Category } from "@/lib/api/category.api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCartStore } from "@/store/useCartStore";
 import { formatMaskedPrice } from "@/lib/utils/priceMasked";
+import { mergeCartLines } from "@/lib/utils/cartItems";
 import { getColorHex, isValidCSSColor } from "@/lib/utils/colorValidation";
 import { useWishlist } from "@/hooks/useWishlist";
 import SortDropdown from "./customDropdown";
@@ -309,14 +310,15 @@ export default function CategoryProductsClient({
               size: variant.size,
               color: variant.color,
               fabric: variant.fabric,
-              stock: variant.stock?.map((stock: any) => ({
-                ...stock,
-                lowStockThreshold: stock.lowStockThreshold ?? 0,
-              })) ?? [],
+              stock:
+                variant.stock?.map((stock: any) => ({
+                  ...stock,
+                  lowStockThreshold: stock.lowStockThreshold ?? 0,
+                })) ?? [],
             }
           : null,
       };
-      addToLocalCart(cartItem);
+      if (!user) addToLocalCart(cartItem);
       if (user) {
         await cartApi.addToCart({
           productId: product.id,
@@ -351,6 +353,8 @@ export default function CategoryProductsClient({
     queryKey: ["cartApi", user?.id],
     queryFn: async () => (await cartApi.getCart()).data,
     enabled: !!user,
+    staleTime: 15_000,
+    refetchOnWindowFocus: false,
   });
 
   const removeItemMutation = useMutation({
@@ -360,7 +364,10 @@ export default function CategoryProductsClient({
   });
 
   const cartItems = useCartStore((state) => state.items);
-  const effectiveCartItems = user ? (cartData?.items ?? []) : cartItems;
+  const effectiveCartItems = useMemo(
+    () => mergeCartLines(user ? (cartData?.items ?? []) : cartItems),
+    [user, cartData?.items, cartItems],
+  );
   const updateQuantityLocal = useCartStore((state) => state.updateQuantity);
   const removeItemLocal = useCartStore((state) => state.removeItem);
 
@@ -373,7 +380,9 @@ export default function CategoryProductsClient({
     const variants = product.hasVariants ? (product.variants ?? []) : [];
     const allVariantsHaveInventory =
       variants.length > 0 &&
-      variants.every((variant) => Array.isArray(variant.stock) && variant.stock.length > 0);
+      variants.every(
+        (variant) => Array.isArray(variant.stock) && variant.stock.length > 0,
+      );
 
     if (allVariantsHaveInventory) {
       // When variant inventory is known, it is the source of truth for the card.
@@ -403,19 +412,18 @@ export default function CategoryProductsClient({
       const everyVariantHasStock = product.variants.every(
         (variant) => Array.isArray(variant.stock) && variant.stock.length > 0,
       );
-      if (everyVariantHasStock) {
-        return product.variants.every(
-          (variant) => Number(variant.stock?.[0]?.quantity ?? 0) <= 0,
-        );
-      }
+      // Only mask the parent price when all variant inventory is known and
+      // confirms every variant is out of stock. Unknown data should not hide prices.
+      return (
+        everyVariantHasStock &&
+        product.variants.every((variant) => {
+          const qty = Number(variant.stock?.[0]?.quantity ?? 0);
+          return Number.isFinite(qty) && qty <= 0;
+        })
+      );
     }
     return Number(product.stock?.[0]?.quantity ?? 0) <= 0;
   };
-  console.log(
-    "isProductOutOfStock",
-    isProductOutOfStock,
-    products?.[0]?.stock?.[0]?.quantity,
-  );
 
   const handleAddToCart = (product: Product) => {
     if (!canAddToCart(product)) {
@@ -1035,29 +1043,30 @@ ${
                         });
                         return;
                       }
-                      const newQty = cartItem.quantity + 1;
+                      const newQty = Number(cartItem.quantity) + 1;
                       if (user)
                         updateQtyMutation.mutate({
-                          itemId: cartItem.id,
+                          itemId: String(cartItem.id),
                           quantity: newQty,
                         });
-                      else updateQuantityLocal(cartItem.id, newQty);
+                      else updateQuantityLocal(String(cartItem.id), newQty);
                     };
 
                     const handleDecrease = () => {
                       if (!cartItem) return;
-                      const newQty = cartItem.quantity - 1;
+                      const newQty = Number(cartItem.quantity) - 1;
                       if (newQty <= 0) {
-                        if (user) removeItemMutation.mutate(cartItem.id);
-                        else removeItemLocal(cartItem.id);
+                        if (user)
+                          removeItemMutation.mutate(String(cartItem.id));
+                        else removeItemLocal(String(cartItem.id));
                         return;
                       }
                       if (user)
                         updateQtyMutation.mutate({
-                          itemId: cartItem.id,
+                          itemId: String(cartItem.id),
                           quantity: newQty,
                         });
-                      else updateQuantityLocal(cartItem.id, newQty);
+                      else updateQuantityLocal(String(cartItem.id), newQty);
                     };
 
                     return (
@@ -1170,7 +1179,7 @@ hover:bg-white
                                 >
                                   View Options
                                 </button>
-                              ) : cartItem && cartItem.quantity > 0 ? (
+                              ) : cartItem && Number(cartItem.quantity) > 0 ? (
                                 <div className="flex items-center border border-gray-200">
                                   <button
                                     onClick={handleDecrease}
@@ -1190,15 +1199,20 @@ hover:bg-white
                                 </div>
                               ) : (
                                 <button
+                                  type="button"
                                   onClick={() =>
                                     addToCartMutation.mutate({
                                       product,
                                       variant: selectedVariant,
                                     })
                                   }
-                                  className="w-full py-2.5 bg-black text-white text-xs tracking-widest uppercase hover:bg-gray-900 transition-colors"
+                                  disabled={addToCartMutation.isPending}
+                                  aria-busy={addToCartMutation.isPending}
+                                  className="w-full py-2.5 bg-black text-white text-xs tracking-widest uppercase hover:bg-gray-900 transition-colors disabled:cursor-wait disabled:opacity-70"
                                 >
-                                  Add to Cart
+                                  {addToCartMutation.isPending
+                                    ? "Adding..."
+                                    : "Add to Cart"}
                                 </button>
                               )
                             ) : (

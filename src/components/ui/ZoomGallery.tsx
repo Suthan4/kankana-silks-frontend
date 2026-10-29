@@ -45,9 +45,15 @@ export function ZoomGallery({
     h: 0,
   });
   const [isMobile, setIsMobile] = useState(false);
+  const [loadedImageUrl, setLoadedImageUrl] = useState<string | null>(null);
+  const naturalImageSizeRef = useRef({ w: 0, h: 0 });
 
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const swiperRef = useRef<SwiperType | null>(null);
+  const activeImageUrl = images[selectedImageIndex]?.url;
+  const isMainImageLoaded =
+    Boolean(activeImageUrl) && loadedImageUrl === activeImageUrl &&
+    renderedRect.w > 0 && renderedRect.h > 0;
 
   // 🔥 FIX 1: Bigger lens (prevents pixel break)
   const LENS_SIZE = 200;
@@ -99,57 +105,77 @@ export function ZoomGallery({
     [],
   );
 
+  // Reset zoom immediately when the active image changes; dimensions are
+  // recalculated only after that image's own onLoad handler fires.
   useEffect(() => {
-    if (!containerSize.w || !containerSize.h) return;
+    setIsHovering(false);
+    setLensPos({ x: 0, y: 0 });
+    setRenderedRect({ x: 0, y: 0, w: 0, h: 0 });
+  }, [activeImageUrl]);
 
-    const currentUrl = images[selectedImageIndex]?.url;
-    if (!currentUrl) return;
+  // The displayed main image owns loading state. Do not issue a second
+  // hidden Image request just to prepare zoom dimensions.
+  useEffect(() => {
+    const { w, h } = naturalImageSizeRef.current;
+    if (
+      !activeImageUrl ||
+      loadedImageUrl !== activeImageUrl ||
+      !containerSize.w ||
+      !containerSize.h ||
+      !w ||
+      !h
+    ) {
+      return;
+    }
 
-    const img = new window.Image();
-    img.src = currentUrl;
-
-    img.onload = () => {
-      setRenderedRect(
-        computeRenderedRect(
-          img.naturalWidth,
-          img.naturalHeight,
-          containerSize.w,
-          containerSize.h,
-        ),
-      );
-    };
-  }, [selectedImageIndex, images, containerSize, computeRenderedRect]);
+    setRenderedRect(
+      computeRenderedRect(w, h, containerSize.w, containerSize.h),
+    );
+  }, [activeImageUrl, loadedImageUrl, containerSize, computeRenderedRect]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isMainImageLoaded) return;
     const container = imageContainerRef.current;
     if (!container) return;
 
     const rect = container.getBoundingClientRect();
-
+    const lensWidth = Math.min(LENS_SIZE, rect.width);
+    const lensHeight = Math.min(LENS_SIZE, rect.height);
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
     const lensX = Math.min(
-      Math.max(x - LENS_SIZE / 2, 0),
-      rect.width - LENS_SIZE,
+      Math.max(x - lensWidth / 2, 0),
+      Math.max(rect.width - lensWidth, 0),
     );
-
     const lensY = Math.min(
-      Math.max(y - LENS_SIZE / 2, 0),
-      rect.height - LENS_SIZE,
+      Math.max(y - lensHeight / 2, 0),
+      Math.max(rect.height - lensHeight, 0),
     );
 
     setLensPos({ x: lensX, y: lensY });
-  }, []);
+  }, [isMainImageLoaded]);
 
   // 🔥 FIX 3: Controlled zoom (prevents blur)
-  const zoomScale = Math.min(containerSize.w / LENS_SIZE, MAX_ZOOM);
+  const lensWidth = Math.min(LENS_SIZE, containerSize.w);
+  const lensHeight = Math.min(LENS_SIZE, containerSize.h);
+  const zoomScale = Math.min(
+    containerSize.w / Math.max(lensWidth, 1),
+    containerSize.h / Math.max(lensHeight, 1),
+    MAX_ZOOM,
+  );
 
   const bgW = renderedRect.w * zoomScale;
   const bgH = renderedRect.h * zoomScale;
 
-  const bgX = -((lensPos.x - renderedRect.x) * zoomScale);
-  const bgY = -((lensPos.y - renderedRect.y) * zoomScale);
+  // Keep the center of the lens centered in the zoom preview for a clearer,
+  // less jumpy magnification.
+  const bgX =
+    containerSize.w / 2 -
+    (lensPos.x + lensWidth / 2 - renderedRect.x) * zoomScale;
+  const bgY =
+    containerSize.h / 2 -
+    (lensPos.y + lensHeight / 2 - renderedRect.y) * zoomScale;
 
   return (
     <>
@@ -172,13 +198,13 @@ export function ZoomGallery({
             className="w-full"
           >
             {images.map((img, idx) => (
-              <SwiperSlide key={idx}>
+              <SwiperSlide key={img.id ?? img.url ?? idx}>
                 <div className="relative w-full aspect-[3/4] bg-[#f8f5f2] overflow-hidden">
                   <Image
                     src={img.url}
                     alt={product.name}
                     fill
-                    priority
+                    priority={idx === selectedImageIndex}
                     quality={100}
                     sizes="100vw"
                     className="object-cover"
@@ -261,10 +287,19 @@ export function ZoomGallery({
         <div className="relative flex-1">
           <div
             ref={imageContainerRef}
-            className="relative w-full h-full rounded-xl overflow-hidden bg-white cursor-crosshair"
-            onMouseEnter={() => !isMobile && setIsHovering(true)}
+            className={`relative w-full h-full rounded-xl overflow-hidden bg-white ${isMainImageLoaded ? "cursor-zoom-in" : "cursor-default"}`}
+            onMouseEnter={() => {
+              if (!isMobile && isMainImageLoaded) setIsHovering(true);
+            }}
             onMouseLeave={() => setIsHovering(false)}
-            onMouseMove={handleMouseMove}
+            onMouseMove={
+              isMainImageLoaded
+                ? (event) => {
+                    if (!isMobile) setIsHovering(true);
+                    handleMouseMove(event);
+                  }
+                : undefined
+            }
           >
             {images.length > 0 && (
               <>
@@ -276,14 +311,26 @@ export function ZoomGallery({
                   quality={100}
                   sizes="(max-width: 768px) 100vw, 50vw"
                   className="object-cover object-top"
+                  onLoad={(event) => {
+                    const image = event.currentTarget;
+                    naturalImageSizeRef.current = {
+                      w: image.naturalWidth,
+                      h: image.naturalHeight,
+                    };
+                    setLoadedImageUrl(activeImageUrl ?? null);
+                  }}
+                  onError={() => {
+                    setLoadedImageUrl(null);
+                    setIsHovering(false);
+                  }}
                 />
 
-                {isHovering && (
+                {isHovering && isMainImageLoaded && (
                   <div
                     className="absolute border-2 border-yellow-400 rounded-md pointer-events-none"
                     style={{
-                      width: LENS_SIZE,
-                      height: LENS_SIZE,
+                      width: lensWidth,
+                      height: lensHeight,
                       left: lensPos.x,
                       top: lensPos.y,
                     }}
@@ -318,7 +365,7 @@ export function ZoomGallery({
           </div>
 
           <AnimatePresence>
-            {isHovering && (
+            {isHovering && isMainImageLoaded && (
               <motion.div
                 className="fixed border shadow-xl rounded-xl overflow-hidden"
                 style={{
@@ -329,7 +376,7 @@ export function ZoomGallery({
                       0) + 10,
                   width: containerSize.w,
                   height: containerSize.h,
-                  backgroundImage: `url(${images[selectedImageIndex].url})`,
+                  backgroundImage: isMainImageLoaded ? `url(${activeImageUrl})` : "none",
                   backgroundRepeat: "no-repeat",
                   backgroundSize: `${bgW}px ${bgH}px`,
                   backgroundPosition: `${bgX}px ${bgY}px`,

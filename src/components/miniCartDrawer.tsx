@@ -12,6 +12,7 @@ import { useAuthModal } from "@/store/useAuthModalStore";
 import { toast } from "sonner";
 import { useEffect, useState, useMemo } from "react";
 import { extractVariantAttributes } from "@/lib/utils/variant.utils";
+import { mergeCartLines } from "@/lib/utils/cartItems";
 
 export default function MiniCartDrawer() {
   const { isOpen, close } = useCartDrawer();
@@ -62,18 +63,21 @@ export default function MiniCartDrawer() {
   }, [isOpen, close]);
 
   /* -------------------- FETCH CART -------------------- */
-  const { data: cartData } = useQuery({
+  const { data: cartData, isLoading: isCartLoading } = useQuery({
     queryKey: ["cartApi", user?.id],
     queryFn: async () => (await cartApi.getCart()).data,
     enabled: !!user,
+    staleTime: 15_000,
+    refetchOnWindowFocus: false,
   });
 
+  // Never mix stale guest rows with a signed-in server cart. Normalize legacy
+  // duplicate product/variant rows so the drawer shows one line and summed qty.
   const apiItems = cartData?.items ?? [];
-  const displayItems = user
-    ? apiItems.length
-      ? apiItems
-      : localItems
-    : localItems;
+  const displayItems = useMemo(
+    () => mergeCartLines(user ? apiItems : localItems),
+    [user, apiItems, localItems],
+  );
 
   /* -------------------- PRICE & ITEM HELPERS -------------------- */
   const getItemPrice = (item: any): number => {
@@ -110,10 +114,10 @@ export default function MiniCartDrawer() {
         const match = item.product.stock.find(
           (s: any) => s.variantId === item.variantId,
         );
-        if (match) return Number(match.quantity) || 0;
+        return match ? Number(match.quantity) || 0 : 0;
       }
 
-      // if NO variant → take first stock
+      // Simple products use their product-level inventory.
       return Number(item.product.stock[0].quantity) || 0;
     }
 
@@ -157,24 +161,103 @@ export default function MiniCartDrawer() {
       itemId: string;
       quantity: number;
     }) => {
-      if (quantity <= 0) {
-        return await cartApi.removeFromCart(itemId);
-      }
+      if (quantity <= 0) return await cartApi.removeFromCart(itemId);
       return await cartApi.updateCartItem(itemId, { quantity });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cartApi"] });
+    onMutate: async ({ itemId, quantity }) => {
+      const queryKey = ["cartApi", user?.id];
+      await queryClient.cancelQueries({ queryKey });
+      const previousCart = queryClient.getQueryData<any>(queryKey);
+      if (previousCart?.items) {
+        const target = previousCart.items.find((item: any) => String(item.id) === String(itemId));
+        let items = previousCart.items;
+        if (target) {
+          const productId = String(target.productId ?? target.product?.id ?? "");
+          const variantId = String(target.variantId ?? target.variant?.id ?? "");
+          let kept = false;
+          items = previousCart.items.flatMap((item: any) => {
+            const sameLine =
+              String(item.productId ?? item.product?.id ?? "") === productId &&
+              String(item.variantId ?? item.variant?.id ?? "") === variantId;
+            if (!sameLine) return [item];
+            if (kept) return [];
+            kept = true;
+            return [{ ...item, quantity }];
+          });
+        }
+        const subtotal = items.reduce((sum: number, item: any) => {
+          const unitPrice = Number(
+            item.variant?.sellingPrice ??
+              item.variant?.price ??
+              item.product?.sellingPrice ??
+              0,
+          );
+          return sum + unitPrice * Number(item.quantity || 0);
+        }, 0);
+        queryClient.setQueryData(queryKey, {
+          ...previousCart,
+          items,
+          totalItems: items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0),
+          subtotal,
+        });
+      }
+      return { previousCart, queryKey };
     },
-    onError: () => toast.error("Failed to update quantity"),
+    onError: (_error, _variables, context) => {
+      if (context?.previousCart) queryClient.setQueryData(context.queryKey, context.previousCart);
+      toast.error("Failed to update quantity. Please try again.");
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["cartApi"] }),
   });
 
   const removeItemMutation = useMutation({
     mutationFn: async (itemId: string) => await cartApi.removeFromCart(itemId),
+    onMutate: async (itemId) => {
+      const queryKey = ["cartApi", user?.id];
+      await queryClient.cancelQueries({ queryKey });
+      const previousCart = queryClient.getQueryData<any>(queryKey);
+      if (previousCart?.items) {
+        const target = previousCart.items.find(
+          (item: any) => String(item.id) === String(itemId),
+        );
+        if (target) {
+          const productId = String(target.productId ?? target.product?.id ?? "");
+          const variantId = String(target.variantId ?? target.variant?.id ?? "");
+          const items = previousCart.items.filter((item: any) =>
+            String(item.productId ?? item.product?.id ?? "") !== productId ||
+            String(item.variantId ?? item.variant?.id ?? "") !== variantId,
+          );
+          const subtotal = items.reduce((sum: number, item: any) => {
+            const unitPrice = Number(
+              item.variant?.sellingPrice ??
+                item.variant?.price ??
+                item.product?.sellingPrice ??
+                0,
+            );
+            return sum + unitPrice * Number(item.quantity || 0);
+          }, 0);
+          queryClient.setQueryData(queryKey, {
+            ...previousCart,
+            items,
+            totalItems: items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0),
+            subtotal,
+          });
+        }
+      }
+      return { previousCart, queryKey };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cartApi"] });
       toast.success("Item removed");
     },
-    onError: () => toast.error("Failed to remove item"),
+    onError: (_error, _itemId, context) => {
+      if (context?.previousCart) {
+        queryClient.setQueryData(context.queryKey, context.previousCart);
+      }
+      toast.error("Failed to remove item. Please try again.");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["cartApi"] });
+    },
   });
 
   const handleUpdateQuantity = (item: any, newQty: number) => {
@@ -184,7 +267,11 @@ export default function MiniCartDrawer() {
     }
 
     const stockQty = getStockQty(item);
-    if (stockQty > 0 && newQty > stockQty) {
+    if (
+      item.product?.allowOutOfStockOrders !== true &&
+      stockQty > 0 &&
+      newQty > stockQty
+    ) {
       toast.error(`Only ${stockQty} item(s) available in stock`);
       return;
     }
@@ -276,7 +363,13 @@ export default function MiniCartDrawer() {
 
             {/* BODY / ITEMS LIST */}
             <div className="flex-1 overflow-y-auto px-5 py-3 divide-y divide-gray-100">
-              {displayItems.length === 0 ? (
+              {displayItems.length === 0 && user && isCartLoading ? (
+                <div role="status" aria-live="polite" className="flex flex-col items-center justify-center h-full py-16 text-center">
+                  <ShoppingBag className="w-7 h-7 text-gray-400 mb-3" />
+                  <p className="text-sm font-medium text-gray-800">Refreshing your bag…</p>
+                  <p className="text-xs text-gray-500 mt-1">This should only take a moment.</p>
+                </div>
+              ) : displayItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full py-16 text-center">
                   <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 mb-4">
                     <ShoppingBag className="w-8 h-8" />
@@ -300,7 +393,9 @@ export default function MiniCartDrawer() {
                   const imageUrl = getItemImage(item);
                   const stockQty = getStockQty(item);
                   const isMaxStock =
-                    stockQty > 0 && Number(item.quantity) >= stockQty;
+                    item.product?.allowOutOfStockOrders !== true &&
+                    stockQty > 0 &&
+                    Number(item.quantity) >= stockQty;
                   const variantAttrs = item?.variant
                     ? extractVariantAttributes(item.variant)
                     : [];
@@ -368,7 +463,7 @@ export default function MiniCartDrawer() {
                                   Number(item.quantity) - 1,
                                 )
                               }
-                              disabled={Number(item.quantity) <= 1}
+                              disabled={Number(item.quantity) <= 1 || updateQuantityMutation.isPending}
                               aria-label="Decrease quantity"
                               className="p-1 sm:p-1.5 text-gray-500 hover:text-black transition disabled:opacity-30 disabled:cursor-not-allowed"
                             >
@@ -384,7 +479,7 @@ export default function MiniCartDrawer() {
                                   Number(item.quantity) + 1,
                                 )
                               }
-                              disabled={isMaxStock || stockQty === 0}
+                              disabled={isMaxStock || (stockQty === 0 && item.product?.allowOutOfStockOrders !== true) || updateQuantityMutation.isPending}
                               aria-label="Increase quantity"
                               className="p-1 sm:p-1.5 text-gray-500 hover:text-black transition disabled:opacity-30 disabled:cursor-not-allowed"
                             >
@@ -401,6 +496,7 @@ export default function MiniCartDrawer() {
                             </span>
                             <button
                               onClick={() => handleRemove(item)}
+                              disabled={removeItemMutation.isPending}
                               aria-label="Remove item"
                               className="text-gray-400 hover:text-red-500 transition p-1"
                             >

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { mergeCartLinesForStorage } from "@/lib/utils/cartItems";
 
 type VariantStock = {
   id: string;
@@ -93,49 +94,99 @@ export const useCartStore = create<CartState>()(
       appliedCoupon: null,
 
       addItem: (item) => {
-        // ✅ Validate that categoryId is provided
-        if (!item?.product?.categoryId) {
-          console.error("❌ categoryId is required for cart items");
+        if (!item?.product?.categoryId || !item.productId) {
+          console.error("Cannot add an invalid product to the cart.");
+          return;
+        }
+
+        const incomingQuantity = Number(item.quantity);
+        if (!Number.isInteger(incomingQuantity) || incomingQuantity <= 0) {
+          console.error("Cart quantity must be a positive integer.");
           return;
         }
 
         set((state) => {
-          const existingItem = state.items.find(
-            (i) =>
-              i.productId === item.productId && i.variantId === item.variantId,
-          );
+          const normalizedItems = mergeCartLinesForStorage(state.items);
+          const normalizeId = (value: unknown) =>
+            value === null || value === undefined || value === ""
+              ? ""
+              : String(value);
+          const incomingProductId = normalizeId(item.productId ?? item.product?.id);
+          const incomingVariantId = normalizeId(item.variantId ?? item.variant?.id);
+          const sameLine = (candidate: CartItemAPIShape) =>
+            normalizeId(candidate.productId ?? candidate.product?.id) === incomingProductId &&
+            normalizeId(candidate.variantId ?? candidate.variant?.id) === incomingVariantId;
+          const existing = normalizedItems.filter(sameLine);
+          const primary = existing[0];
 
-          if (existingItem) {
-            return {
-              items: state.items.map((i) =>
-                i.id === existingItem.id
-                  ? {
-                      ...i,
-                      quantity: Math.min(i.quantity + item.quantity),
-                    }
-                  : i,
-              ),
+          if (primary) {
+            const nextQuantity =
+              existing.reduce((total, candidate) => total + Number(candidate.quantity || 0), 0) +
+              incomingQuantity;
+            const nextItem = {
+              ...primary,
+              ...item,
+              id: primary.id,
+              variantId: item.variantId ?? item.variant?.id ?? null,
+              quantity: nextQuantity,
             };
+            const remaining = normalizedItems.filter((candidate) => !sameLine(candidate));
+            return { items: [...remaining, nextItem] };
           }
 
           return {
-            items: [...state.items, { ...item, id: crypto.randomUUID() }],
+            items: [...normalizedItems, { ...item, id: item.id || crypto.randomUUID() }],
           };
         });
       },
 
       removeItem: (id) => {
-        set((state) => ({
-          items: state.items.filter((item) => item.id !== id),
-        }));
+        set((state) => {
+          const normalizeId = (value: unknown) =>
+            value === null || value === undefined || value === ""
+              ? ""
+              : String(value);
+          const target = state.items.find((item) => normalizeId(item.id) === normalizeId(id));
+          if (!target) return { items: state.items.filter((item) => normalizeId(item.id) !== normalizeId(id)) };
+
+          const targetProductId = normalizeId(target.productId ?? target.product?.id);
+          const targetVariantId = normalizeId(target.variantId ?? target.variant?.id);
+          if (!targetProductId) {
+            return { items: state.items.filter((item) => normalizeId(item.id) !== normalizeId(id)) };
+          }
+          return {
+            items: state.items.filter((item) =>
+              normalizeId(item.productId ?? item.product?.id) !== targetProductId ||
+              normalizeId(item.variantId ?? item.variant?.id) !== targetVariantId,
+            ),
+          };
+        });
       },
 
       updateQuantity: (id, quantity) => {
-        set((state) => ({
-          items: state.items.map((i) =>
-            i.id === id ? { ...i, quantity: Math.max(1, quantity) } : i,
-          ),
-        }));
+        if (!Number.isInteger(quantity) || quantity <= 0) return;
+        set((state) => {
+          const normalizeId = (value: unknown) =>
+            value === null || value === undefined || value === ""
+              ? ""
+              : String(value);
+          const target = state.items.find((item) => normalizeId(item.id) === normalizeId(id));
+          if (!target) return { items: state.items };
+
+          const targetProductId = normalizeId(target.productId ?? target.product?.id);
+          const targetVariantId = normalizeId(target.variantId ?? target.variant?.id);
+          let kept = false;
+          const items = state.items.flatMap((item) => {
+            const isSameLine =
+              normalizeId(item.productId ?? item.product?.id) === targetProductId &&
+              normalizeId(item.variantId ?? item.variant?.id) === targetVariantId;
+            if (!isSameLine) return [item];
+            if (kept) return [];
+            kept = true;
+            return [{ ...item, quantity }];
+          });
+          return { items: mergeCartLinesForStorage(items) };
+        });
       },
 
       clearCart: () => {
@@ -175,7 +226,7 @@ export const useCartStore = create<CartState>()(
       },
 
       syncWithServer: (serverItems) => {
-        set({ items: serverItems, appliedCoupon: null });
+        set({ items: mergeCartLinesForStorage(serverItems), appliedCoupon: null });
       },
     }),
     {
