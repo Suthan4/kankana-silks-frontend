@@ -169,9 +169,22 @@ export default function MiniCartDrawer() {
       await queryClient.cancelQueries({ queryKey });
       const previousCart = queryClient.getQueryData<any>(queryKey);
       if (previousCart?.items) {
-        const items = previousCart.items.map((item: any) =>
-          String(item.id) === String(itemId) ? { ...item, quantity } : item,
-        );
+        const target = previousCart.items.find((item: any) => String(item.id) === String(itemId));
+        let items = previousCart.items;
+        if (target) {
+          const productId = String(target.productId ?? target.product?.id ?? "");
+          const variantId = String(target.variantId ?? target.variant?.id ?? "");
+          let kept = false;
+          items = previousCart.items.flatMap((item: any) => {
+            const sameLine =
+              String(item.productId ?? item.product?.id ?? "") === productId &&
+              String(item.variantId ?? item.variant?.id ?? "") === variantId;
+            if (!sameLine) return [item];
+            if (kept) return [];
+            kept = true;
+            return [{ ...item, quantity }];
+          });
+        }
         const subtotal = items.reduce((sum: number, item: any) => {
           const unitPrice = Number(
             item.variant?.sellingPrice ??
