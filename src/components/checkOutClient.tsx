@@ -1154,10 +1154,20 @@ export default function CheckoutClient() {
                   onToggle={() => toggleSection("items")}
                 >
                   <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {invalidCartItems.length > 0 && (
+                      <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                        <div>
+                          <p className="font-semibold">Some items need attention before checkout</p>
+                          <p className="mt-1">One or more products are missing valid details, a variant, or a price. Remove those items and add them again from the product page.</p>
+                        </div>
+                      </div>
+                    )}
                     {displayItems.map((item: any, index: number) => {
                       const stockQty = getStockQty(item);
                       const unitPrice = getUnitPrice(item);
-                      console.log("item", item);
+                      const validationIssue = getCheckoutItemIssue(item);
+                      const itemName = item?.product?.name?.trim() || item?.name?.trim() || "Unavailable product";
 
                       return (
                         <div
@@ -1165,10 +1175,12 @@ export default function CheckoutClient() {
                           className="flex gap-2.5 p-2.5 bg-gray-50 rounded-lg relative"
                         >
                           <button
+                            type="button"
+                            aria-label={`Remove ${itemName} from checkout`}
                             onClick={() =>
                               user?.id
                                 ? removeItemMutation.mutate(item.id)
-                                : clearCart()
+                                : removeItem(item.id)
                             }
                             className="absolute top-2 right-2 p-1 hover:bg-red-50 rounded transition"
                           >
@@ -1179,7 +1191,7 @@ export default function CheckoutClient() {
                             {item?.product?.media?.[0]?.url ? (
                               <Image
                                 src={item.product.media[0].url}
-                                alt={item.product?.name}
+                                alt={itemName}
                                 width={48}
                                 height={48}
                                 className="w-full h-full object-cover"
@@ -1192,8 +1204,13 @@ export default function CheckoutClient() {
                           </div>
                           <div className="flex-1 min-w-0 pr-6">
                             <p className="font-semibold text-gray-900 text-xs line-clamp-1">
-                              {item.product?.name || item.name}
+                              {itemName}
                             </p>
+                            {validationIssue && (
+                              <p role="alert" className="mt-1 text-[10px] leading-4 text-red-700">
+                                {validationIssue} Remove this item and add the product again before continuing.
+                              </p>
+                            )}
                             {(() => {
                               const variantAttrs = extractVariantAttributes(
                                 item?.variant,
@@ -1247,7 +1264,7 @@ export default function CheckoutClient() {
                                   {item.quantity}
                                 </span>
                                 <button
-                                  disabled={item.quantity >= stockQty}
+                                  disabled={item.product?.allowOutOfStockOrders !== true && item.quantity >= stockQty}
                                   onClick={() =>
                                     user?.id &&
                                     updateQtyMutation.mutate({
@@ -1261,10 +1278,9 @@ export default function CheckoutClient() {
                                 </button>
                               </div>
                               <p className="font-bold text-xs text-gray-900">
-                                ₹
-                                {(unitPrice * item.quantity).toLocaleString(
-                                  "en-IN",
-                                )}
+                                {Number.isFinite(unitPrice) && unitPrice > 0
+                                  ? formatMoney(unitPrice * Number(item.quantity))
+                                  : "Price unavailable"}
                               </p>
                             </div>
                           </div>
@@ -1979,6 +1995,8 @@ export default function CheckoutClient() {
                       whileTap={{ scale: 0.99 }}
                       onClick={handlePlaceOrder}
                       disabled={
+                        displayItems.length === 0 ||
+                        invalidCartItems.length > 0 ||
                         !selectedAddress ||
                         isProcessing ||
                         !user ||
@@ -1989,15 +2007,17 @@ export default function CheckoutClient() {
                       className="w-full bg-gray-900 text-white font-bold py-3 rounded-xl shadow hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
                     >
                       <Lock className="w-4 h-4" />
-                      {!isServiceable
-                        ? "Delivery Not Available"
-                        : isProcessing
-                          ? "Processing..."
-                          : !user
-                            ? "Login to Place Order"
-                            : isLoadingPreview
-                              ? "Calculating..."
-                              : `Place Order — ₹${total.toLocaleString()}`}
+                      {invalidCartItems.length > 0
+                        ? "Fix cart items to continue"
+                        : !isServiceable
+                          ? "Delivery Not Available"
+                          : isProcessing
+                            ? "Processing..."
+                            : !user
+                              ? "Login to Place Order"
+                              : isLoadingPreview
+                                ? "Calculating..."
+                                : `Place Order — ₹${total.toLocaleString()}`}
                     </motion.button>
                   </div>
                 </div>
