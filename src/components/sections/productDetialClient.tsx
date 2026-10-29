@@ -441,6 +441,9 @@ export default function ProductDetailsClient({
           name: product.name,
           slug: product.slug,
           categoryId: product.categoryId,
+          isActive: product.isActive,
+          hasVariants: product.hasVariants ?? false,
+          allowOutOfStockOrders: product.allowOutOfStockOrders ?? false,
           sellingPrice: Number(product.sellingPrice),
           basePrice: Number(product.basePrice),
           media: [
@@ -490,8 +493,8 @@ export default function ProductDetailsClient({
     const availableStock = product.stock?.[0]?.quantity ?? 0;
     const lowStockThreshold = product.stock?.[0]?.lowStockThreshold ?? 0;
     const allowOutOfStockOrders = product.allowOutOfStockOrders ?? false;
-    if (availableStock === 0) return false;
     if (allowOutOfStockOrders) return true;
+    if (availableStock === 0) return false;
     if (availableStock <= lowStockThreshold) return false;
     return true;
   };
@@ -508,11 +511,11 @@ export default function ProductDetailsClient({
   };
 
   const handleBuyNow = async () => {
-    if (availableStock === 0) {
+    if (availableStock === 0 && !allowOutOfStockOrders) {
       toast.error("Product is out of stock");
       return;
     }
-    if (quantity > availableStock) {
+    if (quantity > availableStock && !allowOutOfStockOrders) {
       toast.error(`Only ${availableStock} items available`);
       return;
     }
@@ -530,6 +533,9 @@ export default function ProductDetailsClient({
         name: product.name,
         slug: product.slug,
         categoryId: product.categoryId,
+        isActive: product.isActive,
+        hasVariants: product.hasVariants ?? false,
+        allowOutOfStockOrders: product.allowOutOfStockOrders ?? false,
         sellingPrice: Number(product.sellingPrice),
         basePrice: Number(product.basePrice),
         media: [
@@ -981,7 +987,7 @@ export default function ProductDetailsClient({
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={handleBuyNow}
-                        disabled={availableStock === 0}
+                        disabled={availableStock === 0 && !allowOutOfStockOrders}
                         className="flex-1 bg-main-primary text-main-secondary py-3 rounded-xl font-semibold shadow hover:shadow-md transition flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Zap className="w-4 h-4" /> Buy Now
@@ -1068,7 +1074,7 @@ export default function ProductDetailsClient({
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={() => handleAddToCart(product, selectedVariant)}
-                disabled={availableStock === 0 || addToCartMutation.isPending}
+                disabled={(availableStock === 0 && !allowOutOfStockOrders) || addToCartMutation.isPending}
                 className="flex-1 bg-gray-900 text-white py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {addToCartMutation.isPending ? (
@@ -1088,7 +1094,7 @@ export default function ProductDetailsClient({
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={handleBuyNow}
-                disabled={availableStock === 0}
+                disabled={availableStock === 0 && !allowOutOfStockOrders}
                 className="flex-1 bg-main-primary text-main-secondary py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Zap className="w-4 h-4" />
