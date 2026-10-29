@@ -37,7 +37,7 @@ export function ZoomGallery({
   isOutOfStock,
 }: ZoomGalleryProps) {
   const [isMobile, setIsMobile] = useState(false);
-  const [loadedImageUrl, setLoadedImageUrl] = useState<string | null>(null);
+  const [loadedImageUrls, setLoadedImageUrls] = useState<string[]>([]);
   const [isHoverZoomed, setIsHoverZoomed] = useState(false);
   const [hoverOrigin, setHoverOrigin] = useState("50% 50%");
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -52,7 +52,7 @@ export function ZoomGallery({
   const activeImage = images?.[selectedImageIndex] ?? images?.[0] ?? null;
   const activeImageUrl = activeImage?.url ?? null;
   const isMainImageLoaded =
-    Boolean(activeImageUrl) && loadedImageUrl === activeImageUrl;
+    Boolean(activeImageUrl) && loadedImageUrls.includes(activeImageUrl);
   const safeSelectedIndex = Math.min(
     Math.max(selectedImageIndex, 0),
     Math.max(images.length - 1, 0),
@@ -83,11 +83,14 @@ export function ZoomGallery({
 
   // The image itself controls the loading flag; no duplicate preload request.
   const handleMainImageLoad = useCallback((imageUrl: string | null) => {
-    if (imageUrl) setLoadedImageUrl(imageUrl);
+    if (!imageUrl) return;
+    setLoadedImageUrls((current) =>
+      current.includes(imageUrl) ? current : [...current, imageUrl],
+    );
   }, []);
 
   const handleMainImageError = useCallback((imageUrl: string | null) => {
-    setLoadedImageUrl((current) => (current === imageUrl ? null : current));
+    setLoadedImageUrls((current) => current.filter((url) => url !== imageUrl));
     setIsHoverZoomed(false);
     setIsLightboxZoomed(false);
   }, []);
@@ -206,12 +209,8 @@ export function ZoomGallery({
                     quality={95}
                     sizes="100vw"
                     className="object-cover object-top"
-                    onLoad={() => {
-                      if (idx === selectedImageIndex) handleMainImageLoad(img.url);
-                    }}
-                    onError={() => {
-                      if (idx === selectedImageIndex) handleMainImageError(img.url);
-                    }}
+                    onLoad={() => handleMainImageLoad(img.url)}
+                    onError={() => handleMainImageError(img.url)}
                   />
 
                   {idx === selectedImageIndex && discount > 0 && !isOutOfStock && (
