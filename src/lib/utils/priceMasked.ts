@@ -11,7 +11,7 @@
 export function maskPrice(price: number | string): string {
   const normalized = String(price).replace(/[^0-9.-]/g, "");
   const parsed = Number(normalized);
-  if (!normalized || !Number.isFinite(parsed) || parsed < 0) return "xxxx";
+  if (!normalized || !Number.isFinite(parsed) || parsed < 0) return "XXXX";
 
   const grouped = Math.trunc(parsed).toLocaleString("en-IN", {
     maximumFractionDigits: 0,
@@ -23,7 +23,7 @@ export function maskPrice(price: number | string): string {
 
   const maskedPositions = new Set(digitPositions.slice(0, -2));
   return [...grouped]
-    .map((character, index) => (maskedPositions.has(index) ? "x" : character))
+    .map((character, index) => (maskedPositions.has(index) ? "X" : character))
     .join("");
 }
 
