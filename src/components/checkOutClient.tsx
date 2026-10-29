@@ -2021,6 +2021,8 @@ export default function CheckoutClient() {
                         !selectedAddress ||
                         !selectedCourier ||
                         !orderPreview ||
+                        subtotal <= 0 ||
+                        total <= 0 ||
                         isProcessing ||
                         !user ||
                         isLoadingPreview ||
@@ -2045,7 +2047,9 @@ export default function CheckoutClient() {
                                   : isLoadingPreview
                                     ? "Calculating..."
                                     : isErrorOrderPreview || !orderPreview
-                                      ? "Check delivery details"
+                                    ? "Check delivery details"
+                                    : subtotal <= 0 || total <= 0
+                                      ? "Verify order total"
                                       : `Place Order — ₹${total.toLocaleString()}`}
                     </motion.button>
                   </div>
