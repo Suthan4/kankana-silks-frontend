@@ -1512,7 +1512,7 @@ export default function CheckoutClient() {
                                       );
                                     }
                                   }}
-                                  className="w-5 h-5 flex items-center justify-center text-gray-600 disabled:opacity-40 text-sm"
+                                  className="w-5 h-5 flex items-center justify-center text-gray-600 disabled:opacity-40 text-sm disabled:cursor-not-allowed"
                                 >
                                   −
                                 </button>
@@ -1547,7 +1547,7 @@ export default function CheckoutClient() {
                                       );
                                     }
                                   }}
-                                  className="w-5 h-5 flex items-center justify-center bg-gray-900 text-white rounded-full disabled:opacity-40  text-sm"
+                                  className="w-5 h-5 flex items-center justify-center bg-gray-900 text-white rounded-full disabled:opacity-40 disabled:cursor-not-allowed text-sm"
                                 >
                                   +
                                 </button>

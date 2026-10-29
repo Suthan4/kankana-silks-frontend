@@ -1192,7 +1192,15 @@ hover:bg-white
                                   </span>
                                   <button
                                     onClick={handleIncrease}
-                                    className="flex-1 py-2.5 text-sm hover:bg-gray-50 transition-colors"
+                                    disabled={
+                                      Number(cartItem.quantity) >=
+                                      Number(
+                                        selectedVariant?.stock?.[0]?.quantity ??
+                                          product.stock?.[0]?.quantity ??
+                                          0,
+                                      )
+                                    }
+                                    className="flex-1 py-2.5 text-sm hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                   >
                                     +
                                   </button>
