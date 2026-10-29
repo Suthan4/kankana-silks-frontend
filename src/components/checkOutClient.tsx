@@ -1502,11 +1502,13 @@ export default function CheckoutClient() {
                                 </span>
                                 <button
                                   disabled={
+                                    isBuyNowMode ||
                                     updateQtyMutation.isPending ||
                                     (item?.product?.allowOutOfStockOrders !== true &&
                                       Number(item?.quantity) >= stockQty)
                                   }
                                   onClick={() => {
+                                    if (isBuyNowMode) return;
                                     if (
                                       item?.product?.allowOutOfStockOrders !== true &&
                                       Number(item.quantity) >= stockQty
