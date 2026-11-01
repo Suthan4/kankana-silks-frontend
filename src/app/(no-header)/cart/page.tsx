@@ -31,7 +31,7 @@ import { shippingApi } from "@/lib/api/shipping.api";
 import { addressApi } from "@/lib/api/addresses.api";
 import { extractVariantAttributes } from "@/lib/utils/variant.utils";
 import { mergeCartLines } from "@/lib/utils/cartItems";
-import { getCartItemStockQty, getCartItemStockState } from "@/lib/utils/cartStock";
+import { getCartItemStockState } from "@/lib/utils/cartStock";
 
 const normalizeAttributes = (attrs: any) => {
   if (!attrs) return [];
@@ -148,7 +148,6 @@ export default function CartPage() {
       })),
     [displayItems],
   );
-  const getStockQty = (item: any) => getCartItemStockQty(item);
 
   const { data: shippingData, isLoading: isLoadingShipping } = useQuery({
     queryKey: ["cartShipping", deliveryPin, shippingCartItems],
