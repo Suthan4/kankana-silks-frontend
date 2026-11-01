@@ -18,7 +18,6 @@ import Image from "next/image";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { useCartStore } from "@/store/useCartStore";
 import { useCartDrawer } from "@/store/useCartDrawer";
-import { cartApi } from "@/lib/api/cart.api";
 import { wishlistApi } from "@/lib/api/wishlist.api";
 import { useWishlist } from "@/hooks/useWishlist";
 import { ProtectedRoute } from "@/components/auth/protectedRoutes";
@@ -43,93 +42,20 @@ export default function WishlistPage() {
     refetch,
   } = useWishlist();
 
-  // Move-to-cart is intentionally different from Add-to-cart:
-  // an existing product keeps its current cart quantity; only a new line gets qty 1.
   const handleAddToCart = useMutation({
-    mutationFn: async (item: any) => {
-      const product = item?.product;
-      if (!product?.id) throw new Error("Product information is missing.");
+    mutationFn: (item: any) => wishlistApi.moveToCart(item.id),
+    onSuccess: async (result) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["cartApi"] }),
+        queryClient.invalidateQueries({ queryKey: ["wishlist", user?.id] }),
+      ]);
 
-      // Read the latest server cart before deciding whether an add is needed.
-      const queryKey = ["cartApi", user?.id];
-      const cart = (await cartApi.getCart()).data;
-      queryClient.setQueryData(queryKey, cart);
-      const matchingItems = (cart?.items ?? []).filter(
-        (cartItem: any) =>
-          String(cartItem.productId ?? cartItem.product?.id) === String(product.id) &&
-          !cartItem.variantId &&
-          !cartItem.variant?.id,
-      );
-      const existingQuantity = matchingItems.reduce(
-        (sum: number, cartItem: any) => sum + Math.max(0, Number(cartItem.quantity) || 0),
-        0,
-      );
-
-      // Validate stock before either preserving an existing line or creating one.
-      const stockRows = Array.isArray(product.stock)
-        ? product.stock.filter((row: any) => row.variantId == null)
-        : [];
-      const available = stockRows.reduce(
-        (sum: number, row: any) =>
-          sum + Math.max(0, Number(row.quantity) || 0),
-        0,
-      );
-      const threshold = stockRows.reduce(
-        (sum: number, row: any) =>
-          sum + Math.max(0, Number(row.lowStockThreshold) || 0),
-        0,
-      );
-      const allowOutOfStockOrders = product.allowOutOfStockOrders === true;
-      const isBelowThreshold = available > 0 && threshold > 0 && available <= threshold;
-
-      if (available <= 0 || (isBelowThreshold && !allowOutOfStockOrders)) {
-        throw new Error(`${product.name} is out of stock.`);
-      }
-
-      const maxAllowed = isBelowThreshold ? 1 : available;
-      const quantityToKeep = existingQuantity || 1;
-      if (quantityToKeep > maxAllowed) {
-        throw new Error(
-          isBelowThreshold
-            ? "Only 1 item can be ordered for this low-stock product."
-            : `Only ${available} item(s) of ${product.name} are available.`,
-        );
-      }
-
-      // Existing line: do not call addToCart (that endpoint increments quantity).
-      // New line: create it exactly once with quantity 1.
-      if (existingQuantity === 0) {
-        await cartApi.addToCart({
-          productId: String(product.id),
-          quantity: 1,
-        });
-      }
-
-      return { productId: String(product.id), wasAlreadyInCart: existingQuantity > 0 };
-    },
-    onSuccess: async (_result, item) => {
-      const cartKey = ["cartApi", user?.id];
-      await queryClient.invalidateQueries({ queryKey: cartKey });
-      await queryClient.refetchQueries({ queryKey: cartKey, type: "active" });
-
-      try {
-        await wishlistApi.removeFromWishlist(item.id);
-        await queryClient.invalidateQueries({
-          queryKey: ["wishlist", user?.id],
-        });
-        toast.success(
-          _result.wasAlreadyInCart
+      toast.success(
+        result.message ||
+          (result.data?.alreadyInCart
             ? "Item is already in your cart. Quantity unchanged."
-            : "Added to cart.",
-        );
-      } catch (error: any) {
-        // Cart action succeeded; retain the wishlist entry if its removal failed.
-        toast.error(
-          error?.response?.data?.message ||
-            "Item is in your cart, but couldn't be removed from your wishlist.",
-        );
-      }
-
+            : "Item moved to cart."),
+      );
       router.push("/cart");
     },
     onError: (error: any) => {
@@ -137,7 +63,7 @@ export default function WishlistPage() {
         error?.response?.data?.message ||
         error?.response?.data?.error ||
         error?.message ||
-        "Unable to move this item to your cart.";
+        "Unable to move item to cart.";
       toast.error(message);
     },
   });
@@ -356,10 +282,10 @@ export default function WishlistPage() {
 
                     <button
                       onClick={() => handleAddToCart.mutate(item)}
-                      disabled={!inStock || handleAddToCart.isPending}
+                      disabled={handleAddToCart.isPending}
                       className={`mt-3 w-full py-2 rounded flex items-center justify-center gap-2 transition-all duration-200 ${
                         !inStock
-                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          ? "bg-gray-300 text-gray-600 cursor-pointer hover:bg-gray-400"
                           : handleAddToCart.isPending
                             ? "bg-gray-800 text-white cursor-wait"
                             : "bg-black text-white hover:bg-gray-800 cursor-pointer active:scale-[0.98]"
