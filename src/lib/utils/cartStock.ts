@@ -1,28 +1,31 @@
 /**
  * Shared stock lookup and purchase limit used by wishlist, cart and checkout.
- * Keeps the existing variant-first inventory selection.
+ * Stock rows are summed in the same way as the backend cart validation.
  */
 export const getCartItemStockState = (item: any) => {
-  let stockRow: any = null;
+  let stockRows: any[] = [];
 
   if (Array.isArray(item?.variant?.stock) && item.variant.stock.length > 0) {
-    stockRow = item.variant.stock[0];
-  } else if (Array.isArray(item?.product?.stock) && item.product.stock.length > 0) {
-    if (item.variantId ?? item.variant?.id) {
-      stockRow = item.product.stock.find(
-        (stock: any) =>
-          String(stock.variantId ?? "") ===
-          String(item.variantId ?? item.variant?.id),
-      ) ?? null;
-    } else {
-      stockRow = item.product.stock.find(
-        (stock: any) => stock.variantId == null,
-      ) ?? item.product.stock[0];
-    }
+    stockRows = item.variant.stock;
+  } else if (Array.isArray(item?.product?.stock)) {
+    const variantId = item?.variantId ?? item?.variant?.id;
+    stockRows = variantId
+      ? item.product.stock.filter(
+          (stock: any) => String(stock.variantId ?? "") === String(variantId),
+        )
+      : item.product.stock.filter((stock: any) => stock.variantId == null);
   }
 
-  const available = Math.max(0, Number(stockRow?.quantity) || 0);
-  const threshold = Math.max(0, Number(stockRow?.lowStockThreshold) || 0);
+  const available = stockRows.reduce(
+    (sum: number, row: any) =>
+      sum + Math.max(0, Number(row?.quantity) || 0),
+    0,
+  );
+  const threshold = stockRows.reduce(
+    (sum: number, row: any) =>
+      sum + Math.max(0, Number(row?.lowStockThreshold) || 0),
+    0,
+  );
   const isBelowThreshold =
     available > 0 && threshold > 0 && available <= threshold;
   const allowOutOfStockOrders = item?.product?.allowOutOfStockOrders === true;
