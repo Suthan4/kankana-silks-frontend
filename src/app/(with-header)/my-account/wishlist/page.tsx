@@ -4,6 +4,7 @@ import { Heart, Trash2, ShoppingCart, ArrowRight, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWishlist } from "@/hooks/useWishlist";
+import { wishlistApi } from "@/lib/api/wishlist.api";
 import { toast } from "sonner";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { useQueryClient } from "@tanstack/react-query";
