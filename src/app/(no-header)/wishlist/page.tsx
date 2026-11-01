@@ -51,8 +51,8 @@ export default function WishlistPage() {
 
       // Read the latest server cart before deciding whether an add is needed.
       const queryKey = ["cartApi", user?.id];
-      const cachedCart = queryClient.getQueryData<any>(queryKey);
-      const cart = cachedCart ?? (await cartApi.getCart()).data;
+      const cart = (await cartApi.getCart()).data;
+      queryClient.setQueryData(queryKey, cart);
       const matchingItems = (cart?.items ?? []).filter(
         (cartItem: any) =>
           String(cartItem.productId ?? cartItem.product?.id) === String(product.id) &&
