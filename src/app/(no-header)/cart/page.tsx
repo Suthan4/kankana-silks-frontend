@@ -752,11 +752,7 @@ export default function CartPage() {
                                         })
                                       : updateQuantity(item.id, n);
                                   }}
-                                  disabled={
-                                    stockState.isOutOfStock ||
-                                    Number(item.quantity) >= stockState.maxAllowed ||
-                                    updateQtyMutation.isPending
-                                  }
+                                  disabled={updateQtyMutation.isPending}
                                   className="w-7 h-7 flex items-center justify-center text-white bg-gray-900 rounded-full hover:bg-gray-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                   <Plus className="w-3.5 h-3.5" />
