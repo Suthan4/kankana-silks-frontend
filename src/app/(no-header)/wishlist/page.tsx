@@ -66,9 +66,19 @@ export default function WishlistPage() {
       );
 
       // Validate stock before either preserving an existing line or creating one.
-      const stock = product.stock?.[0];
-      const available = Math.max(0, Number(stock?.quantity) || 0);
-      const threshold = Math.max(0, Number(stock?.lowStockThreshold) || 0);
+      const stockRows = Array.isArray(product.stock)
+        ? product.stock.filter((row: any) => row.variantId == null)
+        : [];
+      const available = stockRows.reduce(
+        (sum: number, row: any) =>
+          sum + Math.max(0, Number(row.quantity) || 0),
+        0,
+      );
+      const threshold = stockRows.reduce(
+        (sum: number, row: any) =>
+          sum + Math.max(0, Number(row.lowStockThreshold) || 0),
+        0,
+      );
       const allowOutOfStockOrders = product.allowOutOfStockOrders === true;
       const isBelowThreshold = available > 0 && threshold > 0 && available <= threshold;
 
