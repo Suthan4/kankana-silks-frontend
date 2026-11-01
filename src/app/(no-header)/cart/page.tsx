@@ -114,6 +114,22 @@ export default function CartPage() {
     () => mergeCartLines(user?.id ? apiItems : items),
     [user?.id, apiItems, items],
   );
+  useEffect(() => {
+    const invalidItem = displayItems.find((item: any) => {
+      const stockState = getCartItemStockState(item);
+      return stockState.isOutOfStock || Number(item.quantity) > stockState.maxAllowed;
+    });
+    if (!invalidItem) return;
+
+    const stockState = getCartItemStockState(invalidItem);
+    const message = stockState.isOutOfStock
+      ? `${invalidItem.product?.name || "This product"} is out of stock. Remove it from your cart.`
+      : stockState.isLimited
+        ? `${invalidItem.product?.name || "This product"} has limited availability. Only 1 item can be ordered.`
+        : `${invalidItem.product?.name || "This product"} has only ${stockState.available} item(s) available.`;
+    toast.error(message);
+  }, [displayItems]);
+
   const deliveryPin = user?.id ? addressData?.pincode : deliveryPincode;
   const totalItems = useMemo(
     () => displayItems.reduce((sum: number, i: any) => sum + i.quantity, 0),
