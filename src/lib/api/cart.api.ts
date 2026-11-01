@@ -16,6 +16,12 @@ export interface CartItem {
       url: string;
       altText?: string;
     }>;
+    allowOutOfStockOrders?: boolean;
+    stock?: Array<{
+      quantity: number;
+      lowStockThreshold: number;
+      warehouseId?: string;
+    }>;
   };
   variant?: {
     id: string;
@@ -26,6 +32,11 @@ export interface CartItem {
     sellingPrice?: number;
     basePrice?: number;
     attributes?: Record<string, any> | Array<{ key: string; value: any }> | string | null;
+    stock?: Array<{
+      quantity: number;
+      lowStockThreshold: number;
+      warehouseId?: string;
+    }>;
   };
 }
 
