@@ -534,6 +534,12 @@ export default function CheckoutClient() {
       return { item, index, message: productIssue ?? stockIssue };
     })
     .filter((entry: { message: string | null }) => entry.message !== null);
+  useEffect(() => {
+    if (invalidCartItems.length > 0) {
+      toast.error(invalidCartItems[0].message || "Please review your cart items.");
+    }
+  }, [invalidCartItems[0]?.message]);
+
   const isCheckoutInitializing =
     !isCartHydrated ||
     (!!user && isLoadingCartApi) ||
