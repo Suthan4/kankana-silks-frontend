@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useCartStore } from "@/store/useCartStore";
 
 export type UserRole = "SUPERADMIN" | "ADMIN" | "USER";
 
@@ -146,19 +147,26 @@ export const authModalStore = create<AuthModalState>()(
       },
 
       logout: () => {
-        // Clear auth state
+        // Clear auth state and any in-memory guest cart from the previous session.
         set({
           user: null,
           accessToken: null,
           refreshToken: null,
         });
 
-        // Clear any pending actions
+        useCartStore.setState({ items: [], appliedCoupon: null });
+
         if (typeof window !== "undefined") {
+          // Zustand persist writes after setState; remove the key afterwards so
+          // the next guest session starts with a genuinely empty cart.
+          localStorage.removeItem("cart-storage");
+          localStorage.removeItem("auth-modal-storage");
+
           sessionStorage.removeItem("pendingAction");
           sessionStorage.removeItem("buyNowData");
           sessionStorage.removeItem("buyNowItem");
           sessionStorage.removeItem("checkoutAfterLogin");
+          sessionStorage.removeItem("redirectAfterLogin");
         }
       },
     }),
