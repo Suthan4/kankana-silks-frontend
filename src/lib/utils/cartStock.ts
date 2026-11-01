@@ -1,15 +1,10 @@
 /**
- * Shared stock lookup and purchase limit used by cart and checkout.
- *
- * A missing stock relation is UNKNOWN, not zero. This matters because some
- * cart responses/optimistic rows do not carry the stock relation. Only an
- * explicit stock quantity of zero should be presented as out of stock.
+ * Shared stock policy for cart and checkout.
+ * Missing stock data is unknown; only explicit zero stock is out of stock.
  */
 export const getCartItemStockState = (item: any) => {
   let stockRows: any[] | null = null;
 
-  // Prefer the selected variant's stock. If that relation is unavailable,
-  // fall back to the product stock rows filtered to the selected variant.
   if (Array.isArray(item?.variant?.stock) && item.variant.stock.length > 0) {
     stockRows = item.variant.stock;
   } else if (Array.isArray(item?.product?.stock)) {
@@ -20,7 +15,6 @@ export const getCartItemStockState = (item: any) => {
         )
       : item.product.stock.filter((stock: any) => stock.variantId == null);
   } else if (Array.isArray(item?.variant?.stock)) {
-    // An explicitly returned empty stock relation means no stock rows exist.
     stockRows = item.variant.stock;
   }
 
@@ -56,16 +50,35 @@ export const getCartItemStockState = (item: any) => {
       (sum: number, row: any) =>
         sum + Math.max(0, Number(row?.lowStockThreshold) || 0),
       0,
-    ) ?? 0;
+    ) ??
+    Number(
+      item?.lowStockThreshold ??
+        item?.variant?.lowStockThreshold ??
+        item?.product?.lowStockThreshold ??
+        0,
+    );
 
+  const allowOutOfStockOrders =
+    item?.product?.allowOutOfStockOrders === true;
+
+  // The flag bypasses the threshold, not physical zero stock, and caps
+  // the customer's total quantity at one.
   const isBelowThreshold =
-    hasStockData && available > 0 && threshold > 0 && available <= threshold;
-  const allowOutOfStockOrders = item?.product?.allowOutOfStockOrders === true;
-
-  // Never infer out-of-stock from a missing stock relation.
-  const isOutOfStock = hasStockData && available <= 0;
-  const isLastOne = hasStockData && available === 1;
-  const maxAllowed = hasStockData ? available : Number.POSITIVE_INFINITY;
+    hasStockData && threshold > 0 && available < threshold;
+  const isOutOfStock =
+    hasStockData &&
+    (available <= 0 || (!allowOutOfStockOrders && isBelowThreshold));
+  const isLimited =
+    hasStockData &&
+    available > 0 &&
+    allowOutOfStockOrders;
+  const maxAllowed = !hasStockData
+    ? Number.POSITIVE_INFINITY
+    : isOutOfStock
+      ? 0
+      : isLimited
+        ? 1
+        : available;
 
   return {
     available,
@@ -74,8 +87,8 @@ export const getCartItemStockState = (item: any) => {
     isBelowThreshold,
     allowOutOfStockOrders,
     isOutOfStock,
-    isLastOne,
-    isLimited: false,
+    isLastOne: hasStockData && available === 1,
+    isLimited,
     maxAllowed,
   };
 };
