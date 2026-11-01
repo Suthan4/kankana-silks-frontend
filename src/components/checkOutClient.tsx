@@ -1414,7 +1414,8 @@ export default function CheckoutClient() {
                       </div>
                     )}
                     {displayItems.map((item: any, index: number) => {
-                      const stockQty = getStockQty(item);
+                      const stockState = getCartItemStockState(item);
+                      const stockQty = stockState.available;
                       const unitPrice = getUnitPrice(item);
                       const validationIssue = invalidCartItems.find(
                         (entry: { index: number; message: string }) =>
@@ -1490,7 +1491,16 @@ export default function CheckoutClient() {
                                 </div>
                               );
                             })()}
-                            {stockQty > 0 && stockQty <= 5 && (
+                            {stockState.isLastOne && (
+                              <div className="mt-1">
+                                <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded">
+                                  <span className="w-1 h-1 rounded-full bg-amber-500 shrink-0" />
+                                  Last one available — make it yours!
+                                </span>
+                              </div>
+                            )}
+
+                            {stockState.hasStockData && stockQty > 1 && stockQty <= 5 && (
                               <div className="mt-1">
                                 <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded">
                                   <span className="w-1 h-1 rounded-full bg-amber-500 shrink-0" />
@@ -1499,7 +1509,7 @@ export default function CheckoutClient() {
                               </div>
                             )}
 
-                            {stockQty === 0 && (
+                            {stockState.isOutOfStock && (
                               <div className="mt-1">
                                 <span className="inline-flex items-center text-[10px] font-medium text-red-700 bg-red-50 border border-red-200/70 px-1.5 py-0.5 rounded">
                                   Out of stock
@@ -1540,11 +1550,15 @@ export default function CheckoutClient() {
                                   disabled={
                                     isBuyNowMode ||
                                     updateQtyMutation.isPending ||
-                                    Number(item?.quantity) >= stockQty
+                                    (stockState.hasStockData &&
+                                      Number(item?.quantity) >= stockQty)
                                   }
                                   onClick={() => {
                                     if (isBuyNowMode) return;
-                                    if (Number(item.quantity) >= stockQty)
+                                    if (
+                                      stockState.hasStockData &&
+                                      Number(item.quantity) >= stockQty
+                                    )
                                       return;
                                     if (user?.id) {
                                       updateQtyMutation.mutate({
