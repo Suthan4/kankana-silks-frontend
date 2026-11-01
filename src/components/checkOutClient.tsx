@@ -534,14 +534,6 @@ export default function CheckoutClient() {
       return { item, index, message: productIssue ?? stockIssue };
     })
     .filter((entry: { message: string | null }) => entry.message !== null);
-  const firstInvalidCartMessage = invalidCartItems[0]?.message ?? null;
-
-  useEffect(() => {
-    if (firstInvalidCartMessage) {
-      toast.error(firstInvalidCartMessage);
-    }
-  }, [firstInvalidCartMessage]);
-
   const isCheckoutInitializing =
     !isCartHydrated ||
     (!!user && isLoadingCartApi) ||
@@ -1397,22 +1389,6 @@ export default function CheckoutClient() {
                   onToggle={() => toggleSection("items")}
                 >
                   <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {invalidCartItems.length > 0 && (
-                      <div
-                        role="alert"
-                        className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800"
-                      >
-                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                        <div>
-                          <p className="font-semibold">
-                            Please review {invalidCartItems.length === 1 ? "this item" : "these items"} before checkout
-                          </p>
-                          <p className="mt-1">
-                            {firstInvalidCartMessage}
-                          </p>
-                        </div>
-                      </div>
-                    )}
                     {displayItems.map((item: any, index: number) => {
                       const stockState = getCartItemStockState(item);
                       const stockQty = stockState.available;
@@ -1495,7 +1471,7 @@ export default function CheckoutClient() {
                               <div className="mt-1">
                                 <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded">
                                   <span className="w-1 h-1 rounded-full bg-amber-500 shrink-0" />
-                                  Only 1 item can be ordered
+                                  Only one left — order yours now!
                                 </span>
                               </div>
                             )}
