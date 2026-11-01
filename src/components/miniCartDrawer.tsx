@@ -488,11 +488,7 @@ export default function MiniCartDrawer() {
                                   Number(item.quantity) + 1,
                                 )
                               }
-                              disabled={
-                                isMaxStock ||
-                                stockState.isOutOfStock ||
-                                updateQuantityMutation.isPending
-                              }
+                              disabled={updateQuantityMutation.isPending}
                               aria-label="Increase quantity"
                               className="p-1 sm:p-1.5 text-gray-500 hover:text-black transition disabled:opacity-30 disabled:cursor-not-allowed"
                             >
