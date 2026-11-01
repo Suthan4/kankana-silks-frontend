@@ -6,17 +6,11 @@ import { useRouter } from "next/navigation";
 import { useWishlist } from "@/hooks/useWishlist";
 import { toast } from "sonner";
 import { useAuthModal } from "@/store/useAuthModalStore";
-import { WishlistItem } from "@/lib/api/wishlist.api";
-import { cartApi } from "@/lib/api/cart.api";
-import { useCartStore } from "@/store/useCartStore";
-import { useCartDrawer } from "@/store/useCartDrawer";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function WishlistPage() {
   const router = useRouter();
   const { user, openModal } = useAuthModal();
-  const { addItem: addToLocalCart } = useCartStore();
-  const { open: openCartDrawer } = useCartDrawer();
   const queryClient = useQueryClient();
 
   const {
@@ -84,66 +78,26 @@ export default function WishlistPage() {
     setRemovingItemId(null);
   };
 
-  const handleAddToCart = async (item: WishlistItem) => {
-    const product = item.product;
-    const stock = product.stock?.[0]?.quantity ?? 0;
-
-    if (stock === 0) {
-      toast.error("Product is out of stock");
-      return;
-    }
-
+  const handleMoveToCart = async (item: (typeof items)[number]) => {
     setAddingToCartId(item.id);
-
     try {
-      const cartItem = {
-        id: crypto.randomUUID(),
-        cartId: "local",
-        productId: product.id,
-        variantId: null,
-        quantity: 1,
-        product: {
-          id: product.id,
-          name: product.name,
-          slug: product.slug,
-          categoryId: product.category?.name ?? "",
-          sellingPrice: Number(product.sellingPrice),
-          basePrice: Number(product.basePrice),
-          media: [
-            {
-              url: product.media?.[0]?.url ?? "/placeholder.jpg",
-              altText: product.name,
-            },
-          ],
-          stock: [{ quantity: stock }],
-        },
-        variant: null,
-      };
-
-      addToLocalCart(cartItem);
-
-      if (user) {
-        try {
-          await cartApi.addToCart({
-            productId: product.id,
-            quantity: 1,
-          });
-          await queryClient.invalidateQueries({ queryKey: ["cartApi"] });
-        } catch {}
-      }
-
-      toast.success("Added to cart");
-      openCartDrawer();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to add to cart");
+      const result = await wishlistApi.moveToCart(item.id);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["cartApi"] }),
+        queryClient.invalidateQueries({ queryKey: ["wishlist", user?.id] }),
+      ]);
+      toast.success(result.message || "Item moved to cart.");
+      router.push("/cart");
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message ||
+          "Unable to move item to cart.",
+      );
     } finally {
       setAddingToCartId(null);
     }
-  };
-
-  const handleMoveToCart = async (item: WishlistItem) => {
-    await handleAddToCart(item);
-    await removeItem(item.id);
   };
 
   /* ------------------ EMPTY ------------------ */
@@ -234,7 +188,7 @@ export default function WishlistPage() {
 
                   <button
                     onClick={() => handleMoveToCart(item)}
-                    disabled={!inStock || isAdding}
+                    disabled={isAdding}
                     className="mt-3 w-full bg-black text-white py-2 rounded-lg disabled:opacity-50"
                   >
                     {isAdding ? (
