@@ -197,7 +197,7 @@ export default function WishlistPage() {
                     ) : (
                       <>
                         <ShoppingCart className="inline w-4 h-4 mr-1" />
-                        Add to Cart
+                        Move to Cart
                       </>
                     )}
                   </button>
