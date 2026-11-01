@@ -203,7 +203,7 @@ export default function Footer() {
       },
       { label: "Shipping Policy", href: "/shipping-policy" },
       { label: "Privacy Policy", href: "/privacy-policy" },
-      { label: "Terms and Conditions", href: "/terms-and-conditions" },
+      { label: "Terms & Conditions", href: "/terms-and-conditions" },
     ],
     Connect: [
       {
