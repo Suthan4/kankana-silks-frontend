@@ -31,7 +31,7 @@ import { shippingApi } from "@/lib/api/shipping.api";
 import { addressApi } from "@/lib/api/addresses.api";
 import { extractVariantAttributes } from "@/lib/utils/variant.utils";
 import { mergeCartLines } from "@/lib/utils/cartItems";
-import { getCartItemStockQty } from "@/lib/utils/cartStock";
+import { getCartItemStockState } from "@/lib/utils/cartStock";
 
 const normalizeAttributes = (attrs: any) => {
   if (!attrs) return [];
@@ -114,6 +114,24 @@ export default function CartPage() {
     () => mergeCartLines(user?.id ? apiItems : items),
     [user?.id, apiItems, items],
   );
+  useEffect(() => {
+    const invalidItem = displayItems.find((item: any) => {
+      const stockState = getCartItemStockState(item);
+      return (
+        stockState.isOutOfStock || Number(item.quantity) > stockState.maxAllowed
+      );
+    });
+    if (!invalidItem) return;
+
+    const stockState = getCartItemStockState(invalidItem);
+    const message = stockState.isOutOfStock
+      ? `${(invalidItem.product as { name?: string } | undefined)?.name || "This product"} is out of stock. Remove it from your cart.`
+      : stockState.isLimited
+        ? `${(invalidItem.product as { name?: string } | undefined)?.name || "This product"} has limited availability. Only 1 item can be ordered.`
+        : `${(invalidItem.product as { name?: string } | undefined)?.name || "This product"} has only ${stockState.available} item(s) available.`;
+    toast.error(message);
+  }, [displayItems]);
+
   const deliveryPin = user?.id ? addressData?.pincode : deliveryPincode;
   const totalItems = useMemo(
     () => displayItems.reduce((sum: number, i: any) => sum + i.quantity, 0),
@@ -148,7 +166,6 @@ export default function CartPage() {
       })),
     [displayItems],
   );
-  const getStockQty = (item: any) => getCartItemStockQty(item);
 
   const { data: shippingData, isLoading: isLoadingShipping } = useQuery({
     queryKey: ["cartShipping", deliveryPin, shippingCartItems],
@@ -401,7 +418,11 @@ export default function CartPage() {
     onError: (err: any, _variables, context) => {
       if (context?.previousCart)
         queryClient.setQueryData(context.queryKey, context.previousCart);
-      toast.error(err?.message || "Failed to update quantity");
+      toast.error(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Failed to update quantity",
+      );
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["cartApi"] }),
   });
@@ -593,7 +614,8 @@ export default function CartPage() {
               <div className="flex-1 overflow-y-auto space-y-3 pr-1">
                 <AnimatePresence mode="popLayout">
                   {displayItems.map((item: any, index: number) => {
-                    const stockQty = getStockQty(item);
+                    const stockState = getCartItemStockState(item);
+                    const stockQty = stockState.available;
 
                     return (
                       <motion.div
@@ -656,21 +678,41 @@ export default function CartPage() {
                                     </div>
                                   );
                                 })()}
-                                {stockQty > 0 && stockQty <= 5 && (
-                                  <div className="mt-1">
-                                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                                      Only {stockQty} left in stock
-                                    </span>
-                                  </div>
-                                )}
-                                {stockQty === 0 && (
+                                {stockState.isOutOfStock && (
                                   <div className="mt-1">
                                     <span className="inline-flex items-center text-xs font-medium text-red-700 bg-red-50 border border-red-200/70 px-2 py-0.5 rounded-md">
                                       Out of stock
                                     </span>
                                   </div>
                                 )}
+                                {stockState.isLimited && !stockState.isLastOne && (
+                                  <div className="mt-1">
+                                    <span className="inline-flex items-center text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
+                                      Only 1 item can be ordered
+                                    </span>
+                                  </div>
+                                )}
+                                {stockState.isLastOne && (
+                                  <div className="mt-1">
+                                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                                      Last one available — order yours now!
+                                    </span>
+                                  </div>
+                                )}
+                                {!stockState.isOutOfStock &&
+                                  !stockState.isLimited &&
+                                  !stockState.isLastOne &&
+                                  stockState.hasStockData &&
+                                  stockQty > 1 &&
+                                  stockQty <= 5 && (
+                                    <div className="mt-1">
+                                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                                        Only {stockQty} left in stock
+                                      </span>
+                                    </div>
+                                  )}
                               </div>
                               <button
                                 onClick={() =>
@@ -715,7 +757,21 @@ export default function CartPage() {
                                 </span>
                                 <button
                                   onClick={() => {
-                                    const n = item.quantity + 1;
+                                    const n = Number(item.quantity) + 1;
+                                    if (stockState.isOutOfStock) {
+                                      toast.error(
+                                        `${item.product?.name || "This product"} is out of stock.`,
+                                      );
+                                      return;
+                                    }
+                                    if (n > stockState.maxAllowed) {
+                                      toast.error(
+                                        stockState.isLimited
+                                          ? "Limited availability — order yours now!"
+                                          : `Only ${stockQty} item(s) are available in stock.`,
+                                      );
+                                      return;
+                                    }
                                     user
                                       ? updateQtyMutation.mutate({
                                           itemId: item.id,
@@ -723,10 +779,7 @@ export default function CartPage() {
                                         })
                                       : updateQuantity(item.id, n);
                                   }}
-                                  disabled={
-                                    item?.product?.allowOutOfStockOrders !==
-                                      true || item.quantity >= stockQty
-                                  }
+                                  disabled={updateQtyMutation.isPending}
                                   className="w-7 h-7 flex items-center justify-center text-white bg-gray-900 rounded-full hover:bg-gray-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                   <Plus className="w-3.5 h-3.5" />

@@ -118,7 +118,7 @@ export default function MyAccountLayout({
 
           {/* Mobile Layout */}
           <div className="lg:hidden">
-            <main className="pb-20">{children}</main>
+            <main className="pb-20 pt-12">{children}</main>
 
             {/* Bottom Navigation */}
             {!showPasswordModal && (

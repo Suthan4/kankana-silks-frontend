@@ -9,6 +9,7 @@ export interface WishlistItem {
     name: string;
     slug: string;
     basePrice: number;
+    allowOutOfStockOrders:boolean;
     sellingPrice: number;
     media?: Array<{
       url: string;
@@ -63,6 +64,23 @@ class WishlistApiService {
     data: AddToWishlistDTO
   ): Promise<{ success: boolean; message: string; data: WishlistItem }> {
     const response = await authService.api.post("/wishlist/items", data);
+    return response.data;
+  }
+
+  /**
+   * Move a wishlist item to cart without incrementing an existing quantity.
+   */
+  async moveToCart(itemId: string): Promise<{
+    success: boolean;
+    message: string;
+    data: {
+      alreadyInCart: boolean;
+      cartItem: unknown;
+    };
+  }> {
+    const response = await authService.api.post(
+      `/wishlist/items/${itemId}/move-to-cart`,
+    );
     return response.data;
   }
 

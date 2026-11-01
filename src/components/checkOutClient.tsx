@@ -46,7 +46,7 @@ import {
 } from "@/hooks/useOrders";
 import { couponApi, type Coupon } from "@/lib/api/coupon.api";
 import { cartApi } from "@/lib/api/cart.api";
-import { getCartItemStockQty as getCheckoutStockQty } from "@/lib/utils/cartStock";
+import { getCartItemStockState } from "@/lib/utils/cartStock";
 import { shippingApi } from "@/lib/api/shipping.api";
 import confetti from "canvas-confetti";
 import PaymentLogos from "./paymentLogos";
@@ -519,14 +519,18 @@ export default function CheckoutClient() {
   const invalidCartItems = displayItems
     .map((item: any, index: number) => {
       const productIssue = getCheckoutItemIssue(item);
-      const stockQty = getCheckoutStockQty(item);
+      const stockState = getCartItemStockState(item);
       const quantity = Number(item?.quantity);
-      const stockIssue =
-        !productIssue &&
-        quantity > stockQty &&
-        item?.product?.allowOutOfStockOrders !== true
-          ? `${item?.product?.name || "This product"} has only ${stockQty} item(s) available. Reduce the quantity or remove it.`
-          : null;
+      let stockIssue: string | null = null;
+
+      if (!productIssue && stockState.isOutOfStock) {
+        stockIssue = `${item?.product?.name || "This product"} is out of stock. Remove it from your cart.`;
+      } else if (!productIssue && quantity > stockState.maxAllowed) {
+        stockIssue = stockState.isLimited
+          ? `${item?.product?.name || "This product"} has limited availability. Only 1 item can be ordered. Reduce the quantity in your cart.`
+          : `${item?.product?.name || "This product"} has only ${stockState.available} item(s) available. Reduce the quantity or remove it.`;
+      }
+
       return { item, index, message: productIssue ?? stockIssue };
     })
     .filter((entry: { message: string | null }) => entry.message !== null);
@@ -592,6 +596,7 @@ export default function CheckoutClient() {
     isLoading: isLoadingPreview,
     refetch: refetchPreview,
     isError: isErrorOrderPreview,
+    error: orderPreviewError,
   } = useQuery({
     queryKey: [
       "orderPreview",
@@ -641,6 +646,15 @@ export default function CheckoutClient() {
     staleTime: 0,
     gcTime: 0,
   });
+
+  useEffect(() => {
+    if (!isErrorOrderPreview || !orderPreviewError) return;
+    const message =
+      (orderPreviewError as any)?.response?.data?.message ||
+      (orderPreviewError as any)?.message ||
+      "Unable to validate your cart. Please review the items and try again.";
+    toast.error(message);
+  }, [isErrorOrderPreview, orderPreviewError]);
 
   const subtotal = orderPreview?.breakdown.subtotal || 0;
   const discount = orderPreview?.breakdown.discount || 0;
@@ -713,7 +727,7 @@ export default function CheckoutClient() {
     setCourierPreference("CHEAPEST");
   }, [shippingData, selectedCourier]);
 
-  const getStockQty = (item: any) => getCheckoutStockQty(item);
+  const getStockQty = (item: any) => getCartItemStockState(item).available;
 
   const getUnitPrice = (item: any) =>
     Number(
@@ -1222,15 +1236,10 @@ export default function CheckoutClient() {
       toast.error("Please select a courier");
       return;
     }
-    // ✅ STOCK VALIDATION (ADD HERE)
-    const invalidItem = displayItems.find(
-      (item: any) =>
-        Number(item.quantity) > getStockQty(item) &&
-        item.product?.allowOutOfStockOrders !== true,
-    );
-
-    if (invalidItem) {
-      toast.error(`${invalidItem.product?.name} exceeds available stock`);
+    // Recheck the same threshold-aware validation immediately before payment.
+    if (invalidCartItems.length > 0) {
+      setOpenSections((previous) => ({ ...previous, items: true }));
+      toast.error(invalidCartItems[0].message);
       return;
     }
     if (paymentMethod === "COD" && !isCODAvailable) {
@@ -1279,7 +1288,11 @@ export default function CheckoutClient() {
       }
     } catch (error: any) {
       console.error("Order creation error:", error);
-      toast.error(error.message || "Failed to place order");
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to place order",
+      );
       setIsProcessing(false);
     }
   };
@@ -1376,27 +1389,9 @@ export default function CheckoutClient() {
                   onToggle={() => toggleSection("items")}
                 >
                   <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {invalidCartItems.length > 0 && (
-                      <div
-                        role="alert"
-                        className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800"
-                      >
-                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                        <div>
-                          <p className="font-semibold">
-                            Some items need attention before checkout
-                          </p>
-                          <p className="mt-1">
-                            One or more products have missing details, an
-                            invalid price or variant, or a quantity above
-                            available stock. Remove unavailable items or reduce
-                            their quantity before continuing.
-                          </p>
-                        </div>
-                      </div>
-                    )}
                     {displayItems.map((item: any, index: number) => {
-                      const stockQty = getStockQty(item);
+                      const stockState = getCartItemStockState(item);
+                      const stockQty = stockState.available;
                       const unitPrice = getUnitPrice(item);
                       const validationIssue = invalidCartItems.find(
                         (entry: { index: number; message: string }) =>
@@ -1451,8 +1446,7 @@ export default function CheckoutClient() {
                                 role="alert"
                                 className="mt-1 text-[10px] leading-4 text-red-700"
                               >
-                                {validationIssue} Remove this item and add the
-                                product again before continuing.
+                                {validationIssue}
                               </p>
                             )}
                             {(() => {
@@ -1473,7 +1467,25 @@ export default function CheckoutClient() {
                                 </div>
                               );
                             })()}
-                            {stockQty > 0 && stockQty <= 5 && (
+                            {stockState.isLimited && !stockState.isLastOne && (
+                              <div className="mt-1">
+                                <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded">
+                                  <span className="w-1 h-1 rounded-full bg-amber-500 shrink-0" />
+                                  Limited availability — order yours now!
+                                </span>
+                              </div>
+                            )}
+
+                            {stockState.isLastOne && (
+                              <div className="mt-1">
+                                <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded">
+                                  <span className="w-1 h-1 rounded-full bg-amber-500 shrink-0" />
+                                  Last one available — order yours now!
+                                </span>
+                              </div>
+                            )}
+
+                            {stockState.hasStockData && !stockState.isLimited && !stockState.isOutOfStock && stockQty > 1 && stockQty <= 5 && (
                               <div className="mt-1">
                                 <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded">
                                   <span className="w-1 h-1 rounded-full bg-amber-500 shrink-0" />
@@ -1482,7 +1494,7 @@ export default function CheckoutClient() {
                               </div>
                             )}
 
-                            {stockQty === 0 && (
+                            {stockState.isOutOfStock && (
                               <div className="mt-1">
                                 <span className="inline-flex items-center text-[10px] font-medium text-red-700 bg-red-50 border border-red-200/70 px-1.5 py-0.5 rounded">
                                   Out of stock
@@ -1523,16 +1535,14 @@ export default function CheckoutClient() {
                                   disabled={
                                     isBuyNowMode ||
                                     updateQtyMutation.isPending ||
-                                    item?.product?.allowOutOfStockOrders !==
-                                      true ||
-                                    Number(item?.quantity) >= stockQty
+                                    (stockState.hasStockData &&
+                                      Number(item?.quantity) >= stockState.maxAllowed)
                                   }
                                   onClick={() => {
                                     if (isBuyNowMode) return;
                                     if (
-                                      item?.product?.allowOutOfStockOrders !==
-                                        true ||
-                                      Number(item.quantity) >= stockQty
+                                      stockState.hasStockData &&
+                                      Number(item.quantity) >= stockState.maxAllowed
                                     )
                                       return;
                                     if (user?.id) {

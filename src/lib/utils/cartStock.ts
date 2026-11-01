@@ -1,27 +1,141 @@
+
 /**
- * Shared inventory lookup used by cart and checkout.
- * Keep variant-first behavior aligned with the existing checkout validation.
+ * Shared stock policy for cart, mini-cart and checkout.
+ *
+ * Rules:
+ * 1. Stock = 0: Out of stock.
+ * 2. Stock below threshold + allowOutOfStockOrders = false:
+ *    Out of stock.
+ * 3. Stock below threshold + allowOutOfStockOrders = true:
+ *    Allow maximum quantity 1.
+ * 4. Stock = 1: Last one available.
+ * 5. Stock >= threshold: Allow available quantity.
  */
-export const getCartItemStockQty = (item: any): number => {
-  if (Array.isArray(item?.variant?.stock) && item.variant.stock.length > 0) {
-    const quantity = Number(item.variant.stock[0].quantity);
-    return Number.isFinite(quantity) && quantity >= 0 ? quantity : 0;
+export const getCartItemStockState = (item: any) => {
+  let stockRows: any[] | null = null;
+
+  if (
+    Array.isArray(item?.variant?.stock) &&
+    item.variant.stock.length > 0
+  ) {
+    stockRows = item.variant.stock;
+  } else if (Array.isArray(item?.product?.stock)) {
+    const variantId = item?.variantId ?? item?.variant?.id;
+const matchedRows = variantId
+  ? item.product.stock.filter(
+      (stock: any) =>
+        String(stock.variantId ?? "") === String(variantId),
+    )
+  : item.product.stock.filter(
+      (stock: any) => stock.variantId == null,
+    );
+
+stockRows = matchedRows.length > 0 ? matchedRows : null;
+  } else if (Array.isArray(item?.variant?.stock)) {
+    stockRows = item.variant.stock;
   }
 
-  if (Array.isArray(item?.product?.stock) && item.product.stock.length > 0) {
-    if (item.variantId) {
-      const matchingStock = item.product.stock.find(
-        (stock: any) => String(stock.variantId ?? "") === String(item.variantId),
-      );
-      if (!matchingStock) return 0;
+  const directAvailable = [
+    item?.availableStock,
+    item?.stockQuantity,
+    item?.variant?.availableStock,
+    item?.variant?.stockQuantity,
+    item?.product?.availableStock,
+    item?.product?.stockQuantity,
+  ].find(
+    (value) =>
+      value !== null &&
+      value !== undefined &&
+      value !== "" &&
+      Number.isFinite(Number(value)),
+  );
 
-      const quantity = Number(matchingStock.quantity);
-      return Number.isFinite(quantity) && quantity >= 0 ? quantity : 0;
-    }
+  const hasStockData =
+    stockRows !== null || directAvailable !== undefined;
 
-    const quantity = Number(item.product.stock[0].quantity);
-    return Number.isFinite(quantity) && quantity >= 0 ? quantity : 0;
-  }
+  const available =
+    stockRows !== null
+      ? stockRows.reduce(
+          (sum: number, row: any) =>
+            sum + Math.max(0, Number(row?.quantity) || 0),
+          0,
+        )
+      : directAvailable !== undefined
+        ? Math.max(0, Number(directAvailable))
+        : 0;
 
-  return 0;
+  const threshold =
+    stockRows !== null
+      ? stockRows.reduce(
+          (sum: number, row: any) =>
+            sum +
+            Math.max(0, Number(row?.lowStockThreshold) || 0),
+          0,
+        )
+      : Math.max(
+          0,
+          Number(
+            item?.lowStockThreshold ??
+              item?.variant?.lowStockThreshold ??
+              item?.product?.lowStockThreshold ??
+              0,
+          ) || 0,
+        );
+
+const rawAllowOutOfStock =
+  item?.product?.allowOutOfStockOrders ??
+  item?.variant?.allowOutOfStockOrders ??
+  item?.allowOutOfStockOrders;
+
+const allowOutOfStockOrders =
+  rawAllowOutOfStock === true ||
+  rawAllowOutOfStock === "true" ||
+  rawAllowOutOfStock === 1;
+
+  const isBelowThreshold =
+    hasStockData &&
+    threshold > 0 &&
+    available < threshold;
+
+  // Physical zero stock is ALWAYS unavailable.
+  const isOutOfStock =
+    hasStockData &&
+    (
+      available <= 0 ||
+      (!allowOutOfStockOrders && isBelowThreshold)
+    );
+
+  // Backorder setting bypasses threshold restriction,
+  // but allows a maximum of ONE item when below threshold.
+  const isLimited =
+    hasStockData &&
+    allowOutOfStockOrders &&
+    isBelowThreshold &&
+    available > 0;
+
+  const isLastOne =
+    hasStockData && available === 1;
+
+  const maxAllowed = !hasStockData
+    ? Number.POSITIVE_INFINITY
+    : isOutOfStock
+      ? 0
+      : isLimited
+        ? 1
+        : available;
+
+  return {
+    available,
+    hasStockData,
+    threshold,
+    allowOutOfStockOrders,
+    isBelowThreshold,
+    isOutOfStock,
+    isLimited,
+    isLastOne,
+    maxAllowed,
+  };
 };
+
+export const getCartItemStockQty = (item: any): number =>
+  getCartItemStockState(item).available;

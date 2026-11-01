@@ -16,19 +16,14 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { useAuthModal } from "@/store/useAuthModalStore";
-import { useCartStore } from "@/store/useCartStore";
-import { useCartDrawer } from "@/store/useCartDrawer";
-import { cartApi } from "@/lib/api/cart.api";
+import { wishlistApi } from "@/lib/api/wishlist.api";
 import { useWishlist } from "@/hooks/useWishlist";
 import { ProtectedRoute } from "@/components/auth/protectedRoutes";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Product } from "@/lib/api/product.api";
 
 export default function WishlistPage() {
   const router = useRouter();
   const { user, openModal } = useAuthModal();
-  const { addItem: addToLocalCart } = useCartStore();
-  const { open: openCartDrawer } = useCartDrawer();
   const queryClient = useQueryClient();
 
   const {
@@ -42,65 +37,29 @@ export default function WishlistPage() {
     refetch,
   } = useWishlist();
 
-  // ✅ MOVE HOOK HERE (TOP LEVEL)
   const handleAddToCart = useMutation({
-    mutationFn: async (item: any) => {
-      return cartApi.addToCart({
-        productId: item?.product.id,
-        quantity: 1,
-      });
+    mutationFn: (item: any) => wishlistApi.moveToCart(item.id),
+    onSuccess: async (result) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["cartApi"] }),
+        queryClient.invalidateQueries({ queryKey: ["wishlist", user?.id] }),
+      ]);
+
+      toast.success(
+        result.message ||
+          (result.data?.alreadyInCart
+            ? "Item is already in your cart. Quantity unchanged."
+            : "Item moved to cart."),
+      );
+      router.push("/cart");
     },
-    onMutate: async (item: any) => {
-      const product = item.product;
-      const availableStock = product.stock?.[0]?.quantity ?? 0;
-
-      const cartItem = {
-        id: crypto.randomUUID(),
-        cartId: "local",
-        productId: product.id,
-        variantId: null,
-        quantity: 1,
-        product: {
-          id: product.id,
-          name: product.name,
-          slug: product.slug,
-          categoryId: product.categoryId,
-          sellingPrice: Number(product.sellingPrice),
-          basePrice: Number(product.basePrice),
-          media: [
-            {
-              url: product.media?.[0]?.url ?? "/placeholder.jpg",
-              altText: product.name,
-              isActive: true,
-            },
-          ],
-          stock: [{ quantity: availableStock }],
-        },
-        variant: null,
-      };
-
-      await queryClient.cancelQueries({ queryKey: ["cartApi", user?.id] });
-
-      const previousCart = queryClient.getQueryData(["cartApi", user?.id]);
-
-      addToLocalCart(cartItem);
-
-      return { previousCart };
-    },
-    onSuccess: async (_, item) => {
-      await queryClient.refetchQueries({ queryKey: ["cartApi", user?.id] });
-      await removeFromWishlist(item.id);
-      toast.success("Added to cart");
-      openCartDrawer();
-    },
-    onError: (err, product, context) => {
-      if (context?.previousCart) {
-        queryClient.setQueryData(["cartApi", user?.id], context.previousCart);
-      }
-      toast.error("Failed to add to cart");
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["cartApi", user?.id] });
+    onError: (error: any) => {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Unable to move item to cart.";
+      toast.error(message);
     },
   });
 
@@ -206,7 +165,7 @@ export default function WishlistPage() {
               </Link>
               <div className="h-4 w-px bg-gray-300" />
               <h1 className="text-xl font-bold text-gray-900">
-                WHishlist Items
+                Whishlist Items
                 <span className="text-sm text-gray-400 font-normal ml-2">
                   {wishlistCount} items
                 </span>
@@ -253,13 +212,16 @@ export default function WishlistPage() {
             {items.map((item) => {
               const product = item.product;
               const stockQty = product.stock?.[0]?.quantity ?? 0;
+              const allowOutOfStockOrders = product.allowOutOfStockOrders;
 
               const lowStockThreshold =
                 product.stock?.[0]?.lowStockThreshold ?? 0;
 
               const isOutOfStock =
                 stockQty === 0 ||
-                (lowStockThreshold > 0 && stockQty <= lowStockThreshold);
+                (!allowOutOfStockOrders &&
+                  lowStockThreshold > 0 &&
+                  stockQty <= lowStockThreshold);
 
               const inStock = !isOutOfStock;
 
@@ -315,10 +277,10 @@ export default function WishlistPage() {
 
                     <button
                       onClick={() => handleAddToCart.mutate(item)}
-                      disabled={!inStock || handleAddToCart.isPending}
+                      disabled={handleAddToCart.isPending}
                       className={`mt-3 w-full py-2 rounded flex items-center justify-center gap-2 transition-all duration-200 ${
                         !inStock
-                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          ? "bg-gray-300 text-gray-600 cursor-pointer hover:bg-gray-400"
                           : handleAddToCart.isPending
                             ? "bg-gray-800 text-white cursor-wait"
                             : "bg-black text-white hover:bg-gray-800 cursor-pointer active:scale-[0.98]"
@@ -327,7 +289,7 @@ export default function WishlistPage() {
                       {handleAddToCart.isPending ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          Adding...
+                          Moving...
                         </>
                       ) : (
                         <>
