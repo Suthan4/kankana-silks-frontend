@@ -685,18 +685,18 @@ export default function CartPage() {
                                     </span>
                                   </div>
                                 )}
-                                {stockState.isLimited && (
+                                {stockState.isLimited && !stockState.isLastOne && (
                                   <div className="mt-1">
                                     <span className="inline-flex items-center text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
                                       Only 1 item can be ordered
                                     </span>
                                   </div>
                                 )}
-                                {stockState.isLastOne && !stockState.isLimited && (
+                                {stockState.isLastOne && (
                                   <div className="mt-1">
                                     <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
                                       <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                                      Last one available — make it yours!
+                                      Last one available — order yours now!
                                     </span>
                                   </div>
                                 )}
@@ -767,7 +767,7 @@ export default function CartPage() {
                                     if (n > stockState.maxAllowed) {
                                       toast.error(
                                         stockState.isLimited
-                                          ? "Only one left — order yours now!"
+                                          ? "Limited availability — order yours now!"
                                           : `Only ${stockQty} item(s) are available in stock.`,
                                       );
                                       return;
