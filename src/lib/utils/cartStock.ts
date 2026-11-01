@@ -70,6 +70,7 @@ export const getCartItemStockState = (item: any) => {
     (available <= 0 || (!allowOutOfStockOrders && isBelowThreshold));
   const isLimited =
     hasStockData &&
+    isBelowThreshold &&
     available > 0 &&
     allowOutOfStockOrders;
   const maxAllowed = !hasStockData
