@@ -16,8 +16,6 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { useAuthModal } from "@/store/useAuthModalStore";
-import { useCartStore } from "@/store/useCartStore";
-import { useCartDrawer } from "@/store/useCartDrawer";
 import { wishlistApi } from "@/lib/api/wishlist.api";
 import { useWishlist } from "@/hooks/useWishlist";
 import { ProtectedRoute } from "@/components/auth/protectedRoutes";
@@ -27,8 +25,6 @@ import { Product } from "@/lib/api/product.api";
 export default function WishlistPage() {
   const router = useRouter();
   const { user, openModal } = useAuthModal();
-  const { addItem: addToLocalCart } = useCartStore();
-  const { open: openCartDrawer } = useCartDrawer();
   const queryClient = useQueryClient();
 
   const {
