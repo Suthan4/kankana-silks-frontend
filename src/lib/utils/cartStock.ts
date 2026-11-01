@@ -1,27 +1,48 @@
 /**
- * Shared inventory lookup used by cart and checkout.
- * Keep variant-first behavior aligned with the existing checkout validation.
+ * Shared stock lookup and purchase limit used by wishlist, cart and checkout.
+ * Stock rows are summed in the same way as the backend cart validation.
  */
-export const getCartItemStockQty = (item: any): number => {
+export const getCartItemStockState = (item: any) => {
+  let stockRows: any[] = [];
+
   if (Array.isArray(item?.variant?.stock) && item.variant.stock.length > 0) {
-    const quantity = Number(item.variant.stock[0].quantity);
-    return Number.isFinite(quantity) && quantity >= 0 ? quantity : 0;
+    stockRows = item.variant.stock;
+  } else if (Array.isArray(item?.product?.stock)) {
+    const variantId = item?.variantId ?? item?.variant?.id;
+    stockRows = variantId
+      ? item.product.stock.filter(
+          (stock: any) => String(stock.variantId ?? "") === String(variantId),
+        )
+      : item.product.stock.filter((stock: any) => stock.variantId == null);
   }
 
-  if (Array.isArray(item?.product?.stock) && item.product.stock.length > 0) {
-    if (item.variantId) {
-      const matchingStock = item.product.stock.find(
-        (stock: any) => String(stock.variantId ?? "") === String(item.variantId),
-      );
-      if (!matchingStock) return 0;
+  const available = stockRows.reduce(
+    (sum: number, row: any) =>
+      sum + Math.max(0, Number(row?.quantity) || 0),
+    0,
+  );
+  const threshold = stockRows.reduce(
+    (sum: number, row: any) =>
+      sum + Math.max(0, Number(row?.lowStockThreshold) || 0),
+    0,
+  );
+  const isBelowThreshold =
+    available > 0 && threshold > 0 && available <= threshold;
+  const allowOutOfStockOrders = item?.product?.allowOutOfStockOrders === true;
+  const isOutOfStock =
+    available <= 0 || (isBelowThreshold && !allowOutOfStockOrders);
+  const maxAllowed = isOutOfStock ? 0 : isBelowThreshold ? 1 : available;
 
-      const quantity = Number(matchingStock.quantity);
-      return Number.isFinite(quantity) && quantity >= 0 ? quantity : 0;
-    }
-
-    const quantity = Number(item.product.stock[0].quantity);
-    return Number.isFinite(quantity) && quantity >= 0 ? quantity : 0;
-  }
-
-  return 0;
+  return {
+    available,
+    threshold,
+    isBelowThreshold,
+    allowOutOfStockOrders,
+    isOutOfStock,
+    isLimited: isBelowThreshold && allowOutOfStockOrders,
+    maxAllowed,
+  };
 };
+
+export const getCartItemStockQty = (item: any): number =>
+  getCartItemStockState(item).available;

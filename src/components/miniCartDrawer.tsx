@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useEffect, useState, useMemo } from "react";
 import { extractVariantAttributes } from "@/lib/utils/variant.utils";
 import { mergeCartLines } from "@/lib/utils/cartItems";
+import { getCartItemStockState } from "@/lib/utils/cartStock";
 
 export default function MiniCartDrawer() {
   const { isOpen, close } = useCartDrawer();
@@ -93,53 +94,7 @@ export default function MiniCartDrawer() {
     return Number(item?.product?.sellingPrice ?? 0);
   };
 
-  const getStockState = (item: any) => {
-    const stockRows = Array.isArray(item?.variant?.stock)
-      ? item.variant.stock
-      : Array.isArray(item?.product?.stock)
-        ? item.product.stock
-        : [];
-
-    const available = stockRows.reduce(
-      (sum: number, row: any) => sum + Math.max(0, Number(row?.quantity) || 0),
-      0,
-    );
-    const threshold = stockRows.reduce(
-      (sum: number, row: any) =>
-        sum + Math.max(0, Number(row?.lowStockThreshold) || 0),
-      0,
-    );
-    const belowThreshold = available > 0 && available < threshold;
-    const allowOutOfStockOrders = item?.product?.allowOutOfStockOrders === true;
-    const isOutOfStock =
-      available <= 0 || (belowThreshold && !allowOutOfStockOrders);
-    const maxAllowed = isOutOfStock
-      ? 0
-      : belowThreshold
-        ? 1
-        : available;
-
-    return {
-      available,
-      threshold,
-      belowThreshold,
-      allowOutOfStockOrders,
-      isOutOfStock,
-      maxAllowed,
-      isLimited: belowThreshold && allowOutOfStockOrders,
-    };
-  };
-
-
-  const getItemImage = (item: any): string => {
-    return (
-      item?.product?.media?.[0]?.url ||
-      (typeof item?.product?.media?.[0] === "string"
-        ? item?.product?.media?.[0]
-        : null) ||
-      "/placeholder.jpg"
-    );
-  };
+  const getStockState = (item: any) => getCartItemStockState(item);
 
   const subtotal = useMemo(
     () =>
@@ -434,9 +389,6 @@ export default function MiniCartDrawer() {
                   const imageUrl = getItemImage(item);
                   const stockState = getStockState(item);
                   const stockQty = stockState.available;
-                  const isMaxStock =
-                    stockState.maxAllowed <= 0 ||
-                    Number(item.quantity) >= stockState.maxAllowed;
                   const variantAttrs = item?.variant
                     ? extractVariantAttributes(item.variant)
                     : [];
@@ -533,11 +485,7 @@ export default function MiniCartDrawer() {
                                   Number(item.quantity) + 1,
                                 )
                               }
-                              disabled={
-                                isMaxStock ||
-                                stockState.isOutOfStock ||
-                                updateQuantityMutation.isPending
-                              }
+                              disabled={updateQuantityMutation.isPending}
                               aria-label="Increase quantity"
                               className="p-1 sm:p-1.5 text-gray-500 hover:text-black transition disabled:opacity-30 disabled:cursor-not-allowed"
                             >

@@ -46,7 +46,7 @@ import {
 } from "@/hooks/useOrders";
 import { couponApi, type Coupon } from "@/lib/api/coupon.api";
 import { cartApi } from "@/lib/api/cart.api";
-import { getCartItemStockQty as getCheckoutStockQty } from "@/lib/utils/cartStock";
+import { getCartItemStockState } from "@/lib/utils/cartStock";
 import { shippingApi } from "@/lib/api/shipping.api";
 import confetti from "canvas-confetti";
 import PaymentLogos from "./paymentLogos";
@@ -519,17 +519,29 @@ export default function CheckoutClient() {
   const invalidCartItems = displayItems
     .map((item: any, index: number) => {
       const productIssue = getCheckoutItemIssue(item);
-      const stockQty = getCheckoutStockQty(item);
+      const stockState = getCartItemStockState(item);
       const quantity = Number(item?.quantity);
-      const stockIssue =
-        !productIssue &&
-        quantity > stockQty &&
-        item?.product?.allowOutOfStockOrders !== true
-          ? `${item?.product?.name || "This product"} has only ${stockQty} item(s) available. Reduce the quantity or remove it.`
-          : null;
+      let stockIssue: string | null = null;
+
+      if (!productIssue && stockState.isOutOfStock) {
+        stockIssue = `${item?.product?.name || "This product"} is out of stock. Remove it from your cart.`;
+      } else if (!productIssue && quantity > stockState.maxAllowed) {
+        stockIssue = stockState.isLimited
+          ? `${item?.product?.name || "This product"} has limited availability. Only 1 item can be ordered. Reduce the quantity in your cart.`
+          : `${item?.product?.name || "This product"} has only ${stockState.available} item(s) available. Reduce the quantity or remove it.`;
+      }
+
       return { item, index, message: productIssue ?? stockIssue };
     })
     .filter((entry: { message: string | null }) => entry.message !== null);
+  const firstInvalidCartMessage = invalidCartItems[0]?.message ?? null;
+
+  useEffect(() => {
+    if (firstInvalidCartMessage) {
+      toast.error(firstInvalidCartMessage);
+    }
+  }, [firstInvalidCartMessage]);
+
   const isCheckoutInitializing =
     !isCartHydrated ||
     (!!user && isLoadingCartApi) ||
@@ -592,6 +604,7 @@ export default function CheckoutClient() {
     isLoading: isLoadingPreview,
     refetch: refetchPreview,
     isError: isErrorOrderPreview,
+    error: orderPreviewError,
   } = useQuery({
     queryKey: [
       "orderPreview",
@@ -641,6 +654,15 @@ export default function CheckoutClient() {
     staleTime: 0,
     gcTime: 0,
   });
+
+  useEffect(() => {
+    if (!isErrorOrderPreview || !orderPreviewError) return;
+    const message =
+      (orderPreviewError as any)?.response?.data?.message ||
+      (orderPreviewError as any)?.message ||
+      "Unable to validate your cart. Please review the items and try again.";
+    toast.error(message);
+  }, [isErrorOrderPreview, orderPreviewError]);
 
   const subtotal = orderPreview?.breakdown.subtotal || 0;
   const discount = orderPreview?.breakdown.discount || 0;
@@ -713,7 +735,7 @@ export default function CheckoutClient() {
     setCourierPreference("CHEAPEST");
   }, [shippingData, selectedCourier]);
 
-  const getStockQty = (item: any) => getCheckoutStockQty(item);
+  const getStockQty = (item: any) => getCartItemStockState(item).available;
 
   const getUnitPrice = (item: any) =>
     Number(
@@ -1222,15 +1244,10 @@ export default function CheckoutClient() {
       toast.error("Please select a courier");
       return;
     }
-    // ✅ STOCK VALIDATION (ADD HERE)
-    const invalidItem = displayItems.find(
-      (item: any) =>
-        Number(item.quantity) > getStockQty(item) &&
-        item.product?.allowOutOfStockOrders !== true,
-    );
-
-    if (invalidItem) {
-      toast.error(`${invalidItem.product?.name} exceeds available stock`);
+    // Recheck the same threshold-aware validation immediately before payment.
+    if (invalidCartItems.length > 0) {
+      setOpenSections((previous) => ({ ...previous, items: true }));
+      toast.error(invalidCartItems[0].message);
       return;
     }
     if (paymentMethod === "COD" && !isCODAvailable) {
@@ -1279,7 +1296,11 @@ export default function CheckoutClient() {
       }
     } catch (error: any) {
       console.error("Order creation error:", error);
-      toast.error(error.message || "Failed to place order");
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to place order",
+      );
       setIsProcessing(false);
     }
   };
