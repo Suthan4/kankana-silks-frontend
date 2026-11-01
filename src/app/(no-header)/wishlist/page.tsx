@@ -20,7 +20,6 @@ import { wishlistApi } from "@/lib/api/wishlist.api";
 import { useWishlist } from "@/hooks/useWishlist";
 import { ProtectedRoute } from "@/components/auth/protectedRoutes";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Product } from "@/lib/api/product.api";
 
 export default function WishlistPage() {
   const router = useRouter();
