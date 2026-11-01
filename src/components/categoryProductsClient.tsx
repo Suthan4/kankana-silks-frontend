@@ -978,7 +978,7 @@ export default function CategoryProductsClient({
           </AnimatePresence>
 
           {/* PRODUCT GRID */}
-          <div className="flex-1 min-w-0 px-4 md:px-8 xl:px-10 pt-6 pb-16">
+          <div className="flex-1 min-w-0 px-4 md:px-8 xl:px-10 pt-10 md:pt-20 pb-16">
             {/* Loading skeleton */}
             {isLoading && !productRes ? (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-px bg-gray-100">
