@@ -58,8 +58,11 @@ export const getCartItemStockState = (item: any) => {
         0,
     );
 
+  // The API normally nests this setting under product. Also accept the root
+  // field used by normalized/local cart entries so the policy stays consistent.
   const allowOutOfStockOrders =
-    item?.product?.allowOutOfStockOrders === true;
+    (item?.product?.allowOutOfStockOrders ??
+      item?.allowOutOfStockOrders) === true;
 
   // The flag bypasses the threshold, not physical zero stock, and caps
   // the customer's total quantity at one.
