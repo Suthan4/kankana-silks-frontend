@@ -29,9 +29,11 @@ export const getCartItemStockState = (item: any) => {
   const isBelowThreshold =
     available > 0 && threshold > 0 && available <= threshold;
   const allowOutOfStockOrders = item?.product?.allowOutOfStockOrders === true;
-  const isOutOfStock =
-    available <= 0 || (isBelowThreshold && !allowOutOfStockOrders);
-  const maxAllowed = isOutOfStock ? 0 : isBelowThreshold ? 1 : available;
+  // lowStockThreshold is only a merchandising warning. It must never
+  // turn physically available stock into an out-of-stock state or reduce
+  // the customer's purchase limit.
+  const isOutOfStock = available <= 0;
+  const maxAllowed = available;
 
   return {
     available,
@@ -39,7 +41,7 @@ export const getCartItemStockState = (item: any) => {
     isBelowThreshold,
     allowOutOfStockOrders,
     isOutOfStock,
-    isLimited: isBelowThreshold && allowOutOfStockOrders,
+    isLimited: false,
     maxAllowed,
   };
 };
