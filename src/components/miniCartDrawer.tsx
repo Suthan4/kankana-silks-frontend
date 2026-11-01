@@ -389,9 +389,6 @@ export default function MiniCartDrawer() {
                   const imageUrl = getItemImage(item);
                   const stockState = getStockState(item);
                   const stockQty = stockState.available;
-                  const isMaxStock =
-                    stockState.maxAllowed <= 0 ||
-                    Number(item.quantity) >= stockState.maxAllowed;
                   const variantAttrs = item?.variant
                     ? extractVariantAttributes(item.variant)
                     : [];
