@@ -424,7 +424,41 @@ export default function MiniCartDrawer() {
                   const itemPrice = getItemPrice(item);
                   const imageUrl = getItemImage(item);
                   const stockState = getStockState(item);
+                  console.log("MINI CART STOCK DEBUG", {
+                    product: item?.product?.name,
+                    quantityInCart: item?.quantity,
+
+                    variantId: item?.variantId ?? item?.variant?.id,
+
+                    productStock: item?.product?.stock,
+                    variantStock: item?.variant?.stock,
+
+                    productAllowOutOfStock:
+                      item?.product?.allowOutOfStockOrders,
+
+                    variantAllowOutOfStock:
+                      item?.variant?.allowOutOfStockOrders,
+
+                    rootAllowOutOfStock: item?.allowOutOfStockOrders,
+
+                    calculatedStockState: stockState,
+                  });
+
                   const stockQty = stockState.available;
+                  const cartQuantity = Math.max(0, Number(item.quantity) || 0);
+
+                  // Remaining inventory after considering this customer's cart.
+                  const remainingStock = Math.max(0, stockQty - cartQuantity);
+
+                  // Customer has added the only physically available item.
+                  const isLastOneInCart =
+                    stockState.hasStockData &&
+                    stockQty === 1 &&
+                    cartQuantity === 1;
+
+                  // Other customers can still purchase the remaining quantity.
+                  const hasOnlyOneRemaining =
+                    stockState.hasStockData && remainingStock === 1;
                   const variantAttrs = item?.variant
                     ? extractVariantAttributes(item.variant)
                     : [];
@@ -466,31 +500,44 @@ export default function MiniCartDrawer() {
                         )}
 
                         {/* STOCK AVAILABILITY */}
-                        {stockState.isOutOfStock && (
+
+                        {/* STOCK AVAILABILITY */}
+                        {stockState.isOutOfStock ? (
                           <div className="mt-1">
                             <span className="inline-flex items-center text-[11px] font-medium text-red-700 bg-red-50 border border-red-200/70 px-2 py-0.5 rounded-md">
                               Out of stock
                             </span>
                           </div>
-                        )}
-                        {stockState.isLimited && (
+                        ) : isLastOneInCart ? (
                           <div className="mt-1">
-                            <span className="inline-flex items-center text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
-                              Limited stock — maximum 1 item
+                            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                              Last one available — order yours now!
                             </span>
                           </div>
-                        )}
-                        {!stockState.isOutOfStock &&
-                          !stockState.isLimited &&
-                          stockQty > 0 &&
-                          stockQty <= 5 && (
-                            <div className="mt-1">
-                              <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                                Only {stockQty} left in stock
-                              </span>
-                            </div>
-                          )}
+                        ) : stockState.isLimited ? (
+                          <div className="mt-1">
+                            <span className="inline-flex items-center text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
+                              Limited availability — order yours now!
+                            </span>
+                          </div>
+                        ) : hasOnlyOneRemaining ? (
+                          <div className="mt-1">
+                            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                              Only 1 left in stock
+                            </span>
+                          </div>
+                        ) : stockState.hasStockData &&
+                          remainingStock > 1 &&
+                          remainingStock <= 5 ? (
+                          <div className="mt-1">
+                            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                              Only {remainingStock} left in stock
+                            </span>
+                          </div>
+                        ) : null}
 
                         {/* PRICE & QUANTITY CONTROLS */}
                         <div className="flex items-center justify-between mt-3">

@@ -1,19 +1,36 @@
+
 /**
- * Shared stock policy for cart and checkout.
- * Missing stock data is unknown; only explicit zero stock is out of stock.
+ * Shared stock policy for cart, mini-cart and checkout.
+ *
+ * Rules:
+ * 1. Stock = 0: Out of stock.
+ * 2. Stock below threshold + allowOutOfStockOrders = false:
+ *    Out of stock.
+ * 3. Stock below threshold + allowOutOfStockOrders = true:
+ *    Allow maximum quantity 1.
+ * 4. Stock = 1: Last one available.
+ * 5. Stock >= threshold: Allow available quantity.
  */
 export const getCartItemStockState = (item: any) => {
   let stockRows: any[] | null = null;
 
-  if (Array.isArray(item?.variant?.stock) && item.variant.stock.length > 0) {
+  if (
+    Array.isArray(item?.variant?.stock) &&
+    item.variant.stock.length > 0
+  ) {
     stockRows = item.variant.stock;
   } else if (Array.isArray(item?.product?.stock)) {
     const variantId = item?.variantId ?? item?.variant?.id;
-    stockRows = variantId
-      ? item.product.stock.filter(
-          (stock: any) => String(stock.variantId ?? "") === String(variantId),
-        )
-      : item.product.stock.filter((stock: any) => stock.variantId == null);
+const matchedRows = variantId
+  ? item.product.stock.filter(
+      (stock: any) =>
+        String(stock.variantId ?? "") === String(variantId),
+    )
+  : item.product.stock.filter(
+      (stock: any) => stock.variantId == null,
+    );
+
+stockRows = matchedRows.length > 0 ? matchedRows : null;
   } else if (Array.isArray(item?.variant?.stock)) {
     stockRows = item.variant.stock;
   }
@@ -33,7 +50,9 @@ export const getCartItemStockState = (item: any) => {
       Number.isFinite(Number(value)),
   );
 
-  const hasStockData = stockRows !== null || directAvailable !== undefined;
+  const hasStockData =
+    stockRows !== null || directAvailable !== undefined;
+
   const available =
     stockRows !== null
       ? stockRows.reduce(
@@ -46,36 +65,57 @@ export const getCartItemStockState = (item: any) => {
         : 0;
 
   const threshold =
-    stockRows?.reduce(
-      (sum: number, row: any) =>
-        sum + Math.max(0, Number(row?.lowStockThreshold) || 0),
-      0,
-    ) ??
-    Number(
-      item?.lowStockThreshold ??
-        item?.variant?.lowStockThreshold ??
-        item?.product?.lowStockThreshold ??
-        0,
-    );
+    stockRows !== null
+      ? stockRows.reduce(
+          (sum: number, row: any) =>
+            sum +
+            Math.max(0, Number(row?.lowStockThreshold) || 0),
+          0,
+        )
+      : Math.max(
+          0,
+          Number(
+            item?.lowStockThreshold ??
+              item?.variant?.lowStockThreshold ??
+              item?.product?.lowStockThreshold ??
+              0,
+          ) || 0,
+        );
 
-  // The API normally nests this setting under product. Also accept the root
-  // field used by normalized/local cart entries so the policy stays consistent.
-  const allowOutOfStockOrders =
-    (item?.product?.allowOutOfStockOrders ??
-      item?.allowOutOfStockOrders) === true;
+const rawAllowOutOfStock =
+  item?.product?.allowOutOfStockOrders ??
+  item?.variant?.allowOutOfStockOrders ??
+  item?.allowOutOfStockOrders;
 
-  // The flag bypasses the threshold, not physical zero stock, and caps
-  // the customer's total quantity at one.
+const allowOutOfStockOrders =
+  rawAllowOutOfStock === true ||
+  rawAllowOutOfStock === "true" ||
+  rawAllowOutOfStock === 1;
+
   const isBelowThreshold =
-    hasStockData && threshold > 0 && available < threshold;
+    hasStockData &&
+    threshold > 0 &&
+    available < threshold;
+
+  // Physical zero stock is ALWAYS unavailable.
   const isOutOfStock =
     hasStockData &&
-    (available <= 0 || (!allowOutOfStockOrders && isBelowThreshold));
+    (
+      available <= 0 ||
+      (!allowOutOfStockOrders && isBelowThreshold)
+    );
+
+  // Backorder setting bypasses threshold restriction,
+  // but allows a maximum of ONE item when below threshold.
   const isLimited =
     hasStockData &&
+    allowOutOfStockOrders &&
     isBelowThreshold &&
-    available > 0 &&
-    allowOutOfStockOrders;
+    available > 0;
+
+  const isLastOne =
+    hasStockData && available === 1;
+
   const maxAllowed = !hasStockData
     ? Number.POSITIVE_INFINITY
     : isOutOfStock
@@ -88,11 +128,11 @@ export const getCartItemStockState = (item: any) => {
     available,
     hasStockData,
     threshold,
-    isBelowThreshold,
     allowOutOfStockOrders,
+    isBelowThreshold,
     isOutOfStock,
-    isLastOne: hasStockData && available === 1,
     isLimited,
+    isLastOne,
     maxAllowed,
   };
 };
