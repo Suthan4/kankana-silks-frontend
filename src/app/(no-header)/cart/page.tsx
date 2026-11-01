@@ -117,16 +117,18 @@ export default function CartPage() {
   useEffect(() => {
     const invalidItem = displayItems.find((item: any) => {
       const stockState = getCartItemStockState(item);
-      return stockState.isOutOfStock || Number(item.quantity) > stockState.maxAllowed;
+      return (
+        stockState.isOutOfStock || Number(item.quantity) > stockState.maxAllowed
+      );
     });
     if (!invalidItem) return;
 
     const stockState = getCartItemStockState(invalidItem);
     const message = stockState.isOutOfStock
-      ? `${invalidItem.product?.name || "This product"} is out of stock. Remove it from your cart.`
+      ? `${(invalidItem.product as { name?: string } | undefined)?.name || "This product"} is out of stock. Remove it from your cart.`
       : stockState.isLimited
-        ? `${invalidItem.product?.name || "This product"} has limited availability. Only 1 item can be ordered.`
-        : `${invalidItem.product?.name || "This product"} has only ${stockState.available} item(s) available.`;
+        ? `${(invalidItem.product as { name?: string } | undefined)?.name || "This product"} has limited availability. Only 1 item can be ordered.`
+        : `${(invalidItem.product as { name?: string } | undefined)?.name || "This product"} has only ${stockState.available} item(s) available.`;
     toast.error(message);
   }, [displayItems]);
 
