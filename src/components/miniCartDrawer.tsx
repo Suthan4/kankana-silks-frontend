@@ -358,7 +358,7 @@ export default function MiniCartDrawer() {
             {/* HEADER */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center">
                   <ShoppingBag className="w-4 h-4" />
                 </div>
                 <div>

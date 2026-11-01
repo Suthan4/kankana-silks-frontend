@@ -13,7 +13,7 @@ export default function MainContent({ children }: MainContentProps) {
 
   return (
     <main
-      className={`${isHomePage ? "overflow-x-hidden md:pt-0" : "overflow-x-hidden pt-[126px]"}`}
+      className={`overflow-x-hidden${isHomePage ? "pt-0 md:pt-0" : "md:pt-[126px]"}`}
     >
       {children}
     </main>

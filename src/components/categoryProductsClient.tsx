@@ -32,6 +32,9 @@ import { getColorHex, isValidCSSColor } from "@/lib/utils/colorValidation";
 import { useWishlist } from "@/hooks/useWishlist";
 import SortDropdown from "./customDropdown";
 import { useCartDrawer } from "@/store/useCartDrawer";
+import ProductRequestModal from "./productRequestModal";
+import PriceRangeSlider from "./ui/PriceRangeSlider";
+import { wishlistApi } from "@/lib/api/wishlist.api";
 
 interface CategoryProductsClientProps {
   category: Category;
@@ -46,11 +49,16 @@ export default function CategoryProductsClient({
   const queryClient = useQueryClient();
   const { addItem: addToLocalCart } = useCartStore();
   const { open } = useCartDrawer();
-
+  // ✅ Prevents hydration mismatch: badge counts come from localStorage/API
+  // which the server doesn't have. Only render counts after first client paint.
+  const [isMounted, setIsMounted] = useState(false);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [desktopFilterOpen, setDesktopFilterOpen] = useState(false);
   const [gridCols, setGridCols] = useState<2 | 3 | 4>(3);
   const [mobileGrid, setMobileGrid] = useState<1 | 2>(2);
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [requestProduct, setRequestProduct] = useState<Product | null>(null);
+  const [requestVariant, setRequestVariant] = useState<any>(null);
 
   // Filter state - Initialize from URL
   const [priceRange, setPriceRange] = useState<[number, number]>(() => {
@@ -99,7 +107,9 @@ export default function CategoryProductsClient({
 
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
-
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   useEffect(() => {
     const el = scrollRef.current;
 
@@ -135,6 +145,31 @@ export default function CategoryProductsClient({
     });
   };
 
+  const handleRequestProduct = (product: Product, variant: any = null) => {
+    if (!user) {
+      openModal("login");
+      toast.info("Please login to request this product");
+      return;
+    }
+
+    setRequestProduct(product);
+    setRequestVariant(variant);
+    setIsRequestModalOpen(true);
+  };
+  /* -------------------- WISHLIST API QUERY -------------------- */
+  const { data: wishlistData } = useQuery({
+    queryKey: ["wishlist", user?.id],
+    queryFn: async () => {
+      const res = await wishlistApi.getWishlist();
+      return res.data;
+    },
+    enabled: !!user,
+  });
+  const wishlistCount = isMounted
+    ? user
+      ? (wishlistData?.totalItems ?? 0)
+      : 0
+    : 0;
   const limit = 12;
   const options = [
     { label: "Featured", value: "createdAt-desc" },
@@ -594,21 +629,13 @@ export default function CategoryProductsClient({
       <div className="mb-6">
         <h3 className="font-semibold text-gray-900 mb-4">Price Range</h3>
         <div className="space-y-4">
-          <input
-            type="range"
-            min="0"
-            max="100000"
-            step="1000"
-            value={priceRange[1]}
-            onChange={(e) =>
-              handlePriceRangeChange([priceRange[0], Number(e.target.value)])
-            }
-            className="w-full accent-main-primary"
+          <PriceRangeSlider
+            value={priceRange}
+            min={0}
+            max={100000}
+            step={500}
+            onChange={setPriceRange}
           />
-          <div className="flex justify-between text-sm text-gray-600">
-            <span>₹{priceRange[0].toLocaleString("en-IN")}</span>
-            <span>₹{priceRange[1].toLocaleString("en-IN")}</span>
-          </div>
         </div>
       </div>
 
@@ -716,9 +743,15 @@ export default function CategoryProductsClient({
               </div>
             </button>
             {/* Wishlist */}
-            <motion.div whileTap={{ scale: 0.9 }}>
-              <Link href="/wishlist">
+            <motion.div whileTap={{ scale: 0.9 }} className="relative">
+              <Link href="/wishlist" className="relative inline-flex">
                 <Heart className="w-6 h-6" />
+
+                {wishlistCount > 0 && (
+                  <span className="absolute -top-1 -right-2 text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-medium bg-black text-white">
+                    {wishlistCount}
+                  </span>
+                )}
               </Link>
             </motion.div>
           </div>
@@ -1224,9 +1257,16 @@ hover:bg-white
                                 </button>
                               )
                             ) : (
-                              <div className="w-full py-2.5 bg-gray-50 text-gray-400 text-xs tracking-widest uppercase text-center">
-                                {isOutOfStock ? "Out of Stock" : "Unavailable"}
-                              </div>
+                              <motion.button
+                                whileTap={{ scale: 0.97 }}
+                                onClick={() =>
+                                  handleRequestProduct(product, selectedVariant)
+                                }
+                                className="w-full py-2.5 flex items-center justify-center gap-2 bg-black text-white text-xs tracking-widest uppercase hover:bg-gray-900 transition-colors disabled:cursor-wait disabled:opacity-70"
+                              >
+                                <AlertCircle className="w-4 h-4" />
+                                Request Product
+                              </motion.button>
                             )}
                           </div>
                         </div>
@@ -1343,6 +1383,22 @@ hover:bg-white
           </>
         )}
       </AnimatePresence>
+
+      {/* ====================================
+           PRODUCT REQUEST MODAL
+          ================================*/}
+      {requestProduct && (
+        <ProductRequestModal
+          isOpen={isRequestModalOpen}
+          onClose={() => {
+            setIsRequestModalOpen(false);
+            setRequestProduct(null);
+            setRequestVariant(null);
+          }}
+          product={requestProduct}
+          selectedVariant={requestVariant}
+        />
+      )}
     </div>
   );
 }

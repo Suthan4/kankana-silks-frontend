@@ -206,7 +206,7 @@ export default function WishlistPage() {
               </Link>
               <div className="h-4 w-px bg-gray-300" />
               <h1 className="text-xl font-bold text-gray-900">
-                WHishlist Items
+                Whishlist Items
                 <span className="text-sm text-gray-400 font-normal ml-2">
                   {wishlistCount} items
                 </span>
@@ -253,13 +253,16 @@ export default function WishlistPage() {
             {items.map((item) => {
               const product = item.product;
               const stockQty = product.stock?.[0]?.quantity ?? 0;
+              const allowOutOfStockOrders = product.allowOutOfStockOrders;
 
               const lowStockThreshold =
                 product.stock?.[0]?.lowStockThreshold ?? 0;
 
               const isOutOfStock =
                 stockQty === 0 ||
-                (lowStockThreshold > 0 && stockQty <= lowStockThreshold);
+                (!allowOutOfStockOrders &&
+                  lowStockThreshold > 0 &&
+                  stockQty <= lowStockThreshold);
 
               const inStock = !isOutOfStock;
 

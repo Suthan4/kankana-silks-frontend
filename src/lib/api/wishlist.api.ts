@@ -9,6 +9,7 @@ export interface WishlistItem {
     name: string;
     slug: string;
     basePrice: number;
+    allowOutOfStockOrders:boolean;
     sellingPrice: number;
     media?: Array<{
       url: string;

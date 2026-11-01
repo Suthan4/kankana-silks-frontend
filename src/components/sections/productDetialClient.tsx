@@ -620,7 +620,7 @@ export default function ProductDetailsClient({
             Desktop: side-by-side grid.
             On mobile we add pb-28 so content isn't hidden behind the floating bar.
           */}
-          <div className="flex flex-col md:grid md:grid-cols-2 gap-5 pb-28 md:pb-6">
+          <div className="flex flex-col md:grid md:grid-cols-2 gap-5 pb-28 md:pb-6 pt-10">
             {/* ── Left: Image Gallery ── */}
             <ZoomGallery
               images={images}
