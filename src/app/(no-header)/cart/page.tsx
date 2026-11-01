@@ -31,7 +31,7 @@ import { shippingApi } from "@/lib/api/shipping.api";
 import { addressApi } from "@/lib/api/addresses.api";
 import { extractVariantAttributes } from "@/lib/utils/variant.utils";
 import { mergeCartLines } from "@/lib/utils/cartItems";
-import { getCartItemStockQty } from "@/lib/utils/cartStock";
+import { getCartItemStockQty, getCartItemStockState } from "@/lib/utils/cartStock";
 
 const normalizeAttributes = (attrs: any) => {
   if (!attrs) return [];
@@ -401,7 +401,11 @@ export default function CartPage() {
     onError: (err: any, _variables, context) => {
       if (context?.previousCart)
         queryClient.setQueryData(context.queryKey, context.previousCart);
-      toast.error(err?.message || "Failed to update quantity");
+      toast.error(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Failed to update quantity",
+      );
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["cartApi"] }),
   });
@@ -593,7 +597,8 @@ export default function CartPage() {
               <div className="flex-1 overflow-y-auto space-y-3 pr-1">
                 <AnimatePresence mode="popLayout">
                   {displayItems.map((item: any, index: number) => {
-                    const stockQty = getStockQty(item);
+                    const stockState = getCartItemStockState(item);
+                    const stockQty = stockState.available;
 
                     return (
                       <motion.div
@@ -656,21 +661,31 @@ export default function CartPage() {
                                     </div>
                                   );
                                 })()}
-                                {stockQty > 0 && stockQty <= 5 && (
-                                  <div className="mt-1">
-                                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                                      Only {stockQty} left in stock
-                                    </span>
-                                  </div>
-                                )}
-                                {stockQty === 0 && (
+                                {stockState.isOutOfStock && (
                                   <div className="mt-1">
                                     <span className="inline-flex items-center text-xs font-medium text-red-700 bg-red-50 border border-red-200/70 px-2 py-0.5 rounded-md">
                                       Out of stock
                                     </span>
                                   </div>
                                 )}
+                                {stockState.isLimited && (
+                                  <div className="mt-1">
+                                    <span className="inline-flex items-center text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
+                                      Limited stock — maximum 1 item
+                                    </span>
+                                  </div>
+                                )}
+                                {!stockState.isOutOfStock &&
+                                  !stockState.isLimited &&
+                                  stockQty > 0 &&
+                                  stockQty <= 5 && (
+                                    <div className="mt-1">
+                                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                                        Only {stockQty} left in stock
+                                      </span>
+                                    </div>
+                                  )}
                               </div>
                               <button
                                 onClick={() =>
@@ -715,7 +730,21 @@ export default function CartPage() {
                                 </span>
                                 <button
                                   onClick={() => {
-                                    const n = item.quantity + 1;
+                                    const n = Number(item.quantity) + 1;
+                                    if (stockState.isOutOfStock) {
+                                      toast.error(
+                                        `${item.product?.name || "This product"} is out of stock.`,
+                                      );
+                                      return;
+                                    }
+                                    if (n > stockState.maxAllowed) {
+                                      toast.error(
+                                        stockState.isLimited
+                                          ? "Only 1 item can be ordered for this low-stock product."
+                                          : `Only ${stockQty} item(s) are available in stock.`,
+                                      );
+                                      return;
+                                    }
                                     user
                                       ? updateQtyMutation.mutate({
                                           itemId: item.id,
@@ -724,8 +753,9 @@ export default function CartPage() {
                                       : updateQuantity(item.id, n);
                                   }}
                                   disabled={
-                                    item?.product?.allowOutOfStockOrders !==
-                                      true || item.quantity >= stockQty
+                                    stockState.isOutOfStock ||
+                                    Number(item.quantity) >= stockState.maxAllowed ||
+                                    updateQtyMutation.isPending
                                   }
                                   className="w-7 h-7 flex items-center justify-center text-white bg-gray-900 rounded-full hover:bg-gray-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
