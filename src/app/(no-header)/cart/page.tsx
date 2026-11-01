@@ -767,7 +767,7 @@ export default function CartPage() {
                                     if (n > stockState.maxAllowed) {
                                       toast.error(
                                         stockState.isLimited
-                                          ? "Only 1 item can be ordered for this low-stock product."
+                                          ? "Only one left — order yours now!"
                                           : `Only ${stockQty} item(s) are available in stock.`,
                                       );
                                       return;
