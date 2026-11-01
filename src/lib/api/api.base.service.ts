@@ -66,7 +66,7 @@ export class BaseApiService {
         request?.headers?.Authorization ??
         request?.headers?.authorization;
       if (typeof value !== "string") return null;
-      return value.replace(/^Bearer\\s+/i, "").trim() || null;
+      return value.replace(/^Bearer\s+/i, "").trim() || null;
     };
 
     // Always attach the latest access token from persisted auth state.
