@@ -717,7 +717,7 @@ export default function CheckoutClient() {
     setCourierPreference("CHEAPEST");
   }, [shippingData, selectedCourier]);
 
-  const getStockQty = (item: any) => getCheckoutStockQty(item);
+  const getStockQty = (item: any) => getCartItemStockState(item).available;
 
   const getUnitPrice = (item: any) =>
     Number(
