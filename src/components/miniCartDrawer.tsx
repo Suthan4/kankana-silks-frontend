@@ -130,7 +130,6 @@ export default function MiniCartDrawer() {
     };
   };
 
-  const getStockQty = (item: any): number => getStockState(item).available;
 
   const getItemImage = (item: any): string => {
     return (
