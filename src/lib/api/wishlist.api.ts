@@ -68,6 +68,23 @@ class WishlistApiService {
   }
 
   /**
+   * Move a wishlist item to cart without incrementing an existing quantity.
+   */
+  async moveToCart(itemId: string): Promise<{
+    success: boolean;
+    message: string;
+    data: {
+      alreadyInCart: boolean;
+      cartItem: unknown;
+    };
+  }> {
+    const response = await authService.api.post(
+      `/wishlist/items/${itemId}/move-to-cart`,
+    );
+    return response.data;
+  }
+
+  /**
    * Remove item from wishlist
    */
   async removeFromWishlist(
