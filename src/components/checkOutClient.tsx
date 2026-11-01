@@ -1405,13 +1405,10 @@ export default function CheckoutClient() {
                         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                         <div>
                           <p className="font-semibold">
-                            Some items need attention before checkout
+                            Please review {invalidCartItems.length === 1 ? "this item" : "these items"} before checkout
                           </p>
                           <p className="mt-1">
-                            One or more products have missing details, an
-                            invalid price or variant, or a quantity above
-                            available stock. Remove unavailable items or reduce
-                            their quantity before continuing.
+                            {firstInvalidCartMessage}
                           </p>
                         </div>
                       </div>
@@ -1472,8 +1469,7 @@ export default function CheckoutClient() {
                                 role="alert"
                                 className="mt-1 text-[10px] leading-4 text-red-700"
                               >
-                                {validationIssue} Remove this item and add the
-                                product again before continuing.
+                                {validationIssue}
                               </p>
                             )}
                             {(() => {
@@ -1544,17 +1540,11 @@ export default function CheckoutClient() {
                                   disabled={
                                     isBuyNowMode ||
                                     updateQtyMutation.isPending ||
-                                    item?.product?.allowOutOfStockOrders !==
-                                      true ||
                                     Number(item?.quantity) >= stockQty
                                   }
                                   onClick={() => {
                                     if (isBuyNowMode) return;
-                                    if (
-                                      item?.product?.allowOutOfStockOrders !==
-                                        true ||
-                                      Number(item.quantity) >= stockQty
-                                    )
+                                    if (Number(item.quantity) >= stockQty)
                                       return;
                                     if (user?.id) {
                                       updateQtyMutation.mutate({
