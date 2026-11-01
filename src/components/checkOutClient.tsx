@@ -534,11 +534,13 @@ export default function CheckoutClient() {
       return { item, index, message: productIssue ?? stockIssue };
     })
     .filter((entry: { message: string | null }) => entry.message !== null);
+  const firstInvalidCartMessage = invalidCartItems[0]?.message ?? null;
+
   useEffect(() => {
-    if (invalidCartItems.length > 0) {
-      toast.error(invalidCartItems[0].message || "Please review your cart items.");
+    if (firstInvalidCartMessage) {
+      toast.error(firstInvalidCartMessage);
     }
-  }, [invalidCartItems[0]?.message]);
+  }, [firstInvalidCartMessage]);
 
   const isCheckoutInitializing =
     !isCartHydrated ||
