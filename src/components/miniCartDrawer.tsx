@@ -94,6 +94,42 @@ export default function MiniCartDrawer() {
     return Number(item?.product?.sellingPrice ?? 0);
   };
 
+  const getItemImage = (item: any): string => {
+    const candidate =
+      item?.variant?.image ??
+      item?.variant?.imageUrl ??
+      item?.variant?.thumbnail ??
+      item?.variant?.images?.[0]?.url ??
+      item?.variant?.images?.[0]?.src ??
+      item?.product?.image ??
+      item?.product?.imageUrl ??
+      item?.product?.thumbnail ??
+      item?.product?.featuredImage ??
+      item?.product?.coverImage ??
+      item?.product?.images?.[0]?.url ??
+      item?.product?.images?.[0]?.src ??
+      item?.product?.media?.[0]?.url ??
+      item?.image ??
+      item?.thumbnail ??
+      "/placeholder-product.png";
+
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate;
+    }
+
+    if (candidate && typeof candidate === "object") {
+      return (
+        candidate.url ||
+        candidate.src ||
+        candidate.image ||
+        candidate.thumbnail ||
+        "/placeholder-product.png"
+      );
+    }
+
+    return "/placeholder-product.png";
+  };
+
   const getStockState = (item: any) => getCartItemStockState(item);
 
   const subtotal = useMemo(
