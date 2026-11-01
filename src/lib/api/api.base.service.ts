@@ -66,7 +66,7 @@ export class BaseApiService {
         request?.headers?.Authorization ??
         request?.headers?.authorization;
       if (typeof value !== "string") return null;
-      return value.replace(/^Bearer\\s+/i, "").trim() || null;
+      return value.replace(/^Bearer\s+/i, "").trim() || null;
     };
 
     // Always attach the latest access token from persisted auth state.
@@ -173,15 +173,10 @@ export class BaseApiService {
   }
 
   private clearAuthAndRedirect() {
-    // Clear all auth data
-    const { user } = authModalStore.getState();
-
+    // Clear auth state first so every API service's failure handler sees
+    // an unauthenticated session and can open the login modal.
     authModalStore.getState().logout();
-
-    // ✅ Only trigger modal if user was actually logged in before
-    if (user) {
-      this.onAuthFailure();
-    }
+    this.onAuthFailure();
   }
 
   async register(data: {

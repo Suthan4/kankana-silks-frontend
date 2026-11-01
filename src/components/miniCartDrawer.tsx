@@ -93,36 +93,43 @@ export default function MiniCartDrawer() {
     return Number(item?.product?.sellingPrice ?? 0);
   };
 
-  const getStockQty = (item: any): number => {
-    // 1. Variant stock
-    if (
-      item?.variant?.stock &&
-      Array.isArray(item.variant.stock) &&
-      item.variant.stock.length > 0
-    ) {
-      return Number(item.variant.stock[0].quantity) || 0;
-    }
+  const getStockState = (item: any) => {
+    const stockRows = Array.isArray(item?.variant?.stock)
+      ? item.variant.stock
+      : Array.isArray(item?.product?.stock)
+        ? item.product.stock
+        : [];
 
-    // 2. Product stock
-    if (
-      item?.product?.stock &&
-      Array.isArray(item.product.stock) &&
-      item.product.stock.length > 0
-    ) {
-      // if variantId exists → match
-      if (item.variantId) {
-        const match = item.product.stock.find(
-          (s: any) => s.variantId === item.variantId,
-        );
-        return match ? Number(match.quantity) || 0 : 0;
-      }
+    const available = stockRows.reduce(
+      (sum: number, row: any) => sum + Math.max(0, Number(row?.quantity) || 0),
+      0,
+    );
+    const threshold = stockRows.reduce(
+      (sum: number, row: any) =>
+        sum + Math.max(0, Number(row?.lowStockThreshold) || 0),
+      0,
+    );
+    const belowThreshold = available > 0 && available < threshold;
+    const allowOutOfStockOrders = item?.product?.allowOutOfStockOrders === true;
+    const isOutOfStock =
+      available <= 0 || (belowThreshold && !allowOutOfStockOrders);
+    const maxAllowed = isOutOfStock
+      ? 0
+      : belowThreshold
+        ? 1
+        : available;
 
-      // Simple products use their product-level inventory.
-      return Number(item.product.stock[0].quantity) || 0;
-    }
-
-    return 0;
+    return {
+      available,
+      threshold,
+      belowThreshold,
+      allowOutOfStockOrders,
+      isOutOfStock,
+      maxAllowed,
+      isLimited: belowThreshold && allowOutOfStockOrders,
+    };
   };
+
 
   const getItemImage = (item: any): string => {
     return (
@@ -215,7 +222,11 @@ export default function MiniCartDrawer() {
     onError: (_error, _variables, context) => {
       if (context?.previousCart)
         queryClient.setQueryData(context.queryKey, context.previousCart);
-      toast.error("Failed to update quantity. Please try again.");
+      const message =
+        (_error as any)?.response?.data?.message ||
+        (_error as any)?.message ||
+        "Failed to update quantity. Please try again.";
+      toast.error(message);
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["cartApi"] }),
   });
@@ -284,13 +295,17 @@ export default function MiniCartDrawer() {
       return;
     }
 
-    const stockQty = getStockQty(item);
-    if (
-      item.product?.allowOutOfStockOrders !== true &&
-      stockQty > 0 &&
-      newQty > stockQty
-    ) {
-      toast.error(`Only ${stockQty} item(s) available in stock`);
+    const stockState = getStockState(item);
+    if (stockState.isOutOfStock) {
+      toast.error("This product is out of stock.");
+      return;
+    }
+    if (newQty > stockState.maxAllowed) {
+      toast.error(
+        stockState.isLimited
+          ? "Only 1 item can be ordered for this low-stock product."
+          : `Only ${stockState.available} item(s) are available in stock.`,
+      );
       return;
     }
 
@@ -417,11 +432,11 @@ export default function MiniCartDrawer() {
                 displayItems.map((item: any) => {
                   const itemPrice = getItemPrice(item);
                   const imageUrl = getItemImage(item);
-                  const stockQty = getStockQty(item);
+                  const stockState = getStockState(item);
+                  const stockQty = stockState.available;
                   const isMaxStock =
-                    (item.product?.allowOutOfStockOrders !== true &&
-                      stockQty > 0) ||
-                    Number(item.quantity) >= stockQty;
+                    stockState.maxAllowed <= 0 ||
+                    Number(item.quantity) >= stockState.maxAllowed;
                   const variantAttrs = item?.variant
                     ? extractVariantAttributes(item.variant)
                     : [];
@@ -463,21 +478,31 @@ export default function MiniCartDrawer() {
                         )}
 
                         {/* STOCK AVAILABILITY */}
-                        {stockQty > 0 && stockQty <= 5 && (
-                          <div className="mt-1">
-                            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                              Only {stockQty} left in stock
-                            </span>
-                          </div>
-                        )}
-                        {stockQty === 0 && (
+                        {stockState.isOutOfStock && (
                           <div className="mt-1">
                             <span className="inline-flex items-center text-[11px] font-medium text-red-700 bg-red-50 border border-red-200/70 px-2 py-0.5 rounded-md">
                               Out of stock
                             </span>
                           </div>
                         )}
+                        {stockState.isLimited && (
+                          <div className="mt-1">
+                            <span className="inline-flex items-center text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
+                              Limited stock — maximum 1 item
+                            </span>
+                          </div>
+                        )}
+                        {!stockState.isOutOfStock &&
+                          !stockState.isLimited &&
+                          stockQty > 0 &&
+                          stockQty <= 5 && (
+                            <div className="mt-1">
+                              <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                                Only {stockQty} left in stock
+                              </span>
+                            </div>
+                          )}
 
                         {/* PRICE & QUANTITY CONTROLS */}
                         <div className="flex items-center justify-between mt-3">
@@ -510,9 +535,7 @@ export default function MiniCartDrawer() {
                               }
                               disabled={
                                 isMaxStock ||
-                                (stockQty === 0 &&
-                                  item.product?.allowOutOfStockOrders !==
-                                    true) ||
+                                stockState.isOutOfStock ||
                                 updateQuantityMutation.isPending
                               }
                               aria-label="Increase quantity"
