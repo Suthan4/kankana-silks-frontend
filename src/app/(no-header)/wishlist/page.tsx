@@ -19,6 +19,7 @@ import { useAuthModal } from "@/store/useAuthModalStore";
 import { useCartStore } from "@/store/useCartStore";
 import { useCartDrawer } from "@/store/useCartDrawer";
 import { cartApi } from "@/lib/api/cart.api";
+import { wishlistApi } from "@/lib/api/wishlist.api";
 import { useWishlist } from "@/hooks/useWishlist";
 import { ProtectedRoute } from "@/components/auth/protectedRoutes";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -102,7 +103,10 @@ export default function WishlistPage() {
       await queryClient.refetchQueries({ queryKey: cartKey, type: "active" });
 
       try {
-        await removeFromWishlist(item.id);
+        await wishlistApi.removeFromWishlist(item.id);
+        await queryClient.invalidateQueries({
+          queryKey: ["wishlist", user?.id],
+        });
         toast.success(
           _result.wasAlreadyInCart
             ? "Item is already in your cart. Quantity unchanged."
@@ -354,7 +358,7 @@ export default function WishlistPage() {
                       {handleAddToCart.isPending ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          Adding...
+                          Moving...
                         </>
                       ) : (
                         <>
