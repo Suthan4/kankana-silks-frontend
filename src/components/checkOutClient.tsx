@@ -596,6 +596,7 @@ export default function CheckoutClient() {
     isLoading: isLoadingPreview,
     refetch: refetchPreview,
     isError: isErrorOrderPreview,
+    error: orderPreviewError,
   } = useQuery({
     queryKey: [
       "orderPreview",
@@ -645,6 +646,15 @@ export default function CheckoutClient() {
     staleTime: 0,
     gcTime: 0,
   });
+
+  useEffect(() => {
+    if (!isErrorOrderPreview || !orderPreviewError) return;
+    const message =
+      (orderPreviewError as any)?.response?.data?.message ||
+      (orderPreviewError as any)?.message ||
+      "Unable to validate your cart. Please review the items and try again.";
+    toast.error(message);
+  }, [isErrorOrderPreview, orderPreviewError]);
 
   const subtotal = orderPreview?.breakdown.subtotal || 0;
   const discount = orderPreview?.breakdown.discount || 0;
