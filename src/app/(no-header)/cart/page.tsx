@@ -692,9 +692,18 @@ export default function CartPage() {
                                     </span>
                                   </div>
                                 )}
+                                {stockState.isLastOne && (
+                                  <div className="mt-1">
+                                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                                      Last one available — make it yours!
+                                    </span>
+                                  </div>
+                                )}
                                 {!stockState.isOutOfStock &&
-                                  !stockState.isLimited &&
-                                  stockQty > 0 &&
+                                  !stockState.isLastOne &&
+                                  stockState.hasStockData &&
+                                  stockQty > 1 &&
                                   stockQty <= 5 && (
                                     <div className="mt-1">
                                       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
