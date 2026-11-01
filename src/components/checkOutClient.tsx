@@ -1491,16 +1491,16 @@ export default function CheckoutClient() {
                                 </div>
                               );
                             })()}
-                            {stockState.isLastOne && (
+                            {stockState.isLimited && (
                               <div className="mt-1">
                                 <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded">
                                   <span className="w-1 h-1 rounded-full bg-amber-500 shrink-0" />
-                                  Last one available — make it yours!
+                                  Only 1 item can be ordered
                                 </span>
                               </div>
                             )}
 
-                            {stockState.hasStockData && stockQty > 1 && stockQty <= 5 && (
+                            {stockState.hasStockData && !stockState.isLimited && !stockState.isOutOfStock && stockQty > 1 && stockQty <= 5 && (
                               <div className="mt-1">
                                 <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded">
                                   <span className="w-1 h-1 rounded-full bg-amber-500 shrink-0" />
@@ -1551,13 +1551,13 @@ export default function CheckoutClient() {
                                     isBuyNowMode ||
                                     updateQtyMutation.isPending ||
                                     (stockState.hasStockData &&
-                                      Number(item?.quantity) >= stockQty)
+                                      Number(item?.quantity) >= stockState.maxAllowed)
                                   }
                                   onClick={() => {
                                     if (isBuyNowMode) return;
                                     if (
                                       stockState.hasStockData &&
-                                      Number(item.quantity) >= stockQty
+                                      Number(item.quantity) >= stockState.maxAllowed
                                     )
                                       return;
                                     if (user?.id) {
