@@ -14,25 +14,19 @@
 export const getCartItemStockState = (item: any) => {
   let stockRows: any[] | null = null;
 
-  if (
-    Array.isArray(item?.variant?.stock) &&
-    item.variant.stock.length > 0
-  ) {
+  // An empty stock array is meaningful: the API has checked the selected
+  // pickup warehouse and there is no inventory there. Do not treat it as
+  // "unknown stock", otherwise checkout sends a request that will be rejected.
+  if (Array.isArray(item?.variant?.stock)) {
     stockRows = item.variant.stock;
   } else if (Array.isArray(item?.product?.stock)) {
     const variantId = item?.variantId ?? item?.variant?.id;
-const matchedRows = variantId
-  ? item.product.stock.filter(
-      (stock: any) =>
-        String(stock.variantId ?? "") === String(variantId),
-    )
-  : item.product.stock.filter(
-      (stock: any) => stock.variantId == null,
-    );
-
-stockRows = matchedRows.length > 0 ? matchedRows : null;
-  } else if (Array.isArray(item?.variant?.stock)) {
-    stockRows = item.variant.stock;
+    stockRows = variantId
+      ? item.product.stock.filter(
+          (stock: any) =>
+            String(stock.variantId ?? "") === String(variantId),
+        )
+      : item.product.stock.filter((stock: any) => stock.variantId == null);
   }
 
   const directAvailable = [
@@ -114,7 +108,7 @@ const allowOutOfStockOrders =
     available > 0;
 
   const isLastOne =
-    hasStockData && available === 1;
+    hasStockData && available === 1 && !isOutOfStock;
 
   const maxAllowed = !hasStockData
     ? Number.POSITIVE_INFINITY
