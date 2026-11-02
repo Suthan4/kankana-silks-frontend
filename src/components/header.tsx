@@ -1775,10 +1775,11 @@ function Header() {
       </AnimatePresence>
 
       {/* Mobile Menu: portal-isolated from the page and hero slider. */}
-      {mobileMenuOpen &&
-        portalRoot &&
+      {portalRoot &&
         createPortal(
-          <div
+          <AnimatePresence initial={false}>
+            {mobileMenuOpen && (
+              <div
             className="md:hidden fixed inset-0 z-[110] isolate"
             role="dialog"
             aria-modal="true"
@@ -1801,7 +1802,11 @@ function Header() {
               onClick={() => setMobileMenuOpen(false)}
             />
             {/* Animate only the drawer layer, not the full-screen overlay. */}
-            <div
+            <motion.div
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
               className="mobile-drawer-panel absolute inset-y-0 left-0 w-[85%] max-w-[420px] overflow-y-auto overscroll-contain bg-white pb-[env(safe-area-inset-bottom)]"
               style={{ WebkitOverflowScrolling: "touch" }}
               onClick={(e) => e.stopPropagation()}
@@ -2032,8 +2037,10 @@ function Header() {
                   )}
                 </div>
               </div>
-            </div>
-          </div>,
+            </motion.div>
+              </div>
+            )}
+          </AnimatePresence>,
           portalRoot,
         )}
 
