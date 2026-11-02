@@ -87,14 +87,22 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
     },
   });
 
-  // Close on ESC
+  // Lock background scrolling while the consultation sheet is open.
   useEffect(() => {
+    if (!isOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
 
-    if (isOpen) window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
+    window.addEventListener("keydown", handleEsc);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleEsc);
+    };
   }, [isOpen, onClose]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -153,92 +161,82 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={onClose}
+      className="fixed inset-0 z-[1000] flex items-end justify-center bg-black/55 backdrop-blur-sm md:items-center md:p-4"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+      role="presentation"
     >
-      <div
-        className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="video-consultation-title"
+        className="flex w-full max-w-4xl flex-col overflow-hidden rounded-t-[28px] bg-white shadow-2xl md:rounded-[28px]"
+        style={{
+          height: "min(94dvh, 860px)",
+          maxHeight: "calc(100dvh - env(safe-area-inset-top) - 8px)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
       >
-        {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-6 flex items-center justify-between rounded-t-3xl z-10">
-          <div>
-            <h2 className="text-2xl font-bold">Book Video Consultation</h2>
-            <p className="text-sm opacity-90 mt-1">
-              {productName
-                ? `For ${productName}`
-                : "Connect with our expert stylists"}
+        <header className="relative z-10 flex shrink-0 items-center justify-between bg-gradient-to-r from-purple-500 to-indigo-600 px-5 pb-4 pt-4 text-white sm:px-6 sm:py-5">
+          <div className="mx-auto absolute left-1/2 top-2 h-1.5 w-10 -translate-x-1/2 rounded-full bg-white/50 md:hidden" />
+          <div className="min-w-0 pr-3 pt-2 md:pt-0">
+            <h2 id="video-consultation-title" className="text-xl font-bold leading-tight sm:text-2xl">
+              Book Video Consultation
+            </h2>
+            <p className="mt-1 text-sm opacity-90">
+              {productName ? \`For \${productName}\` : "Connect with our expert stylists"}
             </p>
           </div>
-
           <button
+            type="button"
+            aria-label="Close video consultation"
             onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-full transition"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition hover:bg-white/20 active:scale-95"
           >
-            <X className="w-6 h-6" />
+            <X className="h-6 w-6" />
           </button>
-        </div>
+        </header>
 
-        {/* Body */}
         <form
+          id="video-consultation-form"
           onSubmit={handleSubmit}
-          className="p-6 lg:p-8 overflow-y-auto flex-1"
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6 sm:py-6"
         >
-          <div className="grid lg:grid-cols-2 gap-6">
-            {/* Left - Info */}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-7">
             <div className="space-y-4">
-              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-5 border-2 border-purple-100">
-                <h3 className="font-bold text-lg mb-3">How it works</h3>
-
+              <div className="rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50 to-indigo-50 p-4 sm:p-5">
+                <h3 className="mb-3 text-base font-bold sm:text-lg">How it works</h3>
                 <div className="space-y-3">
                   {[
-                    {
-                      num: 1,
-                      title: "Book Appointment",
-                      desc: "Choose your preferred time",
-                    },
-                    {
-                      num: 2,
-                      title: "Connect via Video",
-                      desc: "Join on WhatsApp or Zoom/Meet",
-                    },
-                    {
-                      num: 3,
-                      title: "Shop & Select",
-                      desc: "Browse with expert guidance",
-                    },
+                    { num: 1, title: "Book Appointment", desc: "Choose your preferred time" },
+                    { num: 2, title: "Connect via Video", desc: "Join on WhatsApp or Zoom/Meet" },
+                    { num: 3, title: "Shop & Select", desc: "Browse with expert guidance" },
                   ].map((step) => (
-                    <div key={step.num} className="flex gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">
+                    <div key={step.num} className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-sm font-bold text-white">
                         {step.num}
                       </div>
-                      <div>
-                        <div className="font-semibold text-sm">
-                          {step.title}
-                        </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold">{step.title}</div>
                         <div className="text-xs text-gray-600">{step.desc}</div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-
-              <div className="bg-yellow-50 rounded-2xl p-4 border-2 border-yellow-200">
+              <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-4">
                 <p className="text-sm font-semibold text-yellow-900">
                   ✨ Free consultation for all customers
                 </p>
               </div>
             </div>
 
-            {/* Right - Form */}
             <div className="space-y-4">
-              {/* Full Name */}
               <div>
-                <label className="block text-sm font-semibold mb-2">
-                  Full Name
-                </label>
+                <label className="mb-2 block text-sm font-semibold">Full Name</label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
                     name="fullName"
@@ -246,18 +244,15 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                     onChange={handleInputChange}
                     placeholder="Enter your name"
                     required
-                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 transition"
+                    className="w-full rounded-xl border-2 border-gray-300 py-3 pl-11 pr-4 text-base transition focus:border-purple-500 focus:outline-none sm:text-sm"
                   />
                 </div>
               </div>
 
-              {/* Email */}
               <div>
-                <label className="block text-sm font-semibold mb-2">
-                  Email Address
-                </label>
+                <label className="mb-2 block text-sm font-semibold">Email Address</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                   <input
                     type="email"
                     name="email"
@@ -265,23 +260,19 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                     onChange={handleInputChange}
                     placeholder="your@email.com"
                     required
-                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 transition"
+                    className="w-full rounded-xl border-2 border-gray-300 py-3 pl-11 pr-4 text-base transition focus:border-purple-500 focus:outline-none sm:text-sm"
                   />
                 </div>
               </div>
 
-              {/* Phone */}
               <div>
-                <label className="block text-sm font-semibold mb-2">
-                  Phone Number
-                </label>
+                <label className="mb-2 block text-sm font-semibold">Phone Number</label>
                 <div className="flex gap-2">
-                  <select className="w-24 px-3 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 font-medium">
+                  <select className="w-24 shrink-0 rounded-xl border-2 border-gray-300 px-3 py-3 text-base font-medium focus:border-purple-500 focus:outline-none sm:text-sm">
                     <option>+91</option>
                   </select>
-
-                  <div className="relative flex-1">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <div className="relative min-w-0 flex-1">
+                    <Phone className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                     <input
                       type="tel"
                       name="phone"
@@ -290,19 +281,17 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                       placeholder="98765 43210"
                       required
                       pattern="[0-9]{10}"
-                      className="w-full pl-11 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 transition"
+                      inputMode="numeric"
+                      className="w-full rounded-xl border-2 border-gray-300 py-3 pl-11 pr-3 text-base transition focus:border-purple-500 focus:outline-none sm:text-sm"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Preferred Date */}
               <div>
-                <label className="block text-sm font-semibold mb-2">
-                  Preferred Date
-                </label>
+                <label className="mb-2 block text-sm font-semibold">Preferred Date</label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Calendar className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                   <input
                     type="date"
                     name="preferredDate"
@@ -310,89 +299,56 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                     onChange={handleInputChange}
                     min={today}
                     required
-                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 transition"
+                    className="w-full rounded-xl border-2 border-gray-300 py-3 pl-11 pr-4 text-base transition focus:border-purple-500 focus:outline-none sm:text-sm"
                   />
                 </div>
               </div>
 
-              {/* Preferred Time */}
               <div>
-                <label className="block text-sm font-semibold mb-2">
-                  Preferred Time
-                </label>
+                <label className="mb-2 block text-sm font-semibold">Preferred Time</label>
                 <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Clock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                   <input
                     type="time"
                     name="preferredTime"
                     value={formData.preferredTime}
                     onChange={handleInputChange}
                     required
-                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 transition"
+                    className="w-full rounded-xl border-2 border-gray-300 py-3 pl-11 pr-4 text-base transition focus:border-purple-500 focus:outline-none sm:text-sm"
                   />
                 </div>
               </div>
 
-              {/* Platform Selection */}
               <div>
-                <label className="block text-sm font-semibold mb-3">
-                  Preferred Platform
-                </label>
-
+                <label className="mb-3 block text-sm font-semibold">Preferred Platform</label>
                 <div className="space-y-2">
                   {[
-                    {
-                      id: ConsultationPlatform.WHATSAPP,
-                      name: "WhatsApp Video",
-                      icon: MessageSquare,
-                      bg: "bg-green-500",
-                    },
-                    {
-                      id: ConsultationPlatform.ZOOM,
-                      name: "Zoom",
-                      icon: Video,
-                      bg: "bg-blue-500",
-                    },
-                    {
-                      id: ConsultationPlatform.GOOGLE_MEET,
-                      name: "Google Meet",
-                      icon: Video,
-                      bg: "bg-orange-500",
-                    },
+                    { id: ConsultationPlatform.WHATSAPP, name: "WhatsApp Video", icon: MessageSquare, bg: "bg-green-500" },
+                    { id: ConsultationPlatform.ZOOM, name: "Zoom", icon: Video, bg: "bg-blue-500" },
+                    { id: ConsultationPlatform.GOOGLE_MEET, name: "Google Meet", icon: Video, bg: "bg-orange-500" },
                   ].map((platform) => {
                     const Icon = platform.icon;
                     const isSelected = formData.platform === platform.id;
-
                     return (
                       <label
                         key={platform.id}
-                        className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer hover:bg-gray-50 transition ${
-                          isSelected
-                            ? "border-purple-500 bg-purple-50"
-                            : "border-gray-200"
-                        }`}
+                        className={\`flex min-h-[68px] cursor-pointer items-center gap-3 rounded-xl border-2 p-3 transition active:scale-[0.99] \${
+                          isSelected ? "border-purple-500 bg-purple-50" : "border-gray-200 hover:bg-gray-50"
+                        }\`}
                       >
                         <input
                           type="radio"
                           name="platform"
                           checked={isSelected}
                           onChange={() => handlePlatformChange(platform.id)}
-                          className="w-5 h-5 accent-purple-500"
+                          className="h-5 w-5 shrink-0 accent-purple-500"
                         />
-
-                        <div
-                          className={`w-10 h-10 ${platform.bg} rounded-full flex items-center justify-center`}
-                        >
-                          <Icon className="w-5 h-5 text-white" />
+                        <div className={\`flex h-10 w-10 shrink-0 items-center justify-center rounded-full \${platform.bg}\`}>
+                          <Icon className="h-5 w-5 text-white" />
                         </div>
-
-                        <div className="flex-1">
-                          <div className="font-semibold text-sm">
-                            {platform.name}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Video call
-                          </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-semibold">{platform.name}</div>
+                          <div className="text-xs text-gray-500">Video call</div>
                         </div>
                       </label>
                     );
@@ -400,44 +356,47 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                 </div>
               </div>
 
-              {/* Additional Notes */}
               <div>
-                <label className="block text-sm font-semibold mb-2">
-                  Additional Notes (Optional)
-                </label>
+                <label className="mb-2 block text-sm font-semibold">Additional Notes (Optional)</label>
                 <textarea
                   name="notes"
                   value={formData.notes}
                   onChange={handleInputChange}
                   placeholder="Any specific requirements or questions..."
                   rows={3}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 transition resize-none"
+                  className="w-full resize-none rounded-xl border-2 border-gray-300 px-4 py-3 text-base transition focus:border-purple-500 focus:outline-none sm:text-sm"
                 />
               </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={createConsultationMutation.isPending}
-                className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-4 rounded-xl font-bold hover:shadow-xl transition-all flex items-center justify-center gap-2 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {createConsultationMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    Confirm Booking
-                    <ChevronRight className="w-5 h-5" />
-                  </>
-                )}
-              </button>
             </div>
           </div>
         </form>
-      </div>
+
+        <div
+          className="shrink-0 border-t border-gray-100 bg-white px-4 pt-3 sm:px-6"
+          style={{ paddingBottom: "max(14px, env(safe-area-inset-bottom))" }}
+        >
+          <button
+            type="submit"
+            form="video-consultation-form"
+            disabled={createConsultationMutation.isPending}
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-500 to-indigo-600 px-4 py-3.5 text-base font-bold text-white transition hover:shadow-lg active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {createConsultationMutation.isPending ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              <>
+                Confirm Booking
+                <ChevronRight className="h-5 w-5" />
+              </>
+            )}
+          </button>
+        </div>
+      </section>
     </div>
+  );
   );
 };
 
