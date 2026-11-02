@@ -185,7 +185,7 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
               Book Video Consultation
             </h2>
             <p className="mt-1 text-sm opacity-90">
-              {productName ? \`For \${productName}\` : "Connect with our expert stylists"}
+              {productName ? `For ${productName}` : "Connect with our expert stylists"}
             </p>
           </div>
           <button
@@ -332,9 +332,9 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                     return (
                       <label
                         key={platform.id}
-                        className={\`flex min-h-[68px] cursor-pointer items-center gap-3 rounded-xl border-2 p-3 transition active:scale-[0.99] \${
+                        className={`flex min-h-[68px] cursor-pointer items-center gap-3 rounded-xl border-2 p-3 transition active:scale-[0.99] ${
                           isSelected ? "border-purple-500 bg-purple-50" : "border-gray-200 hover:bg-gray-50"
-                        }\`}
+                        }`}
                       >
                         <input
                           type="radio"
@@ -343,7 +343,7 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                           onChange={() => handlePlatformChange(platform.id)}
                           className="h-5 w-5 shrink-0 accent-purple-500"
                         />
-                        <div className={\`flex h-10 w-10 shrink-0 items-center justify-center rounded-full \${platform.bg}\`}>
+                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${platform.bg}`}>
                           <Icon className="h-5 w-5 text-white" />
                         </div>
                         <div className="min-w-0 flex-1">
@@ -396,7 +396,6 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
         </div>
       </section>
     </div>
-  );
   );
 };
 
