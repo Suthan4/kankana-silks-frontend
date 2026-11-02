@@ -4,12 +4,10 @@
  *
  * Rules:
  * 1. Stock = 0: Out of stock.
- * 2. Stock below threshold + allowOutOfStockOrders = false:
- *    Out of stock.
- * 3. Stock below threshold + allowOutOfStockOrders = true:
- *    Allow maximum quantity 1.
- * 4. Stock = 1: Last one available.
- * 5. Stock >= threshold: Allow available quantity.
+ * 2. Any positive physical stock is purchasable.
+ * 3. Stock = 1: Last one available (maximum quantity 1).
+ * 4. Backorder-enabled products below threshold remain limited to 1.
+ * 5. Stock = 0: Out of stock.
  */
 export const getCartItemStockState = (item: any) => {
   let stockRows: any[] | null = null;
@@ -91,13 +89,9 @@ const allowOutOfStockOrders =
     threshold > 0 &&
     available < threshold;
 
-  // Physical zero stock is ALWAYS unavailable.
-  const isOutOfStock =
-    hasStockData &&
-    (
-      available <= 0 ||
-      (!allowOutOfStockOrders && isBelowThreshold)
-    );
+  // Only physical zero stock is out of stock. A positive quantity of one
+  // must remain purchasable and display the "Last one available" message.
+  const isOutOfStock = hasStockData && available <= 0;
 
   // Backorder setting bypasses threshold restriction,
   // but allows a maximum of ONE item when below threshold.
