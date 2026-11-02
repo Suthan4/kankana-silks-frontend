@@ -420,11 +420,11 @@ export default function VideoAppointmentPage() {
       )}
 
       {/* Booking Modal */}
-      {/* <VideoConsultationModal
+      <VideoConsultationModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={handleConsultationSuccess}
-      /> */}
+      />
     </div>
   );
 }
