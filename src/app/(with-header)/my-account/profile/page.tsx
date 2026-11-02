@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuthModal } from "@/store/useAuthModalStore";
+import { authModalStore, useAuthModal } from "@/store/useAuthModalStore";
 import {
   User,
   MapPin,
@@ -19,6 +19,7 @@ import { useState, useEffect } from "react";
 import { authService } from "@/lib/api/api.base.service";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "@/store/useToastStore";
 import { z } from "zod";
 import {
   useUpdateProfile,
@@ -27,6 +28,8 @@ import {
 } from "@/hooks/useProfileMutation";
 import { useOrders } from "@/hooks/useOrders";
 import { createPortal } from "react-dom";
+import clientApiService from "@/lib/api/api.client.service";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Validation Schemas
 const updateProfileSchema = z.object({
@@ -68,12 +71,13 @@ type UpdateProfileFormData = z.infer<typeof updateProfileSchema>;
 type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 
 export default function ProfilePage() {
-  const router = useRouter();
   const { user, showPasswordModal, setShowPasswordModal } = useAuthModal();
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const router = useRouter();
+  const queryClient = useQueryClient();
 
   // Fetch fresh profile data on mount
   const {
@@ -227,6 +231,26 @@ export default function ProfilePage() {
     },
   ];
 
+  const handleLogout = async () => {
+    try {
+      await clientApiService.logout();
+    } catch (error) {
+      // Always clear this browser session even if the logout request fails.
+      console.warn(
+        "Server logout request failed; clearing local session.",
+        error,
+      );
+    } finally {
+      authModalStore.getState().logout();
+      queryClient.clear();
+      localStorage.removeItem("userLocation");
+      localStorage.removeItem("cart-storage");
+      localStorage.removeItem("auth-modal-storage");
+
+      toast.success("Logged out successfully");
+    }
+  };
+
   return (
     <div className="space-y-4 lg:space-y-6 p-4 lg:p-0">
       {/* Mobile Profile Header */}
@@ -340,10 +364,7 @@ export default function ProfilePage() {
       {/* Sign Out - Mobile Only */}
       <div className="lg:hidden">
         <button
-          onClick={() => {
-            authService.logout();
-            router.push("/");
-          }}
+          onClick={() => handleLogout()}
           className="w-full flex items-center justify-center gap-3 p-5 bg-white border-2 border-red-200 text-red-600 rounded-2xl font-semibold hover:bg-red-50 transition-all"
         >
           <LogOut className="w-5 h-5" />

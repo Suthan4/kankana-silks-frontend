@@ -4,13 +4,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import bannerService, { type Banner, MediaType } from "@/lib/api/banner.api";
+import { type Banner, MediaType } from "@/lib/api/banner.api";
 
 const AUTOPLAY_DELAY = 5000;
 const MIN_SWIPE_DISTANCE = 50;
+const TRANSITION_DURATION = 0.65;
 
 interface IHeroSection {
   banners: Banner[];
@@ -23,96 +23,140 @@ export default function HeroSection({
   banners,
   isError,
   isLoading,
-  error,
 }: IHeroSection) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const totalSlides = banners.length;
 
   useEffect(() => {
-    if (banners.length === 0) {
-      setCurrentSlide(0);
+    setCurrentSlide((current) =>
+      totalSlides === 0 ? 0 : current % totalSlides,
+    );
+  }, [totalSlides]);
+
+  // Clear autoplay timer
+  const clearAutoplay = useCallback(() => {
+    if (autoplayRef.current) {
+      clearInterval(autoplayRef.current);
+      autoplayRef.current = null;
+    }
+  }, []);
+
+  // Next slide
+  const nextSlide = useCallback(() => {
+    if (totalSlides <= 1) return;
+
+    setCurrentSlide((current) => (current + 1) % totalSlides);
+  }, [totalSlides]);
+
+  // Previous slide
+  const prevSlide = useCallback(() => {
+    if (totalSlides <= 1) return;
+
+    setCurrentSlide((current) => (current - 1 + totalSlides) % totalSlides);
+  }, [totalSlides]);
+
+  // Autoplay
+  useEffect(() => {
+    clearAutoplay();
+
+    if (!autoPlay || totalSlides <= 1) return;
+
+    const startAutoplay = () => {
+      clearAutoplay();
+
+      if (document.hidden) return;
+
+      autoplayRef.current = setInterval(() => {
+        setCurrentSlide((current) => (current + 1) % totalSlides);
+      }, AUTOPLAY_DELAY);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        clearAutoplay();
+      } else {
+        startAutoplay();
+      }
+    };
+
+    startAutoplay();
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearAutoplay();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [autoPlay, totalSlides, clearAutoplay]);
+
+  // Manual interaction pauses autoplay
+  const handleManualNavigation = useCallback((callback: () => void) => {
+    setAutoPlay(false);
+    callback();
+  }, []);
+
+  const goToSlide = useCallback(
+    (index: number) => {
+      if (index < 0 || index >= totalSlides) return;
+
+      setAutoPlay(false);
+      setCurrentSlide(index);
+    },
+    [totalSlides],
+  );
+
+  // Touch handling using refs to avoid stale React state
+  const onTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (event.touches.length !== 1) return;
+
+    touchStartX.current = event.touches[0].clientX;
+    touchStartY.current = event.touches[0].clientY;
+  };
+
+  const onTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (touchStartX.current === null || touchStartY.current === null) {
       return;
     }
 
-    setCurrentSlide((current) => (current >= banners.length ? 0 : current));
-  }, [banners.length]);
+    const touch = event.changedTouches[0];
 
-  useEffect(() => {
-    if (!autoPlay || banners.length <= 1) return;
+    const deltaX = touchStartX.current - touch.clientX;
+    const deltaY = touchStartY.current - touch.clientY;
 
-    const interval = window.setInterval(() => {
-      setCurrentSlide((current) => (current + 1) % banners.length);
-    }, AUTOPLAY_DELAY);
+    touchStartX.current = null;
+    touchStartY.current = null;
 
-    return () => window.clearInterval(interval);
-  }, [autoPlay, banners.length]);
+    // Ignore vertical scrolling
+    if (Math.abs(deltaY) > Math.abs(deltaX)) return;
 
-  const nextSlide = () => {
-    if (banners.length <= 1) return;
+    if (Math.abs(deltaX) < MIN_SWIPE_DISTANCE) return;
 
-    setCurrentSlide((current) => (current + 1) % banners.length);
     setAutoPlay(false);
-  };
 
-  const prevSlide = () => {
-    if (banners.length <= 1) return;
-
-    setCurrentSlide(
-      (current) => (current - 1 + banners.length) % banners.length,
-    );
-    setAutoPlay(false);
-  };
-
-  const goToSlide = (index: number) => {
-    setCurrentSlide(index);
-    setAutoPlay(false);
-  };
-
-  const onTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
-    setAutoPlay(false);
-    setTouchEnd(null);
-    setTouchStart(event.targetTouches[0].clientX);
-  };
-
-  const onTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
-    setTouchEnd(event.targetTouches[0].clientX);
-  };
-
-  const onTouchEnd = () => {
-    if (touchStart === null || touchEnd === null) return;
-
-    const distance = touchStart - touchEnd;
-
-    if (distance > MIN_SWIPE_DISTANCE) {
+    if (deltaX > 0) {
       nextSlide();
-    } else if (distance < -MIN_SWIPE_DISTANCE) {
+    } else {
       prevSlide();
     }
-
-    setTouchStart(null);
-    setTouchEnd(null);
   };
 
-  // NOTE: heights below were changed. On mobile we no longer force 100svh
-  // (which made the banner feel like a tall, narrow slab). Instead mobile
-  // gets a shorter, more banner-proportioned height, and it scales up to
-  // full-viewport height starting at the md breakpoint (tablet/desktop).
   if (isLoading) {
     return (
-      <section className="relative mt-[108px] flex aspect-[16/10] h-auto w-full items-center justify-center overflow-hidden bg-black sm:mt-[108px] sm:aspect-auto sm:h-[75vh] sm:min-h-[480px] md:mt-0 md:h-[100svh] md:min-h-[640px]">
-        <div className="text-center">
-          <div className="mx-auto mb-4 h-11 w-11 animate-spin rounded-full border-4 border-white/25 border-t-white" />
-          <p className="text-sm text-white/70">Loading...</p>
-        </div>
+      <section className="relative mt-[108px] flex aspect-[16/10] w-full items-center justify-center bg-black sm:mt-[108px] sm:aspect-auto sm:h-[75vh] sm:min-h-[480px] md:mt-0 md:h-[100svh] md:min-h-[640px]">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/20 border-t-white" />
       </section>
     );
   }
 
-  if (isError || banners.length === 0) {
+  if (isError || totalSlides === 0) {
     return (
-      <section className="relative mt-[108px] flex aspect-[16/10] h-auto w-full items-center justify-center overflow-hidden bg-black sm:mt-[108px] sm:aspect-auto sm:h-[75vh] sm:min-h-[480px] md:mt-0 md:h-[100svh] md:min-h-[640px]">
+      <section className="relative mt-[108px] flex aspect-[16/10] w-full items-center justify-center bg-black sm:mt-[108px] sm:aspect-auto sm:h-[75vh] sm:min-h-[480px] md:mt-0 md:h-[100svh] md:min-h-[640px]">
         <p className="text-sm text-white/70">
           {isError ? "Unable to load banners" : "No banners available"}
         </p>
@@ -125,215 +169,145 @@ export default function HeroSection({
   return (
     <section
       className="
-    relative
-    mt-[108px]
-    aspect-[16/10]
-    h-auto
-    w-full
-    overflow-hidden
-    bg-black
-
-    sm:mt-[108px]
-    sm:aspect-auto
-    sm:h-[75vh]
-    sm:min-h-[480px]
-
-    md:mt-0
-    md:h-[100svh]
-    md:min-h-[640px]
-  "
+        relative mt-[108px]
+        aspect-[16/10] h-auto w-full
+        overflow-hidden bg-black
+        isolate
+        sm:mt-[108px] sm:aspect-auto
+        sm:h-[75vh] sm:min-h-[480px]
+        md:mt-0 md:h-[100svh] md:min-h-[640px]
+      "
       aria-roledescription="carousel"
       aria-label="Promotional banners"
     >
-      {/* ==================== BANNER SLIDER ==================== */}
+      {/* SLIDER */}
+
       <div
         className="
-          absolute
-          inset-0
+          absolute inset-0
           touch-pan-y
           select-none
-          overscroll-x-contain
+          overflow-hidden
         "
         onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
+        onTouchCancel={() => {
+          touchStartX.current = null;
+          touchStartY.current = null;
+        }}
       >
-        {banners.map((banner, index) => (
+        <AnimatePresence initial={false}>
           <motion.div
-            key={banner.id}
-            className="absolute inset-0"
-            initial={false}
-            animate={{
-              opacity: index === currentSlide ? 1 : 0,
-              visibility: index === currentSlide ? "visible" : "hidden",
-            }}
+            key={activeBanner.id}
+            className="
+              absolute inset-0
+              overflow-hidden
+              pointer-events-none
+              [transform:translateZ(0)]
+              [backface-visibility:hidden]
+              will-change-[opacity]
+            "
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{
               opacity: {
-                duration: 0.85,
-                ease: "easeInOut",
+                duration: TRANSITION_DURATION,
+                ease: [0.22, 1, 0.36, 1],
               },
             }}
-            aria-hidden={index !== currentSlide}
           >
-            {banner.type === MediaType.IMAGE ? (
-              banner.mobileUrl ? (
-                <>
-                  {/* Desktop view image */}
-                  <Image
-                    src={banner.url}
-                    alt={banner.title || "Promotional banner"}
-                    fill
-                    sizes="100vw"
-                    priority={index === 0}
-                    quality={90}
-                    className="
-                      hidden md:block
-                      h-full
-                      w-full
-                      object-cover
-                      object-center
-                    "
-                  />
-                  {/* Mobile view image */}
-                  <Image
-                    src={banner.mobileUrl}
-                    alt={banner.title || "Promotional banner"}
-                    fill
-                    sizes="100vw"
-                    priority={index === 0}
-                    quality={90}
-                    className="
-                      block md:hidden
-                      h-full
-                      w-full
-                      object-cover
-                      object-[50%_25%]
-                    "
-                  />
-                </>
-              ) : (
-                <picture className="w-full h-full block">
-                  {/* Mobile Viewport (< 768px) */}
-                  <source
-                    media="(max-width: 767px)"
-                    srcSet={banner.mobileUrl || banner.url}
-                  />
-                  {/* Desktop Viewport (>= 768px) */}
-                  <source media="(min-width: 768px)" srcSet={banner.url} />
-                  {/* Fallback Image */}
-                  <img
-                    src={banner.url}
-                    alt={banner.title || "Promotional banner"}
-                    className="
-                      h-full
-                      w-full
-                      object-cover
-                      object-[50%_25%]
-                      md:object-center
-                    "
-                    loading="eager"
-                  />
-                </picture>
-              )
+            {activeBanner.type === MediaType.IMAGE ? (
+              <>
+                {/* Desktop image */}
+                <Image
+                  src={activeBanner.url}
+                  alt={activeBanner.title || "Promotional banner"}
+                  fill
+                  sizes="100vw"
+                  priority
+                  quality={90}
+                  draggable={false}
+                  className="
+                    hidden md:block
+                    object-cover object-center
+                  "
+                />
+
+                {/* Mobile image */}
+                <Image
+                  src={activeBanner.mobileUrl || activeBanner.url}
+                  alt={activeBanner.title || "Promotional banner"}
+                  fill
+                  sizes="100vw"
+                  priority
+                  quality={85}
+                  draggable={false}
+                  className="
+                    block md:hidden
+                    object-cover object-[50%_25%]
+                  "
+                />
+              </>
             ) : (
               <video
-                src={banner.url}
-                poster={banner.thumbnailUrl}
+                key={activeBanner.id}
+                src={activeBanner.url}
+                poster={activeBanner.thumbnailUrl || undefined}
                 className="
-                  h-full
-                  w-full
-                  object-cover
-                  object-[50%_25%]
+                  h-full w-full
+                  object-cover object-[50%_25%]
                   md:object-center
                 "
-                autoPlay={index === currentSlide}
+                autoPlay
                 muted
                 loop
                 playsInline
-                preload={index === 0 ? "auto" : "metadata"}
+                preload="auto"
               />
             )}
           </motion.div>
-        ))}
+        </AnimatePresence>
       </div>
 
-      {/* Gradient fade at the bottom edge so the photo blends into the
-          solid-black section that follows, instead of a hard cut */}
+      {/* BOTTOM GRADIENT */}
+
       <div
         className="
           pointer-events-none
-          absolute
-          inset-x-0
-          bottom-0
-          z-[5]
-          h-24
-          bg-gradient-to-t
-          from-black
-          to-transparent
-
-          sm:h-32
-
-          md:h-40
+          absolute inset-x-0 bottom-0 z-[5]
+          h-24 bg-gradient-to-t
+          from-black to-transparent
+          sm:h-32 md:h-40
         "
-        aria-hidden="true"
       />
 
-      {/* ==================== HERO CONTENT ==================== */}
+      {/* HERO CONTENT */}
+
       <div
         className="
-          relative
-          z-10
-          flex
-          h-full
-          items-end
-          justify-center
-          px-5
-          pb-8
-
-          sm:px-8
-          sm:pb-20
-
+          relative z-10
+          flex h-full items-end justify-center
+          px-5 pb-8
+          sm:px-8 sm:pb-20
           lg:pb-20
         "
       >
         <AnimatePresence mode="wait">
           <motion.div
             key={activeBanner.id}
-            className="
-              mx-auto
-              w-full
-              max-w-5xl
-              text-center
-            "
-            initial={{
-              opacity: 0,
-              y: 24,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            exit={{
-              opacity: 0,
-              y: -16,
-            }}
-            transition={{
-              duration: 0.5,
-            }}
+            className="mx-auto w-full max-w-5xl text-center"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
           >
             <h1
               className="
-                text-xl
-                font-semibold
-                uppercase
-                leading-tight
-                tracking-[0.08em]
-                text-white
-                drop-shadow-lg
-
-                sm:text-4xl
-                sm:tracking-[0.12em]
-
+                text-xl font-semibold uppercase
+                leading-tight tracking-[0.08em]
+                text-white drop-shadow-lg
+                sm:text-4xl sm:tracking-[0.12em]
                 lg:text-5xl
               "
             >
@@ -343,18 +317,11 @@ export default function HeroSection({
             {activeBanner.text && (
               <p
                 className="
-      hidden
-      sm:block
-      mx-auto
-      mt-4
-      max-w-3xl
-      text-base
-      font-light
-      tracking-wide
-      text-white/90
-      drop-shadow
-      lg:text-lg
-    "
+                  mx-auto mt-4 hidden max-w-3xl
+                  text-base font-light tracking-wide
+                  text-white/90 drop-shadow
+                  sm:block lg:text-lg
+                "
               >
                 {activeBanner.text}
               </p>
@@ -364,32 +331,16 @@ export default function HeroSection({
               <Link
                 href={activeBanner.link}
                 className="
-                  mt-4
-                  inline-flex
-                  min-w-32
-                  items-center
-                  justify-center
-                  border
-                  border-white
-                  bg-black/15
-                  px-5
-                  py-2
-                  text-[10px]
-                  font-semibold
-                  uppercase
-                  tracking-[0.16em]
-                  text-white
-                  backdrop-blur-sm
+                  mt-4 inline-flex min-w-32
+                  items-center justify-center
+                  border border-white bg-black/15
+                  px-5 py-2 text-[10px]
+                  font-semibold uppercase tracking-[0.16em]
+                  text-white backdrop-blur-sm
                   transition-colors
-
-                  hover:bg-white
-                  hover:text-black
-
-                  sm:mt-7
-                  sm:min-w-40
-                  sm:px-8
-                  sm:py-3
-                  sm:text-sm
+                  hover:bg-white hover:text-black
+                  sm:mt-7 sm:min-w-40 sm:px-8
+                  sm:py-3 sm:text-sm
                 "
               >
                 Explore Collection
@@ -399,34 +350,23 @@ export default function HeroSection({
         </AnimatePresence>
       </div>
 
-      {/* ==================== DESKTOP ARROWS ==================== */}
-      {banners.length > 1 && (
+      {/* DESKTOP ARROWS */}
+
+      {totalSlides > 1 && (
         <>
           <button
             type="button"
-            onClick={prevSlide}
+            onClick={() => handleManualNavigation(prevSlide)}
             className="
-              absolute
-              left-4
-              top-1/2
-              z-30
-              hidden
-              h-12
-              w-12
+              absolute left-4 top-1/2 z-30
+              hidden h-12 w-12
               -translate-y-1/2
-              items-center
-              justify-center
-              rounded-full
-              border
-              border-white/30
-              bg-black/20
-              text-white
-              backdrop-blur-md
-              transition-all
+              items-center justify-center
+              rounded-full border border-white/30
+              bg-black/20 text-white
+              backdrop-blur-md transition-all
               hover:bg-black/45
-
-              md:flex
-              lg:left-8
+              md:flex lg:left-8
             "
             aria-label="Previous slide"
           >
@@ -435,47 +375,30 @@ export default function HeroSection({
 
           <button
             type="button"
-            onClick={nextSlide}
+            onClick={() => handleManualNavigation(nextSlide)}
             className="
-              absolute
-              right-4
-              top-1/2
-              z-30
-              hidden
-              h-12
-              w-12
+              absolute right-4 top-1/2 z-30
+              hidden h-12 w-12
               -translate-y-1/2
-              items-center
-              justify-center
-              rounded-full
-              border
-              border-white/30
-              bg-black/20
-              text-white
-              backdrop-blur-md
-              transition-all
+              items-center justify-center
+              rounded-full border border-white/30
+              bg-black/20 text-white
+              backdrop-blur-md transition-all
               hover:bg-black/45
-
-              md:flex
-              lg:right-8
+              md:flex lg:right-8
             "
             aria-label="Next slide"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
 
-          {/* ==================== SLIDE INDICATORS ==================== */}
+          {/* INDICATORS */}
+
           <div
             className="
-              absolute
-              bottom-5
-              left-1/2
-              z-30
-              flex
-              -translate-x-1/2
-              items-center
-              gap-2
-
+              absolute bottom-5 left-1/2 z-30
+              flex -translate-x-1/2
+              items-center gap-2
               sm:bottom-9
             "
           >
@@ -484,11 +407,14 @@ export default function HeroSection({
                 key={banner.id}
                 type="button"
                 onClick={() => goToSlide(index)}
-                className={`rounded-full transition-all duration-300 ${
-                  index === currentSlide
-                    ? "h-[3px] w-10 bg-white"
-                    : "h-2 w-2 bg-white/40 hover:bg-white/70"
-                }`}
+                className={`
+                  rounded-full transition-all duration-300
+                  ${
+                    index === currentSlide
+                      ? "h-[3px] w-10 bg-white"
+                      : "h-2 w-2 bg-white/40 hover:bg-white/70"
+                  }
+                `}
                 aria-label={`Go to slide ${index + 1}`}
                 aria-current={index === currentSlide ? "true" : undefined}
               />
