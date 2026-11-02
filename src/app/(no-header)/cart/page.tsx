@@ -621,20 +621,28 @@ export default function CartPage() {
               <div className="flex-1 overflow-y-auto space-y-3 pr-1">
                 <AnimatePresence mode="popLayout">
                   {displayItems.map((item: any, index: number) => {
+                    console.log("CART STOCK DEBUG", {
+                      productName: item.product?.name,
+                      variantId: item.variantId ?? item.variant?.id,
+                      cartQuantity: item.quantity,
+                      availableStock: item.availableStock,
+                      variantStock: item.variant?.stock,
+                      productStock: item.product?.stock,
+                      productStockQuantity: item.product?.stockQuantity,
+                      allowOutOfStockOrders:
+                        item.product?.allowOutOfStockOrders,
+                    });
                     const stockState = getCartItemStockState(item);
                     const stockMessage = getCartItemStockMessage(item);
+
                     const cartQuantity = Number(item.quantity) || 0;
+
                     const canIncreaseQuantity =
+                      stockState.hasStockData &&
                       !stockState.isOutOfStock &&
                       cartQuantity < stockState.maxAllowed;
-                    const customerStockMessage =
-                      stockState.isLastOne && !stockState.isOutOfStock
-                        ? {
-                            type: "warning" as const,
-                            message:
-                              "Last one available — order now to make it yours!",
-                          }
-                        : stockMessage;
+
+                    const customerStockMessage = stockMessage;
 
                     return (
                       <motion.div
