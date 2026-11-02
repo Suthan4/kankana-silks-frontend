@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   MapPin,
   Plus,
@@ -54,6 +54,27 @@ export type AddressFormValues = z.infer<typeof addressSchema>;
 export default function AddressesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+
+  useEffect(() => {
+    if (!isModalOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsModalOpen(false);
+        reset();
+        setEditingAddress(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isModalOpen, reset]);
   const {
     register,
     handleSubmit,
@@ -312,28 +333,58 @@ export default function AddressesPage() {
         )}
       </div>
 
-      {/* Add/Edit Address Modal */}
+      {/* Add/Edit Address — mobile-first iOS style sheet */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between rounded-t-2xl">
-              <h2 className="text-lg font-semibold">
-                {editingAddress ? "Edit Address" : "Add New Address"}
-              </h2>
-              <button
-                onClick={() => {
-                  setIsModalOpen(false);
-                  resetForm();
-                }}
-                className="p-2 hover:bg-gray-100 rounded-full transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
+        <div
+          className="fixed inset-0 z-[1000] flex items-end justify-center bg-black/45 backdrop-blur-[2px] md:items-center md:p-6"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setIsModalOpen(false);
+              reset();
+              resetForm();
+            }
+          }}
+          role="presentation"
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="address-modal-title"
+            className="flex w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] bg-white shadow-2xl md:max-h-[min(820px,90dvh)] md:rounded-[28px]"
+            style={{
+              height: "min(88dvh, 760px)",
+              maxHeight: "calc(100dvh - env(safe-area-inset-top) - 12px)",
+              paddingBottom: "env(safe-area-inset-bottom)",
+            }}
+          >
+            {/* Drag handle + fixed header */}
+            <div className="shrink-0 border-b border-gray-100 bg-white px-5 pb-4 pt-3">
+              <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-gray-300 md:hidden" />
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 id="address-modal-title" className="text-[18px] font-semibold tracking-tight text-gray-950">
+                    {editingAddress ? "Edit Address" : "Add New Address"}
+                  </h2>
+                  <p className="mt-1 text-xs text-gray-500">Your delivery details</p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close address form"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    reset();
+                    resetForm();
+                  }}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-700 transition hover:bg-gray-200 active:scale-95"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
             <form
               onSubmit={handleSubmit(onSubmit)}
-              className="p-5 sm:p-6 space-y-4"
+              id="address-editor-form" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 pb-8 space-y-5 sm:px-6"
             >
               {/* Address Type */}
               <div className="grid grid-cols-2 gap-3">
@@ -382,7 +433,7 @@ export default function AddressesPage() {
                   {...register("fullName")}
                   type="text"
                   placeholder="Enter full name"
-                  className={`w-full px-4 py-3 border rounded-xl outline-none transition-all text-sm ${
+                  className={`w-full px-4 py-3 border rounded-xl outline-none transition-all text-base sm:text-sm ${
                     errors.fullName
                       ? "border-red-500 focus:ring-2 focus:ring-red-200"
                       : "border-gray-300 focus:ring-2 focus:ring-black/10 focus:border-black"
@@ -413,7 +464,7 @@ export default function AddressesPage() {
                       .replace(/\D/g, "")
                       .slice(0, 10);
                   }}
-                  className={`w-full px-4 py-3 border rounded-xl outline-none transition-all text-sm ${
+                  className={`w-full px-4 py-3 border rounded-xl outline-none transition-all text-base sm:text-sm ${
                     errors.phone
                       ? "border-red-500 focus:ring-2 focus:ring-red-200"
                       : "border-gray-300 focus:ring-2 focus:ring-black/10 focus:border-black"
@@ -461,7 +512,7 @@ export default function AddressesPage() {
                   {...register("addressLine2")}
                   type="text"
                   placeholder="Landmark, Area"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none transition-all focus:ring-2 focus:ring-black/10 focus:border-black text-sm"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none transition-all focus:ring-2 focus:ring-black/10 focus:border-black text-base sm:text-sm"
                 />
               </div>
 
@@ -476,7 +527,7 @@ export default function AddressesPage() {
                     {...register("city")}
                     type="text"
                     placeholder="City"
-                    className={`w-full px-4 py-3 border rounded-xl outline-none transition-all text-sm ${
+                    className={`w-full px-4 py-3 border rounded-xl outline-none transition-all text-base sm:text-sm ${
                       errors.city
                         ? "border-red-500 focus:ring-2 focus:ring-red-200"
                         : "border-gray-300 focus:ring-2 focus:ring-black/10 focus:border-black"
@@ -500,7 +551,7 @@ export default function AddressesPage() {
                     type="text"
                     inputMode="numeric"
                     placeholder="560038"
-                    className={`w-full px-4 py-3 border rounded-xl outline-none transition-all text-sm ${
+                    className={`w-full px-4 py-3 border rounded-xl outline-none transition-all text-base sm:text-sm ${
                       errors.pincode
                         ? "border-red-500 focus:ring-2 focus:ring-red-200"
                         : "border-gray-300 focus:ring-2 focus:ring-black/10 focus:border-black"
@@ -525,7 +576,7 @@ export default function AddressesPage() {
                   {...register("state")}
                   type="text"
                   placeholder="Karnataka"
-                  className={`w-full px-4 py-3 border rounded-xl outline-none transition-all text-sm ${
+                  className={`w-full px-4 py-3 border rounded-xl outline-none transition-all text-base sm:text-sm ${
                     errors.state
                       ? "border-red-500 focus:ring-2 focus:ring-red-200"
                       : "border-gray-300 focus:ring-2 focus:ring-black/10 focus:border-black"
@@ -553,25 +604,32 @@ export default function AddressesPage() {
                 </label>
               </div>
 
-              {/* Submit */}
+
+            </form>
+
+            {/* Fixed action area: stays visible while the fields scroll */}
+            <div className="shrink-0 border-t border-gray-100 bg-white px-5 pt-3 sm:px-6"
+              style={{ paddingBottom: "max(14px, env(safe-area-inset-bottom))" }}
+            >
               <button
                 type="submit"
+                form="address-editor-form"
                 disabled={createMutation.isPending || updateMutation.isPending}
-                className="w-full bg-black text-white py-3.5 rounded-xl font-medium hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-black px-4 py-3.5 text-[15px] font-semibold text-white transition hover:bg-gray-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {createMutation.isPending || updateMutation.isPending ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     Saving...
-                  </div>
+                  </>
                 ) : editingAddress ? (
                   "Update Address"
                 ) : (
                   "Save Address"
                 )}
               </button>
-            </form>
-          </div>
+            </div>
+          </section>
         </div>
       )}
     </div>
