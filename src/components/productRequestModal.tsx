@@ -1,5 +1,6 @@
 "use client";
 
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, AlertCircle, Send, Package } from "lucide-react";
@@ -23,6 +24,8 @@ export default function ProductRequestModal({
   selectedVariant,
   // onSuccess,
 }: ProductRequestModalProps) {
+  useModalScrollLock(isOpen);
+
   const [message, setMessage] = useState("");
 
   const requestMutation = useMutation({
@@ -65,7 +68,7 @@ export default function ProductRequestModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/60 z-50"
           />
 
           {/* Modal */}

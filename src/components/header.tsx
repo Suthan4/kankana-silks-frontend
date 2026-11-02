@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageCircle,
@@ -549,6 +550,13 @@ function Header() {
     Boolean(hoveredCategory) ||
     locationModalOpen ||
     userMenuOpen;
+
+  // Render the mobile drawer outside the header subtree. This prevents
+  // fixed-position overlays and their animations from invalidating the hero layer.
+  const portalRoot =
+    typeof document !== "undefined"
+      ? document.getElementById("portal-root")
+      : null;
 
   return (
     <>
@@ -1766,25 +1774,41 @@ function Header() {
         )}
       </AnimatePresence>
 
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            className="md:hidden fixed inset-0 z-[110]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+      {/* Mobile Menu: portal-isolated from the page and hero slider. */}
+      {portalRoot &&
+        createPortal(
+          <AnimatePresence initial={false}>
+            {mobileMenuOpen && (
+              <div
+            className="md:hidden fixed inset-0 z-[110] isolate"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mobile navigation"
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 110,
+              isolation: "isolate",
+              contain: "layout paint",
+              transform: "translate3d(0, 0, 0)",
+              WebkitTransform: "translate3d(0, 0, 0)",
+            }}
           >
-            <div
-              className="absolute inset-0 bg-black/50"
+            {/* Static backdrop: avoid animating opacity over the large hero image. */}
+            <button
+              type="button"
+              aria-label="Close navigation menu"
+              className="absolute inset-0 h-full w-full touch-none bg-black/50"
               onClick={() => setMobileMenuOpen(false)}
             />
+            {/* Animate only the drawer layer, not the full-screen overlay. */}
             <motion.div
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
-              transition={{ duration: 0.3 }}
-              className="absolute left-0 top-0 bottom-0 w-[85%] bg-white overflow-y-auto"
+              transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+              className="mobile-drawer-panel absolute inset-y-0 left-0 w-[85%] max-w-[420px] overflow-y-auto overscroll-contain bg-white pb-[env(safe-area-inset-bottom)]"
+              style={{ WebkitOverflowScrolling: "touch" }}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="px-4 py-6">
@@ -2014,9 +2038,11 @@ function Header() {
                 </div>
               </div>
             </motion.div>
-          </motion.div>
+              </div>
+            )}
+          </AnimatePresence>,
+          portalRoot,
         )}
-      </AnimatePresence>
 
       {/* Mobile Bottom Navigation */}
       {!isMyAccountPage && !isProductDetailPage && !isCategoryPage && (

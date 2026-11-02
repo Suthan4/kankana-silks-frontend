@@ -1,3 +1,6 @@
+"use client";
+
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import React, { useEffect, useState } from "react";
 import {
   X,
@@ -87,22 +90,16 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
     },
   });
 
-  // Lock background scrolling while the consultation sheet is open.
+  useModalScrollLock(isOpen);
+
+  // Keep Escape handling separate from global scroll locking.
   useEffect(() => {
     if (!isOpen) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
-
     window.addEventListener("keydown", handleEsc);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleEsc);
-    };
+    return () => window.removeEventListener("keydown", handleEsc);
   }, [isOpen, onClose]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -161,7 +158,7 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-[1000] flex items-end justify-center bg-black/55 backdrop-blur-sm md:items-center md:p-4"
+      className="fixed inset-0 z-[1000] flex items-end justify-center bg-black/55 md:items-center md:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}

@@ -399,3 +399,18 @@ html {
   cursor: grabbing;
   transform: scale(1.12);
 }
+
+/* iOS Safari: isolate only the moving drawer layer.
+   Framer Motion owns the transform; do not add a second CSS transform animation. */
+.mobile-drawer-panel {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  will-change: transform;
+  touch-action: pan-y;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-drawer-panel {
+    will-change: auto;
+  }
+}

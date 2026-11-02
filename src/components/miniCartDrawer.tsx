@@ -1,5 +1,6 @@
 "use client";
 
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartDrawer } from "@/store/useCartDrawer";
 import { useCartStore } from "@/store/useCartStore";
@@ -41,16 +42,7 @@ export default function MiniCartDrawer() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  /* -------------------- PREVENT BODY SCROLL -------------------- */
-  useEffect(() => {
-    if (isOpen) {
-      const originalOverflow = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = originalOverflow;
-      };
-    }
-  }, [isOpen]);
+  useModalScrollLock(isOpen);
 
   /* -------------------- ESCAPE KEY HANDLER -------------------- */
   useEffect(() => {
@@ -326,7 +318,7 @@ export default function MiniCartDrawer() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             onClick={close}
-            className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-[150]"
+            className="fixed inset-0 bg-black/60 z-[150]"
             aria-hidden="true"
           />
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, AlertCircle, Info, Loader2, CheckCircle2 } from "lucide-react";
@@ -21,6 +22,8 @@ export function ReturnModal({
   onClose,
   onSuccess,
 }: ReturnModalProps) {
+  useModalScrollLock(isOpen);
+
   const { createReturn, loading } = useCreateReturn();
 
   const [selectedItems, setSelectedItems] = useState<
@@ -111,7 +114,7 @@ export function ReturnModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/60"
           />
 
           {/* Modal */}

@@ -1,4 +1,5 @@
 "use client";
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { type FormEvent, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -113,17 +114,7 @@ export default function AuthModal() {
     return () => window.removeEventListener("resize", checkScreen);
   }, []);
 
-  // Prevent body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
-    return () => {
-      document.body.style.overflow = "unset";
-    };
-  }, [isOpen]);
+  useModalScrollLock(isOpen);
 
   const handleLoginSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -262,7 +253,7 @@ export default function AuthModal() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 z-50"
+        className="fixed inset-0 bg-black/60 flex items-center justify-center p-3 z-50"
         onClick={closeModal}
         role="presentation"
       >
