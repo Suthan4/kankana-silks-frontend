@@ -414,3 +414,11 @@ html {
     will-change: auto;
   }
 }
+
+
+/* Keep the viewport width stable when any modal locks document scrolling.
+   This prevents every shared modal/drawer from causing a horizontal layout
+   shift as the browser scrollbar disappears. */
+html {
+  scrollbar-gutter: stable;
+}
