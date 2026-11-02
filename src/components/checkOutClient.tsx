@@ -46,7 +46,10 @@ import {
 } from "@/hooks/useOrders";
 import { couponApi, type Coupon } from "@/lib/api/coupon.api";
 import { cartApi } from "@/lib/api/cart.api";
-import { getCartItemStockState } from "@/lib/utils/cartStock";
+import {
+  getCartItemStockMessage,
+  getCartItemStockState,
+} from "@/lib/utils/cartStock";
 import { shippingApi } from "@/lib/api/shipping.api";
 import confetti from "canvas-confetti";
 import PaymentLogos from "./paymentLogos";
@@ -1391,8 +1394,17 @@ export default function CheckoutClient() {
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {displayItems.map((item: any, index: number) => {
                       const stockState = getCartItemStockState(item);
-                      const stockQty = stockState.available;
+                      const stockMessage = getCartItemStockMessage(item);
                       const unitPrice = getUnitPrice(item);
+
+                      const cartQuantity = Number(item.quantity) || 0;
+
+                      const canIncreaseQuantity =
+                        stockState.hasStockData &&
+                        !stockState.isOutOfStock &&
+                        cartQuantity < stockState.maxAllowed;
+
+                      const customerStockMessage = stockMessage;
                       const validationIssue = invalidCartItems.find(
                         (entry: { index: number; message: string }) =>
                           entry.index === index,
@@ -1467,37 +1479,26 @@ export default function CheckoutClient() {
                                 </div>
                               );
                             })()}
-                            {stockState.isLimited && !stockState.isLastOne && (
-                              <div className="mt-1">
-                                <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded">
-                                  <span className="w-1 h-1 rounded-full bg-amber-500 shrink-0" />
-                                  Limited availability — order yours now!
-                                </span>
-                              </div>
-                            )}
-
-                            {stockState.isLastOne && (
-                              <div className="mt-1">
-                                <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded">
-                                  <span className="w-1 h-1 rounded-full bg-amber-500 shrink-0" />
-                                  Last one available — order yours now!
-                                </span>
-                              </div>
-                            )}
-
-                            {stockState.hasStockData && !stockState.isLimited && !stockState.isOutOfStock && stockQty > 1 && stockQty <= 5 && (
-                              <div className="mt-1">
-                                <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded">
-                                  <span className="w-1 h-1 rounded-full bg-amber-500 shrink-0" />
-                                  Only {stockQty} left in stock
-                                </span>
-                              </div>
-                            )}
-
-                            {stockState.isOutOfStock && (
-                              <div className="mt-1">
-                                <span className="inline-flex items-center text-[10px] font-medium text-red-700 bg-red-50 border border-red-200/70 px-1.5 py-0.5 rounded">
-                                  Out of stock
+                            {customerStockMessage && (
+                              <div className="mt-2">
+                                <span
+                                  className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md border ${
+                                    customerStockMessage.type === "error"
+                                      ? "text-red-700 bg-red-50 border-red-200"
+                                      : customerStockMessage.type === "warning"
+                                        ? "text-amber-800 bg-amber-50 border-amber-200"
+                                        : "text-gray-600 bg-gray-50 border-gray-200"
+                                  }`}
+                                  role={
+                                    customerStockMessage.type === "error"
+                                      ? "alert"
+                                      : "status"
+                                  }
+                                >
+                                  {customerStockMessage.type === "warning" && (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                                  )}
+                                  {customerStockMessage.message}
                                 </span>
                               </div>
                             )}
@@ -1535,14 +1536,14 @@ export default function CheckoutClient() {
                                   disabled={
                                     isBuyNowMode ||
                                     updateQtyMutation.isPending ||
-                                    (stockState.hasStockData &&
-                                      Number(item?.quantity) >= stockState.maxAllowed)
+                                    !canIncreaseQuantity
                                   }
                                   onClick={() => {
                                     if (isBuyNowMode) return;
                                     if (
                                       stockState.hasStockData &&
-                                      Number(item.quantity) >= stockState.maxAllowed
+                                      Number(item.quantity) >=
+                                        stockState.maxAllowed
                                     )
                                       return;
                                     if (user?.id) {

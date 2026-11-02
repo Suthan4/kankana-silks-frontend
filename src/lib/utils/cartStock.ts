@@ -2,25 +2,9 @@
 /**
  * Shared stock policy for Cart, Mini Cart and Checkout.
  *
- * BUSINESS RULES
- *
- * 1. Physical stock = 0:
- *    Always unavailable, regardless of backorder setting.
- *
- * 2. allowOutOfStockOrders = false:
- *    Enforce low-stock threshold.
- *    Stock below threshold is unavailable.
- *
- * 3. allowOutOfStockOrders = true:
- *    Bypass threshold restriction.
- *    Positive stock below threshold allows maximum quantity 1.
- *
- * 4. Physical stock = 1:
- *    Display last-one availability message,
- *    provided the threshold rule permits purchasing.
- *
- * 5. Cart quantity exceeding maxAllowed:
- *    Block checkout.
+ * IMPORTANT:
+ * Cart quantity does NOT reserve or deduct inventory.
+ * Inventory is deducted only when an order is placed.
  */
 
 export interface CartStockState {
@@ -43,6 +27,14 @@ export type StockMessage = {
 };
 
 const toStockNumber = (value: any): number => {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return 0;
+  }
+
   const number = Number(value);
 
   return Number.isFinite(number)
@@ -51,7 +43,10 @@ const toStockNumber = (value: any): number => {
 };
 
 /**
- * Resolve stock rows for the selected variant.
+ * Resolve inventory rows for the selected variant.
+ *
+ * Empty relations are treated as missing data, not automatically
+ * as confirmed zero inventory.
  */
 const getStockRows = (item: any): any[] | null => {
   const variantId = item?.variantId ?? item?.variant?.id;
@@ -65,31 +60,43 @@ const getStockRows = (item: any): any[] | null => {
     : null;
 
   if (variantId != null) {
+    // Prefer the selected variant's inventory.
     if (variantStock && variantStock.length > 0) {
       return variantStock;
     }
 
-    if (productStock !== null) {
-      return productStock.filter(
+    // Fall back to matching product-level warehouse rows.
+    if (productStock && productStock.length > 0) {
+      const matchingRows = productStock.filter(
         (row: any) =>
           String(row?.variantId ?? "") === String(variantId)
       );
+
+      if (matchingRows.length > 0) {
+        return matchingRows;
+      }
     }
 
-    return variantStock;
+    // No matching rows: allow direct stock fields to resolve inventory.
+    return null;
   }
 
-  if (productStock !== null) {
-    return productStock.filter(
+  // Simple product inventory.
+  if (productStock && productStock.length > 0) {
+    const matchingRows = productStock.filter(
       (row: any) => row?.variantId == null
     );
+
+    if (matchingRows.length > 0) {
+      return matchingRows;
+    }
   }
 
-  return variantStock;
+  return null;
 };
 
 /**
- * Resolve allowOutOfStockOrders safely.
+ * Parse allowOutOfStockOrders safely.
  */
 const getAllowOutOfStockOrders = (item: any): boolean => {
   const value =
@@ -101,7 +108,7 @@ const getAllowOutOfStockOrders = (item: any): boolean => {
 };
 
 /**
- * Resolve stock and purchasing restrictions.
+ * Resolve the selected item's current inventory.
  */
 export const getCartItemStockState = (
   item: any
@@ -110,10 +117,10 @@ export const getCartItemStockState = (
 
   const directAvailable = [
     item?.availableStock,
-    item?.stockQuantity,
     item?.variant?.availableStock,
-    item?.variant?.stockQuantity,
     item?.product?.availableStock,
+    item?.stockQuantity,
+    item?.variant?.stockQuantity,
     item?.product?.stockQuantity,
   ].find(
     (value) =>
@@ -127,30 +134,27 @@ export const getCartItemStockState = (
     stockRows !== null ||
     directAvailable !== undefined;
 
-  const available =
-    stockRows !== null
-      ? stockRows.reduce(
-          (sum: number, row: any) =>
-            sum + toStockNumber(row?.quantity),
-          0
-        )
-      : directAvailable !== undefined
-        ? toStockNumber(directAvailable)
-        : 0;
+  const available = stockRows !== null
+    ? stockRows.reduce(
+        (sum: number, row: any) =>
+          sum + toStockNumber(row?.quantity),
+        0
+      )
+    : directAvailable !== undefined
+      ? toStockNumber(directAvailable)
+      : 0;
 
-  const threshold =
-    stockRows !== null
-      ? stockRows.reduce(
-          (sum: number, row: any) =>
-            sum + toStockNumber(row?.lowStockThreshold),
-          0
-        )
-      : toStockNumber(
-          item?.lowStockThreshold ??
-          item?.variant?.lowStockThreshold ??
-          item?.product?.lowStockThreshold ??
-          0
-        );
+  const threshold = stockRows !== null
+    ? stockRows.reduce(
+        (sum: number, row: any) =>
+          sum + toStockNumber(row?.lowStockThreshold),
+        0
+      )
+    : toStockNumber(
+        item?.lowStockThreshold ??
+        item?.variant?.lowStockThreshold ??
+        item?.product?.lowStockThreshold
+      );
 
   const allowOutOfStockOrders =
     getAllowOutOfStockOrders(item);
@@ -160,29 +164,28 @@ export const getCartItemStockState = (
     threshold > 0 &&
     available < threshold;
 
-  // Rule 1: Physical zero stock is always unavailable.
+  // Physical stock zero ALWAYS blocks purchasing.
   const isZeroStock =
     hasStockData && available <= 0;
 
-  // Rule 2: Enforce threshold when backorders are disabled.
+  // When backorders are disabled, enforce threshold.
   const isThresholdBlocked =
     hasStockData &&
     !allowOutOfStockOrders &&
     isBelowThreshold &&
     available > 0;
 
-  // Both zero stock and threshold restrictions block purchasing.
   const isOutOfStock =
     isZeroStock || isThresholdBlocked;
 
-  // Backorder setting bypasses threshold only for positive stock.
+  // Backorders bypass threshold only with positive physical stock.
   const isLimited =
     hasStockData &&
     allowOutOfStockOrders &&
     isBelowThreshold &&
     available > 0;
 
-  // Exactly one physical item remains and purchasing is permitted.
+  // Exactly one physical unit and purchasing is permitted.
   const isLastOne =
     hasStockData &&
     available === 1 &&
@@ -212,12 +215,10 @@ export const getCartItemStockState = (
 };
 
 /**
- * Customer-facing stock messages.
- *
- * Messaging is separate from validation.
+ * Customer-facing messages.
  */
 export const getCartItemStockMessage = (
-  item: any,
+  item: any
 ): StockMessage | null => {
   const stock = getCartItemStockState(item);
 
@@ -225,20 +226,38 @@ export const getCartItemStockMessage = (
 
   const quantity = Math.max(
     0,
-    Number(item?.quantity) || 0,
+    Number(item?.quantity) || 0
   );
 
-  // Physical stock is genuinely zero.
-  if (stock.available <= 0) {
+  // Actual physical stock is zero.
+  if (stock.isZeroStock) {
     return {
       type: "error",
       message:
-        "This item is now out of stock. Please remove it from your cart to continue.",
+        "This item is currently out of stock. Please remove it from your cart to continue.",
     };
   }
 
-  // Customer successfully has the last available unit.
-  if (stock.available === 1 && quantity === 1) {
+  // Threshold restriction.
+  if (stock.isThresholdBlocked) {
+    return {
+      type: "error",
+      message:
+        "This item is currently unavailable. Please check back later.",
+    };
+  }
+
+  // Customer requested more than available.
+  if (quantity > stock.maxAllowed) {
+    return {
+      type: "error",
+      message:
+        `Only ${stock.maxAllowed} item(s) are available. Please update your quantity.`,
+    };
+  }
+
+  // Customer has successfully added the final available unit.
+  if (stock.isLastOne && quantity === 1) {
     return {
       type: "warning",
       message:
@@ -246,19 +265,11 @@ export const getCartItemStockMessage = (
     };
   }
 
-  // Requested quantity exceeds available inventory.
-  if (quantity > stock.maxAllowed) {
-    return {
-      type: "error",
-      message:
-        `Only ${stock.maxAllowed} item(s) available. Please update your quantity.`,
-    };
-  }
-
   if (stock.isLimited) {
     return {
       type: "warning",
-      message: "Only one item can be ordered at this time.",
+      message:
+        "Only one item can be ordered at this time.",
     };
   }
 
@@ -266,7 +277,7 @@ export const getCartItemStockMessage = (
 };
 
 /**
- * Validate one cart item before checkout.
+ * Validate one item before checkout.
  */
 export const validateCartItemForCheckout = (
   item: any
@@ -278,7 +289,7 @@ export const validateCartItemForCheckout = (
     Number(item?.quantity) || 0
   );
 
-  // Unknown stock must be verified by backend.
+  // Missing inventory data must be verified by backend.
   if (!stock.hasStockData) {
     return {
       valid: true,
@@ -292,7 +303,7 @@ export const validateCartItemForCheckout = (
       valid: false,
       requiresServerValidation: false,
       message:
-        "This item is out of stock. Please remove it from your cart.",
+        "This item is currently out of stock. Please remove it from your cart.",
     };
   }
 
@@ -301,7 +312,7 @@ export const validateCartItemForCheckout = (
       valid: false,
       requiresServerValidation: false,
       message:
-        "This item is currently unavailable. Please check back later.",
+        "This item is currently unavailable.",
     };
   }
 
@@ -318,8 +329,7 @@ export const validateCartItemForCheckout = (
       valid: false,
       requiresServerValidation: false,
       message:
-        `Only ${stock.maxAllowed} item(s) are available. ` +
-        "Please update your cart to continue.",
+        `Only ${stock.maxAllowed} item(s) are available. Please update your cart.`,
     };
   }
 
@@ -331,7 +341,7 @@ export const validateCartItemForCheckout = (
 };
 
 /**
- * Validate the complete cart.
+ * Validate complete cart.
  */
 export const validateCartForCheckout = (
   items: any[]
@@ -361,7 +371,7 @@ export const validateCartForCheckout = (
 };
 
 /**
- * Backward-compatible stock quantity helper.
+ * Backward-compatible helper.
  */
 export const getCartItemStockQty = (
   item: any
