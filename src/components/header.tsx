@@ -24,7 +24,7 @@ import categoryService from "@/lib/api/category.api";
 import { toast } from "@/store/useToastStore";
 import { buildCategoryQuery } from "@/lib/shared/builders/productCategoryQuery.builder.ts";
 import { useCartStore } from "@/store/useCartStore";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import { shipmentApi } from "@/lib/api/shipment.api";
 import VideoConsultationModal from "./video-consultationModal";
@@ -60,6 +60,7 @@ function Header() {
   }, []);
   const localCartItemsCount = useCartStore((s) => s.getTotalItems());
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [location, setLocation] = useState<{
     city: string;
@@ -378,13 +379,17 @@ function Header() {
   const handleLogout = async () => {
     try {
       await clientApiService.logout();
+    } catch (error) {
+      // Always clear this browser session even if the logout request fails.
+      console.warn("Server logout request failed; clearing local session.", error);
+    } finally {
       authModalStore.getState().logout();
+      queryClient.clear();
       localStorage.removeItem("userLocation");
+      localStorage.removeItem("cart-storage");
       localStorage.removeItem("auth-modal-storage");
       setLocation(null);
       toast.success("Logged out successfully");
-    } catch (error) {
-      toast.error("Logout failed", 1000);
     }
   };
 
