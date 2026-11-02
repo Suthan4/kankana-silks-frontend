@@ -120,7 +120,10 @@ function Header() {
       if (delta !== 0) {
         setHoveredCategory(null);
         setUserMenuOpen(false);
-        setLocationModalOpen(false);
+        // iOS Safari may scroll the document when an input receives focus and
+        // the keyboard opens. Keep the mobile location sheet open during that
+        // viewport adjustment; desktop overlays retain the existing behavior.
+        if (window.innerWidth >= 768) setLocationModalOpen(false);
         setIsHeaderHovered(false);
 
         if (hoverTimeoutRef.current) {
@@ -1577,7 +1580,7 @@ function Header() {
       <AnimatePresence>
         {locationModalOpen && (
           <motion.div
-            className="md:hidden fixed inset-0 z-[100]"
+            className="md:hidden fixed inset-0 z-[100] h-[100dvh] overflow-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -1595,7 +1598,8 @@ function Header() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto z-20"
+              className="absolute inset-x-0 bottom-0 z-20 max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain rounded-t-3xl bg-white pb-[env(safe-area-inset-bottom)]"
+              style={{ WebkitOverflowScrolling: "touch" }}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6 pb-8">
@@ -1683,6 +1687,8 @@ function Header() {
                   <div className="flex gap-2 mb-3">
                     <input
                       type="text"
+                      inputMode="numeric"
+                      autoComplete="postal-code"
                       placeholder="Enter 6-digit Pincode"
                       value={pincode}
                       onChange={(e) => setPincode(e.target.value)}
