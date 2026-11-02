@@ -67,6 +67,8 @@
 //   existingAddress,
 //   mode,
 // }: AddressModalProps) {
+  useModalScrollLock(isOpen);
+
 //   const queryClient = useQueryClient();
 
 //   /* -------------------------- react-hook-form -------------------------- */
@@ -159,7 +161,7 @@
 //   return (
 //     <AnimatePresence>
 //       <motion.div
-//         className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center"
+//         className="fixed inset-0 z-50 bg-black/60 flex items-end md:items-center justify-center"
 //         initial={{ opacity: 0 }}
 //         animate={{ opacity: 1 }}
 //         exit={{ opacity: 0 }}
@@ -316,6 +318,7 @@
 // }
 "use client";
 
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, MapPin, Check } from "lucide-react";
 import { useEffect } from "react";
@@ -448,7 +451,7 @@ export default function AddressModal({
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4"
+        className="fixed inset-0 z-50 bg-black/60 flex items-end md:items-center justify-center p-0 md:p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
