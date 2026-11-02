@@ -64,7 +64,7 @@ export default function ShopClient({ categories }: ShopClientProps) {
   }[grid];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white pt-30 md:pt-30">
       {/* ── TOOLBAR ── */}
       <div className="border-b border-gray-100 sticky top-0 z-30 bg-white">
         <div className="max-w-screen mx-auto px-6 md:px-12 flex items-center justify-between h-11">

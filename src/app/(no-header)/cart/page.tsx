@@ -31,7 +31,11 @@ import { shippingApi } from "@/lib/api/shipping.api";
 import { addressApi } from "@/lib/api/addresses.api";
 import { extractVariantAttributes } from "@/lib/utils/variant.utils";
 import { mergeCartLines } from "@/lib/utils/cartItems";
-import { getCartItemStockState } from "@/lib/utils/cartStock";
+import {
+  getCartItemStockState,
+  getCartItemStockMessage,
+  validateCartForCheckout,
+} from "@/lib/utils/cartStock";
 
 const normalizeAttributes = (attrs: any) => {
   if (!attrs) return [];
@@ -105,8 +109,11 @@ export default function CartPage() {
     queryKey: ["cartApi", user?.id],
     queryFn: async () => (await cartApi.getCart()).data,
     enabled: !!user,
-    staleTime: 15_000,
-    refetchOnWindowFocus: false,
+    // Stock can change while the customer is away from the cart.
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   const apiItems = cartData?.items ?? [];
@@ -114,23 +121,12 @@ export default function CartPage() {
     () => mergeCartLines(user?.id ? apiItems : items),
     [user?.id, apiItems, items],
   );
-  useEffect(() => {
-    const invalidItem = displayItems.find((item: any) => {
-      const stockState = getCartItemStockState(item);
-      return (
-        stockState.isOutOfStock || Number(item.quantity) > stockState.maxAllowed
-      );
-    });
-    if (!invalidItem) return;
-
-    const stockState = getCartItemStockState(invalidItem);
-    const message = stockState.isOutOfStock
-      ? `${(invalidItem.product as { name?: string } | undefined)?.name || "This product"} is out of stock. Remove it from your cart.`
-      : stockState.isLimited
-        ? `${(invalidItem.product as { name?: string } | undefined)?.name || "This product"} has limited availability. Only 1 item can be ordered.`
-        : `${(invalidItem.product as { name?: string } | undefined)?.name || "This product"} has only ${stockState.available} item(s) available.`;
-    toast.error(message);
-  }, [displayItems]);
+  // Stock problems are shown beside the affected item and in the checkout CTA.
+  // Avoid an automatic error toast when the customer simply opens the cart.
+  const cartStockValidation = useMemo(
+    () => validateCartForCheckout(displayItems),
+    [displayItems],
+  );
 
   const deliveryPin = user?.id ? addressData?.pincode : deliveryPincode;
   const totalItems = useMemo(
@@ -497,6 +493,17 @@ export default function CartPage() {
       toast.error("Your cart is empty");
       return;
     }
+
+    const validation = validateCartForCheckout(displayItems);
+
+    if (!validation.valid) {
+      toast.error(
+        validation.errors[0]?.message ??
+          "Please update your cart before continuing.",
+      );
+      return;
+    }
+
     router.push("/checkout");
   };
   const handleCouponSelect = (coupon: Coupon) => {
@@ -615,7 +622,19 @@ export default function CartPage() {
                 <AnimatePresence mode="popLayout">
                   {displayItems.map((item: any, index: number) => {
                     const stockState = getCartItemStockState(item);
-                    const stockQty = stockState.available;
+                    const stockMessage = getCartItemStockMessage(item);
+                    const cartQuantity = Number(item.quantity) || 0;
+                    const canIncreaseQuantity =
+                      !stockState.isOutOfStock &&
+                      cartQuantity < stockState.maxAllowed;
+                    const customerStockMessage =
+                      stockState.isLastOne && !stockState.isOutOfStock
+                        ? {
+                            type: "warning" as const,
+                            message:
+                              "Last one available — order now to make it yours!",
+                          }
+                        : stockMessage;
 
                     return (
                       <motion.div
@@ -678,41 +697,31 @@ export default function CartPage() {
                                     </div>
                                   );
                                 })()}
-                                {stockState.isOutOfStock && (
-                                  <div className="mt-1">
-                                    <span className="inline-flex items-center text-xs font-medium text-red-700 bg-red-50 border border-red-200/70 px-2 py-0.5 rounded-md">
-                                      Out of stock
-                                    </span>
-                                  </div>
-                                )}
-                                {stockState.isLimited && !stockState.isLastOne && (
-                                  <div className="mt-1">
-                                    <span className="inline-flex items-center text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
-                                      Only 1 item can be ordered
-                                    </span>
-                                  </div>
-                                )}
-                                {stockState.isLastOne && (
-                                  <div className="mt-1">
-                                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                                      Last one available — order yours now!
-                                    </span>
-                                  </div>
-                                )}
-                                {!stockState.isOutOfStock &&
-                                  !stockState.isLimited &&
-                                  !stockState.isLastOne &&
-                                  stockState.hasStockData &&
-                                  stockQty > 1 &&
-                                  stockQty <= 5 && (
-                                    <div className="mt-1">
-                                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
+                                {customerStockMessage && (
+                                  <div className="mt-2">
+                                    <span
+                                      className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md border ${
+                                        customerStockMessage.type === "error"
+                                          ? "text-red-700 bg-red-50 border-red-200"
+                                          : customerStockMessage.type ===
+                                              "warning"
+                                            ? "text-amber-800 bg-amber-50 border-amber-200"
+                                            : "text-gray-600 bg-gray-50 border-gray-200"
+                                      }`}
+                                      role={
+                                        customerStockMessage.type === "error"
+                                          ? "alert"
+                                          : "status"
+                                      }
+                                    >
+                                      {customerStockMessage.type ===
+                                        "warning" && (
                                         <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                                        Only {stockQty} left in stock
-                                      </span>
-                                    </div>
-                                  )}
+                                      )}
+                                      {customerStockMessage.message}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                               <button
                                 onClick={() =>
@@ -757,29 +766,32 @@ export default function CartPage() {
                                 </span>
                                 <button
                                   onClick={() => {
-                                    const n = Number(item.quantity) + 1;
-                                    if (stockState.isOutOfStock) {
-                                      toast.error(
-                                        `${item.product?.name || "This product"} is out of stock.`,
-                                      );
+                                    const nextQuantity =
+                                      Number(item.quantity) + 1;
+
+                                    if (!canIncreaseQuantity) {
                                       return;
                                     }
-                                    if (n > stockState.maxAllowed) {
-                                      toast.error(
-                                        stockState.isLimited
-                                          ? "Limited availability — order yours now!"
-                                          : `Only ${stockQty} item(s) are available in stock.`,
-                                      );
-                                      return;
-                                    }
-                                    user
+
+                                    user?.id
                                       ? updateQtyMutation.mutate({
                                           itemId: item.id,
-                                          quantity: n,
+                                          quantity: nextQuantity,
                                         })
-                                      : updateQuantity(item.id, n);
+                                      : updateQuantity(item.id, nextQuantity);
                                   }}
-                                  disabled={updateQtyMutation.isPending}
+                                  disabled={
+                                    updateQtyMutation.isPending ||
+                                    !canIncreaseQuantity
+                                  }
+                                  aria-label="Increase quantity"
+                                  title={
+                                    !canIncreaseQuantity
+                                      ? stockState.isLastOne
+                                        ? "Only one item is available"
+                                        : "Maximum available quantity reached"
+                                      : "Increase quantity"
+                                  }
                                   className="w-7 h-7 flex items-center justify-center text-white bg-gray-900 rounded-full hover:bg-gray-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                   <Plus className="w-3.5 h-3.5" />
@@ -1265,13 +1277,23 @@ export default function CartPage() {
                   )}
 
                   <motion.button
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
+                    whileHover={
+                      cartStockValidation.valid ? { scale: 1.01 } : undefined
+                    }
+                    whileTap={
+                      cartStockValidation.valid ? { scale: 0.99 } : undefined
+                    }
                     onClick={handleCheckout}
-                    className="w-full bg-gray-900 text-white py-3 rounded-xl font-bold shadow hover:shadow-md transition flex items-center justify-center gap-2 text-sm group"
+                    disabled={!cartStockValidation.valid}
+                    aria-disabled={!cartStockValidation.valid}
+                    className="w-full bg-gray-900 text-white py-3 rounded-xl font-bold shadow hover:shadow-md transition flex items-center justify-center gap-2 text-sm group disabled:bg-gray-400 disabled:shadow-none disabled:cursor-not-allowed"
                   >
-                    Proceed to Checkout
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+                    {cartStockValidation.valid
+                      ? "Proceed to Checkout"
+                      : "Update cart to continue"}
+                    {cartStockValidation.valid && (
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+                    )}
                   </motion.button>
                 </div>
               </div>
