@@ -2,15 +2,13 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { type Banner, MediaType } from "@/lib/api/banner.api";
 
 const AUTOPLAY_DELAY = 5000;
 const MIN_SWIPE_DISTANCE = 50;
-const TRANSITION_DURATION = 0.65;
 
 interface IHeroSection {
   banners: Banner[];
@@ -19,6 +17,43 @@ interface IHeroSection {
   error: Error | null;
 }
 
+// Preload and decode an image before displaying its slide.
+const preloadImage = (src: string): Promise<void> => {
+  return new Promise((resolve) => {
+    const image = new window.Image();
+    let completed = false;
+
+    const finish = () => {
+      if (completed) return;
+      completed = true;
+      resolve();
+    };
+
+    image.onload = async () => {
+      try {
+        if (typeof image.decode === "function") {
+          await image.decode();
+        }
+      } catch {
+        // Continue even if Safari's decode() rejects.
+      }
+
+      finish();
+    };
+
+    image.onerror = finish;
+    image.src = src;
+
+    if (image.complete) {
+      if (image.naturalWidth > 0) {
+        image.onload?.(new Event("load"));
+      } else {
+        finish();
+      }
+    }
+  });
+};
+
 export default function HeroSection({
   banners,
   isError,
@@ -26,6 +61,7 @@ export default function HeroSection({
 }: IHeroSection) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
+  const [imagesReady, setImagesReady] = useState(false);
 
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -33,39 +69,78 @@ export default function HeroSection({
 
   const totalSlides = banners.length;
 
+  // Resolve the correct image URL for the current viewport.
+  const imageUrls = useMemo(() => {
+    const isMobile =
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 767px)").matches;
+
+    return banners
+      .filter((banner) => banner.type === MediaType.IMAGE)
+      .map((banner) =>
+        isMobile ? banner.mobileUrl || banner.url : banner.url,
+      );
+  }, [banners]);
+
+  const imagePreloadKey = imageUrls.join("|");
+
+  // Preload all banner images before starting autoplay.
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadImages = async () => {
+      setImagesReady(false);
+
+      await Promise.all(imageUrls.map(preloadImage));
+
+      if (!cancelled) {
+        setImagesReady(true);
+      }
+    };
+
+    loadImages();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [imagePreloadKey]);
+
+  // Keep slide index within the available banner range.
   useEffect(() => {
     setCurrentSlide((current) =>
       totalSlides === 0 ? 0 : current % totalSlides,
     );
   }, [totalSlides]);
 
-  // Clear autoplay timer
+  // Clear autoplay.
   const clearAutoplay = useCallback(() => {
-    if (autoplayRef.current) {
+    if (autoplayRef.current !== null) {
       clearInterval(autoplayRef.current);
       autoplayRef.current = null;
     }
   }, []);
 
-  // Next slide
+  // Next slide.
   const nextSlide = useCallback(() => {
     if (totalSlides <= 1) return;
 
     setCurrentSlide((current) => (current + 1) % totalSlides);
   }, [totalSlides]);
 
-  // Previous slide
+  // Previous slide.
   const prevSlide = useCallback(() => {
     if (totalSlides <= 1) return;
 
     setCurrentSlide((current) => (current - 1 + totalSlides) % totalSlides);
   }, [totalSlides]);
 
-  // Autoplay
+  // Autoplay.
   useEffect(() => {
     clearAutoplay();
 
-    if (!autoPlay || totalSlides <= 1) return;
+    if (!autoPlay || !imagesReady || totalSlides <= 1) {
+      return;
+    }
 
     const startAutoplay = () => {
       clearAutoplay();
@@ -91,16 +166,18 @@ export default function HeroSection({
 
     return () => {
       clearAutoplay();
+
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [autoPlay, totalSlides, clearAutoplay]);
+  }, [autoPlay, imagesReady, totalSlides, clearAutoplay]);
 
-  // Manual interaction pauses autoplay
+  // Manual navigation pauses autoplay.
   const handleManualNavigation = useCallback((callback: () => void) => {
     setAutoPlay(false);
     callback();
   }, []);
 
+  // Navigate to a particular slide.
   const goToSlide = useCallback(
     (index: number) => {
       if (index < 0 || index >= totalSlides) return;
@@ -111,7 +188,7 @@ export default function HeroSection({
     [totalSlides],
   );
 
-  // Touch handling using refs to avoid stale React state
+  // Touch start.
   const onTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
     if (event.touches.length !== 1) return;
 
@@ -119,6 +196,7 @@ export default function HeroSection({
     touchStartY.current = event.touches[0].clientY;
   };
 
+  // Touch end.
   const onTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
     if (touchStartX.current === null || touchStartY.current === null) {
       return;
@@ -132,7 +210,7 @@ export default function HeroSection({
     touchStartX.current = null;
     touchStartY.current = null;
 
-    // Ignore vertical scrolling
+    // Ignore vertical scrolling.
     if (Math.abs(deltaY) > Math.abs(deltaX)) return;
 
     if (Math.abs(deltaX) < MIN_SWIPE_DISTANCE) return;
@@ -146,17 +224,46 @@ export default function HeroSection({
     }
   };
 
+  // Reset touch tracking.
+  const onTouchCancel = () => {
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
+
+  // Loading state.
   if (isLoading) {
     return (
-      <section className="relative mt-[108px] flex aspect-[16/10] w-full items-center justify-center bg-black sm:mt-[108px] sm:aspect-auto sm:h-[75vh] sm:min-h-[480px] md:mt-0 md:h-[100svh] md:min-h-[640px]">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/20 border-t-white" />
+      <section
+        className="
+        relative mt-[108px] flex aspect-[16/10] w-full
+        items-center justify-center bg-black
+        sm:mt-[108px] sm:aspect-auto sm:h-[75vh]
+        sm:min-h-[480px]
+        md:mt-0 md:h-[100svh] md:min-h-[640px]
+      "
+      >
+        <div
+          className="
+          h-10 w-10 animate-spin rounded-full
+          border-4 border-white/20 border-t-white
+        "
+        />
       </section>
     );
   }
 
+  // Error state.
   if (isError || totalSlides === 0) {
     return (
-      <section className="relative mt-[108px] flex aspect-[16/10] w-full items-center justify-center bg-black sm:mt-[108px] sm:aspect-auto sm:h-[75vh] sm:min-h-[480px] md:mt-0 md:h-[100svh] md:min-h-[640px]">
+      <section
+        className="
+        relative mt-[108px] flex aspect-[16/10] w-full
+        items-center justify-center bg-black
+        sm:mt-[108px] sm:aspect-auto sm:h-[75vh]
+        sm:min-h-[480px]
+        md:mt-0 md:h-[100svh] md:min-h-[640px]
+      "
+      >
         <p className="text-sm text-white/70">
           {isError ? "Unable to load banners" : "No banners available"}
         </p>
@@ -180,7 +287,10 @@ export default function HeroSection({
       aria-roledescription="carousel"
       aria-label="Promotional banners"
     >
-      {/* SLIDER */}
+      {/* =====================================
+          STABLE BANNER SLIDER
+          No image animations or crossfades.
+      ====================================== */}
 
       <div
         className="
@@ -191,86 +301,78 @@ export default function HeroSection({
         "
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
-        onTouchCancel={() => {
-          touchStartX.current = null;
-          touchStartY.current = null;
-        }}
+        onTouchCancel={onTouchCancel}
       >
-        <AnimatePresence initial={false}>
-          <motion.div
-            key={activeBanner.id}
-            className="
-              absolute inset-0
-              overflow-hidden
-              pointer-events-none
-              [transform:translateZ(0)]
-              [backface-visibility:hidden]
-              will-change-[opacity]
-            "
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{
-              opacity: {
-                duration: TRANSITION_DURATION,
-                ease: [0.22, 1, 0.36, 1],
-              },
-            }}
-          >
-            {activeBanner.type === MediaType.IMAGE ? (
-              <>
-                {/* Desktop image */}
-                <Image
-                  src={activeBanner.url}
-                  alt={activeBanner.title || "Promotional banner"}
-                  fill
-                  sizes="100vw"
-                  priority
-                  quality={90}
-                  draggable={false}
-                  className="
-                    hidden md:block
-                    object-cover object-center
-                  "
+        {banners.map((banner, index) => {
+          const isActive = index === currentSlide;
+
+          // Image banners.
+          if (banner.type === MediaType.IMAGE) {
+            return (
+              <picture
+                key={banner.id}
+                className="absolute inset-0 h-full w-full"
+                style={{
+                  display: isActive ? "block" : "none",
+                }}
+                aria-hidden={!isActive}
+              >
+                {/* Mobile image. */}
+                <source
+                  media="(max-width: 767px)"
+                  srcSet={banner.mobileUrl || banner.url}
                 />
 
-                {/* Mobile image */}
-                <Image
-                  src={activeBanner.mobileUrl || activeBanner.url}
-                  alt={activeBanner.title || "Promotional banner"}
-                  fill
-                  sizes="100vw"
-                  priority
-                  quality={85}
+                {/* Desktop image and fallback. */}
+                <img
+                  src={banner.url}
+                  alt={banner.title || "Promotional banner"}
                   draggable={false}
+                  loading="eager"
+                  decoding="sync"
+                  fetchPriority={index === 0 ? "high" : "auto"}
                   className="
-                    block md:hidden
-                    object-cover object-[50%_25%]
+                    absolute inset-0
+                    block h-full w-full
+                    object-cover
+                    object-[50%_25%]
+                    md:object-center
                   "
                 />
-              </>
-            ) : (
-              <video
-                key={activeBanner.id}
-                src={activeBanner.url}
-                poster={activeBanner.thumbnailUrl || undefined}
-                className="
-                  h-full w-full
-                  object-cover object-[50%_25%]
-                  md:object-center
-                "
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="auto"
-              />
-            )}
-          </motion.div>
-        </AnimatePresence>
+              </picture>
+            );
+          }
+
+          // Video banners.
+          return (
+            <video
+              key={banner.id}
+              src={banner.url}
+              poster={banner.thumbnailUrl || undefined}
+              className="
+                absolute inset-0
+                h-full w-full
+                object-cover
+                object-[50%_25%]
+                md:object-center
+              "
+              style={{
+                display: isActive ? "block" : "none",
+              }}
+              autoPlay={isActive}
+              muted
+              loop
+              playsInline
+              preload={isActive ? "auto" : "none"}
+              aria-hidden={!isActive}
+            />
+          );
+        })}
       </div>
 
-      {/* BOTTOM GRADIENT */}
+      {/* =====================================
+          BOTTOM GRADIENT
+      ====================================== */}
 
       <div
         className="
@@ -280,9 +382,12 @@ export default function HeroSection({
           from-black to-transparent
           sm:h-32 md:h-40
         "
+        aria-hidden="true"
       />
 
-      {/* HERO CONTENT */}
+      {/* =====================================
+          HERO CONTENT
+      ====================================== */}
 
       <div
         className="
@@ -300,7 +405,10 @@ export default function HeroSection({
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.35, ease: "easeOut" }}
+            transition={{
+              duration: 0.35,
+              ease: "easeOut",
+            }}
           >
             <h1
               className="
@@ -350,7 +458,9 @@ export default function HeroSection({
         </AnimatePresence>
       </div>
 
-      {/* DESKTOP ARROWS */}
+      {/* =====================================
+          DESKTOP ARROWS
+      ====================================== */}
 
       {totalSlides > 1 && (
         <>
@@ -392,7 +502,9 @@ export default function HeroSection({
             <ChevronRight className="h-5 w-5" />
           </button>
 
-          {/* INDICATORS */}
+          {/* =====================================
+              SLIDE INDICATORS
+          ====================================== */}
 
           <div
             className="
