@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     template: "%s | Kankana Silks",
   },
   description:
-    "Shop authentic Kanchipuram, Banarasi, Paithani and handloom silk sarees online at Kankana Silks, Mysore. Discover timeless sarees with delivery across Bengaluru, Chennai, Hyderabad and all India.",
+    "Shop Kanchipuram, Banarasi, Paithani and handloom sarees at Kankana Silks, Mysore. Order online for delivery to Bengaluru, Chennai, Hyderabad and across India.",
   keywords: [
     "Kankana Silks",
     "silk sarees",
@@ -27,6 +27,8 @@ export const metadata: Metadata = {
     "traditional sarees",
     "authentic silk sarees Mysuru",
     "silk sarees in Mysore",
+    "Mysore saree shop",
+    "silk saree shop Mysore",
     "silk sarees in Bengaluru",
     "online silk saree store in Karnataka",
     "silk saree delivery across India",
