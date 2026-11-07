@@ -9,11 +9,11 @@ import MiniCartDrawer from "@/components/miniCartDrawer";
 
 export const metadata: Metadata = {
   title: {
-    default: "Kankana Silks - Timeless Heritage | Authentic Silk Sarees",
+    default: "Kankana Silks | Premium Silk Sarees Online in Mysore & Bengaluru",
     template: "%s | Kankana Silks",
   },
   description:
-    "Kankana Silks celebrates India's timeless textile heritage with authentic Kanchipuram, Banarasi, Paithani, and handloom silk sarees. Founded by Shobha and Soumya in Mysuru, we curate premium silk sarees for weddings, festivities, and cherished moments.",
+    "Shop authentic Kanchipuram, Banarasi, Paithani and handloom silk sarees online at Kankana Silks, Mysore. Discover timeless sarees with delivery across Bengaluru, Chennai, Hyderabad and all India.",
   keywords: [
     "Kankana Silks",
     "silk sarees",
@@ -39,15 +39,15 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL("https://kankanasilks.com"),
+  metadataBase: new URL("https://www.kankanasilks.com"),
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "Kankana Silks - Timeless Heritage | Authentic Silk Sarees",
+    title: "Kankana Silks | Premium Silk Sarees Online in Mysore & Bengaluru",
     description:
-      "Discover authentic Kanchipuram, Banarasi, and handloom silk sarees at Kankana Silks, Mysuru. Each saree tells a story of heritage, craftsmanship, and timeless beauty.",
-    url: "https://kankanasilks.com",
+      "Shop authentic Kanchipuram, Banarasi and handloom silk sarees from Mysore. Explore premium sarees online with delivery across Bengaluru, Chennai, Hyderabad and India.",
+    url: "https://www.kankanasilks.com",
     siteName: "Kankana Silks",
     locale: "en_IN",
     type: "website",
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Kankana Silks - Timeless Heritage | Authentic Silk Sarees",
     description:
-      "Celebrating India's timeless textile heritage with authentic handloom and silk sarees from Kanchipuram, Banaras, and beyond.",
+      "Shop authentic Kanchipuram, Banarasi and handloom silk sarees online from Mysore, Karnataka. Delivery available across Bengaluru, Chennai, Hyderabad and all India.",
     images: ["/kankana-silks-logo.png"],
   },
   robots: {
