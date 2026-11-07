@@ -7,13 +7,16 @@ import Providers from "@/components/provider/tanstackProvider";
 import { Toaster } from "sonner";
 import MiniCartDrawer from "@/components/miniCartDrawer";
 
+const SITE_URL = "https://www.kankanasilks.com";
+const SITE_LOGO = SITE_URL + "/kankana-silks-logo.png";
+
 export const metadata: Metadata = {
   title: {
-    default: "Kankana Silks - Timeless Heritage | Authentic Silk Sarees",
+    default: "Kankana Silks | Premium Silk Sarees Online in Mysore & Bengaluru",
     template: "%s | Kankana Silks",
   },
   description:
-    "Kankana Silks celebrates India's timeless textile heritage with authentic Kanchipuram, Banarasi, Paithani, and handloom silk sarees. Founded by Shobha and Soumya in Mysuru, we curate premium silk sarees for weddings, festivities, and cherished moments.",
+    "Shop authentic Kanchipuram, Banarasi, Paithani and handloom sarees at Kankana Silks, Mysore. Explore the collection online with delivery to Bengaluru, Chennai, Hyderabad and across India.",
   keywords: [
     "Kankana Silks",
     "silk sarees",
@@ -26,10 +29,18 @@ export const metadata: Metadata = {
     "wedding sarees",
     "traditional sarees",
     "authentic silk sarees Mysuru",
+    "silk sarees in Mysore",
+    "Mysore saree shop",
+    "silk saree shop Mysore",
+    "silk sarees in Bengaluru",
+    "silk sarees in Bangalore",
+    "online silk saree store Karnataka",
+    "silk sarees Chennai",
+    "silk sarees Hyderabad",
+    "silk saree delivery across India",
     "Indian silk sarees",
     "handwoven sarees",
     "bridal sarees",
-    "National Award winning artisan sarees",
   ],
   authors: [{ name: "Kankana Silks" }],
   creator: "Kankana Silks",
@@ -39,15 +50,15 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL("https://kankanasilks.com"),
+  metadataBase: new URL(SITE_URL),
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "Kankana Silks - Timeless Heritage | Authentic Silk Sarees",
+    title: "Kankana Silks | Premium Silk Sarees Online in Mysore & Bengaluru",
     description:
-      "Discover authentic Kanchipuram, Banarasi, and handloom silk sarees at Kankana Silks, Mysuru. Each saree tells a story of heritage, craftsmanship, and timeless beauty.",
-    url: "https://kankanasilks.com",
+      "Shop authentic Kanchipuram, Banarasi, Paithani and handloom silk sarees from Mysore. Explore online collections with delivery across Bengaluru, Chennai, Hyderabad and India.",
+    url: SITE_URL,
     siteName: "Kankana Silks",
     locale: "en_IN",
     type: "website",
@@ -62,9 +73,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Kankana Silks - Timeless Heritage | Authentic Silk Sarees",
+    title: "Premium Silk Sarees in Mysore & Bengaluru | Kankana Silks",
     description:
-      "Celebrating India's timeless textile heritage with authentic handloom and silk sarees from Kanchipuram, Banaras, and beyond.",
+      "Shop authentic Kanchipuram, Banarasi, Paithani and handloom sarees at Kankana Silks, Mysore. Order online from Bengaluru, Chennai, Hyderabad and across India.",
     images: ["/kankana-silks-logo.png"],
   },
   robots: {
@@ -104,15 +115,75 @@ export const metadata: Metadata = {
   },
 };
 
+const storeStructuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": SITE_URL + "/#organization",
+      name: "Kankana Silks",
+      url: SITE_URL,
+      logo: {
+        "@type": "ImageObject",
+        url: SITE_LOGO,
+      },
+    },
+    {
+      "@type": "ClothingStore",
+      "@id": SITE_URL + "/#store",
+      name: "Kankana Silks",
+      url: SITE_URL,
+      image: SITE_LOGO,
+      description:
+        "A Mysore-based silk saree store offering Kanchipuram, Banarasi, Paithani and handloom sarees with online delivery across India.",
+      email: "support@kankanasilks.com",
+      address: {
+        "@type": "PostalAddress",
+        streetAddress:
+          "464, First Floor, Jayachamarajendra Road, 1st Stage, Vijayanagar",
+        addressLocality: "Mysore",
+        addressRegion: "Karnataka",
+        addressCountry: "IN",
+      },
+      areaServed: [
+        { "@type": "City", name: "Mysore" },
+        { "@type": "City", name: "Bengaluru" },
+        { "@type": "City", name: "Chennai" },
+        { "@type": "City", name: "Hyderabad" },
+        { "@type": "Country", name: "India" },
+      ],
+      parentOrganization: {
+        "@id": SITE_URL + "/#organization",
+      },
+    },
+    {
+      "@type": "WebSite",
+      "@id": SITE_URL + "/#website",
+      url: SITE_URL,
+      name: "Kankana Silks",
+      publisher: {
+        "@id": SITE_URL + "/#organization",
+      },
+      inLanguage: "en-IN",
+    },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en-IN">
       <head>
         <link rel="stylesheet" href="https://use.typekit.net/gmp5qfk.css" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(storeStructuredData).replace(/</g, "\\u003c"),
+          }}
+        />
       </head>
 
       <body className="bg-[#faf7f2] text-neutral-900 antialiased overflow-x-hidden">
