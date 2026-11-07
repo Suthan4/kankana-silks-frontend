@@ -28,7 +28,7 @@ type ApiCategory = {
 };
 
 const SITE_URL = "https://www.kankanasilks.com";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\\/+$/, "");
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
 
 function flattenActiveCategories(categories: ApiCategory[]): ApiCategory[] {
   const flattened: ApiCategory[] = [];
