@@ -122,8 +122,10 @@ async function getProductEntries(): Promise<MetadataRoute.Sitemap> {
       });
     }
 
+    if (entries.length >= 45000) break;
+
     const totalPages = payload?.data?.pagination?.totalPages;
-    if (!totalPages || page >= totalPages || products.length < pageSize) break;
+    if (totalPages ? page >= totalPages : products.length < pageSize) break;
   }
 
   return entries;
