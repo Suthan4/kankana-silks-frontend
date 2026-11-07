@@ -84,7 +84,7 @@ async function getActiveCategories(): Promise<ApiCategory[]> {
 }
 
 export default async function CityLandingPage({ config }: { config: CitySeoConfig }) {
-  const [categories] = await Promise.all([getActiveCategories()]);
+  const categories = await getActiveCategories();
   const pageUrl = `${SITE_URL}/${config.slug}`;
 
   const structuredData = {
