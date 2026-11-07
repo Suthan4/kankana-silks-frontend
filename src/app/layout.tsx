@@ -160,14 +160,6 @@ const storeStructuredData = {
       publisher: {
         "@id": "https://www.kankanasilks.com/#organization",
       },
-      potentialAction: {
-        "@type": "SearchAction",
-        target: {
-          "@type": "EntryPoint",
-          urlTemplate: "https://www.kankanasilks.com/s?k={search_term_string}",
-        },
-        "query-input": "required name=search_term_string",
-      },
     },
   ],
 };
