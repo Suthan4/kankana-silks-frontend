@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import ProductDetailsClient from "@/components/sections/productDetialClient";
 
 type Props = {
-  params: { category: string; slug: string };
+  params: Promise<{ category: string; slug: string }>;
 };
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
