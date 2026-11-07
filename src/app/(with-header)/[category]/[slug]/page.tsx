@@ -32,7 +32,7 @@ async function getProductBySlug(slug: string) {
 
 // Generate dynamic metadata for SEO
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug, category } = await params;
+  const { slug } = await params;
   const product = await getProductBySlug(slug);
 
   if (!product) {
