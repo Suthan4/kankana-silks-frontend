@@ -43,9 +43,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const canonicalPath = `/${encodeURIComponent(category)}/${encodeURIComponent(slug)}`;
   const images =
     product.media
-      ?.filter((media) => media.type === "IMAGE" && media.url)
+      ?.filter(
+        (media: { type?: string; url?: string; altText?: string | null }) =>
+          media.type === "IMAGE" && media.url,
+      )
       .slice(0, 4)
-      .map((media) => ({
+      .map((media: { url?: string; altText?: string | null }) => ({
         url: media.url!,
         width: 1200,
         height: 630,
