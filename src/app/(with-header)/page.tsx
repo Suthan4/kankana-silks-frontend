@@ -1,92 +1,84 @@
 import LandingPage from "@/components/landingPage";
 import Link from "next/link";
+import { cityHref, citySeoEntries, legacyCityLinks, primaryCityLinks } from "@/config/seo/cities";
 
-const citySeoLinks = [
-  {
-    href: "/mysore-sarees",
-    title: "Premium sarees in Mysore",
-    description:
-      "Explore silk, Kanchipuram, Banarasi, Paithani and bridal saree collections, and find information about our Mysore store.",
-  },
-  {
-    href: "/bengaluru-sarees",
-    title: "Premium sarees in Bengaluru",
-    description:
-      "Browse traditional silk, Kanchipuram, Banarasi, Paithani and wedding sarees online from Bengaluru and Bangalore.",
-  },
-  {
-    href: "/chennai-sarees",
-    title: "Silk sarees online in Chennai",
-    description:
-      "Discover traditional saree collections online and check delivery availability for your Chennai address.",
-  },
-  {
-    href: "/hyderabad-sarees",
-    title: "Premium sarees in Hyderabad",
-    description:
-      "Explore traditional silk, Kanchipuram, Banarasi, Paithani and bridal styles online from Hyderabad.",
-  },
-];
+function CityDiscoverySection() {
+  const metroCities = citySeoEntries.filter((city) => city.market === "metro");
+  const regionalCities = citySeoEntries.filter((city) => city.market === "regional");
 
-function RegionalSeoContent() {
   return (
     <section
-      aria-labelledby="regional-saree-shopping"
-      className="border-t border-neutral-200 bg-[#faf7f2] px-4 py-12 sm:px-6 lg:py-16"
+      aria-labelledby="city-discovery-title"
+      className="border-t border-[#e8e0d7] bg-[#f7f4ef] px-4 py-14 sm:px-6 lg:py-20"
     >
       <div className="mx-auto max-w-6xl">
-        <div className="max-w-3xl">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-neutral-600">
-            Kankana Silks · Mysore, Karnataka
+        <div className="max-w-2xl">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#846c5a]">
+            Kankana Silks · Mysore, India
           </p>
-          <h2
-            id="regional-saree-shopping"
-            className="text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl"
-          >
-            Discover premium silk sarees from Mysore
+          <h2 id="city-discovery-title" className="mt-3 text-3xl font-semibold tracking-tight text-[#29231f] sm:text-4xl">
+            A tradition of sarees, wherever you are.
           </h2>
-          <p className="mt-4 text-sm leading-7 text-neutral-700 sm:text-base">
-            Kankana Silks is a Mysore-based saree store bringing together
-            traditional Indian textiles and carefully curated saree
-            collections. Explore available Kanchipuram silk, Banarasi,
-            Paithani, Mysore silk and handloom styles for weddings,
-            celebrations and special occasions. Shop online or visit our
-            Mysore store.
+          <p className="mt-4 text-sm leading-7 text-[#6e6258] sm:text-base">
+            Explore our online saree collections from cities across India.
+            Browse traditional, silk and occasion styles, then confirm delivery
+            availability for your address at checkout.
           </p>
         </div>
 
-        <div className="mt-9 grid gap-5 border-t border-neutral-200 pt-8 sm:grid-cols-2">
-          {citySeoLinks.map((city) => (
-            <article key={city.href} className="rounded-2xl border border-neutral-200 bg-white p-5">
-              <h3 className="text-base font-semibold text-neutral-900">
-                <Link href={city.href} className="underline-offset-4 hover:underline">
-                  {city.title}
-                </Link>
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-neutral-700">
-                {city.description}
-              </p>
-              <Link
-                href={city.href}
-                className="mt-3 inline-flex text-sm font-semibold text-neutral-900 underline underline-offset-4"
-              >
-                Explore sarees
-              </Link>
-            </article>
+        <div className="mt-9 grid gap-4 sm:grid-cols-2">
+          {primaryCityLinks.map((city, index) => (
+            <Link
+              key={city.href}
+              href={city.href}
+              className="group flex min-h-36 flex-col justify-between rounded-2xl border border-[#ded4c9] bg-white p-6 transition duration-200 hover:-translate-y-0.5 hover:border-[#a58b77] hover:shadow-[0_12px_32px_rgba(55,39,27,0.08)]"
+            >
+              <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8a705d]">
+                {index === 0 ? "Our home city" : "Priority online destination"}
+              </span>
+              <span>
+                <span className="block text-2xl font-semibold tracking-tight text-[#29231f]">{city.city}</span>
+                <span className="mt-1 block text-sm text-[#766a60]">{city.note}</span>
+              </span>
+              <span className="mt-4 text-xs font-semibold text-[#47382e] group-hover:underline group-hover:underline-offset-4">
+                Explore city collection <span aria-hidden="true">→</span>
+              </span>
+            </Link>
           ))}
         </div>
 
-        <div className="mt-8 flex flex-col gap-2 text-sm text-neutral-700 sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            Mysore store: First Floor, 464, Jayachamarajendra Road, 1st Stage,
-            Vijayanagar, Mysore, Karnataka 570017.
-          </p>
-          <Link
-            href="/shop"
-            className="font-semibold text-neutral-900 underline underline-offset-4"
-          >
-            Explore all saree collections
-          </Link>
+        <div className="mt-10 border-t border-[#e3dacf] pt-8">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold text-[#29231f]">Explore more destinations</h3>
+              <p className="mt-1 text-sm text-[#766a60]">City collections across major Indian markets</p>
+            </div>
+            <Link href="/shop" className="text-sm font-semibold text-[#47382e] underline underline-offset-4">
+              Browse all sarees
+            </Link>
+          </div>
+
+          <div className="mt-5">
+            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8a705d]">Major cities</p>
+            <div className="flex flex-wrap gap-2">
+              {[...legacyCityLinks, ...metroCities.map((city) => ({ city: city.city, href: cityHref(city.slug), note: city.focus }))].map((city) => (
+                <Link key={city.href} href={city.href} className="rounded-full border border-[#ded4c9] bg-white px-4 py-2 text-sm text-[#51453b] transition hover:border-[#8b7461] hover:bg-[#eee7de]">
+                  {city.city}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8a705d]">More cities</p>
+            <div className="flex flex-wrap gap-2">
+              {regionalCities.map((city) => (
+                <Link key={city.slug} href={cityHref(city.slug)} className="rounded-full border border-transparent bg-[#eee8e0] px-3 py-2 text-sm text-[#5f5349] transition hover:border-[#d5c8ba] hover:bg-white">
+                  {city.city}
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -97,7 +89,7 @@ export default function Home() {
   return (
     <>
       <LandingPage />
-      <RegionalSeoContent />
+      <CityDiscoverySection />
     </>
   );
 }
