@@ -75,7 +75,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       images: images.slice(0, 4),
       type: "website",
-      url: `https://kankanasilks.com/products/${category}/${slug}`,
+      url: `https://www.kankanasilks.com/products/${slug}`,
       siteName: "Kankana Silks",
     },
     twitter: {
@@ -85,7 +85,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: images[0]?.url ? [images[0].url] : [],
     },
     alternates: {
-      canonical: `/${category}/${slug}`,
+      canonical: `/products/${slug}`,
     },
     robots: {
       index: true,
