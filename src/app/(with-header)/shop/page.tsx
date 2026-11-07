@@ -39,33 +39,37 @@ async function getCategories(): Promise<Category[]> {
 // Generate metadata for SEO
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Shop All Categories - Kankana Silks",
+    title: "Shop Silk Sarees Online | Mysore & Bengaluru",
     description:
-      "Browse our complete collection of premium silk sarees, traditional wear, and handcrafted textiles. Explore categories including women's wear, men's wear, and exclusive collections.",
+      "Explore Kanchipuram, Banarasi, Paithani and handloom sarees at Kankana Silks, Mysore. Shop online from Bengaluru, Chennai, Hyderabad and across India.",
     keywords: [
       "silk sarees",
       "traditional wear",
       "handloom sarees",
+      "silk sarees in Mysore",
+      "silk sarees in Bengaluru",
+      "online saree shopping India",
       "Kankana Silks",
-      "women's wear",
-      "men's wear",
-      "bridal's wear",
+      "Kanchipuram silk sarees",
+      "Banarasi sarees",
+      "Paithani sarees",
+      "bridal silk sarees",
       "ethnic wear",
       "shop sarees",
     ],
     openGraph: {
-      title: "Shop All Categories - Kankana Silks",
+      title: "Shop Silk Sarees Online | Mysore & Bengaluru",
       description:
-        "Browse our complete collection of premium silk sarees and traditional wear.",
+        "Shop curated silk and handloom saree collections from Kankana Silks, Mysore, with delivery across India.",
       type: "website",
-      url: "https://kankanasilks.com/shop",
+      url: "https://www.kankanasilks.com/shop",
       siteName: "Kankana Silks",
     },
     twitter: {
       card: "summary_large_image",
-      title: "Shop All Categories - Kankana Silks",
+      title: "Shop Silk Sarees Online | Mysore & Bengaluru",
       description:
-        "Browse our complete collection of premium silk sarees and traditional wear.",
+        "Shop silk and handloom sarees online from Kankana Silks, Mysore. We deliver to Bengaluru and across India.",
     },
     alternates: {
       canonical: "/shop",

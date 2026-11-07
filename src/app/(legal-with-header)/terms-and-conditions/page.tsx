@@ -1,3 +1,12 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Terms and Conditions",
+  description: "Read the terms governing purchases, orders, payments, product information and use of the Kankana Silks website.",
+  alternates: { canonical: "/terms-and-conditions" },
+  robots: { index: true, follow: true },
+};
+
 import Link from "next/link";
 import React from "react";
 

@@ -15,6 +15,8 @@ interface Category {
   name: string;
   slug: string;
   description?: string;
+  metaTitle?: string | null;
+  metaDesc?: string | null;
   image?: string;
   parentId?: string;
   children: Category[];
@@ -58,10 +60,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  const title = `${category.name} - Premium Silk Sarees | Kankana Silks`;
+  const title =
+    category.metaTitle || `${category.name} - Premium Silk Sarees | Kankana Silks`;
   const description =
+    category.metaDesc ||
     category.description ||
-    `Explore our exquisite collection of ${category.name.toLowerCase()} at Kankana Silks. Handcrafted traditional silk sarees with authentic artistry and timeless elegance.`;
+    `Explore ${category.name.toLowerCase()} at Kankana Silks, Mysore. Shop online with delivery to Bengaluru, Chennai, Hyderabad and across India.`;
 
   return {
     title,
@@ -89,7 +93,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           ]
         : [],
       type: "website",
-      url: `https://kankanasilks.com/shop/${slug}`,
+      url: `https://www.kankanasilks.com/shop/${slug}`,
       siteName: "Kankana Silks",
     },
     twitter: {
