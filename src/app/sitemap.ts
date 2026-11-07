@@ -16,6 +16,7 @@ type ApiCategory = {
 
 type ApiProduct = {
   slug?: string;
+  category?: { slug?: string };
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -120,7 +121,7 @@ async function getProductEntries(): Promise<MetadataRoute.Sitemap> {
     if (!products.length) break;
 
     for (const product of products) {
-      if (!product.slug || product.isActive === false) continue;
+      if (!product.slug || !product.category?.slug || product.isActive === false) continue;
 
       const images = (product.media ?? [])
         .filter((media) => media.type === "IMAGE" && media.url)
@@ -128,8 +129,14 @@ async function getProductEntries(): Promise<MetadataRoute.Sitemap> {
         .map((media) => media.url!);
 
       entries.push({
-        // This route is the canonical URL emitted by the product metadata.
-        url: absoluteUrl("/products/" + encodeURIComponent(product.slug)),
+        // Product cards use /:category/:slug; keep the sitemap aligned with
+        // that route and the canonical URL emitted by product metadata.
+        url: absoluteUrl(
+          "/" +
+            encodeURIComponent(product.category.slug) +
+            "/" +
+            encodeURIComponent(product.slug),
+        ),
         ...(validDate(product.updatedAt ?? product.createdAt)
           ? { lastModified: validDate(product.updatedAt ?? product.createdAt) }
           : {}),
