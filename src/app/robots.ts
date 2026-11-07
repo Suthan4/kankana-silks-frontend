@@ -22,6 +22,7 @@ export default function robots(): MetadataRoute.Robots {
         // Match the search route only when it has a query string.
         // Do not use "/s": that prefix would also block /shop and /shipping-policy.
         "/s?",
+        "/s$",
         "/coming-soon",
       ],
     },
