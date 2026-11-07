@@ -3,6 +3,8 @@ import type { MetadataRoute } from "next";
 const SITE_URL = "https://www.kankanasilks.com";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
 const REVALIDATE_SECONDS = 60 * 60;
+const MAX_PRODUCT_URLS = 45_000;
+const PRODUCT_PAGE_SIZE = 100;
 
 type ApiCategory = {
   slug?: string;
@@ -20,7 +22,7 @@ type ApiProduct = {
   media?: Array<{ type?: string; url?: string }>;
 };
 
-function absoluteUrl(path: string) {
+function absoluteUrl(path: string): string {
   return new URL(path, SITE_URL).toString();
 }
 
@@ -32,8 +34,15 @@ function validDate(value?: string): Date | undefined {
 
 function flattenCategories(categories: ApiCategory[]): ApiCategory[] {
   const result: ApiCategory[] = [];
+  const visited = new Set<string>();
+
   const visit = (category: ApiCategory) => {
-    if (category.isActive !== false && category.slug) result.push(category);
+    if (category.isActive === false) return;
+
+    if (category.slug && !visited.has(category.slug)) {
+      visited.add(category.slug);
+      result.push(category);
+    }
 
     const children =
       category.children ??
@@ -56,7 +65,12 @@ async function fetchJson<T>(url: string): Promise<T | null> {
       next: { revalidate: REVALIDATE_SECONDS },
       headers: { Accept: "application/json" },
     });
-    if (!response.ok) return null;
+
+    if (!response.ok) {
+      console.error("Sitemap request failed:", response.status, url);
+      return null;
+    }
+
     return (await response.json()) as T;
   } catch (error) {
     console.error("Sitemap data fetch failed:", error);
@@ -66,6 +80,7 @@ async function fetchJson<T>(url: string): Promise<T | null> {
 
 async function getCategoryEntries(): Promise<MetadataRoute.Sitemap> {
   if (!API_BASE_URL) return [];
+
   const payload = await fetchJson<{ data?: ApiCategory[] }>(
     API_BASE_URL + "/categories/tree",
   );
@@ -75,7 +90,9 @@ async function getCategoryEntries(): Promise<MetadataRoute.Sitemap> {
 
   return categories.map((category) => ({
     url: absoluteUrl("/shop/" + encodeURIComponent(category.slug!)),
-    lastModified: validDate(category.updatedAt),
+    ...(validDate(category.updatedAt)
+      ? { lastModified: validDate(category.updatedAt) }
+      : {}),
     changeFrequency: "weekly",
     priority: 0.75,
   }));
@@ -85,13 +102,11 @@ async function getProductEntries(): Promise<MetadataRoute.Sitemap> {
   if (!API_BASE_URL) return [];
 
   const entries: MetadataRoute.Sitemap = [];
-  const pageSize = 100;
-  const maxPages = 500;
 
-  for (let page = 1; page <= maxPages; page += 1) {
+  for (let page = 1; page <= 500 && entries.length < MAX_PRODUCT_URLS; page += 1) {
     const url = new URL(API_BASE_URL + "/products");
     url.searchParams.set("page", String(page));
-    url.searchParams.set("limit", String(pageSize));
+    url.searchParams.set("limit", String(PRODUCT_PAGE_SIZE));
     url.searchParams.set("isActive", "true");
 
     const payload = await fetchJson<{
@@ -106,26 +121,30 @@ async function getProductEntries(): Promise<MetadataRoute.Sitemap> {
 
     for (const product of products) {
       if (!product.slug || product.isActive === false) continue;
+
       const images = (product.media ?? [])
         .filter((media) => media.type === "IMAGE" && media.url)
         .slice(0, 5)
         .map((media) => media.url!);
 
-      if (entries.length >= 45000) break;
       entries.push({
-        // The /products/:slug route is the canonical product URL.
+        // This route is the canonical URL emitted by the product metadata.
         url: absoluteUrl("/products/" + encodeURIComponent(product.slug)),
-        lastModified: validDate(product.updatedAt ?? product.createdAt),
+        ...(validDate(product.updatedAt ?? product.createdAt)
+          ? { lastModified: validDate(product.updatedAt ?? product.createdAt) }
+          : {}),
         changeFrequency: "weekly",
         priority: 0.8,
         ...(images.length ? { images } : {}),
       });
+
+      if (entries.length >= MAX_PRODUCT_URLS) break;
     }
 
-    if (entries.length >= 45000) break;
-
     const totalPages = payload?.data?.pagination?.totalPages;
-    if (totalPages ? page >= totalPages : products.length < pageSize) break;
+    if (totalPages ? page >= totalPages : products.length < PRODUCT_PAGE_SIZE) {
+      break;
+    }
   }
 
   return entries;
