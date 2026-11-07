@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ProductDetailsClient from "@/components/sections/productDetialClient";
 
@@ -8,73 +8,83 @@ type Props = {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// Fetch product data (server-side)
-async function getProductBySlug(slug: string) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/products/slug/${slug}`, {
-      cache: "no-store", // Always get fresh data for product details
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+type ProductSeoData = {
+  name: string;
+  slug?: string;
+  description?: string | null;
+  metaTitle?: string | null;
+  metaDesc?: string | null;
+  artisanName?: string | null;
+  category?: { name?: string; slug?: string };
+  media?: Array<{ type?: string; url?: string; altText?: string | null }>;
+};
 
-    if (!response.ok) {
-      return null;
-    }
+async function getProductBySlug(slug: string): Promise<ProductSeoData | null> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/products/slug/${encodeURIComponent(slug)}`,
+      {
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+
+    if (!response.ok) return null;
 
     const result = await response.json();
-    return result.data;
+    return result.data ?? null;
   } catch (error) {
     console.error("Error fetching product:", error);
     return null;
   }
 }
 
-// Generate dynamic metadata for SEO
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug, category } = await params;
   const product = await getProductBySlug(slug);
 
-  if (!product) {
+  if (!product || product.category?.slug !== category) {
     return {
       title: "Product Not Found | Kankana Silks",
       description: "The product you're looking for could not be found.",
+      robots: { index: false, follow: false },
     };
   }
 
+  const canonicalPath = `/${encodeURIComponent(category)}/${encodeURIComponent(slug)}`;
   const images =
-    product?.media
-      ?.filter((m: any) => m.type === "IMAGE")
-      .map((m: any) => ({
-        url: m.url,
+    product.media
+      ?.filter((media) => media.type === "IMAGE" && media.url)
+      .slice(0, 4)
+      .map((media) => ({
+        url: media.url!,
         width: 1200,
         height: 630,
-        alt: m.altText || product.name,
-      })) || [];
+        alt: media.altText || product.name,
+      })) ?? [];
 
-  const canonicalPath = `/${encodeURIComponent(category)}/${encodeURIComponent(slug)}`;
   const title = product.metaTitle || `${product.name} | Kankana Silks`;
   const description =
     product.metaDesc ||
-    product.description.substring(0, 160) ||
-    `Shop ${product.name} at Kankana Silks. Premium handloom sarees with traditional craftsmanship.`;
+    product.description?.replace(/\s+/g, " ").trim().slice(0, 160) ||
+    `Explore ${product.name} at Kankana Silks. View product details and availability online.`;
 
   return {
     title,
     description,
     keywords: [
       product.name,
-      product.category?.name || "",
+      product.category?.name,
+      product.category?.name ? `${product.category.name} saree` : undefined,
       "silk saree",
-      "handloom",
       "traditional saree",
       "Kankana Silks",
-      product.artisanName || "",
-    ].filter(Boolean),
+      product.artisanName,
+    ].filter((keyword): keyword is string => Boolean(keyword)),
     openGraph: {
       title,
       description,
-      images: images.slice(0, 4),
+      images,
       type: "website",
       url: `https://www.kankanasilks.com${canonicalPath}`,
       siteName: "Kankana Silks",
@@ -83,30 +93,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: "summary_large_image",
       title,
       description,
-      images: images[0]?.url ? [images[0].url] : [],
+      ...(images[0]?.url ? { images: [images[0].url] } : {}),
     },
-    alternates: {
-      canonical: canonicalPath,
-    },
-    robots: {
-      index: true,
-      follow: true,
-    },
+    alternates: { canonical: canonicalPath },
+    robots: { index: true, follow: true },
   };
 }
 
-// Main page component
 export default async function ProductDetailsPage({ params }: Props) {
   const { slug, category } = await params;
   const product = await getProductBySlug(slug);
 
-  if (!product) {
+  if (!product || product.category?.slug !== category) {
     notFound();
-  }
-
-  // ✅ Ensure URL category matches actual product category
-  if (product.category?.slug !== category) {
-    notFound(); // prevents wrong URLs
   }
 
   return <ProductDetailsClient initialProduct={product} />;
