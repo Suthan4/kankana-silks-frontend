@@ -16,7 +16,7 @@ export default function robots(): MetadataRoute.Robots {
         "/cart",
         "/checkout",
         "/order-success",
-        "/my-account/",
+        "/my-account",
         "/wishlist",
         "/reset-password",
         // Match the search route only when it has a query string.
