@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { citySeoEntries } from "@/config/seo/cities";
 
 const SITE_URL = "https://www.kankanasilks.com";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
@@ -161,8 +162,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: absoluteUrl("/shop"), changeFrequency: "daily", priority: 0.9 },
     { url: absoluteUrl("/mysore-sarees"), changeFrequency: "monthly", priority: 0.8 },
     { url: absoluteUrl("/bengaluru-sarees"), changeFrequency: "monthly", priority: 0.8 },
-    { url: absoluteUrl("/chennai-sarees"), changeFrequency: "monthly", priority: 0.7 },
-    { url: absoluteUrl("/hyderabad-sarees"), changeFrequency: "monthly", priority: 0.7 },
     { url: absoluteUrl("/about-us"), changeFrequency: "monthly", priority: 0.5 },
     { url: absoluteUrl("/contact-us"), changeFrequency: "monthly", priority: 0.5 },
     { url: absoluteUrl("/faq"), changeFrequency: "monthly", priority: 0.4 },
@@ -174,10 +173,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: absoluteUrl("/terms-and-conditions"), changeFrequency: "yearly", priority: 0.1 },
   ];
 
+  const cityEntries: MetadataRoute.Sitemap = [
+    { url: absoluteUrl("/chennai-sarees"), changeFrequency: "monthly", priority: 0.7 },
+    { url: absoluteUrl("/hyderabad-sarees"), changeFrequency: "monthly", priority: 0.7 },
+    ...citySeoEntries.map((city) => ({
+      url: absoluteUrl("/sarees-in/" + encodeURIComponent(city.slug)),
+      changeFrequency: "monthly" as const,
+      priority: city.market === "metro" ? 0.65 : 0.55,
+    })),
+  ];
+
   const [categoryEntries, productEntries] = await Promise.all([
     getCategoryEntries(),
     getProductEntries(),
   ]);
 
-  return [...staticEntries, ...categoryEntries, ...productEntries];
+  return [...staticEntries, ...cityEntries, ...categoryEntries, ...productEntries];
 }
