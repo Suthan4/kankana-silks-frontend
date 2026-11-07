@@ -52,6 +52,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         alt: m.altText || product.name,
       })) || [];
 
+  const canonicalPath = `/${encodeURIComponent(category)}/${encodeURIComponent(slug)}`;
   const title = product.metaTitle || `${product.name} | Kankana Silks`;
   const description =
     product.metaDesc ||
@@ -75,7 +76,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       images: images.slice(0, 4),
       type: "website",
-      url: `https://www.kankanasilks.com/products/${slug}`,
+      url: `https://www.kankanasilks.com${canonicalPath}`,
       siteName: "Kankana Silks",
     },
     twitter: {
@@ -85,7 +86,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: images[0]?.url ? [images[0].url] : [],
     },
     alternates: {
-      canonical: `/products/${slug}`,
+      canonical: canonicalPath,
     },
     robots: {
       index: true,
