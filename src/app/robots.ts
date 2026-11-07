@@ -8,50 +8,23 @@ const SITE_URL = "https://www.kankanasilks.com";
  */
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: [
-      {
-        userAgent: "*",
-        allow: [
-          "/",
-          "/shop/",
-          "/products/",
-          "/about-us",
-          "/contact-us",
-          "/faq",
-        ],
-        disallow: [
-          "/api/",
-          "/cart",
-          "/checkout",
-          "/order-success",
-          "/my-account/",
-          "/wishlist",
-          "/reset-password",
-          "/s",
-          "/s?",
-          "/coming-soon",
-        ],
-      },
-      {
-        userAgent: "Googlebot",
-        allow: ["/", "/shop/", "/products/"],
-        disallow: [
-          "/api/",
-          "/cart",
-          "/checkout",
-          "/order-success",
-          "/my-account/",
-          "/wishlist",
-          "/reset-password",
-          "/s",
-          "/coming-soon",
-        ],
-      },
-      {
-        userAgent: "Googlebot-Image",
-        allow: ["/"],
-      },
-    ],
+    rules: {
+      userAgent: "*",
+      allow: ["/", "/shop/", "/products/", "/about-us", "/contact-us", "/faq"],
+      disallow: [
+        "/api/",
+        "/cart",
+        "/checkout",
+        "/order-success",
+        "/my-account/",
+        "/wishlist",
+        "/reset-password",
+        // Match the search route only when it has a query string.
+        // Do not use "/s": that prefix would also block /shop and /shipping-policy.
+        "/s?",
+        "/coming-soon",
+      ],
+    },
     sitemap: SITE_URL + "/sitemap.xml",
     host: SITE_URL,
   };
