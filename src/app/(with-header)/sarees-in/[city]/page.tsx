@@ -6,6 +6,7 @@ import { citySeoEntries } from "@/config/seo/cities";
 type Props = { params: Promise<{ city: string }> };
 
 export const revalidate = 3600;
+export const dynamicParams = false;
 
 export function generateStaticParams() {
   return citySeoEntries.map(({ slug }) => ({ city: slug }));
