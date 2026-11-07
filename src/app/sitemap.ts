@@ -129,8 +129,6 @@ async function getProductEntries(): Promise<MetadataRoute.Sitemap> {
         .map((media) => media.url!);
 
       entries.push({
-        // Product cards use /:category/:slug; keep the sitemap aligned with
-        // that route and the canonical URL emitted by product metadata.
         url: absoluteUrl(
           "/" +
             encodeURIComponent(product.category.slug) +
@@ -161,6 +159,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticEntries: MetadataRoute.Sitemap = [
     { url: absoluteUrl("/"), changeFrequency: "daily", priority: 1 },
     { url: absoluteUrl("/shop"), changeFrequency: "daily", priority: 0.9 },
+    { url: absoluteUrl("/mysore-sarees"), changeFrequency: "monthly", priority: 0.8 },
+    { url: absoluteUrl("/bengaluru-sarees"), changeFrequency: "monthly", priority: 0.8 },
+    { url: absoluteUrl("/chennai-sarees"), changeFrequency: "monthly", priority: 0.7 },
+    { url: absoluteUrl("/hyderabad-sarees"), changeFrequency: "monthly", priority: 0.7 },
     { url: absoluteUrl("/about-us"), changeFrequency: "monthly", priority: 0.5 },
     { url: absoluteUrl("/contact-us"), changeFrequency: "monthly", priority: 0.5 },
     { url: absoluteUrl("/faq"), changeFrequency: "monthly", priority: 0.4 },
