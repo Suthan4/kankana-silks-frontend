@@ -15,6 +15,8 @@ interface Category {
   name: string;
   slug: string;
   description?: string;
+  metaTitle?: string | null;
+  metaDesc?: string | null;
   image?: string;
   parentId?: string;
   children: Category[];
@@ -58,8 +60,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  const title = `${category.name} - Premium Silk Sarees | Kankana Silks`;
+  const title =
+    category.metaTitle || `${category.name} - Premium Silk Sarees | Kankana Silks`;
   const description =
+    category.metaDesc ||
     category.description ||
     `Explore ${category.name.toLowerCase()} at Kankana Silks, Mysore. Shop online with delivery to Bengaluru, Chennai, Hyderabad and across India.`;
 
