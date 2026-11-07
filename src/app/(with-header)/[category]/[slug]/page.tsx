@@ -8,18 +8,7 @@ type Props = {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
-type ProductSeoData = {
-  name: string;
-  slug?: string;
-  description?: string | null;
-  metaTitle?: string | null;
-  metaDesc?: string | null;
-  artisanName?: string | null;
-  category?: { name?: string; slug?: string };
-  media?: Array<{ type?: string; url?: string; altText?: string | null }>;
-};
-
-async function getProductBySlug(slug: string): Promise<ProductSeoData | null> {
+async function getProductBySlug(slug: string) {
   try {
     const response = await fetch(
       `${API_BASE_URL}/products/slug/${encodeURIComponent(slug)}`,
