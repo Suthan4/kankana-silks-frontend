@@ -111,6 +111,7 @@ async function getProductEntries(): Promise<MetadataRoute.Sitemap> {
         .slice(0, 5)
         .map((media) => media.url!);
 
+      if (entries.length >= 45000) break;
       entries.push({
         // The /products/:slug route is the canonical product URL.
         url: absoluteUrl("/products/" + encodeURIComponent(product.slug)),
@@ -135,6 +136,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: absoluteUrl("/about-us"), changeFrequency: "monthly", priority: 0.5 },
     { url: absoluteUrl("/contact-us"), changeFrequency: "monthly", priority: 0.5 },
     { url: absoluteUrl("/faq"), changeFrequency: "monthly", priority: 0.4 },
+    { url: absoluteUrl("/product-details-appearance"), changeFrequency: "yearly", priority: 0.2 },
     { url: absoluteUrl("/shipping-policy"), changeFrequency: "yearly", priority: 0.2 },
     { url: absoluteUrl("/return-policy"), changeFrequency: "yearly", priority: 0.2 },
     { url: absoluteUrl("/cancellation-policy"), changeFrequency: "yearly", priority: 0.2 },
