@@ -3,6 +3,7 @@ import CityLandingPage, { type CitySeoConfig } from "@/components/seo/cityLandin
 
 const config: CitySeoConfig = {
   city: "Hyderabad",
+  slug: "hyderabad-sarees",
   title: "Premium Silk Sarees Online in Hyderabad | Kankana Silks",
   description: "Discover premium silk, Kanchipuram, Banarasi, Paithani and bridal sarees online in Hyderabad from Kankana Silks. Check delivery availability at checkout.",
   heading: "Discover premium traditional sarees in Hyderabad",
