@@ -162,8 +162,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: absoluteUrl("/shop"), changeFrequency: "daily", priority: 0.9 },
     { url: absoluteUrl("/mysore-sarees"), changeFrequency: "monthly", priority: 0.8 },
     { url: absoluteUrl("/bengaluru-sarees"), changeFrequency: "monthly", priority: 0.8 },
-    { url: absoluteUrl("/chennai-sarees"), changeFrequency: "monthly", priority: 0.7 },
-    { url: absoluteUrl("/hyderabad-sarees"), changeFrequency: "monthly", priority: 0.7 },
     { url: absoluteUrl("/about-us"), changeFrequency: "monthly", priority: 0.5 },
     { url: absoluteUrl("/contact-us"), changeFrequency: "monthly", priority: 0.5 },
     { url: absoluteUrl("/faq"), changeFrequency: "monthly", priority: 0.4 },
@@ -176,8 +174,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   const cityEntries: MetadataRoute.Sitemap = [
-    { url: absoluteUrl("/mysore-sarees"), changeFrequency: "monthly", priority: 0.9 },
-    { url: absoluteUrl("/bengaluru-sarees"), changeFrequency: "monthly", priority: 0.9 },
     { url: absoluteUrl("/chennai-sarees"), changeFrequency: "monthly", priority: 0.7 },
     { url: absoluteUrl("/hyderabad-sarees"), changeFrequency: "monthly", priority: 0.7 },
     ...citySeoEntries.map((city) => ({
