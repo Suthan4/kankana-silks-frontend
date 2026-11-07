@@ -7,13 +7,16 @@ import Providers from "@/components/provider/tanstackProvider";
 import { Toaster } from "sonner";
 import MiniCartDrawer from "@/components/miniCartDrawer";
 
+const SITE_URL = "https://www.kankanasilks.com";
+const SITE_LOGO = SITE_URL + "/kankana-silks-logo.png";
+
 export const metadata: Metadata = {
   title: {
     default: "Kankana Silks | Premium Silk Sarees Online in Mysore & Bengaluru",
     template: "%s | Kankana Silks",
   },
   description:
-    "Shop Kanchipuram, Banarasi, Paithani and handloom sarees at Kankana Silks, Mysore. Order online for delivery to Bengaluru, Chennai, Hyderabad and across India.",
+    "Shop authentic Kanchipuram, Banarasi, Paithani and handloom sarees at Kankana Silks, Mysore. Explore the collection online with delivery to Bengaluru, Chennai, Hyderabad and across India.",
   keywords: [
     "Kankana Silks",
     "silk sarees",
@@ -30,12 +33,14 @@ export const metadata: Metadata = {
     "Mysore saree shop",
     "silk saree shop Mysore",
     "silk sarees in Bengaluru",
-    "online silk saree store in Karnataka",
+    "silk sarees in Bangalore",
+    "online silk saree store Karnataka",
+    "silk sarees Chennai",
+    "silk sarees Hyderabad",
     "silk saree delivery across India",
     "Indian silk sarees",
     "handwoven sarees",
     "bridal sarees",
-    "National Award winning artisan sarees",
   ],
   authors: [{ name: "Kankana Silks" }],
   creator: "Kankana Silks",
@@ -45,15 +50,15 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL("https://www.kankanasilks.com"),
+  metadataBase: new URL(SITE_URL),
   alternates: {
     canonical: "/",
   },
   openGraph: {
     title: "Kankana Silks | Premium Silk Sarees Online in Mysore & Bengaluru",
     description:
-      "Shop authentic Kanchipuram, Banarasi and handloom silk sarees from Mysore. Explore premium sarees online with delivery across Bengaluru, Chennai, Hyderabad and India.",
-    url: "https://www.kankanasilks.com",
+      "Shop authentic Kanchipuram, Banarasi, Paithani and handloom silk sarees from Mysore. Explore online collections with delivery across Bengaluru, Chennai, Hyderabad and India.",
+    url: SITE_URL,
     siteName: "Kankana Silks",
     locale: "en_IN",
     type: "website",
@@ -70,7 +75,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Premium Silk Sarees in Mysore & Bengaluru | Kankana Silks",
     description:
-      "Shop authentic Kanchipuram, Banarasi, Paithani and handloom sarees at Kankana Silks, Mysore. Order online from Bengaluru, Chennai, Hyderabad and anywhere in India.",
+      "Shop authentic Kanchipuram, Banarasi, Paithani and handloom sarees at Kankana Silks, Mysore. Order online from Bengaluru, Chennai, Hyderabad and across India.",
     images: ["/kankana-silks-logo.png"],
   },
   robots: {
@@ -110,26 +115,25 @@ export const metadata: Metadata = {
   },
 };
 
-
 const storeStructuredData = {
   "@context": "https://schema.org",
   "@graph": [
     {
       "@type": "Organization",
-      "@id": "https://www.kankanasilks.com/#organization",
+      "@id": SITE_URL + "/#organization",
       name: "Kankana Silks",
-      url: "https://www.kankanasilks.com",
+      url: SITE_URL,
       logo: {
         "@type": "ImageObject",
-        url: "https://www.kankanasilks.com/kankana-silks-logo.png",
+        url: SITE_LOGO,
       },
     },
     {
       "@type": "ClothingStore",
-      "@id": "https://www.kankanasilks.com/#store",
+      "@id": SITE_URL + "/#store",
       name: "Kankana Silks",
-      url: "https://www.kankanasilks.com",
-      image: "https://www.kankanasilks.com/kankana-silks-logo.png",
+      url: SITE_URL,
+      image: SITE_LOGO,
       description:
         "A Mysore-based silk saree store offering Kanchipuram, Banarasi, Paithani and handloom sarees with online delivery across India.",
       email: "support@kankanasilks.com",
@@ -149,17 +153,18 @@ const storeStructuredData = {
         { "@type": "Country", name: "India" },
       ],
       parentOrganization: {
-        "@id": "https://www.kankanasilks.com/#organization",
+        "@id": SITE_URL + "/#organization",
       },
     },
     {
       "@type": "WebSite",
-      "@id": "https://www.kankanasilks.com/#website",
-      url: "https://www.kankanasilks.com",
+      "@id": SITE_URL + "/#website",
+      url: SITE_URL,
       name: "Kankana Silks",
       publisher: {
-        "@id": "https://www.kankanasilks.com/#organization",
+        "@id": SITE_URL + "/#organization",
       },
+      inLanguage: "en-IN",
     },
   ],
 };
@@ -170,7 +175,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en-IN">
       <head>
         <link rel="stylesheet" href="https://use.typekit.net/gmp5qfk.css" />
         <script
