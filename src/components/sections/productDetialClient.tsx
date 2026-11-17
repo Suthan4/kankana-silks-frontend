@@ -45,6 +45,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatColorText } from "@/lib/utils/colorValidationwithText";
 import DOMPurify from "isomorphic-dompurify";
 import { ZoomGallery } from "../ui/ZoomGallery";
+import { trackAddToCart, trackViewItem } from "@/lib/analytics";
 
 interface ProductDetailsClientProps {
   initialProduct: Product;
@@ -292,6 +293,17 @@ export default function ProductDetailsClient({
       : productSpecificationsAsAttrs;
 
   useEffect(() => {
+    if (hasVariants && !selectedVariant) return;
+    trackViewItem({
+      item_id: product.id,
+      item_name: product.name,
+      item_category: product.category?.name,
+      item_variant: selectedVariant?.id,
+      price: displayPrice,
+    });
+  }, [product.id, product.name, product.category?.name, selectedVariant?.id, hasVariants, displayPrice]);
+
+  useEffect(() => {
     if (user) checkWishlistStatus();
     fetchRelatedProducts();
     const savedLocation = localStorage.getItem("userLocation");
@@ -485,7 +497,15 @@ export default function ProductDetailsClient({
           quantity: 1,
         });
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      trackAddToCart({
+        item_id: variables.product.id,
+        item_name: variables.product.name,
+        item_category: variables.product.category?.name,
+        item_variant: variables.variant?.id,
+        price: Number(variables.variant?.sellingPrice ?? variables.variant?.price ?? variables.product.sellingPrice),
+        quantity: 1,
+      });
       if (user) {
         queryClient.invalidateQueries({ queryKey: ["cartApi"] });
       }
