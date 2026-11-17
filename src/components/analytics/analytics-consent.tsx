@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Script from "next/script";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { analyticsConsentKey, hasAnalyticsConsent } from "@/lib/analytics";
 
 declare global {
@@ -19,7 +19,6 @@ const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
 export default function AnalyticsConsent() {
   const [consent, setConsent] = useState<"unknown" | "granted" | "denied">("unknown");
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     const saved = window.localStorage.getItem(analyticsConsentKey);
@@ -31,9 +30,9 @@ export default function AnalyticsConsent() {
     window.gtag("event", "page_view", {
       page_title: document.title,
       page_location: window.location.href,
-      page_path: pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : ""),
+      page_path: pathname,
     });
-  }, [consent, pathname, searchParams]);
+  }, [consent, pathname]);
 
   const choose = (value: "granted" | "denied") => {
     window.localStorage.setItem(analyticsConsentKey, value);
