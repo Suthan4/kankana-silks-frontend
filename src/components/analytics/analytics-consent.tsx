@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Script from "next/script";
 import { usePathname } from "next/navigation";
-import { analyticsConsentKey, hasAnalyticsConsent } from "@/lib/analytics";
+import { analyticsConsentKey } from "@/lib/analytics";
 
 declare global {
   interface Window {
@@ -32,6 +32,8 @@ export default function AnalyticsConsent() {
       page_location: window.location.href,
       page_path: pathname,
     });
+    if (pathname === "/cart") window.gtag("event", "view_cart");
+    if (pathname.startsWith("/checkout")) window.gtag("event", "begin_checkout");
   }, [consent, pathname]);
 
   const choose = (value: "granted" | "denied") => {
