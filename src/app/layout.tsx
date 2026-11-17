@@ -6,6 +6,7 @@ import ClientLayout from "@/components/clientLayout";
 import Providers from "@/components/provider/tanstackProvider";
 import { Toaster } from "sonner";
 import MiniCartDrawer from "@/components/miniCartDrawer";
+import AnalyticsConsent from "@/components/analytics/analytics-consent";
 
 const SITE_URL = "https://www.kankanasilks.com";
 const SITE_LOGO = SITE_URL + "/kankana-silks-logo.png";
@@ -187,6 +188,7 @@ export default function RootLayout({
       </head>
 
       <body className="bg-[#faf7f2] text-neutral-900 antialiased overflow-x-hidden">
+        <AnalyticsConsent />
         <Providers>
           <ClientLayout>{children}</ClientLayout>
           <MiniCartDrawer />
