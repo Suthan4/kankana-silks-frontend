@@ -385,7 +385,10 @@ function Header() {
       await clientApiService.logout();
     } catch (error) {
       // Always clear this browser session even if the logout request fails.
-      console.warn("Server logout request failed; clearing local session.", error);
+      console.warn(
+        "Server logout request failed; clearing local session.",
+        error,
+      );
     } finally {
       authModalStore.getState().logout();
       queryClient.clear();
@@ -448,7 +451,7 @@ function Header() {
       requiresAuth: false,
       onClick: () => {
         window.open(
-          "https://api.whatsapp.com/send?phone=918838562459&text=Hello%20Kankana%20Silks,%20I%E2%80%99m%20interested%20in%20exploring%20your%20saree%20collection.",
+          "https://api.whatsapp.com/send?phone=916364945568&text=Hello%20Kankana%20Silks,%20I%E2%80%99m%20interested%20in%20exploring%20your%20saree%20collection.",
           "_blank",
         );
       },
@@ -877,7 +880,7 @@ function Header() {
                   whileTap={{ scale: 0.86 }}
                   onClick={() =>
                     window.open(
-                      "https://api.whatsapp.com/send?phone=918838562459&text=Hello%20Kankana%20Silks,%20I%E2%80%99m%20interested%20in%20exploring%20your%20saree%20collection.",
+                      "https://api.whatsapp.com/send?phone=916364945568&text=Hello%20Kankana%20Silks,%20I%E2%80%99m%20interested%20in%20exploring%20your%20saree%20collection.",
                       "_blank",
                     )
                   }
@@ -1780,264 +1783,267 @@ function Header() {
           <AnimatePresence initial={false}>
             {mobileMenuOpen && (
               <div
-            className="md:hidden fixed inset-0 z-[110] isolate"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Mobile navigation"
-            style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 110,
-              isolation: "isolate",
-              contain: "layout paint",
-              transform: "translate3d(0, 0, 0)",
-              WebkitTransform: "translate3d(0, 0, 0)",
-            }}
-          >
-            {/* Static backdrop: avoid animating opacity over the large hero image. */}
-            <button
-              type="button"
-              aria-label="Close navigation menu"
-              className="absolute inset-0 h-full w-full touch-none bg-black/50"
-              onClick={() => setMobileMenuOpen(false)}
-            />
-            {/* Animate only the drawer layer, not the full-screen overlay. */}
-            <motion.div
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-              className="mobile-drawer-panel absolute inset-y-0 left-0 w-[85%] max-w-[420px] overflow-y-auto overscroll-contain bg-white pb-[env(safe-area-inset-bottom)]"
-              style={{ WebkitOverflowScrolling: "touch" }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="px-4 py-6">
+                className="md:hidden fixed inset-0 z-[110] isolate"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Mobile navigation"
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  zIndex: 110,
+                  isolation: "isolate",
+                  contain: "layout paint",
+                  transform: "translate3d(0, 0, 0)",
+                  WebkitTransform: "translate3d(0, 0, 0)",
+                }}
+              >
+                {/* Static backdrop: avoid animating opacity over the large hero image. */}
                 <button
-                  className="mb-4"
+                  type="button"
+                  aria-label="Close navigation menu"
+                  className="absolute inset-0 h-full w-full touch-none bg-black/50"
                   onClick={() => setMobileMenuOpen(false)}
+                />
+                {/* Animate only the drawer layer, not the full-screen overlay. */}
+                <motion.div
+                  initial={{ x: "-100%" }}
+                  animate={{ x: 0 }}
+                  exit={{ x: "-100%" }}
+                  transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+                  className="mobile-drawer-panel absolute inset-y-0 left-0 w-[85%] max-w-[420px] overflow-y-auto overscroll-contain bg-white pb-[env(safe-area-inset-bottom)]"
+                  style={{ WebkitOverflowScrolling: "touch" }}
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <X />
-                </button>
+                  <div className="px-4 py-6">
+                    <button
+                      className="mb-4"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <X />
+                    </button>
 
-                {user && (
-                  <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                    <p className="font-semibold text-gray-900">
-                      Hello, {user.firstName}!
-                    </p>
-                    <p className="text-sm text-gray-600">{user.email}</p>
-                    <div className="mt-3 space-y-2">
-                      <Link
-                        href="/my-account"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="block text-sm text-gray-700 hover:text-black"
-                      >
-                        My Account
-                      </Link>
-                      <Link
-                        href="/my-account/orders"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="block text-sm text-gray-700 hover:text-black"
-                      >
-                        My Orders
-                      </Link>
-                      <Link
-                        href="/my-account/addresses"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="block text-sm text-gray-700 hover:text-black"
-                      >
-                        Address
-                      </Link>
+                    {user && (
+                      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                        <p className="font-semibold text-gray-900">
+                          Hello, {user.firstName}!
+                        </p>
+                        <p className="text-sm text-gray-600">{user.email}</p>
+                        <div className="mt-3 space-y-2">
+                          <Link
+                            href="/my-account"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="block text-sm text-gray-700 hover:text-black"
+                          >
+                            My Account
+                          </Link>
+                          <Link
+                            href="/my-account/orders"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="block text-sm text-gray-700 hover:text-black"
+                          >
+                            My Orders
+                          </Link>
+                          <Link
+                            href="/my-account/addresses"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="block text-sm text-gray-700 hover:text-black"
+                          >
+                            Address
+                          </Link>
+                          <button
+                            onClick={() => {
+                              setMobileMenuOpen(false);
+                              handleLogout();
+                            }}
+                            className="block w-full text-left text-sm text-red-600"
+                          >
+                            Sign Out
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {!user && (
                       <button
                         onClick={() => {
                           setMobileMenuOpen(false);
-                          handleLogout();
+                          openModal("login");
                         }}
-                        className="block w-full text-left text-sm text-red-600"
+                        className="w-full mb-6 py-3 bg-black text-white rounded-lg font-semibold"
                       >
-                        Sign Out
+                        Sign In / Sign Up
                       </button>
+                    )}
+
+                    <div className="space-y-1">
+                      {loading ? (
+                        <>
+                          {[120, 90, 110, 80, 100].map((w, i) => (
+                            <div
+                              key={i}
+                              className="border-b border-gray-100 px-1 py-5"
+                            >
+                              <div
+                                className="h-4 rounded-full bg-gray-200 animate-pulse"
+                                style={{ width: `${w}px` }}
+                              />
+                            </div>
+                          ))}
+                        </>
+                      ) : (
+                        categories.map((category) => {
+                          const isOpen = activeNav === category.name;
+
+                          return (
+                            <div
+                              key={category.id}
+                              className="border-b border-gray-200"
+                            >
+                              <div className="flex items-center">
+                                {(category.children?.length ?? 0) > 0 && (
+                                  <button
+                                    onClick={() =>
+                                      setActiveNav(isOpen ? "" : category.name)
+                                    }
+                                    className="flex h-12 w-10 shrink-0 items-center justify-center"
+                                  >
+                                    <span className="relative h-4 w-4">
+                                      <span className="absolute left-0 top-1/2 h-[1.5px] w-4 -translate-y-1/2 bg-black" />
+                                      {!isOpen && (
+                                        <span className="absolute left-1/2 top-0 h-4 w-[1.5px] -translate-x-1/2 bg-black" />
+                                      )}
+                                    </span>
+                                  </button>
+                                )}
+
+                                <Link
+                                  href={getCategoryUrl(category.slug)}
+                                  onClick={() => setMobileMenuOpen(false)}
+                                  className="flex-1 py-2 text-[15px] font-medium uppercase tracking-[0.08em] text-black"
+                                >
+                                  {category.name}
+                                </Link>
+                              </div>
+
+                              <AnimatePresence initial={false}>
+                                {isOpen && category.children && (
+                                  <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.25 }}
+                                    className="overflow-hidden"
+                                  >
+                                    <div className="pb-4 pl-10 pr-4">
+                                      <div className="space-y-5">
+                                        {category.children.map((sub) => {
+                                          const subKey = `${category.name}-${sub.name}`;
+                                          const isSubOpen =
+                                            activeSubNav === subKey;
+
+                                          return (
+                                            <div key={sub.id}>
+                                              <div className="flex items-center">
+                                                {(sub.children?.length ?? 0) >
+                                                  0 && (
+                                                  <button
+                                                    onClick={() =>
+                                                      setActiveSubNav(
+                                                        isSubOpen ? "" : subKey,
+                                                      )
+                                                    }
+                                                    className="mr-2 flex h-8 w-6 shrink-0 items-center justify-center"
+                                                  >
+                                                    <span className="relative h-3 w-3">
+                                                      <span className="absolute left-0 top-1/2 h-[1.5px] w-3 -translate-y-1/2 bg-black" />
+                                                      {!isSubOpen && (
+                                                        <span className="absolute left-1/2 top-0 h-3 w-[1.5px] -translate-x-1/2 bg-black" />
+                                                      )}
+                                                    </span>
+                                                  </button>
+                                                )}
+
+                                                <Link
+                                                  href={getCategoryUrl(
+                                                    sub.slug,
+                                                  )}
+                                                  onClick={() =>
+                                                    setMobileMenuOpen(false)
+                                                  }
+                                                  className="text-[14px] font-medium uppercase tracking-[0.06em] text-black"
+                                                >
+                                                  {sub.name}
+                                                </Link>
+                                              </div>
+
+                                              <AnimatePresence initial={false}>
+                                                {isSubOpen &&
+                                                  sub.children &&
+                                                  sub.children.length > 0 && (
+                                                    <motion.div
+                                                      initial={{
+                                                        height: 0,
+                                                        opacity: 0,
+                                                      }}
+                                                      animate={{
+                                                        height: "auto",
+                                                        opacity: 1,
+                                                      }}
+                                                      exit={{
+                                                        height: 0,
+                                                        opacity: 0,
+                                                      }}
+                                                      transition={{
+                                                        duration: 0.2,
+                                                      }}
+                                                      className="overflow-hidden"
+                                                    >
+                                                      <div className="mt-3 space-y-3 pl-8">
+                                                        {sub.children.map(
+                                                          (grand) => (
+                                                            <Link
+                                                              key={grand.id}
+                                                              href={getCategoryUrl(
+                                                                grand.slug,
+                                                              )}
+                                                              onClick={() =>
+                                                                setMobileMenuOpen(
+                                                                  false,
+                                                                )
+                                                              }
+                                                              className="block text-[12px] uppercase tracking-[0.05em] text-gray-500"
+                                                            >
+                                                              {grand.name}
+                                                            </Link>
+                                                          ),
+                                                        )}
+                                                      </div>
+                                                    </motion.div>
+                                                  )}
+                                              </AnimatePresence>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+
+                                      <Link
+                                        href={getCategoryUrl(category.slug)}
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className="mt-5 inline-flex items-center text-xs font-semibold uppercase tracking-wider text-black"
+                                      >
+                                        View All →
+                                      </Link>
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          );
+                        })
+                      )}
                     </div>
                   </div>
-                )}
-
-                {!user && (
-                  <button
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      openModal("login");
-                    }}
-                    className="w-full mb-6 py-3 bg-black text-white rounded-lg font-semibold"
-                  >
-                    Sign In / Sign Up
-                  </button>
-                )}
-
-                <div className="space-y-1">
-                  {loading ? (
-                    <>
-                      {[120, 90, 110, 80, 100].map((w, i) => (
-                        <div
-                          key={i}
-                          className="border-b border-gray-100 px-1 py-5"
-                        >
-                          <div
-                            className="h-4 rounded-full bg-gray-200 animate-pulse"
-                            style={{ width: `${w}px` }}
-                          />
-                        </div>
-                      ))}
-                    </>
-                  ) : (
-                    categories.map((category) => {
-                      const isOpen = activeNav === category.name;
-
-                      return (
-                        <div
-                          key={category.id}
-                          className="border-b border-gray-200"
-                        >
-                          <div className="flex items-center">
-                            {(category.children?.length ?? 0) > 0 && (
-                              <button
-                                onClick={() =>
-                                  setActiveNav(isOpen ? "" : category.name)
-                                }
-                                className="flex h-12 w-10 shrink-0 items-center justify-center"
-                              >
-                                <span className="relative h-4 w-4">
-                                  <span className="absolute left-0 top-1/2 h-[1.5px] w-4 -translate-y-1/2 bg-black" />
-                                  {!isOpen && (
-                                    <span className="absolute left-1/2 top-0 h-4 w-[1.5px] -translate-x-1/2 bg-black" />
-                                  )}
-                                </span>
-                              </button>
-                            )}
-
-                            <Link
-                              href={getCategoryUrl(category.slug)}
-                              onClick={() => setMobileMenuOpen(false)}
-                              className="flex-1 py-2 text-[15px] font-medium uppercase tracking-[0.08em] text-black"
-                            >
-                              {category.name}
-                            </Link>
-                          </div>
-
-                          <AnimatePresence initial={false}>
-                            {isOpen && category.children && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: "auto", opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.25 }}
-                                className="overflow-hidden"
-                              >
-                                <div className="pb-4 pl-10 pr-4">
-                                  <div className="space-y-5">
-                                    {category.children.map((sub) => {
-                                      const subKey = `${category.name}-${sub.name}`;
-                                      const isSubOpen = activeSubNav === subKey;
-
-                                      return (
-                                        <div key={sub.id}>
-                                          <div className="flex items-center">
-                                            {(sub.children?.length ?? 0) >
-                                              0 && (
-                                              <button
-                                                onClick={() =>
-                                                  setActiveSubNav(
-                                                    isSubOpen ? "" : subKey,
-                                                  )
-                                                }
-                                                className="mr-2 flex h-8 w-6 shrink-0 items-center justify-center"
-                                              >
-                                                <span className="relative h-3 w-3">
-                                                  <span className="absolute left-0 top-1/2 h-[1.5px] w-3 -translate-y-1/2 bg-black" />
-                                                  {!isSubOpen && (
-                                                    <span className="absolute left-1/2 top-0 h-3 w-[1.5px] -translate-x-1/2 bg-black" />
-                                                  )}
-                                                </span>
-                                              </button>
-                                            )}
-
-                                            <Link
-                                              href={getCategoryUrl(sub.slug)}
-                                              onClick={() =>
-                                                setMobileMenuOpen(false)
-                                              }
-                                              className="text-[14px] font-medium uppercase tracking-[0.06em] text-black"
-                                            >
-                                              {sub.name}
-                                            </Link>
-                                          </div>
-
-                                          <AnimatePresence initial={false}>
-                                            {isSubOpen &&
-                                              sub.children &&
-                                              sub.children.length > 0 && (
-                                                <motion.div
-                                                  initial={{
-                                                    height: 0,
-                                                    opacity: 0,
-                                                  }}
-                                                  animate={{
-                                                    height: "auto",
-                                                    opacity: 1,
-                                                  }}
-                                                  exit={{
-                                                    height: 0,
-                                                    opacity: 0,
-                                                  }}
-                                                  transition={{
-                                                    duration: 0.2,
-                                                  }}
-                                                  className="overflow-hidden"
-                                                >
-                                                  <div className="mt-3 space-y-3 pl-8">
-                                                    {sub.children.map(
-                                                      (grand) => (
-                                                        <Link
-                                                          key={grand.id}
-                                                          href={getCategoryUrl(
-                                                            grand.slug,
-                                                          )}
-                                                          onClick={() =>
-                                                            setMobileMenuOpen(
-                                                              false,
-                                                            )
-                                                          }
-                                                          className="block text-[12px] uppercase tracking-[0.05em] text-gray-500"
-                                                        >
-                                                          {grand.name}
-                                                        </Link>
-                                                      ),
-                                                    )}
-                                                  </div>
-                                                </motion.div>
-                                              )}
-                                          </AnimatePresence>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-
-                                  <Link
-                                    href={getCategoryUrl(category.slug)}
-                                    onClick={() => setMobileMenuOpen(false)}
-                                    className="mt-5 inline-flex items-center text-xs font-semibold uppercase tracking-wider text-black"
-                                  >
-                                    View All →
-                                  </Link>
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            </motion.div>
+                </motion.div>
               </div>
             )}
           </AnimatePresence>,
