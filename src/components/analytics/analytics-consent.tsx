@@ -16,13 +16,21 @@ const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
 
 export default function AnalyticsConsent() {
-  const [consent, setConsent] = useState<"unknown" | "granted" | "denied">("unknown");
+  const [consent, setConsent] = useState<"unknown" | "granted" | "denied">(
+    "unknown",
+  );
   const [gaReady, setGaReady] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
     const saved = window.localStorage.getItem(analyticsConsentKey);
-    setConsent(saved === "granted" ? "granted" : saved === "denied" ? "denied" : "unknown");
+    setConsent(
+      saved === "granted"
+        ? "granted"
+        : saved === "denied"
+          ? "denied"
+          : "unknown",
+    );
   }, []);
 
   useEffect(() => {
@@ -52,7 +60,9 @@ export default function AnalyticsConsent() {
 
     if (CLARITY_ID && !window.clarity) {
       window.clarity = (...args: unknown[]) => {
-        const clarity = window.clarity as ((...values: unknown[]) => void) & { q?: unknown[][] };
+        const clarity = window.clarity as ((...values: unknown[]) => void) & {
+          q?: unknown[][];
+        };
         clarity.q = clarity.q || [];
         clarity.q.push(args);
       };
@@ -74,7 +84,8 @@ export default function AnalyticsConsent() {
       page_path: pathname,
     });
     if (pathname === "/cart") window.gtag("event", "view_cart");
-    if (pathname.startsWith("/checkout")) window.gtag("event", "begin_checkout");
+    if (pathname.startsWith("/checkout"))
+      window.gtag("event", "begin_checkout");
   }, [consent, gaReady, pathname]);
 
   const choose = (value: "granted" | "denied") => {
@@ -93,11 +104,27 @@ export default function AnalyticsConsent() {
   return consent === "unknown" && (GA_ID || CLARITY_ID) ? (
     <div className="fixed bottom-3 left-3 right-3 z-[100] mx-auto flex max-w-3xl flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-4 shadow-xl sm:flex-row sm:items-center sm:justify-between">
       <p className="text-sm text-neutral-700">
-        We use Google Analytics and Microsoft Clarity to understand site usage and improve your shopping experience. You can accept or decline analytics.
+        We use small cookies to understand how people browse our collection, so
+        we can make the site easier to use. Your details are never sold.{" "}
+        <a href="/privacy-policy" className="underline">
+          Learn more
+        </a>
       </p>
       <div className="flex shrink-0 gap-2">
-        <button type="button" onClick={() => choose("denied")} className="rounded-lg border border-neutral-300 px-3 py-2 text-sm">Decline</button>
-        <button type="button" onClick={() => choose("granted")} className="rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white">Accept</button>
+        <button
+          type="button"
+          onClick={() => choose("denied")}
+          className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+        >
+          No, thanks
+        </button>
+        <button
+          type="button"
+          onClick={() => choose("granted")}
+          className="rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white"
+        >
+          Sounds good
+        </button>
       </div>
     </div>
   ) : null;
