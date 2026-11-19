@@ -1,6 +1,7 @@
 import { cache } from "react";
 import type { Product } from "@/lib/api/product.api";
 import type { HomeSection } from "@/lib/api/home-section.api";
+import type { Banner } from "@/lib/api/banner.api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -88,3 +89,18 @@ export const getActiveHomeSections = cache(
     }
   },
 );
+
+export const getActiveBanners = cache(async (): Promise<Banner[] | undefined> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/banners/active`, {
+      next: { revalidate: 300 },
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok) return undefined;
+    const result = await response.json();
+    return Array.isArray(result.data) ? (result.data as Banner[]) : undefined;
+  } catch (error) {
+    console.error("Error fetching banners:", error);
+    return undefined;
+  }
+});

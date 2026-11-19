@@ -21,9 +21,12 @@ import bannerService, { Banner } from "@/lib/api/banner.api";
 
 export default function LandingPage({
   initialSections,
+  initialBanners,
 }: {
   /** Server-fetched sections so the first HTML already contains the content. */
   initialSections?: HomeSection[];
+  /** Server-fetched banners so the hero is in the first HTML. */
+  initialBanners?: Banner[];
 }) {
   const {
     data: sections = [],
@@ -42,6 +45,7 @@ export default function LandingPage({
   } = useQuery<Banner[]>({
     queryKey: ["active-banners"],
     queryFn: () => bannerService.getActiveBanners(),
+    initialData: initialBanners,
   });
 
   const getDisplayTitle = (section: HomeSection) => {

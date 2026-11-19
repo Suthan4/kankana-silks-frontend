@@ -192,6 +192,9 @@ export default function RootLayout({
   return (
     <html lang="en-IN">
       <head>
+        {/* Open the font connections early; Typekit CSS is render-blocking. */}
+        <link rel="preconnect" href="https://use.typekit.net" crossOrigin="" />
+        <link rel="preconnect" href="https://p.typekit.net" crossOrigin="" />
         <link rel="stylesheet" href="https://use.typekit.net/gmp5qfk.css" />
         <script
           type="application/ld+json"
