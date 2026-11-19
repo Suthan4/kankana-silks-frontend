@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { getImageProps } from "next/image";
+import { preload } from "react-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { type Banner, MediaType } from "@/lib/api/banner.api";
@@ -47,12 +48,8 @@ function BannerPicture({
   const { props: desktop } = getImageProps({
     ...common,
     src: banner.url,
-    preload: isFirst,
-    ...(isFirst
-     
-     
-      ? {}
-      : { loading: "eager" as const, fetchPriority: "low" as const }),
+    loading: "eager" as const,
+    fetchPriority: isFirst ? ("high" as const) : ("low" as const),
   });
   const { props: mobile } = getImageProps({
     ...common,
@@ -60,12 +57,36 @@ function BannerPicture({
   });
   const { srcSet: desktopSrcSet, ...imgProps } = desktop;
 
+  // The first banner is the LCP element. Tell the browser about it in <head>
+  // right away (one hint per screen size) so it starts downloading before the
+  // page's JavaScript runs. (<picture> images are not preloaded by default.)
+  if (isFirst) {
+    preload(mobile.src, {
+      as: "image",
+      imageSrcSet: mobile.srcSet,
+      imageSizes: "100vw",
+      media: "(max-width: 767px)",
+      fetchPriority: "high",
+    });
+    preload(desktop.src, {
+      as: "image",
+      imageSrcSet: desktopSrcSet,
+      imageSizes: "100vw",
+      media: "(min-width: 768px)",
+      fetchPriority: "high",
+    });
+  }
+
   return (
     <picture
       className="absolute inset-0 h-full w-full"
       style={{ display: isActive ? "block" : "none" }}
       aria-hidden={!isActive}
-    > ource media="(max-width: 7 ource media="(min-widt * eslint-disa <img
+    >
+      <source media="(max-width: 767px)" srcSet={mobile.srcSet} sizes="100vw" />
+      <source media="(min-width: 768px)" srcSet={desktopSrcSet} sizes="100vw" />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
         {...imgProps}
         ref={(node) => {
           // The image may finish loading before React hydrates.
@@ -526,4 +547,3 @@ export default function HeroSection({
     </section>
   );
 }
-
