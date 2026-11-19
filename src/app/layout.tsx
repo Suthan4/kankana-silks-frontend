@@ -195,7 +195,17 @@ export default function RootLayout({
         {/* Open the font connections early; Typekit CSS is render-blocking. */}
         <link rel="preconnect" href="https://use.typekit.net" crossOrigin="" />
         <link rel="preconnect" href="https://p.typekit.net" crossOrigin="" />
-        <link rel="stylesheet" href="https://use.typekit.net/gmp5qfk.css" />
+        {/* Added by script so it never blocks first paint (text shows in the
+            fallback font, then swaps to Futura PT when it arrives). */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){var l=document.createElement('link');l.rel='stylesheet';l.href='https://use.typekit.net/gmp5qfk.css';document.head.appendChild(l);})();",
+          }}
+        />
+        <noscript>
+          <link rel="stylesheet" href="https://use.typekit.net/gmp5qfk.css" />
+        </noscript>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

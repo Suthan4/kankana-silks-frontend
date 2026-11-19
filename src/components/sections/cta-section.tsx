@@ -188,7 +188,7 @@ export default function CTASection() {
                 sm:text-sm
               "
             >
-              Learn More
+              Our Story
             </motion.button>
           </Link>
         </motion.div>

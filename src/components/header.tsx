@@ -833,6 +833,11 @@ function Header() {
                           if (item.requiresAuth) authGuard(item.onClick);
                           else item.onClick?.();
                         }}
+                        aria-label={
+                          "badgeCount" in item && item.badgeCount! > 0
+                            ? `${item.name}, ${item.badgeCount} items`
+                            : item.name
+                        }
                         className={`relative flex items-center justify-center w-10 h-10 transition-colors duration-300 ${
                           isHeaderWhite
                             ? "text-gray-700 hover:text-black"
@@ -884,6 +889,7 @@ function Header() {
                       "_blank",
                     )
                   }
+                  aria-label="Chat with us on WhatsApp"
                   className={`flex items-center justify-center w-10 h-10 transition-colors duration-300 ${
                     isHeaderWhite
                       ? "text-gray-700 hover:text-black"
@@ -910,6 +916,7 @@ function Header() {
                     if (!user) openModal("login");
                     else setUserMenuOpen((p) => !p);
                   }}
+                  aria-label={user ? "Open account menu" : "Sign in"}
                   className={`flex items-center justify-center gap-1 h-10 px-1 transition-colors duration-300 ${
                     isHeaderWhite
                       ? "text-gray-700 hover:text-black"
@@ -1509,6 +1516,8 @@ function Header() {
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileMenuOpen}
             className="p-2"
           >
             {mobileMenuOpen ? (
@@ -1579,7 +1588,7 @@ function Header() {
               className="flex flex-1 items-center gap-2 py-2.5 px-3 text-left active:bg-gray-100"
             >
               <Search className="w-4 h-4 flex-shrink-0 text-gray-400" />
-              <span className="truncate text-sm text-gray-400">
+              <span className="truncate text-sm text-gray-600">
                 Search sarees, silks…
               </span>
             </button>

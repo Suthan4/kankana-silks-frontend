@@ -21,7 +21,7 @@ function CityDiscoverySection() {
     >
       <div className="mx-auto max-w-6xl">
         <div className="max-w-2xl">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#846c5a]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#6b5646]">
             Kankana Silks · Mysore, India
           </p>
           <h2
@@ -44,7 +44,7 @@ function CityDiscoverySection() {
               href={city.href}
               className="group flex min-h-36 flex-col justify-between rounded-2xl border border-[#ded4c9] bg-white p-6 transition duration-200 hover:-translate-y-0.5 hover:border-[#a58b77] hover:shadow-[0_12px_32px_rgba(55,39,27,0.08)]"
             >
-              <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8a705d]">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6b5646]">
                 {index === 0 ? "Our home city" : "Priority online destination"}
               </span>
               <span>
@@ -81,7 +81,7 @@ function CityDiscoverySection() {
           </div>
 
           <div className="mt-5">
-            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8a705d]">
+            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6b5646]">
               Major cities
             </p>
             <div className="flex flex-wrap gap-2">
@@ -105,7 +105,7 @@ function CityDiscoverySection() {
           </div>
 
           <div className="mt-6">
-            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8a705d]">
+            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6b5646]">
               More cities
             </p>
             <div className="flex flex-wrap gap-2">
