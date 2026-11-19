@@ -6,38 +6,19 @@ import type { Banner } from "@/lib/api/banner.api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
-/**
- * Safety net only. Real updates arrive instantly through on-demand
- * revalidation (POST /api/revalidate -> revalidateTag). If the backend
- * signal is ever missed, data still refreshes within this window.
- */
-const REVALIDATE_SECONDS = 60;
-
 /** Default first page of a category; must match the client's default query. */
 export const CATEGORY_PAGE_LIMIT = 12;
 
 /**
- * Tag names. The backend must send these in its revalidate call.
- *  - "products"           any product create/update/delete/stock change
- *  - "product:<slug>"     one product page
- *  - "categories"         any category create/update/delete/reorder
- *  - "category:<slug>"    one category page
- *  - "home-sections"      any home section change
- *  - "banners"            any banner change
+ * No Next.js data cache: every request fetches fresh data from the backend,
+ * so admin changes (create / update / delete) show up on the next page load.
+ * React `cache` below only dedupes calls inside ONE request
+ * (generateMetadata + page share one fetch); it never persists across requests.
  */
-export const CACHE_TAGS = {
-  products: "products",
-  product: (slug: string) => `product:${slug}`,
-  categories: "categories",
-  category: (slug: string) => `category:${slug}`,
-  homeSections: "home-sections",
-  banners: "banners",
-} as const;
-
-async function apiGet<T>(path: string, tags: string[]): Promise<T | null> {
+async function apiGet<T>(path: string): Promise<T | null> {
   try {
     const response = await fetch(`${API_BASE_URL}${path}`, {
-      next: { revalidate: REVALIDATE_SECONDS, tags },
+      cache: "no-store",
       headers: { "Content-Type": "application/json" },
     });
     if (!response.ok) return null;
@@ -48,16 +29,10 @@ async function apiGet<T>(path: string, tags: string[]): Promise<T | null> {
   }
 }
 
-/**
- * React `cache` dedupes within one request (generateMetadata + page share ONE
- * call). Next `revalidate` + `tags` handle caching across requests.
- */
-
 export const getProductBySlug = cache(
   async (slug: string): Promise<Product | null> => {
     const result = await apiGet<{ data?: Product }>(
       `/products/slug/${encodeURIComponent(slug)}`,
-      [CACHE_TAGS.products, CACHE_TAGS.product(slug)],
     );
     return result?.data ?? null;
   },
@@ -86,11 +61,7 @@ export const getCategoryProducts = cache(
       sortBy: "price",
       sortOrder: "desc",
     });
-    return apiGet<CategoryProductsPayload>(`/products?${query}`, [
-      CACHE_TAGS.products,
-      CACHE_TAGS.categories,
-      CACHE_TAGS.category(categorySlug),
-    ]);
+    return apiGet<CategoryProductsPayload>(`/products?${query}`);
   },
 );
 
@@ -98,7 +69,6 @@ export const getCategoryBySlug = cache(
   async (slug: string): Promise<Category | null> => {
     const result = await apiGet<{ data?: Category }>(
       `/categories/slug/${encodeURIComponent(slug)}`,
-      [CACHE_TAGS.categories, CACHE_TAGS.category(slug)],
     );
     return result?.data ?? null;
   },
@@ -106,13 +76,7 @@ export const getCategoryBySlug = cache(
 
 export const getActiveHomeSections = cache(
   async (): Promise<HomeSection[] | undefined> => {
-    // "products" and "categories" tags too: sections embed product and
-    // category data (price, sold-out state, names, images).
-    const result = await apiGet<{ data?: unknown }>("/home-sections/active", [
-      CACHE_TAGS.homeSections,
-      CACHE_TAGS.products,
-      CACHE_TAGS.categories,
-    ]);
+    const result = await apiGet<{ data?: unknown }>("/home-sections/active");
     return Array.isArray(result?.data)
       ? (result.data as HomeSection[])
       : undefined;
@@ -121,9 +85,7 @@ export const getActiveHomeSections = cache(
 
 export const getActiveBanners = cache(
   async (): Promise<Banner[] | undefined> => {
-    const result = await apiGet<{ data?: unknown }>("/banners/active", [
-      CACHE_TAGS.banners,
-    ]);
+    const result = await apiGet<{ data?: unknown }>("/banners/active");
     return Array.isArray(result?.data) ? (result.data as Banner[]) : undefined;
   },
 );
