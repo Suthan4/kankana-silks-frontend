@@ -1,10 +1,18 @@
 import LandingPage from "@/components/landingPage";
+import { getActiveHomeSections } from "@/lib/seo/server-api";
 import Link from "next/link";
-import { cityHref, citySeoEntries, legacyCityLinks, primaryCityLinks } from "@/config/seo/cities";
+import {
+  cityHref,
+  citySeoEntries,
+  legacyCityLinks,
+  primaryCityLinks,
+} from "@/config/seo/cities";
 
 function CityDiscoverySection() {
   const metroCities = citySeoEntries.filter((city) => city.market === "metro");
-  const regionalCities = citySeoEntries.filter((city) => city.market === "regional");
+  const regionalCities = citySeoEntries.filter(
+    (city) => city.market === "regional",
+  );
 
   return (
     <section
@@ -16,7 +24,10 @@ function CityDiscoverySection() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#846c5a]">
             Kankana Silks · Mysore, India
           </p>
-          <h2 id="city-discovery-title" className="mt-3 text-3xl font-semibold tracking-tight text-[#29231f] sm:text-4xl">
+          <h2
+            id="city-discovery-title"
+            className="mt-3 text-3xl font-semibold tracking-tight text-[#29231f] sm:text-4xl"
+          >
             A tradition of sarees, wherever you are.
           </h2>
           <p className="mt-4 text-sm leading-7 text-[#6e6258] sm:text-base">
@@ -37,8 +48,12 @@ function CityDiscoverySection() {
                 {index === 0 ? "Our home city" : "Priority online destination"}
               </span>
               <span>
-                <span className="block text-2xl font-semibold tracking-tight text-[#29231f]">{city.city}</span>
-                <span className="mt-1 block text-sm text-[#766a60]">{city.note}</span>
+                <span className="block text-2xl font-semibold tracking-tight text-[#29231f]">
+                  {city.city}
+                </span>
+                <span className="mt-1 block text-sm text-[#766a60]">
+                  {city.note}
+                </span>
               </span>
               <span className="mt-4 text-xs font-semibold text-[#47382e] group-hover:underline group-hover:underline-offset-4">
                 Explore city collection <span aria-hidden="true">→</span>
@@ -50,19 +65,39 @@ function CityDiscoverySection() {
         <div className="mt-10 border-t border-[#e3dacf] pt-8">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h3 className="text-lg font-semibold text-[#29231f]">Explore more destinations</h3>
-              <p className="mt-1 text-sm text-[#766a60]">City collections across major Indian markets</p>
+              <h3 className="text-lg font-semibold text-[#29231f]">
+                Explore more destinations
+              </h3>
+              <p className="mt-1 text-sm text-[#766a60]">
+                City collections across major Indian markets
+              </p>
             </div>
-            <Link href="/shop" className="text-sm font-semibold text-[#47382e] underline underline-offset-4">
+            <Link
+              href="/shop"
+              className="text-sm font-semibold text-[#47382e] underline underline-offset-4"
+            >
               Browse all sarees
             </Link>
           </div>
 
           <div className="mt-5">
-            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8a705d]">Major cities</p>
+            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8a705d]">
+              Major cities
+            </p>
             <div className="flex flex-wrap gap-2">
-              {[...legacyCityLinks, ...metroCities.map((city) => ({ city: city.city, href: cityHref(city.slug), note: city.focus }))].map((city) => (
-                <Link key={city.href} href={city.href} className="rounded-full border border-[#ded4c9] bg-white px-4 py-2 text-sm text-[#51453b] transition hover:border-[#8b7461] hover:bg-[#eee7de]">
+              {[
+                ...legacyCityLinks,
+                ...metroCities.map((city) => ({
+                  city: city.city,
+                  href: cityHref(city.slug),
+                  note: city.focus,
+                })),
+              ].map((city) => (
+                <Link
+                  key={city.href}
+                  href={city.href}
+                  className="rounded-full border border-[#ded4c9] bg-white px-4 py-2 text-sm text-[#51453b] transition hover:border-[#8b7461] hover:bg-[#eee7de]"
+                >
                   {city.city}
                 </Link>
               ))}
@@ -70,10 +105,16 @@ function CityDiscoverySection() {
           </div>
 
           <div className="mt-6">
-            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8a705d]">More cities</p>
+            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8a705d]">
+              More cities
+            </p>
             <div className="flex flex-wrap gap-2">
               {regionalCities.map((city) => (
-                <Link key={city.slug} href={cityHref(city.slug)} className="rounded-full border border-transparent bg-[#eee8e0] px-3 py-2 text-sm text-[#5f5349] transition hover:border-[#d5c8ba] hover:bg-white">
+                <Link
+                  key={city.slug}
+                  href={cityHref(city.slug)}
+                  className="rounded-full border border-transparent bg-[#eee8e0] px-3 py-2 text-sm text-[#5f5349] transition hover:border-[#d5c8ba] hover:bg-white"
+                >
                   {city.city}
                 </Link>
               ))}
@@ -85,10 +126,12 @@ function CityDiscoverySection() {
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  const initialSections = await getActiveHomeSections();
+
   return (
     <>
-      <LandingPage />
+      <LandingPage initialSections={initialSections} />
       <CityDiscoverySection />
     </>
   );

@@ -1,32 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ProductDetailsClient from "@/components/sections/productDetialClient";
+import { getProductBySlug } from "@/lib/seo/server-api";
+import { JsonLd, breadcrumbJsonLd, productJsonLd } from "@/lib/seo/json-ld";
 
 type Props = {
   params: Promise<{ category: string; slug: string }>;
 };
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-
-async function getProductBySlug(slug: string) {
-  try {
-    const response = await fetch(
-      `${API_BASE_URL}/products/slug/${encodeURIComponent(slug)}`,
-      {
-        cache: "no-store",
-        headers: { "Content-Type": "application/json" },
-      },
-    );
-
-    if (!response.ok) return null;
-
-    const result = await response.json();
-    return result.data ?? null;
-  } catch (error) {
-    console.error("Error fetching product:", error);
-    return null;
-  }
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, category } = await params;
@@ -100,5 +80,24 @@ export default async function ProductDetailsPage({ params }: Props) {
     notFound();
   }
 
-  return <ProductDetailsClient initialProduct={product} />;
+  const canonicalPath = `/${encodeURIComponent(category)}/${encodeURIComponent(slug)}`;
+
+  return (
+    <>
+      <JsonLd
+        data={[
+          productJsonLd(product, canonicalPath),
+          breadcrumbJsonLd([
+            { name: "Home", path: "/" },
+            {
+              name: product.category?.name ?? "Shop",
+              path: `/shop/${encodeURIComponent(category)}`,
+            },
+            { name: product.name, path: canonicalPath },
+          ]),
+        ]}
+      />
+      <ProductDetailsClient initialProduct={product} />
+    </>
+  );
 }
