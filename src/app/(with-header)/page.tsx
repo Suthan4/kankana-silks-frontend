@@ -1,5 +1,5 @@
 import LandingPage from "@/components/landingPage";
-import { getActiveHomeSections } from "@/lib/seo/server-api";
+import { getActiveBanners, getActiveHomeSections } from "@/lib/seo/server-api";
 import Link from "next/link";
 import {
   cityHref,
@@ -127,11 +127,19 @@ function CityDiscoverySection() {
 }
 
 export default async function Home() {
-  const initialSections = await getActiveHomeSections();
+  // Fetched together on the server so the hero and sections are in the first
+  // HTML (fast LCP, no layout jump when data arrives).
+  const [initialSections, initialBanners] = await Promise.all([
+    getActiveHomeSections(),
+    getActiveBanners(),
+  ]);
 
   return (
     <>
-      <LandingPage initialSections={initialSections} />
+      <LandingPage
+        initialSections={initialSections}
+        initialBanners={initialBanners}
+      />
       <CityDiscoverySection />
     </>
   );

@@ -280,6 +280,8 @@ export default function AuthModal() {
             <div className="flex justify-center mb-2">
               <motion.img
                 src="/image-removebg-preview.png"
+                width={316}
+                height={152}
                 alt="Kankana Silks"
                 layoutId={isMobile ? "mobile-logo" : "desktop-logo"}
                 transition={{

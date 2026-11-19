@@ -38,6 +38,8 @@ export default function SplashScreen() {
         {/* 🔥 MAIN LOGO (NO animate here) */}
         <motion.img
           src="/image-removebg-preview.png"
+          width={316}
+          height={152}
           layoutId={isMobile ? "mobile-logo" : "desktop-logo"}
           transition={{
             type: "spring",

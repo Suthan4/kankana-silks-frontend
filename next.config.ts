@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
         // LocalStack / local S3
          { protocol: "http", hostname: "localhost", port: "4566", pathname: "/**", }, ],
     formats: ["image/avif", "image/webp"],
+    // Optimised images are cached for 30 days (banner URLs are content-hashed).
+    minimumCacheTTL: 60 * 60 * 24 * 30,
   },
 };
 

@@ -3,7 +3,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getImageProps } from "next/image";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { type Banner, MediaType } from "@/lib/api/banner.api";
 
@@ -17,42 +18,67 @@ interface IHeroSection {
   error: Error | null;
 }
 
-// Preload and decode an image before displaying its slide.
-const preloadImage = (src: string): Promise<void> => {
-  return new Promise((resolve) => {
-    const image = new window.Image();
-    let completed = false;
+/**
+ * One responsive, optimised banner image.
+ * - Served through the Next.js image optimiser (AVIF/WebP, right-sized per
+ *   screen) instead of the original 3840x2160 JPEG.
+ * - Mobile gets its own source when the banner has a mobileUrl.
+ * - Only the first slide is high priority; later slides load at low priority.
+ */
+function BannerPicture({
+  banner,
+  isFirst,
+  isActive,
+  onFirstSettled,
+}: {
+  banner: Banner;
+  isFirst: boolean;
+  isActive: boolean;
+  onFirstSettled: () => void;
+}) {
+  const common = {
+    alt: banner.title || "Promotional banner",
+    fill: true,
+    sizes: "100vw",
+    draggable: false,
+  } as const;
 
-    const finish = () => {
-      if (completed) return;
-      completed = true;
-      resolve();
-    };
-
-    image.onload = async () => {
-      try {
-        if (typeof image.decode === "function") {
-          await image.decode();
-        }
-      } catch {
-        // Continue even if Safari's decode() rejects.
-      }
-
-      finish();
-    };
-
-    image.onerror = finish;
-    image.src = src;
-
-    if (image.complete) {
-      if (image.naturalWidth > 0) {
-        image.onload?.(new Event("load"));
-      } else {
-        finish();
-      }
-    }
+  const { props: desktop } = getImageProps({
+    ...common,
+    src: banner.url,
+    preload: isFirst,
+    ...(isFirst
+      ? {}
+      : { loading: "eager" as const, fetchPriority: "low" as const }),
   });
-};
+  const { props: mobile } = getImageProps({
+    ...common,
+    src: banner.mobileUrl || banner.url,
+  });
+  const { srcSet: desktopSrcSet, ...imgProps } = desktop;
+
+  return (
+    <picture
+      className="absolute inset-0 h-full w-full"
+      style={{ display: isActive ? "block" : "none" }}
+      aria-hidden={!isActive}
+    >
+      <source media="(max-width: 767px)" srcSet={mobile.srcSet} sizes="100vw" />
+      <source media="(min-width: 768px)" srcSet={desktopSrcSet} sizes="100vw" />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        {...imgProps}
+        ref={(node) => {
+          // The image may finish loading before React hydrates.
+          if (isFirst && node?.complete) onFirstSettled();
+        }}
+        onLoad={isFirst ? onFirstSettled : undefined}
+        onError={isFirst ? onFirstSettled : undefined}
+        className="absolute inset-0 block h-full w-full object-cover object-[50%_25%] md:object-center"
+      />
+    </picture>
+  );
+}
 
 export default function HeroSection({
   banners,
@@ -61,7 +87,9 @@ export default function HeroSection({
 }: IHeroSection) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
-  const [imagesReady, setImagesReady] = useState(false);
+  // The first banner decides when autoplay may start and when the next
+  // banner is allowed to download (never all banners at once).
+  const [firstLoaded, setFirstLoaded] = useState(false);
 
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -69,41 +97,18 @@ export default function HeroSection({
 
   const totalSlides = banners.length;
 
-  // Resolve the correct image URL for the current viewport.
-  const imageUrls = useMemo(() => {
-    const isMobile =
-      typeof window !== "undefined" &&
-      window.matchMedia("(max-width: 767px)").matches;
+  const handleFirstSettled = useCallback(() => setFirstLoaded(true), []);
 
-    return banners
-      .filter((banner) => banner.type === MediaType.IMAGE)
-      .map((banner) =>
-        isMobile ? banner.mobileUrl || banner.url : banner.url,
-      );
-  }, [banners]);
+  // A video first slide is "ready" immediately; a slow first image must not
+  // block autoplay forever, so give up waiting after 4 seconds.
+  const firstIsImage = banners[0]?.type === MediaType.IMAGE;
+  const ready = firstLoaded || !firstIsImage;
 
-  const imagePreloadKey = imageUrls.join("|");
-
-  // Preload all banner images before starting autoplay.
   useEffect(() => {
-    let cancelled = false;
-
-    const loadImages = async () => {
-      setImagesReady(false);
-
-      await Promise.all(imageUrls.map(preloadImage));
-
-      if (!cancelled) {
-        setImagesReady(true);
-      }
-    };
-
-    loadImages();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [imagePreloadKey]);
+    if (ready || banners.length === 0) return;
+    const timer = setTimeout(() => setFirstLoaded(true), 4000);
+    return () => clearTimeout(timer);
+  }, [ready, banners.length]);
 
   // Keep slide index within the available banner range.
   useEffect(() => {
@@ -138,7 +143,7 @@ export default function HeroSection({
   useEffect(() => {
     clearAutoplay();
 
-    if (!autoPlay || !imagesReady || totalSlides <= 1) {
+    if (!autoPlay || !ready || totalSlides <= 1) {
       return;
     }
 
@@ -169,7 +174,7 @@ export default function HeroSection({
 
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [autoPlay, imagesReady, totalSlides, clearAutoplay]);
+  }, [autoPlay, ready, totalSlides, clearAutoplay]);
 
   // Manual navigation pauses autoplay.
   const handleManualNavigation = useCallback((callback: () => void) => {
@@ -308,38 +313,23 @@ export default function HeroSection({
 
           // Image banners.
           if (banner.type === MediaType.IMAGE) {
-            return (
-              <picture
-                key={banner.id}
-                className="absolute inset-0 h-full w-full"
-                style={{
-                  display: isActive ? "block" : "none",
-                }}
-                aria-hidden={!isActive}
-              >
-                {/* Mobile image. */}
-                <source
-                  media="(max-width: 767px)"
-                  srcSet={banner.mobileUrl || banner.url}
-                />
+            // Mount the visible slide and, once the first banner is ready,
+            // only the NEXT one (never all banners at once).
+            const nextIndex = (currentSlide + 1) % totalSlides;
+            const shouldMount =
+              index === 0 ||
+              index === currentSlide ||
+              (ready && index === nextIndex);
+            if (!shouldMount) return null;
 
-                {/* Desktop image and fallback. */}
-                <img
-                  src={banner.url}
-                  alt={banner.title || "Promotional banner"}
-                  draggable={false}
-                  loading="eager"
-                  decoding="sync"
-                  fetchPriority={index === 0 ? "high" : "auto"}
-                  className="
-                    absolute inset-0
-                    block h-full w-full
-                    object-cover
-                    object-[50%_25%]
-                    md:object-center
-                  "
-                />
-              </picture>
+            return (
+              <BannerPicture
+                key={banner.id}
+                banner={banner}
+                isFirst={index === 0}
+                isActive={isActive}
+                onFirstSettled={handleFirstSettled}
+              />
             );
           }
 

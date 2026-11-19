@@ -233,6 +233,8 @@ export default function Footer() {
             <div>
               <img
                 src="/image-removebg-preview.png"
+                width={316}
+                height={152}
                 alt="Kankana Silks"
                 className="h-14 w-14 w-auto object-contain mb-4"
               />
