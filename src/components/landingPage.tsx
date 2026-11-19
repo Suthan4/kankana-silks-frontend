@@ -19,7 +19,12 @@ import AestheticFullImage from "./sections/aestheticFullImage";
 import BannerSection from "./sections/bannerSection";
 import bannerService, { Banner } from "@/lib/api/banner.api";
 
-export default function LandingPage() {
+export default function LandingPage({
+  initialSections,
+}: {
+  /** Server-fetched sections so the first HTML already contains the content. */
+  initialSections?: HomeSection[];
+}) {
   const {
     data: sections = [],
     isLoading: loading,
@@ -28,6 +33,7 @@ export default function LandingPage() {
   } = useQuery({
     queryKey: ["home-sections-active"],
     queryFn: () => homeSectionService.getActiveSections(),
+    initialData: initialSections,
   });
   const {
     data: banners_data = [],

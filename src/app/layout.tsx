@@ -136,18 +136,32 @@ const storeStructuredData = {
       url: SITE_URL,
       image: SITE_LOGO,
       description:
-        "A Mysore-based silk saree store offering Kanchipuram, Banarasi, Paithani and handloom sarees with online delivery across India.",
+        "A Mysuru (Mysore)-based silk saree store offering Kanchipuram, Banarasi, Paithani and handloom sarees with online delivery across India.",
       email: "support@kankanasilks.com",
+      // Only emitted once the real number is set in the environment.
+      ...(process.env.NEXT_PUBLIC_STORE_PHONE
+        ? { telephone: process.env.NEXT_PUBLIC_STORE_PHONE }
+        : {}),
       address: {
         "@type": "PostalAddress",
         streetAddress:
           "464, First Floor, Jayachamarajendra Road, 1st Stage, Vijayanagar",
-        addressLocality: "Mysore",
+        addressLocality: "Mysuru",
         addressRegion: "Karnataka",
+        postalCode: "570017",
         addressCountry: "IN",
       },
+      geo: {
+        "@type": "GeoCoordinates",
+        latitude: 12.3292222,
+        longitude: 76.6154278,
+      },
+      sameAs: [
+        "https://instagram.com/kankanasilks",
+        "https://youtube.com/@kankanasilks",
+      ],
       areaServed: [
-        { "@type": "City", name: "Mysore" },
+        { "@type": "City", name: "Mysuru" },
         { "@type": "City", name: "Bengaluru" },
         { "@type": "City", name: "Chennai" },
         { "@type": "City", name: "Hyderabad" },
@@ -182,7 +196,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(storeStructuredData).replace(/</g, "\\u003c"),
+            __html: JSON.stringify(storeStructuredData).replace(
+              /</g,
+              "\\u003c",
+            ),
           }}
         />
       </head>

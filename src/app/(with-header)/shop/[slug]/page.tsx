@@ -2,9 +2,11 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import axios from "axios";
 import CategoryProductsClient from "@/components/categoryProductsClient";
+import { getCategoryProducts } from "@/lib/seo/server-api";
+import { JsonLd, SITE_URL, breadcrumbJsonLd } from "@/lib/seo/json-ld";
 
 type Props = {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 };
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -61,7 +63,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const title =
-    category.metaTitle || `${category.name} - Premium Silk Sarees | Kankana Silks`;
+    category.metaTitle ||
+    `${category.name} - Premium Silk Sarees | Kankana Silks`;
   const description =
     category.metaDesc ||
     category.description ||
@@ -155,5 +158,47 @@ export default async function CategoryPage({ params }: Props) {
     notFound();
   }
 
-  return <CategoryProductsClient category={category} />;
+  // First page of products is rendered on the server so crawlers (and AI bots
+  // that do not run JavaScript) see real product links in the initial HTML.
+  const initialProducts = await getCategoryProducts(slug);
+  const listed = initialProducts?.data?.products ?? [];
+
+  return (
+    <>
+      <JsonLd
+        data={[
+          breadcrumbJsonLd([
+            { name: "Home", path: "/" },
+            { name: "Shop", path: "/shop" },
+            { name: category.name, path: `/shop/${slug}` },
+          ]),
+          {
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            name: category.name,
+            url: `${SITE_URL}/shop/${slug}`,
+            ...(listed.length
+              ? {
+                  mainEntity: {
+                    "@type": "ItemList",
+                    itemListElement: listed.map((product, index) => ({
+                      "@type": "ListItem",
+                      position: index + 1,
+                      url: `${SITE_URL}/${encodeURIComponent(
+                        product.category?.slug ?? slug,
+                      )}/${encodeURIComponent(product.slug)}`,
+                      name: product.name,
+                    })),
+                  },
+                }
+              : {}),
+          },
+        ]}
+      />
+      <CategoryProductsClient
+        category={category}
+        initialProducts={initialProducts ?? undefined}
+      />
+    </>
+  );
 }

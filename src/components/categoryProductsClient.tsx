@@ -38,10 +38,13 @@ import { wishlistApi } from "@/lib/api/wishlist.api";
 
 interface CategoryProductsClientProps {
   category: Category;
+  /** Server-fetched first page (default sort, no filters). */
+  initialProducts?: Awaited<ReturnType<typeof productApi.getProducts>>;
 }
 
 export default function CategoryProductsClient({
   category,
+  initialProducts,
 }: CategoryProductsClientProps) {
   const { user, openModal } = useAuthModal();
   const router = useRouter();
@@ -273,6 +276,16 @@ export default function CategoryProductsClient({
 
   /* ------------------ PRODUCTS QUERY ------------------ */
 
+  // Seed the query with the server-rendered page only while the URL still
+  // matches the default view; any filter/sort/page change fetches normally.
+  const isDefaultQuery =
+    Object.keys(queryParams).length === 6 &&
+    queryParams.page === 1 &&
+    queryParams.limit === limit &&
+    queryParams.categorySlug === category.slug &&
+    queryParams.sortBy === "price" &&
+    queryParams.sortOrder === "desc";
+
   const {
     data: productRes,
     isLoading,
@@ -281,6 +294,7 @@ export default function CategoryProductsClient({
     error,
   } = useQuery({
     queryKey: ["products", category.slug, JSON.stringify(queryParams)],
+    initialData: isDefaultQuery ? initialProducts : undefined,
     queryFn: async () => {
       const result = await productApi.getProducts(queryParams);
       return result;

@@ -60,7 +60,9 @@ function flattenActiveCategories(categories: ApiCategory[]): ApiCategory[] {
 
 async function getActiveCategories(): Promise<ApiCategory[]> {
   if (!API_BASE_URL) {
-    console.error("NEXT_PUBLIC_API_URL is not configured; city page categories are unavailable.");
+    console.error(
+      "NEXT_PUBLIC_API_URL is not configured; city page categories are unavailable.",
+    );
     return [];
   }
 
@@ -76,14 +78,20 @@ async function getActiveCategories(): Promise<ApiCategory[]> {
     }
 
     const payload: { data?: ApiCategory[] } = await response.json();
-    return flattenActiveCategories(Array.isArray(payload.data) ? payload.data : []);
+    return flattenActiveCategories(
+      Array.isArray(payload.data) ? payload.data : [],
+    );
   } catch (error) {
     console.error("Unable to load categories for city landing page:", error);
     return [];
   }
 }
 
-export default async function CityLandingPage({ config }: { config: CitySeoConfig }) {
+export default async function CityLandingPage({
+  config,
+}: {
+  config: CitySeoConfig;
+}) {
   const categories = await getActiveCategories();
   const pageUrl = `${SITE_URL}/${config.slug}`;
 
@@ -102,7 +110,12 @@ export default async function CityLandingPage({ config }: { config: CitySeoConfi
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
-        { "@type": "ListItem", position: 2, name: `Sarees in ${config.city}`, item: pageUrl },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: `Sarees in ${config.city}`,
+          item: pageUrl,
+        },
       ],
     },
   };
@@ -112,12 +125,14 @@ export default async function CityLandingPage({ config }: { config: CitySeoConfi
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(structuredData).replace(/</g, "\\\\u003c"),
+          __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
         }}
       />
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:py-16">
         <nav aria-label="Breadcrumb" className="mb-6 text-sm text-neutral-500">
-          <Link href="/" className="hover:text-neutral-900">Home</Link>
+          <Link href="/" className="hover:text-neutral-900">
+            Home
+          </Link>
           <span className="mx-2">/</span>
           <span aria-current="page">Sarees in {config.city}</span>
         </nav>
@@ -148,18 +163,25 @@ export default async function CityLandingPage({ config }: { config: CitySeoConfi
           </div>
         </header>
 
-        <section aria-labelledby="city-collections" className="mt-12 border-t border-neutral-200 pt-9">
+        <section
+          aria-labelledby="city-collections"
+          className="mt-12 border-t border-neutral-200 pt-9"
+        >
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">
                 Browse our collections
               </p>
-              <h2 id="city-collections" className="mt-2 text-2xl font-semibold text-neutral-950">
+              <h2
+                id="city-collections"
+                className="mt-2 text-2xl font-semibold text-neutral-950"
+              >
                 Saree categories available in {config.city}
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-600">
-                Explore the same live category collection available across Kankana Silks.
-                Product availability and delivery options are shown with each product and at checkout.
+                Explore the same live category collection available across
+                Kankana Silks. Product availability and delivery options are
+                shown with each product and at checkout.
               </p>
             </div>
             <Link
@@ -196,7 +218,10 @@ export default async function CityLandingPage({ config }: { config: CitySeoConfi
           ) : (
             <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-5 text-sm text-neutral-600">
               Our collections are temporarily unavailable. Please visit the{" "}
-              <Link href="/shop" className="font-semibold text-neutral-900 underline underline-offset-4">
+              <Link
+                href="/shop"
+                className="font-semibold text-neutral-900 underline underline-offset-4"
+              >
                 shop page
               </Link>{" "}
               to browse current categories.
@@ -207,7 +232,9 @@ export default async function CityLandingPage({ config }: { config: CitySeoConfi
         <section className="mt-12 grid gap-8 border-t border-neutral-200 pt-9 md:grid-cols-2">
           {config.sections.map((section) => (
             <article key={section.heading}>
-              <h2 className="text-xl font-semibold text-neutral-950">{section.heading}</h2>
+              <h2 className="text-xl font-semibold text-neutral-950">
+                {section.heading}
+              </h2>
               <p className="mt-3 text-sm leading-7 text-neutral-700 sm:text-base">
                 {section.body}
               </p>
@@ -217,7 +244,9 @@ export default async function CityLandingPage({ config }: { config: CitySeoConfi
 
         {config.isStoreCity && (
           <aside className="mt-10 rounded-2xl border border-neutral-200 bg-white p-6">
-            <h2 className="text-lg font-semibold text-neutral-950">Visit our Mysore store</h2>
+            <h2 className="text-lg font-semibold text-neutral-950">
+              Visit our Mysore store
+            </h2>
             <address className="mt-2 not-italic text-sm leading-7 text-neutral-700">
               First Floor, 464, Jayachamarajendra Road, Vijayanagar 1st Stage,
               Vijayanagar, Mysore, Karnataka 570017

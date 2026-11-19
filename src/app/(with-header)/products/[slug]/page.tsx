@@ -1,37 +1,17 @@
-import { Metadata } from "next";
-import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import { notFound, permanentRedirect } from "next/navigation";
 import ProductDetailsClient from "@/components/sections/productDetialClient";
+import { getProductBySlug } from "@/lib/seo/server-api";
 
 type Props = {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 };
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL;
-
-// Fetch product data (server-side)
-async function getProductBySlug(slug: string) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/products/slug/${slug}`, {
-      cache: "no-store", // Always get fresh data for product details
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const result = await response.json();
-    return result.data;
-  } catch (error) {
-    console.error("Error fetching product:", error);
-    return null;
-  }
-}
-
-// Generate dynamic metadata for SEO
+/**
+ * Legacy URL. The canonical product URL is /{category}/{slug}; this route
+ * permanently redirects there so the same product is never served twice.
+ * Products without a category keep rendering here as a fallback.
+ */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const product = await getProductBySlug(slug);
@@ -39,72 +19,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!product) {
     return {
       title: "Product Not Found | Kankana Silks",
-      description: "The product you're looking for could not be found.",
+      robots: { index: false, follow: false },
     };
   }
 
-  const images =
-    product.media
-      ?.filter((m: any) => m.type === "IMAGE")
-      .map((m: any) => ({
-        url: m.url,
-        width: 1200,
-        height: 630,
-        alt: m.altText || product.name,
-      })) || [];
-
-  const canonicalPath = product.category?.slug
-    ? `/${encodeURIComponent(product.category.slug)}/${encodeURIComponent(slug)}`
-    : `/products/${encodeURIComponent(slug)}`;
-  const title = product.metaTitle || `${product.name} | Kankana Silks`;
-  const description =
-    product.metaDesc ||
-    product.description.substring(0, 160) ||
-    `Shop ${product.name} at Kankana Silks. Premium handloom sarees with traditional craftsmanship.`;
-
   return {
-    title,
-    description,
-    keywords: [
-      product.name,
-      product.category?.name || "",
-      "silk saree",
-      "handloom",
-      "traditional saree",
-      "Kankana Silks",
-      product.artisanName || "",
-    ].filter(Boolean),
-    openGraph: {
-      title,
-      description,
-      images: images.slice(0, 4),
-      type: "website",
-      url: `https://www.kankanasilks.com${canonicalPath}`,
-      siteName: "Kankana Silks",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: images[0]?.url ? [images[0].url] : [],
-    },
-    alternates: {
-      canonical: canonicalPath,
-    },
-    robots: {
-      index: true,
-      follow: true,
-    },
+    title: product.metaTitle || `${product.name} | Kankana Silks`,
+    description:
+      product.metaDesc ||
+      product.description?.replace(/\s+/g, " ").trim().slice(0, 160) ||
+      `Shop ${product.name} at Kankana Silks.`,
+    alternates: { canonical: `/products/${encodeURIComponent(slug)}` },
+    robots: { index: true, follow: true },
   };
 }
 
-// Main page component
-export default async function ProductDetailsPage({ params }: Props) {
+export default async function LegacyProductPage({ params }: Props) {
   const { slug } = await params;
   const product = await getProductBySlug(slug);
 
-  if (!product) {
-    notFound();
+  if (!product) notFound();
+
+  if (product.category?.slug) {
+    permanentRedirect(
+      `/${encodeURIComponent(product.category.slug)}/${encodeURIComponent(slug)}`,
+    );
   }
 
   return <ProductDetailsClient initialProduct={product} />;

@@ -19,7 +19,8 @@ const STORES = [
     name: "Kankana Silks — Mysuru",
     address:
       "First Floor, 464, Jayachamarajendra Rd, Vijayanagar 1st Stage, Vijayanagar, Mysuru, Karnataka 570017",
-    phone: "+91 98765 43210",
+    // Set NEXT_PUBLIC_STORE_PHONE (e.g. "+91 9XXXXXXXXX"). Hidden until set.
+    phone: process.env.NEXT_PUBLIC_STORE_PHONE ?? "",
     hours: "Mon – Sat: 9:00 AM – 8:00 PM\nSun: 10:00 AM – 6:00 PM",
     lat: 12.3292222,
     lng: 76.6154278,
@@ -140,15 +141,17 @@ function StoreLocatorModal({ onClose }: { onClose: () => void }) {
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
-                <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                <a
-                  href={`tel:${selected.phone}`}
-                  className="text-xs text-gray-600 hover:text-black transition-colors"
-                >
-                  {selected.phone}
-                </a>
-              </div>
+              {selected.phone && (
+                <div className="flex items-center gap-3">
+                  <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <a
+                    href={`tel:${selected.phone.replace(/\s+/g, "")}`}
+                    className="text-xs text-gray-600 hover:text-black transition-colors"
+                  >
+                    {selected.phone}
+                  </a>
+                </div>
+              )}
 
               {/* CTA buttons */}
               <div className="flex gap-3 pt-1">
@@ -338,13 +341,13 @@ export default function Footer() {
             </p>
             <div className="flex items-center gap-4">
               <Link
-                href="/privacy"
+                href="/privacy-policy"
                 className="text-base text-gray-400 transition-colors hover:text-black"
               >
                 Privacy
               </Link>
               <Link
-                href="/terms"
+                href="/terms-and-conditions"
                 className="text-base text-gray-400 transition-colors hover:text-black"
               >
                 Terms
