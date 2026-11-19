@@ -40,6 +40,7 @@ function BannerPicture({
     alt: banner.title || "Promotional banner",
     fill: true,
     sizes: "100vw",
+    quality: 60,
     draggable: false,
   } as const;
 
@@ -48,6 +49,8 @@ function BannerPicture({
     src: banner.url,
     preload: isFirst,
     ...(isFirst
+     
+     
       ? {}
       : { loading: "eager" as const, fetchPriority: "low" as const }),
   });
@@ -62,11 +65,7 @@ function BannerPicture({
       className="absolute inset-0 h-full w-full"
       style={{ display: isActive ? "block" : "none" }}
       aria-hidden={!isActive}
-    >
-      <source media="(max-width: 767px)" srcSet={mobile.srcSet} sizes="100vw" />
-      <source media="(min-width: 768px)" srcSet={desktopSrcSet} sizes="100vw" />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+    > ource media="(max-width: 7 ource media="(min-widt * eslint-disa <img
         {...imgProps}
         ref={(node) => {
           // The image may finish loading before React hydrates.
@@ -527,3 +526,4 @@ export default function HeroSection({
     </section>
   );
 }
+

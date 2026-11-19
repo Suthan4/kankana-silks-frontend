@@ -107,7 +107,7 @@ export default function AnalyticsConsent() {
         We use small cookies to understand how people browse our collection, so
         we can make the site easier to use. Your details are never sold.{" "}
         <a href="/privacy-policy" className="underline">
-          Learn more
+          Read our privacy policy
         </a>
       </p>
       <div className="flex shrink-0 gap-2">

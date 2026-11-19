@@ -60,7 +60,7 @@ function StoreLocatorModal({ onClose }: { onClose: () => void }) {
             <h2 className="text-base font-bold tracking-wide text-gray-900 uppercase">
               Our Stores
             </h2>
-            <p className="text-xs text-gray-400 mt-0.5">Find us near you</p>
+            <p className="text-xs text-gray-600 mt-0.5">Find us near you</p>
           </div>
           <button
             onClick={onClose}
@@ -338,26 +338,26 @@ export default function Footer() {
         {/* ── Bottom bar ── */}
         <div className="border-t border-gray-100">
           <div className="max-w-screen-xl mx-auto px-6 md:px-10 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-base text-gray-400">
+            <p className="text-base text-gray-600">
               © {new Date().getFullYear()} Kankana Silks. All rights reserved.
             </p>
             <div className="flex items-center gap-4">
               <Link
                 href="/privacy-policy"
-                className="text-base text-gray-400 transition-colors hover:text-black"
+                className="text-base text-gray-600 transition-colors hover:text-black"
               >
                 Privacy
               </Link>
               <Link
                 href="/terms-and-conditions"
-                className="text-base text-gray-400 transition-colors hover:text-black"
+                className="text-base text-gray-600 transition-colors hover:text-black"
               >
                 Terms
               </Link>
               {/* Mobile store locator shortcut */}
               <button
                 onClick={() => setStoreLocatorOpen(true)}
-                className="flex items-center gap-1.5 text-base text-gray-400 transition-colors hover:text-black"
+                className="flex items-center gap-1.5 text-base text-gray-600 transition-colors hover:text-black"
               >
                 <MapPin className="h-4 w-4 transition-colors group-hover:text-black" />{" "}
                 Stores
