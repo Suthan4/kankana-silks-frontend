@@ -1,9 +1,30 @@
 "use client";
 import { motion } from "framer-motion";
+import { getImageProps } from "next/image";
 import { useEffect, useState } from "react";
+import { preload } from "react-dom";
+
+// Served as a small AVIF/WebP instead of the 25 KB PNG, and fetched first:
+// on desktop this logo is the page's first big paint.
+const { props: logo } = getImageProps({
+  src: "/image-removebg-preview.png",
+  alt: "Kankana Silks",
+  width: 316,
+  height: 152,
+  sizes: "233px",
+  loading: "eager",
+  fetchPriority: "high",
+});
 
 export default function SplashScreen() {
   const [isMobile, setIsMobile] = useState(false);
+
+  preload(logo.src, {
+    as: "image",
+    imageSrcSet: logo.srcSet,
+    imageSizes: "233px",
+    fetchPriority: "high",
+  });
 
   useEffect(() => {
     const checkScreen = () => {
@@ -37,9 +58,15 @@ export default function SplashScreen() {
       >
         {/* 🔥 MAIN LOGO (NO animate here) */}
         <motion.img
-          src="/image-removebg-preview.png"
-          width={316}
-          height={152}
+          src={logo.src}
+          srcSet={logo.srcSet}
+          sizes={logo.sizes}
+          alt={logo.alt}
+          width={logo.width}
+          height={logo.height}
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
           layoutId={isMobile ? "mobile-logo" : "desktop-logo"}
           transition={{
             type: "spring",
