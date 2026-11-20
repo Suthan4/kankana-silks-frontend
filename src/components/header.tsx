@@ -777,15 +777,16 @@ function Header() {
             <Link
               href="/"
               aria-label="Kankana Silks home"
-              className="relative block h-14 w-[180px]"
+              className="relative block h-14 w-[180px] shrink-0"
             >
               <Image
                 src="/removed-bg-logo.png"
                 alt="Kankana Silks"
-                fill
+                width={360}
+                height={140}
                 priority
                 sizes="180px"
-                className={`object-contain transition-opacity duration-150 ${
+                className={`absolute inset-0 h-full w-full object-contain transition-opacity duration-150 ${
                   isHeaderWhite ? "opacity-100" : "opacity-0"
                 }`}
               />
@@ -794,10 +795,11 @@ function Header() {
                 src="/removed-bg-logo.png"
                 alt=""
                 aria-hidden="true"
-                fill
+                width={360}
+                height={140}
                 priority
                 sizes="180px"
-                className={`object-contain brightness-0 invert transition-opacity duration-150 ${
+                className={`absolute inset-0 h-full w-full object-contain brightness-0 invert transition-opacity duration-150 ${
                   isHeaderWhite ? "opacity-0" : "opacity-100"
                 }`}
               />
@@ -1531,15 +1533,16 @@ function Header() {
           <Link
             href="/"
             aria-label="Kankana Silks home"
-            className="relative block h-9 w-[120px]"
+            className="relative block h-9 w-[120px] shrink-0"
           >
             <Image
               src="/removed-bg-logo.png"
               alt="Kankana Silks"
-              fill
+              width={240}
+              height={72}
               priority
-              sizes="180px"
-              className="object-contain"
+              sizes="120px"
+              className="h-full w-full object-contain"
             />
           </Link>
 
