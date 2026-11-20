@@ -16,7 +16,14 @@ const SLIDE_CLASS =
 const arrowClass =
   "absolute top-1/3 z-20 hidden h-11 w-11 items-center justify-center rounded-full bg-white shadow-lg transition hover:scale-105 md:flex";
 
-function ProductGrid({ section }: { section: HomeSection }) {
+function ProductGrid({
+  section,
+  eagerCount = 0,
+}: {
+  section: HomeSection;
+  /** How many leading cards are on the first screen (loaded immediately, not lazily). */
+  eagerCount?: number;
+}) {
   const [swiper, setSwiper] = useState<SwiperType | null>(null);
   const [isBeginning, setIsBeginning] = useState(true);
   const [isEnd, setIsEnd] = useState(true);
@@ -126,7 +133,7 @@ function ProductGrid({ section }: { section: HomeSection }) {
             onResize={sync}
             onUpdate={sync}
           >
-            {products.map((product) => {
+            {products.map((product, productIndex) => {
               const image = product.media?.[0]?.url;
               const inStock = product.stock?.some((s) => s.quantity > 0);
               const basePrice = Number(product.basePrice);
@@ -148,6 +155,7 @@ function ProductGrid({ section }: { section: HomeSection }) {
                           src={image}
                           alt={product.name}
                           fill
+                          loading={productIndex < eagerCount ? "eager" : "lazy"}
                           sizes="(min-width: 1280px) 290px, (min-width: 1024px) 270px, (min-width: 768px) 240px, 48vw"
                           draggable={false}
                           className="object-cover object-top transition-transform duration-700 group-hover:scale-105"

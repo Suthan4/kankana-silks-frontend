@@ -120,7 +120,14 @@ export default function LandingPage({
         );
       }
 
-      return <ProductGrid key={section.id} section={sectionWithTitle} />;
+      return (
+        <ProductGrid
+          key={section.id}
+          section={sectionWithTitle}
+          // Cards right under the hero are visible on a phone's first screen.
+          eagerCount={index <= 1 ? 2 : 0}
+        />
+      );
     }
 
     // Categories
