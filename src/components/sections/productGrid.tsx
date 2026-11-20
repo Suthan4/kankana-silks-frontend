@@ -186,7 +186,7 @@ function ProductGrid({ section }: { section: HomeSection }) {
                           ₹{sellingPrice.toLocaleString("en-IN")}
                         </span>
                         {discount > 0 && (
-                          <span className="text-xs text-gray-400 line-through">
+                          <span className="text-xs text-gray-500 line-through">
                             ₹{basePrice.toLocaleString("en-IN")}
                           </span>
                         )}

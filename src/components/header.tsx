@@ -598,7 +598,7 @@ function Header() {
                 <div className="flex flex-col items-start leading-tight">
                   <span
                     className={`text-[11px] uppercase tracking-wider ${
-                      isHeaderWhite ? "text-gray-400" : "text-white/70"
+                      isHeaderWhite ? "text-gray-600" : "text-white/90"
                     }`}
                   >
                     Deliver to
@@ -956,7 +956,8 @@ function Header() {
                         <p className="text-xs font-semibold text-gray-900">
                           {user.firstName}
                         </p>
-                        <p className="text-[10px] text-gray-400 truncate">
+                        <p className="text-[10px] text-gray-600 truncate">
+                          {" "}
                           {user.email}
                         </p>
                       </div>
