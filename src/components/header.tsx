@@ -1101,19 +1101,24 @@ function Header() {
                         aria-hidden="true"
                         initial={false}
                         animate={{
-                          width: isActive ? "calc(100% - 32px)" : "10px",
+                          scaleX: isActive ? 1 : 0.1,
                           opacity: isActive ? 1 : 0.65,
                         }}
                         transition={{
-                          width: {
+                          scaleX: {
                             duration: 0.28,
-                            ease: [0.22, 1, 0.36, 1],
+                            ease: "easeOut",
                           },
                           opacity: {
                             duration: 0.2,
+                            ease: "easeOut",
                           },
                         }}
-                        className={`pointer-events-none absolute bottom-0 left-1/2 h-[2px] -translate-x-1/2 rounded-full ${
+                        style={{
+                          transformOrigin: "center",
+                          willChange: "transform, opacity",
+                        }}
+                        className={`pointer-events-none absolute bottom-0 left-4 right-4 h-[2px] rounded-full ${
                           isHeaderWhite
                             ? "bg-black"
                             : "bg-white shadow-[0_0_8px_rgba(255,255,255,0.65)]"

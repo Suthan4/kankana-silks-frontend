@@ -89,7 +89,7 @@ export const getCategoryBySlug = cache(
  * doesn't wait on the backend for every request. Admin edits show up within a
  * minute; to show them instantly, call revalidateTag("home") after saving.
  */
-const HOME_REVALIDATE_SECONDS = 60;
+const HOME_REVALIDATE_SECONDS = 300;
 
 /** Throws on failure so a failed request is never stored in the cache. */
 async function fetchHome(path: string): Promise<{ data?: unknown }> {
