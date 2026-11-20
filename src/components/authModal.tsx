@@ -86,11 +86,19 @@ export default function AuthModal() {
   >({});
   const [apiError, setApiError] = useState<string>("");
   const [isMobile, setIsMobile] = useState(false);
+  const [mobileOtpMode, setMobileOtpMode] = useState(false);
+  const [mobileNumber, setMobileNumber] = useState("");
+  const [mobileOtp, setMobileOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
 
   const queryClient = useQueryClient();
 
   // Reset form when mode changes
   useEffect(() => {
+    setMobileOtpMode(false);
+    setMobileNumber("");
+    setMobileOtp("");
+    setOtpSent(false);
     setLoginErrors({});
     setRegisterErrors({});
     setForgotErrors({});
@@ -333,152 +341,110 @@ export default function AuthModal() {
               {mode === "login" && (
                 <motion.form
                   key="login"
-                  initial={{ opacity: 0, x: -20 }}
+                  initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  className="space-y-3 sm:space-y-4"
-                  onSubmit={handleLoginSubmit}
+                  exit={{ opacity: 0, x: 12 }}
+                  className="space-y-4"
+                  onSubmit={mobileOtpMode ? async (e) => {
+                    e.preventDefault();
+                    setApiError("");
+                    if (!/^[6-9]\\d{9}$/.test(mobileNumber)) {
+                      setApiError("Enter a valid 10-digit mobile number.");
+                      return;
+                    }
+                    setIsLoading(true);
+                    try {
+                      if (!otpSent) {
+                        await authService.sendMobileOtp(mobileNumber);
+                        setOtpSent(true);
+                      } else {
+                        const response = await authService.verifyMobileOtp(mobileNumber, mobileOtp);
+                        const payload = response.data?.data;
+                        if (payload?.user && payload?.accessToken) {
+                          setAuth(payload.accessToken, payload.user, payload.refreshToken);
+                          queryClient.clear();
+                          closeModal();
+                        } else {
+                          setApiError(response.data?.message || "Unable to sign in.");
+                        }
+                      }
+                    } catch (error: any) {
+                      setApiError(error?.response?.data?.message || "Something went wrong. Please try again.");
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  } : handleLoginSubmit}
                 >
-                  <div>
-                    <label
-                      htmlFor="login-email"
-                      className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
-                    >
-                      Email
-                    </label>
-                    <div className="relative">
-                      <Mail
-                        className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-                        aria-hidden="true"
-                      />
-                      <input
-                        id="login-email"
-                        type="email"
-                        placeholder="name@example.com"
-                        className={`w-full pl-9 pr-4 py-2 sm:py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition text-sm sm:text-base ${
-                          loginErrors.email
-                            ? "border-red-500 bg-red-50"
-                            : "border-gray-300 bg-white"
-                        }`}
-                        onChange={(e) =>
-                          setLoginData({ ...loginData, email: e.target.value })
-                        }
-                        value={loginData.email}
-                        disabled={isLoading}
-                        aria-invalid={!!loginErrors.email}
-                        aria-describedby={
-                          loginErrors.email ? "login-email-error" : undefined
-                        }
-                      />
-                    </div>
-                    {loginErrors.email && (
-                      <p
-                        id="login-email-error"
-                        className="mt-1 text-xs text-red-500"
-                      >
-                        {loginErrors.email}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="login-password"
-                      className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
-                    >
-                      Password
-                    </label>
-                    <div className="relative">
-                      <Lock
-                        className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-                        aria-hidden="true"
-                      />
-                      <input
-                        id="login-password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        className={`w-full pl-9 pr-10 py-2 sm:py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition text-sm sm:text-base ${
-                          loginErrors.password
-                            ? "border-red-500 bg-red-50"
-                            : "border-gray-300 bg-white"
-                        }`}
-                        onChange={(e) =>
-                          setLoginData({
-                            ...loginData,
-                            password: e.target.value,
-                          })
-                        }
-                        value={loginData.password}
-                        disabled={isLoading}
-                        aria-invalid={!!loginErrors.password}
-                        aria-describedby={
-                          loginErrors.password
-                            ? "login-password-error"
-                            : undefined
-                        }
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-black rounded p-1"
-                        aria-label={
-                          showPassword ? "Hide password" : "Show password"
-                        }
-                      >
-                        {showPassword ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
+                  {!mobileOtpMode ? (
+                    <>
+                      <div>
+                        <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
+                          <input id="login-email" type="email" placeholder="name@example.com" autoComplete="email"
+                            className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
+                            onChange={(e) => setLoginData({ ...loginData, email: e.target.value })} value={loginData.email} disabled={isLoading} />
+                        </div>
+                      </div>
+                      <div>
+                        <label htmlFor="login-password" className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
+                          <input id="login-password" type={showPassword ? "text" : "password"} placeholder="Enter your password" autoComplete="current-password"
+                            className="w-full pl-9 pr-10 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
+                            onChange={(e) => setLoginData({ ...loginData, password: e.target.value })} value={loginData.password} disabled={isLoading} />
+                          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 p-1" aria-label={showPassword ? "Hide password" : "Show password"}>
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <button type="button" onClick={() => setMode("forgot")} className="text-sm text-gray-700 hover:text-black font-medium">Forgot password?</button>
+                      </div>
+                      <button type="submit" disabled={isLoading} className="w-full bg-black text-white py-2.5 rounded-lg font-semibold text-sm disabled:opacity-50">
+                        {isLoading ? "Signing in..." : "Sign in"}
                       </button>
-                    </div>
-                    {loginErrors.password && (
-                      <p
-                        id="login-password-error"
-                        className="mt-1 text-xs text-red-500"
-                      >
-                        {loginErrors.password}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs sm:text-sm">
-                    <label className="flex items-center gap-2 cursor-pointer hover:text-gray-700">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 accent-black rounded focus:ring-2 focus:ring-black"
-                        aria-label="Remember me"
-                      />
-                      <span className="text-gray-600">Remember me</span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setMode("forgot")}
-                      className="text-black hover:text-black/60 font-medium focus:outline-none focus:ring-2 focus:ring-black rounded px-1"
-                    >
-                      Forgot Password?
-                    </button>
-                  </div>
-
-                  <motion.button
-                    type="submit"
-                    whileHover={{ scale: isLoading ? 1 : 1.02 }}
-                    whileTap={{ scale: isLoading ? 1 : 0.98 }}
-                    disabled={isLoading}
-                    className="w-full bg-black text-white py-2 sm:py-2.5 rounded-lg font-semibold shadow-md text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed hover:bg-black/90 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition"
-                  >
-                    {isLoading ? "Signing in..." : "Sign In"}
-                  </motion.button>
-
-                  <p className="text-center text-xs sm:text-sm text-gray-600">
-                    Don't have an account?{" "}
-                    <button
-                      type="button"
-                      onClick={() => setMode("register")}
-                      className="text-black hover:text-black/60 font-medium focus:outline-none focus:ring-2 focus:ring-black rounded px-1"
-                    >
-                      Sign up
-                    </button>
+                      <div className="relative py-1"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-200" /></div><div className="relative flex justify-center"><span className="bg-white px-3 text-xs text-gray-400">OR</span></div></div>
+                      <button type="button" onClick={() => { setMobileOtpMode(true); setApiError(""); }} className="w-full border border-gray-300 text-gray-900 py-2.5 rounded-lg font-medium text-sm hover:bg-gray-50 transition">
+                        Continue with mobile OTP
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold text-gray-900">{otpSent ? "Verify your number" : "Sign in with mobile"}</p>
+                        <button type="button" onClick={() => { setMobileOtpMode(false); setOtpSent(false); setMobileOtp(""); setApiError(""); }} className="text-xs text-gray-500 hover:text-black">Use email instead</button>
+                      </div>
+                      <div>
+                        <label htmlFor="mobile-number" className="block text-sm font-medium text-gray-700 mb-1.5">Mobile number</label>
+                        <div className="flex rounded-lg border border-gray-300 focus-within:ring-2 focus-within:ring-black">
+                          <span className="px-3 py-2.5 text-sm text-gray-500 border-r border-gray-200">+91</span>
+                          <input id="mobile-number" type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={10} placeholder="10-digit mobile number"
+                            className="min-w-0 flex-1 px-3 py-2.5 text-sm outline-none rounded-r-lg" value={mobileNumber}
+                            onChange={(e) => setMobileNumber(e.target.value.replace(/\\D/g, "").slice(0, 10))} disabled={isLoading || otpSent} />
+                        </div>
+                      </div>
+                      {otpSent && (
+                        <div>
+                          <label htmlFor="mobile-otp" className="block text-sm font-medium text-gray-700 mb-1.5">6-digit OTP</label>
+                          <input id="mobile-otp" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="Enter OTP"
+                            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm tracking-[0.3em]"
+                            value={mobileOtp} onChange={(e) => setMobileOtp(e.target.value.replace(/\\D/g, "").slice(0, 6))} disabled={isLoading} />
+                          <div className="flex justify-between items-center mt-2">
+                            <span className="text-xs text-gray-500">OTP expires in 5 minutes.</span>
+                            <button type="button" disabled={isLoading} onClick={async () => { setIsLoading(true); setApiError(""); try { await authService.resendMobileOtp(mobileNumber); setMobileOtp(""); } catch (error: any) { setApiError(error?.response?.data?.message || "Unable to resend OTP."); } finally { setIsLoading(false); } }} className="text-xs font-medium text-gray-800 underline disabled:opacity-50">Resend OTP</button>
+                          </div>
+                        </div>
+                      )}
+                      <button type="submit" disabled={isLoading || (otpSent && mobileOtp.length !== 6)} className="w-full bg-black text-white py-2.5 rounded-lg font-semibold text-sm disabled:opacity-50">
+                        {isLoading ? "Please wait..." : otpSent ? "Verify & sign in" : "Send OTP"}
+                      </button>
+                      <p className="text-xs text-center text-gray-500">Standard SMS charges may apply. By continuing, you agree to our Terms and Privacy Policy.</p>
+                    </>
+                  )}
+                  <p className="text-center text-sm text-gray-600">
+                    Don&apos;t have an account?{" "}
+                    <button type="button" onClick={() => setMode("register")} className="text-black font-medium hover:underline">Sign up</button>
                   </p>
                 </motion.form>
               )}
