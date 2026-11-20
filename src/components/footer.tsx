@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -231,12 +232,13 @@ export default function Footer() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 md:gap-8">
             {/* ── Heritage ── */}
             <div>
-              <img
+              <Image
                 src="/image-removebg-preview.png"
                 width={316}
                 height={152}
+                sizes="120px"
                 alt="Kankana Silks"
-                className="h-14 w-14 w-auto object-contain mb-4"
+                className="h-14 w-auto object-contain mb-4"
               />
               <p className="text-base text-gray-500 leading-relaxed max-w-[200px]">
                 Celebrating centuries of saree-making tradition with modern

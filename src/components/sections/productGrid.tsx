@@ -5,6 +5,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import type { Swiper as SwiperType } from "swiper";
 import type { HomeSection } from "@/lib/api/home-section.api";
+import SmartImage from "../common/smartImage";
 
 // Mobile: 2 fluid cards per view. Tablet and up: fixed card widths, so cards
 // stay the same size on any screen (like the header menu) and the number
@@ -143,12 +144,13 @@ function ProductGrid({ section }: { section: HomeSection }) {
                   >
                     <div className="relative aspect-[4/5] w-full overflow-hidden">
                       {image ? (
-                        <img
+                        <SmartImage
                           src={image}
                           alt={product.name}
-                          loading="lazy"
+                          fill
+                          sizes="(min-width: 1280px) 290px, (min-width: 1024px) 270px, (min-width: 768px) 240px, 48vw"
                           draggable={false}
-                          className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                          className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-gray-100">

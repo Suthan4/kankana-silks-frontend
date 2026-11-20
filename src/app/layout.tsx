@@ -5,7 +5,7 @@ import AuthModalProvider from "@/components/authModalProvider";
 import ClientLayout from "@/components/clientLayout";
 import Providers from "@/components/provider/tanstackProvider";
 import { Toaster } from "sonner";
-import MiniCartDrawer from "@/components/miniCartDrawer";
+import MiniCartDrawer from "@/components/miniCartDrawerProvider";
 import AnalyticsConsent from "@/components/analytics/analytics-consent";
 
 const SITE_URL = "https://www.kankanasilks.com";

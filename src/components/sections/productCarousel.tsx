@@ -18,6 +18,7 @@ import type { Swiper as SwiperType } from "swiper";
 
 import "swiper/css";
 import "swiper/css/pagination";
+import SmartImage from "../common/smartImage";
 
 const stripHtml = (html?: string) => (html ? html.replace(/<[^>]+>/g, "") : "");
 const inr = (value: number | string) => Number(value).toLocaleString("en-IN");
@@ -156,11 +157,12 @@ export default function ProductCarousel({
                   {/* Image */}
                   <div className="relative w-[46%] shrink-0 overflow-hidden bg-gray-50">
                     {product.media?.[0]?.url ? (
-                      <img
+                      <SmartImage
                         src={product.media[0].url}
                         alt={product.name}
-                        loading="lazy"
-                        className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                        fill
+                        sizes="45vw"
+                        className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-xs text-gray-400">
@@ -234,11 +236,13 @@ export default function ProductCarousel({
           {/* Image */}
           <div className="group relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-[#f7f7f5]">
             {currentProduct.media?.[0]?.url ? (
-              <img
+              <SmartImage
                 key={currentProduct.id}
                 src={currentProduct.media[0].url}
                 alt={currentProduct.name}
-                className="h-full w-full object-cover object-top transition duration-500 ease-out group-hover:scale-[1.02]"
+                fill
+                sizes="(min-width: 1024px) 460px, 380px"
+                className="object-cover object-top transition duration-500 ease-out group-hover:scale-[1.02]"
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-sm text-gray-400">
