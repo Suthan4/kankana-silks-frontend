@@ -194,6 +194,18 @@ export class BaseApiService {
     return this.api.post("/auth/login", credentials);
   }
 
+  async sendMobileOtp(mobile: string) {
+    return this.api.post("/auth/mobile/send-otp", { mobile });
+  }
+
+  async resendMobileOtp(mobile: string) {
+    return this.api.post("/auth/mobile/resend-otp", { mobile });
+  }
+
+  async verifyMobileOtp(mobile: string, otp: string) {
+    return this.api.post("/auth/mobile/verify-otp", { mobile, otp });
+  }
+
   async forgotPassword(credentials: { email: string }) {
     return this.api.post("/auth/forgot-password", credentials);
   }
