@@ -5,6 +5,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import type { Swiper as SwiperType } from "swiper";
 import type { HomeSection } from "@/lib/api/home-section.api";
+import SmartImage from "../common/smartImage";
 
 // Mobile: 2 fluid cards per view. Tablet and up: fixed card widths, so cards
 // stay the same size on any screen (like the header menu) and the number
@@ -15,7 +16,14 @@ const SLIDE_CLASS =
 const arrowClass =
   "absolute top-1/3 z-20 hidden h-11 w-11 items-center justify-center rounded-full bg-white shadow-lg transition hover:scale-105 md:flex";
 
-function ProductGrid({ section }: { section: HomeSection }) {
+function ProductGrid({
+  section,
+  eagerCount = 0,
+}: {
+  section: HomeSection;
+  /** How many leading cards are on the first screen (loaded immediately, not lazily). */
+  eagerCount?: number;
+}) {
   const [swiper, setSwiper] = useState<SwiperType | null>(null);
   const [isBeginning, setIsBeginning] = useState(true);
   const [isEnd, setIsEnd] = useState(true);
@@ -125,7 +133,7 @@ function ProductGrid({ section }: { section: HomeSection }) {
             onResize={sync}
             onUpdate={sync}
           >
-            {products.map((product) => {
+            {products.map((product, productIndex) => {
               const image = product.media?.[0]?.url;
               const inStock = product.stock?.some((s) => s.quantity > 0);
               const basePrice = Number(product.basePrice);
@@ -143,12 +151,14 @@ function ProductGrid({ section }: { section: HomeSection }) {
                   >
                     <div className="relative aspect-[4/5] w-full overflow-hidden">
                       {image ? (
-                        <img
+                        <SmartImage
                           src={image}
                           alt={product.name}
-                          loading="lazy"
+                          fill
+                          loading={productIndex < eagerCount ? "eager" : "lazy"}
+                          sizes="(min-width: 1280px) 290px, (min-width: 1024px) 270px, (min-width: 768px) 240px, 48vw"
                           draggable={false}
-                          className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                          className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-gray-100">
@@ -160,7 +170,7 @@ function ProductGrid({ section }: { section: HomeSection }) {
 
                       <div className="absolute left-0 top-0 flex flex-col gap-2">
                         {!inStock && (
-                          <span className="rounded-full bg-red-500 px-3 py-1.5 text-xs font-bold text-white shadow-lg">
+                          <span className="rounded-full bg-red-600 px-3 py-1.5 text-xs font-bold text-white shadow-lg">
                             Sold Out
                           </span>
                         )}
@@ -184,7 +194,7 @@ function ProductGrid({ section }: { section: HomeSection }) {
                           ₹{sellingPrice.toLocaleString("en-IN")}
                         </span>
                         {discount > 0 && (
-                          <span className="text-xs text-gray-400 line-through">
+                          <span className="text-xs text-gray-500 line-through">
                             ₹{basePrice.toLocaleString("en-IN")}
                           </span>
                         )}

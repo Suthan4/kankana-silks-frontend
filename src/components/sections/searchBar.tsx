@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { Search, X } from 'lucide-react';
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { Search, X } from "lucide-react";
 
 interface Suggestion {
   name: string;
   slug: string;
-  type: 'product' | 'category';
+  type: "product" | "category";
 }
 
 interface SuggestionsResponse {
@@ -20,8 +20,10 @@ interface SuggestionsResponse {
 
 export default function xSearchBar() {
   const router = useRouter();
-  const [query, setQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<SuggestionsResponse['data'] | null>(null);
+  const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<
+    SuggestionsResponse["data"] | null
+  >(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -39,7 +41,7 @@ export default function xSearchBar() {
       setLoading(true);
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/search/suggestions?q=${encodeURIComponent(query)}&limit=5`
+          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/search/suggestions?q=${encodeURIComponent(query)}&limit=5`,
         );
 
         if (response.ok) {
@@ -48,7 +50,7 @@ export default function xSearchBar() {
           setShowSuggestions(true);
         }
       } catch (error) {
-        console.error('Failed to fetch suggestions:', error);
+        console.error("Failed to fetch suggestions:", error);
       } finally {
         setLoading(false);
       }
@@ -60,13 +62,16 @@ export default function xSearchBar() {
   // Close suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
         setShowSuggestions(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Get all suggestions in a flat array for keyboard navigation
@@ -77,24 +82,24 @@ export default function xSearchBar() {
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!showSuggestions || allSuggestions.length === 0) {
-      if (e.key === 'Enter') {
+      if (e.key === "Enter") {
         handleSearch();
       }
       return;
     }
 
     switch (e.key) {
-      case 'ArrowDown':
+      case "ArrowDown":
         e.preventDefault();
-        setSelectedIndex((prev) => 
-          prev < allSuggestions.length - 1 ? prev + 1 : prev
+        setSelectedIndex((prev) =>
+          prev < allSuggestions.length - 1 ? prev + 1 : prev,
         );
         break;
-      case 'ArrowUp':
+      case "ArrowUp":
         e.preventDefault();
         setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
         break;
-      case 'Enter':
+      case "Enter":
         e.preventDefault();
         if (selectedIndex >= 0) {
           const selected = allSuggestions[selectedIndex];
@@ -103,7 +108,7 @@ export default function xSearchBar() {
           handleSearch();
         }
         break;
-      case 'Escape':
+      case "Escape":
         setShowSuggestions(false);
         setSelectedIndex(-1);
         break;
@@ -114,24 +119,24 @@ export default function xSearchBar() {
     if (query.trim()) {
       router.push(`/s?k=${encodeURIComponent(query.trim())}`);
       setShowSuggestions(false);
-      setQuery('');
+      setQuery("");
       inputRef.current?.blur();
     }
   };
 
   const handleSuggestionClick = (suggestion: Suggestion) => {
-    if (suggestion.type === 'product') {
+    if (suggestion.type === "product") {
       router.push(`/products/${suggestion.slug}`);
     } else {
       router.push(`/shop/${suggestion.slug}`);
     }
     setShowSuggestions(false);
-    setQuery('');
+    setQuery("");
     setSelectedIndex(-1);
   };
 
   const clearSearch = () => {
-    setQuery('');
+    setQuery("");
     setSuggestions(null);
     setShowSuggestions(false);
     setSelectedIndex(-1);
@@ -159,20 +164,21 @@ export default function xSearchBar() {
           placeholder="Search for products, categories..."
           className="w-full pl-10 pr-20 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
         />
-        
+
         {/* Search Icon */}
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-        
+
         {/* Clear Button */}
         {query && (
           <button
             onClick={clearSearch}
+            aria-label="Clear search"
             className="absolute right-14 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >
             <X className="w-5 h-5" />
           </button>
         )}
-        
+
         {/* Search Button */}
         <button
           onClick={handleSearch}
@@ -184,63 +190,79 @@ export default function xSearchBar() {
       </div>
 
       {/* Suggestions Dropdown */}
-      {showSuggestions && (suggestions?.products.length || suggestions?.categories.length) ? (
+      {showSuggestions &&
+      (suggestions?.products.length || suggestions?.categories.length) ? (
         <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
           {/* Loading State */}
           {loading && (
-            <div className="px-4 py-3 text-sm text-gray-500">
-              Searching...
-            </div>
+            <div className="px-4 py-3 text-sm text-gray-500">Searching...</div>
           )}
 
           {/* Products */}
-          {!loading && suggestions?.products && suggestions.products.length > 0 && (
-            <div>
-              <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase bg-gray-50">
-                Products
-              </div>
-              {suggestions.products.map((product, index) => (
-                <button
-                  key={`product-${product.slug}`}
-                  onClick={() => handleSuggestionClick(product)}
-                  className={`w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center gap-3 ${
-                    selectedIndex === index ? 'bg-gray-100' : ''
-                  }`}
-                >
-                  <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <span className="text-sm text-gray-900 truncate">{product.name}</span>
-                  <span className="ml-auto text-xs text-gray-500 flex-shrink-0">Product</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Categories */}
-          {!loading && suggestions?.categories && suggestions.categories.length > 0 && (
-            <div>
-              <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase bg-gray-50">
-                Categories
-              </div>
-              {suggestions.categories.map((category, index) => {
-                const adjustedIndex = (suggestions?.products.length || 0) + index;
-                return (
+          {!loading &&
+            suggestions?.products &&
+            suggestions.products.length > 0 && (
+              <div>
+                <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase bg-gray-50">
+                  Products
+                </div>
+                {suggestions.products.map((product, index) => (
                   <button
-                    key={`category-${category.slug}`}
-                    onClick={() => handleSuggestionClick(category)}
+                    key={`product-${product.slug}`}
+                    onClick={() => handleSuggestionClick(product)}
                     className={`w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center gap-3 ${
-                      selectedIndex === adjustedIndex ? 'bg-gray-100' : ''
+                      selectedIndex === index ? "bg-gray-100" : ""
                     }`}
                   >
-                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                    </svg>
-                    <span className="text-sm text-gray-900 truncate">{category.name}</span>
-                    <span className="ml-auto text-xs text-gray-500 flex-shrink-0">Category</span>
+                    <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <span className="text-sm text-gray-900 truncate">
+                      {product.name}
+                    </span>
+                    <span className="ml-auto text-xs text-gray-500 flex-shrink-0">
+                      Product
+                    </span>
                   </button>
-                );
-              })}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+
+          {/* Categories */}
+          {!loading &&
+            suggestions?.categories &&
+            suggestions.categories.length > 0 && (
+              <div>
+                <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase bg-gray-50">
+                  Categories
+                </div>
+                {suggestions.categories.map((category, index) => {
+                  const adjustedIndex =
+                    (suggestions?.products.length || 0) + index;
+                  return (
+                    <button
+                      key={`category-${category.slug}`}
+                      onClick={() => handleSuggestionClick(category)}
+                      className={`w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center gap-3 ${
+                        selectedIndex === adjustedIndex ? "bg-gray-100" : ""
+                      }`}
+                    >
+                      <svg
+                        className="w-4 h-4 text-gray-400 flex-shrink-0"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                      </svg>
+                      <span className="text-sm text-gray-900 truncate">
+                        {category.name}
+                      </span>
+                      <span className="ml-auto text-xs text-gray-500 flex-shrink-0">
+                        Category
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
           {/* View All Results */}
           {!loading && query && (

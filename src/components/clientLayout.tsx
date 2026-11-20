@@ -11,16 +11,16 @@ export default function ClientLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [showSplash, setShowSplash] = useState(true);
+  // const [showSplash, setShowSplash] = useState(true);
   const pathname = usePathname();
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowSplash(false);
-    }, 1200); // timing matters
+  // useEffect(() => {
+  //   const timer = setTimeout(() => {
+  //     setShowSplash(false);
+  //   }, 1200); // timing matters
 
-    return () => clearTimeout(timer);
-  }, []);
+  //   return () => clearTimeout(timer);
+  // }, []);
   // ❗ define where header should be hidden
   const hideHeaderRoutes = [
     "/login",
@@ -45,7 +45,9 @@ export default function ClientLayout({
       {!hideHeader && <Header />}
 
       {/* ✅ SPLASH OVERLAY */}
-      <AnimatePresence>{showSplash && <SplashScreen />}</AnimatePresence>
+      {/* <AnimatePresence>
+      {showSplash && <SplashScreen />}
+      </AnimatePresence> */}
 
       {/* CONTENT */}
       {children}

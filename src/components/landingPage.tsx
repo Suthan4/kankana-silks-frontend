@@ -58,7 +58,7 @@ export default function LandingPage({
   /**
    * Render section based on layout and data
    */
-  const renderSection = (section: HomeSection) => {
+  const renderSection = (section: HomeSection, index: number) => {
     const layout = section.layout?.trim().toLowerCase();
     const displayTitle = getDisplayTitle(section);
 
@@ -73,6 +73,8 @@ export default function LandingPage({
         <AestheticFullImage
           key={`aesthetic-${section.id}`}
           section={sectionWithTitle}
+          // First thing on the page (no top banner above it) => LCP element.
+          priority={index === 0 && banners_data.length === 0}
         />
       );
     }
@@ -118,7 +120,14 @@ export default function LandingPage({
         );
       }
 
-      return <ProductGrid key={section.id} section={sectionWithTitle} />;
+      return (
+        <ProductGrid
+          key={section.id}
+          section={sectionWithTitle}
+          // Cards right under the hero are visible on a phone's first screen.
+          eagerCount={index <= 1 ? 2 : 0}
+        />
+      );
     }
 
     // Categories
@@ -217,7 +226,9 @@ export default function LandingPage({
       {/* Only render the wrapper (and its padding) when there's something to show */}
       {orderedSections.length > 0 && (
         <section className="">
-          {orderedSections.map((section, index) => renderSection(section))}
+          {orderedSections.map((section, index) =>
+            renderSection(section, index),
+          )}{" "}
         </section>
       )}
 

@@ -2,6 +2,7 @@
 
 import { Category } from "@/lib/api/home-section.api";
 import { useState } from "react";
+import SmartImage from "../common/smartImage";
 
 function CategoryShowcase({
   title,
@@ -174,11 +175,12 @@ function CategoryShowcase({
                 onMouseLeave={() => setHoveredIndex(null)}
               >
                 {category.image ? (
-                  <img
+                  <SmartImage
                     src={category.image}
                     alt={category.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    loading="lazy"
+                    fill
+                    sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                    className="object-cover transition-transform duration-700 group-hover:scale-110"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-100">

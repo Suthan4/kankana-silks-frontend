@@ -59,11 +59,11 @@
     "sharp",
     "unrs-resolver"
   ],
-    "browserslist": [
-      "chrome >= 100",
-      "edge >= 100",
-      "firefox >= 100",
-      "safari >= 15.4",
-      "ios_saf >= 15.4"
-    ]
+  "browserslist": [
+    "chrome >= 111",
+    "edge >= 111",
+    "firefox >= 111",
+    "safari >= 16.4",
+    "ios_saf >= 16.4"
+  ]
 }

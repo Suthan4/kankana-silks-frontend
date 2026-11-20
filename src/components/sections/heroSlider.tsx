@@ -2,6 +2,7 @@
 
 import { HomeSection } from "@/lib/api/home-section.api";
 import { useState, useEffect } from "react";
+import SmartImage from "../common/smartImage";
 
 function HeroSlider({ section }: { section: HomeSection }) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -99,10 +100,14 @@ function HeroSlider({ section }: { section: HomeSection }) {
             }`}
           >
             {slide.type === "IMAGE" ? (
-              <img
+              <SmartImage
                 src={slide.url}
                 alt={slide.altText || slide.title || "Hero slide"}
-                className="w-full h-full object-cover"
+                fill
+                sizes="100vw"
+                quality={60}
+                loading={index === 0 ? "eager" : "lazy"}
+                className="object-cover"
               />
             ) : (
               <video

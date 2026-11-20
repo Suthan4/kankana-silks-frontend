@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -64,6 +65,7 @@ function StoreLocatorModal({ onClose }: { onClose: () => void }) {
           </div>
           <button
             onClick={onClose}
+            aria-label="Close stores"
             className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
           >
             <X className="w-4 h-4 text-gray-600" />
@@ -231,12 +233,13 @@ export default function Footer() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 md:gap-8">
             {/* ── Heritage ── */}
             <div>
-              <img
+              <Image
                 src="/image-removebg-preview.png"
                 width={316}
                 height={152}
+                sizes="120px"
                 alt="Kankana Silks"
-                className="h-14 w-14 w-auto object-contain mb-4"
+                className="h-14 w-auto object-contain mb-4"
               />
               <p className="text-base text-gray-500 leading-relaxed max-w-[200px]">
                 Celebrating centuries of saree-making tradition with modern

@@ -9,7 +9,7 @@ import {
   Phone,
   MessageSquare,
   Video,
-  ChevronRight,
+  ArrowRight,
   Calendar,
   Clock,
   Loader2,
@@ -32,6 +32,29 @@ type VideoConsultationModalProps = {
   productName?: string;
 };
 
+// Single border on focus: outline + ring are fully disabled, only border-color changes.
+const inputClass =
+  "w-full rounded-lg border border-gray-300 bg-white py-3 pl-10 pr-3 text-base text-black " +
+  "placeholder:text-gray-400 shadow-none transition-colors " +
+  "outline-none focus:outline-none focus-visible:outline-none " +
+  "ring-0 focus:ring-0 focus-visible:ring-0 " +
+  "focus:border-black sm:text-sm";
+
+const iconClass =
+  "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400";
+
+const labelClass = "mb-1.5 block text-sm font-medium text-black";
+
+const initialForm = {
+  fullName: "",
+  email: "",
+  phone: "",
+  platform: ConsultationPlatform.WHATSAPP,
+  preferredDate: "",
+  preferredTime: "",
+  notes: "",
+};
+
 const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
   isOpen,
   onClose,
@@ -43,16 +66,7 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
   const { user } = useAuthModal();
   const openModal = useAuthModal((state) => state.openModal);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    platform: ConsultationPlatform.WHATSAPP,
-    preferredDate: "",
-    preferredTime: "",
-    notes: "",
-  });
+  const [formData, setFormData] = useState(initialForm);
 
   // Populate form with user data when available
   useEffect(() => {
@@ -66,24 +80,14 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
     }
   }, [user]);
 
-  // Create consultation mutation
   const createConsultationMutation = useMutation({
     mutationFn: (data: CreateConsultationRequest) =>
       consultationApi.createConsultation(data),
-    onSuccess: (response) => {
+    onSuccess: () => {
       toast.success("Consultation request submitted successfully!");
       onClose();
       onSuccess?.();
-      // Reset form
-      setFormData({
-        fullName: "",
-        email: "",
-        phone: "",
-        platform: ConsultationPlatform.WHATSAPP,
-        preferredDate: "",
-        preferredTime: "",
-        notes: "",
-      });
+      setFormData(initialForm);
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || "Failed to submit request");
@@ -92,7 +96,6 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
 
   useModalScrollLock(isOpen);
 
-  // Keep Escape handling separate from global scroll locking.
   useEffect(() => {
     if (!isOpen) return;
     const handleEsc = (e: KeyboardEvent) => {
@@ -112,19 +115,16 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
       return;
     }
 
-    // Validation
     if (!formData.preferredDate || !formData.preferredTime) {
       toast.error("Please select date and time for consultation");
       return;
     }
 
-    // Combine date and time into ISO datetime string
     const dateTime = new Date(
       `${formData.preferredDate}T${formData.preferredTime}:00`,
     );
     const isoDateTime = dateTime.toISOString();
 
-    // Submit consultation request
     const requestData: CreateConsultationRequest = {
       productId,
       categoryId,
@@ -153,12 +153,27 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Get minimum date (today)
   const today = new Date().toISOString().split("T")[0];
+
+  const steps = [
+    { title: "Book an appointment", desc: "Choose your preferred time" },
+    { title: "Connect via video", desc: "Join on WhatsApp, Zoom or Meet" },
+    { title: "Shop with guidance", desc: "Browse with an expert stylist" },
+  ];
+
+  const platforms = [
+    {
+      id: ConsultationPlatform.WHATSAPP,
+      name: "WhatsApp",
+      icon: MessageSquare,
+    },
+    { id: ConsultationPlatform.ZOOM, name: "Zoom", icon: Video },
+    { id: ConsultationPlatform.GOOGLE_MEET, name: "Google Meet", icon: Video },
+  ];
 
   return (
     <div
-      className="fixed inset-0 z-[1000] flex items-end justify-center bg-black/55 md:items-center md:p-4"
+      className="fixed inset-0 z-[1000] flex items-end justify-center bg-black/50 md:items-center md:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -168,72 +183,78 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="video-consultation-title"
-        className="flex w-full max-w-4xl flex-col overflow-hidden rounded-t-[28px] bg-white shadow-2xl md:rounded-[28px]"
+        className="flex w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl bg-white text-black shadow-xl md:rounded-2xl"
         style={{
-          height: "min(94dvh, 860px)",
+          height: "min(94dvh, 820px)",
           maxHeight: "calc(100dvh - env(safe-area-inset-top) - 8px)",
           paddingBottom: "env(safe-area-inset-bottom)",
         }}
       >
-        <header className="relative z-10 flex shrink-0 items-center justify-between bg-gradient-to-r from-purple-500 to-indigo-600 px-5 pb-4 pt-4 text-white sm:px-6 sm:py-5">
-          <div className="mx-auto absolute left-1/2 top-2 h-1.5 w-10 -translate-x-1/2 rounded-full bg-white/50 md:hidden" />
-          <div className="min-w-0 pr-3 pt-2 md:pt-0">
-            <h2 id="video-consultation-title" className="text-xl font-bold leading-tight sm:text-2xl">
+        {/* Header */}
+        <header className="relative flex shrink-0 items-start justify-between border-b border-gray-200 px-5 pb-4 pt-5 sm:px-6">
+          <div className="absolute left-1/2 top-2 h-1 w-9 -translate-x-1/2 rounded-full bg-gray-300 md:hidden" />
+          <div className="min-w-0 pr-3 pt-1 md:pt-0">
+            <h2
+              id="video-consultation-title"
+              className="text-lg font-semibold leading-tight sm:text-xl"
+            >
               Book Video Consultation
             </h2>
-            <p className="mt-1 text-sm opacity-90">
-              {productName ? `For ${productName}` : "Connect with our expert stylists"}
+            <p className="mt-0.5 text-sm text-gray-500">
+              {productName
+                ? `For ${productName}`
+                : "Connect with our expert stylists"}
             </p>
           </div>
           <button
             type="button"
             aria-label="Close video consultation"
             onClick={onClose}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition hover:bg-white/20 active:scale-95"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-600 outline-none transition hover:bg-gray-100 hover:text-black focus-visible:outline-none"
           >
-            <X className="h-6 w-6" />
+            <X className="h-5 w-5" />
           </button>
         </header>
 
+        {/* Form */}
         <form
           id="video-consultation-form"
           onSubmit={handleSubmit}
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6 sm:py-6"
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6 sm:py-6"
         >
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-7">
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50 to-indigo-50 p-4 sm:p-5">
-                <h3 className="mb-3 text-base font-bold sm:text-lg">How it works</h3>
-                <div className="space-y-3">
-                  {[
-                    { num: 1, title: "Book Appointment", desc: "Choose your preferred time" },
-                    { num: 2, title: "Connect via Video", desc: "Join on WhatsApp or Zoom/Meet" },
-                    { num: 3, title: "Shop & Select", desc: "Browse with expert guidance" },
-                  ].map((step) => (
-                    <div key={step.num} className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-sm font-bold text-white">
-                        {step.num}
-                      </div>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-10">
+            {/* Info column */}
+            <div className="space-y-5">
+              <div>
+                <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+                  How it works
+                </h3>
+                <ol className="space-y-4">
+                  {steps.map((step, i) => (
+                    <li key={step.title} className="flex items-start gap-3">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-black text-xs font-medium">
+                        {i + 1}
+                      </span>
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold">{step.title}</div>
-                        <div className="text-xs text-gray-600">{step.desc}</div>
+                        <div className="text-sm font-medium">{step.title}</div>
+                        <div className="text-xs text-gray-500">{step.desc}</div>
                       </div>
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ol>
               </div>
-              <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-4">
-                <p className="text-sm font-semibold text-yellow-900">
-                  ✨ Free consultation for all customers
-                </p>
+
+              <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+                Free consultation for all customers.
               </div>
             </div>
 
+            {/* Fields column */}
             <div className="space-y-4">
               <div>
-                <label className="mb-2 block text-sm font-semibold">Full Name</label>
+                <label className={labelClass}>Full name</label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                  <User className={iconClass} />
                   <input
                     type="text"
                     name="fullName"
@@ -241,15 +262,15 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                     onChange={handleInputChange}
                     placeholder="Enter your name"
                     required
-                    className="w-full rounded-xl border-2 border-gray-300 py-3 pl-11 pr-4 text-base transition focus:border-purple-500 focus:outline-none sm:text-sm"
+                    className={inputClass}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold">Email Address</label>
+                <label className={labelClass}>Email address</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                  <Mail className={iconClass} />
                   <input
                     type="email"
                     name="email"
@@ -257,19 +278,22 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                     onChange={handleInputChange}
                     placeholder="your@email.com"
                     required
-                    className="w-full rounded-xl border-2 border-gray-300 py-3 pl-11 pr-4 text-base transition focus:border-purple-500 focus:outline-none sm:text-sm"
+                    className={inputClass}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold">Phone Number</label>
+                <label className={labelClass}>Phone number</label>
                 <div className="flex gap-2">
-                  <select className="w-24 shrink-0 rounded-xl border-2 border-gray-300 px-3 py-3 text-base font-medium focus:border-purple-500 focus:outline-none sm:text-sm">
+                  <select
+                    className="w-20 shrink-0 rounded-lg border border-gray-300 bg-white px-2 py-3 text-base outline-none ring-0 focus:border-black focus:outline-none focus:ring-0 focus-visible:outline-none sm:text-sm"
+                    defaultValue="+91"
+                  >
                     <option>+91</option>
                   </select>
                   <div className="relative min-w-0 flex-1">
-                    <Phone className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                    <Phone className={iconClass} />
                     <input
                       type="tel"
                       name="phone"
@@ -279,58 +303,57 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                       required
                       pattern="[0-9]{10}"
                       inputMode="numeric"
-                      className="w-full rounded-xl border-2 border-gray-300 py-3 pl-11 pr-3 text-base transition focus:border-purple-500 focus:outline-none sm:text-sm"
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Date</label>
+                  <div className="relative">
+                    <Calendar className={iconClass} />
+                    <input
+                      type="date"
+                      name="preferredDate"
+                      value={formData.preferredDate}
+                      onChange={handleInputChange}
+                      min={today}
+                      required
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className={labelClass}>Time</label>
+                  <div className="relative">
+                    <Clock className={iconClass} />
+                    <input
+                      type="time"
+                      name="preferredTime"
+                      value={formData.preferredTime}
+                      onChange={handleInputChange}
+                      required
+                      className={inputClass}
                     />
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold">Preferred Date</label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="date"
-                    name="preferredDate"
-                    value={formData.preferredDate}
-                    onChange={handleInputChange}
-                    min={today}
-                    required
-                    className="w-full rounded-xl border-2 border-gray-300 py-3 pl-11 pr-4 text-base transition focus:border-purple-500 focus:outline-none sm:text-sm"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-semibold">Preferred Time</label>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="time"
-                    name="preferredTime"
-                    value={formData.preferredTime}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full rounded-xl border-2 border-gray-300 py-3 pl-11 pr-4 text-base transition focus:border-purple-500 focus:outline-none sm:text-sm"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-3 block text-sm font-semibold">Preferred Platform</label>
-                <div className="space-y-2">
-                  {[
-                    { id: ConsultationPlatform.WHATSAPP, name: "WhatsApp Video", icon: MessageSquare, bg: "bg-green-500" },
-                    { id: ConsultationPlatform.ZOOM, name: "Zoom", icon: Video, bg: "bg-blue-500" },
-                    { id: ConsultationPlatform.GOOGLE_MEET, name: "Google Meet", icon: Video, bg: "bg-orange-500" },
-                  ].map((platform) => {
+                <label className={labelClass}>Preferred platform</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {platforms.map((platform) => {
                     const Icon = platform.icon;
                     const isSelected = formData.platform === platform.id;
                     return (
                       <label
                         key={platform.id}
-                        className={`flex min-h-[68px] cursor-pointer items-center gap-3 rounded-xl border-2 p-3 transition active:scale-[0.99] ${
-                          isSelected ? "border-purple-500 bg-purple-50" : "border-gray-200 hover:bg-gray-50"
+                        className={`flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-center transition ${
+                          isSelected
+                            ? "border-black bg-black text-white"
+                            : "border-gray-300 bg-white text-black hover:border-gray-500"
                         }`}
                       >
                         <input
@@ -338,15 +361,12 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                           name="platform"
                           checked={isSelected}
                           onChange={() => handlePlatformChange(platform.id)}
-                          className="h-5 w-5 shrink-0 accent-purple-500"
+                          className="sr-only"
                         />
-                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${platform.bg}`}>
-                          <Icon className="h-5 w-5 text-white" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-semibold">{platform.name}</div>
-                          <div className="text-xs text-gray-500">Video call</div>
-                        </div>
+                        <Icon className="h-5 w-5" />
+                        <span className="text-xs font-medium">
+                          {platform.name}
+                        </span>
                       </label>
                     );
                   })}
@@ -354,29 +374,33 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold">Additional Notes (Optional)</label>
+                <label className={labelClass}>
+                  Additional notes{" "}
+                  <span className="font-normal text-gray-400">(optional)</span>
+                </label>
                 <textarea
                   name="notes"
                   value={formData.notes}
                   onChange={handleInputChange}
                   placeholder="Any specific requirements or questions..."
                   rows={3}
-                  className="w-full resize-none rounded-xl border-2 border-gray-300 px-4 py-3 text-base transition focus:border-purple-500 focus:outline-none sm:text-sm"
+                  className="w-full resize-none rounded-lg border border-gray-300 bg-white px-3 py-3 text-base text-black placeholder:text-gray-400 shadow-none outline-none ring-0 transition-colors focus:border-black focus:outline-none focus:ring-0 focus-visible:outline-none sm:text-sm"
                 />
               </div>
             </div>
           </div>
         </form>
 
+        {/* Footer */}
         <div
-          className="shrink-0 border-t border-gray-100 bg-white px-4 pt-3 sm:px-6"
+          className="shrink-0 border-t border-gray-200 bg-white px-5 pt-3 sm:px-6"
           style={{ paddingBottom: "max(14px, env(safe-area-inset-bottom))" }}
         >
           <button
             type="submit"
             form="video-consultation-form"
             disabled={createConsultationMutation.isPending}
-            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-500 to-indigo-600 px-4 py-3.5 text-base font-bold text-white transition hover:shadow-lg active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-black px-4 py-3 text-base font-medium text-white outline-none transition hover:bg-gray-800 focus-visible:outline-none active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {createConsultationMutation.isPending ? (
               <>
@@ -385,8 +409,8 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
               </>
             ) : (
               <>
-                Confirm Booking
-                <ChevronRight className="h-5 w-5" />
+                Confirm booking
+                <ArrowRight className="h-4 w-4" />
               </>
             )}
           </button>

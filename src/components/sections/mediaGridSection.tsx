@@ -2,6 +2,7 @@
 
 import { HomeSection } from "@/lib/api/home-section.api";
 import { useState, useRef, useEffect } from "react";
+import SmartImage from "../common/smartImage";
 
 function MediaGridSection({ section }: { section: HomeSection }) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -65,11 +66,12 @@ function MediaGridSection({ section }: { section: HomeSection }) {
         onMouseLeave={() => setIsHovered(null)}
       >
         {media.type === "IMAGE" ? (
-          <img
+          <SmartImage
             src={media.url}
             alt={media.altText || media.title || "Media"}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-            loading="lazy"
+            fill
+            sizes="(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 100vw"
+            className="object-cover transition-transform duration-700 group-hover:scale-110"
           />
         ) : (
           <video

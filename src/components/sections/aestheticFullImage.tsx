@@ -1,82 +1,167 @@
 "use client";
 
 import { HomeSection } from "@/lib/api/home-section.api";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { getImageProps } from "next/image";
+import { preload } from "react-dom";
 import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { canOptimize } from "@/components/common/smartImage";
 
 interface AestheticFullImageProps {
   section: HomeSection;
+  /**
+   * True when this section is the first thing on the page (it is then the LCP
+   * element): its first image is preloaded and fetched at high priority.
+   */
+  priority?: boolean;
+}
+
+/**
+ * One full-width responsive slide image.
+ * Served through the Next.js optimiser (right-sized WebP per screen) instead of
+ * the original multi-megabyte upload, with a separate mobile source when the
+ * media has a mobileUrl.
+ */
+function SlidePicture({
+  url,
+  mobileUrl,
+  alt,
+  isLcp,
+}: {
+  url: string;
+  mobileUrl: string;
+  alt: string;
+  isLcp: boolean;
+}) {
+  // Unknown host (not in next.config remotePatterns): plain <img>, no crash.
+  if (!canOptimize(url) || !canOptimize(mobileUrl)) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={url}
+        alt={alt}
+        className="absolute inset-0 h-full w-full object-cover object-center"
+        loading={isLcp ? "eager" : "lazy"}
+      />
+    );
+  }
+
+  const common = {
+    alt,
+    fill: true,
+    sizes: "100vw",
+    quality: 60,
+  } as const;
+
+  const { props: desktop } = getImageProps({
+    ...common,
+    src: url,
+    loading: isLcp ? ("eager" as const) : ("lazy" as const),
+    fetchPriority: isLcp ? ("high" as const) : ("auto" as const),
+  });
+  const { props: mobile } = getImageProps({ ...common, src: mobileUrl });
+  const { srcSet: desktopSrcSet, ...imgProps } = desktop;
+
+  // <picture> images are not preloaded by default, so tell the browser about
+  // the LCP image in <head> (one hint per screen size) before JS runs.
+  if (isLcp) {
+    preload(mobile.src, {
+      as: "image",
+      imageSrcSet: mobile.srcSet,
+      imageSizes: "100vw",
+      media: "(max-width: 767px)",
+      fetchPriority: "high",
+    });
+    preload(desktop.src, {
+      as: "image",
+      imageSrcSet: desktopSrcSet,
+      imageSizes: "100vw",
+      media: "(min-width: 768px)",
+      fetchPriority: "high",
+    });
+  }
+
+  return (
+    <picture className="absolute inset-0 block h-full w-full">
+      <source media="(max-width: 767px)" srcSet={mobile.srcSet} sizes="100vw" />
+      <source media="(min-width: 768px)" srcSet={desktopSrcSet} sizes="100vw" />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        {...imgProps}
+        className="absolute inset-0 block h-full w-full object-cover object-center"
+      />
+    </picture>
+  );
 }
 
 export default function AestheticFullImage({
   section,
+  priority = false,
 }: AestheticFullImageProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
+  // Slides that may be mounted. Only the current + next slide are loaded, so a
+  // section with many slides doesn't download every image up front.
+  const [mounted, setMounted] = useState<number[]>([0]);
   // 🔥 SMART MEDIA FALLBACK
   const media = section.media?.length
     ? section.media
     : section.products?.flatMap((p) => p.media || []) || [];
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
 
   if (!media.length) return null;
 
   const currentMedia = media[currentSlide];
   const displayTitle = section.customTypeName || section.title;
 
-  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % media.length);
+  // Go to a slide and make sure it and the one after it are mounted (loaded).
+  const goTo = (index: number) => {
+    const target = ((index % media.length) + media.length) % media.length;
+    const upcoming = (target + 1) % media.length;
+    setCurrentSlide(target);
+    setMounted((prev) =>
+      prev.includes(target) && prev.includes(upcoming)
+        ? prev
+        : Array.from(new Set([...prev, target, upcoming])),
+    );
+  };
 
-  const prevSlide = () =>
-    setCurrentSlide((prev) => (prev - 1 + media.length) % media.length);
+  const nextSlide = () => goTo(currentSlide + 1);
+
+  const prevSlide = () => goTo(currentSlide - 1);
 
   return (
     <section className="relative w-full h-[70vh] md:h-screen overflow-hidden">
       {/* Background Images/Videos */}
       {media.map((item, index) => {
-        console.log("item", item);
+        const shouldMount = index === 0 || mounted.includes(index);
+        const imageUrl = typeof item.url === "string" ? item.url : "";
+        const mobileImageUrl =
+          "mobileUrl" in item && typeof item.mobileUrl === "string"
+            ? item.mobileUrl
+            : imageUrl;
+
         return (
           <div
             key={item.id ?? index}
             className={`absolute inset-0 transition-opacity duration-1000 ${
               index === currentSlide ? "opacity-100" : "opacity-0"
             }`}
+            aria-hidden={index !== currentSlide}
           >
-            {item.type === "IMAGE" ? (
-              (() => {
-                const imageUrl = typeof item.url === "string" ? item.url : "";
-                const mobileImageUrl =
-                  "mobileUrl" in item && typeof item.mobileUrl === "string"
-                    ? item.mobileUrl
-                    : imageUrl;
-
-                return (
-                  <picture className="w-full h-full block">
-                    {/* Mobile Viewport (< 768px) */}
-                    <source
-                      media="(max-width: 767px)"
-                      srcSet={mobileImageUrl}
-                    />
-                    {/* Desktop Viewport (>= 768px) */}
-                    <source media="(min-width: 768px)" srcSet={imageUrl} />
-                    {/* Fallback Image */}
-                    <img
-                      src={imageUrl}
-                      alt={displayTitle || "Hero Banner"}
-                      className="w-full h-full object-cover object-center"
-                      loading="eager"
-                    />
-                  </picture>
-                );
-              })()
+            {!shouldMount ? null : item.type === "IMAGE" ? (
+              <SlidePicture
+                url={imageUrl}
+                mobileUrl={mobileImageUrl}
+                alt={displayTitle || "Hero Banner"}
+                isLcp={priority && index === 0}
+              />
             ) : (
               <video
-                src={typeof item.url === "string" ? item.url : ""}
+                src={imageUrl}
                 autoPlay
                 loop
                 muted
                 playsInline
+                preload="metadata"
                 className="w-full h-full object-cover"
               />
             )}
@@ -91,14 +176,7 @@ export default function AestheticFullImage({
       <div className="absolute inset-x-0 bottom-8 sm:bottom-14 lg:bottom-16 z-10 px-6 sm:px-12 md:px-16 text-center flex flex-col items-center justify-center">
         {/* Subtitle / Overlay Text */}
         {((section.showSubtitle && section.subtitle) || section.title) && (
-          <div
-            className={`max-w-3xl space-y-1.5 sm:space-y-2 mb-4 md:mb-6
-                       transition-all duration-1000 delay-200 ${
-                         isVisible
-                           ? "opacity-100 translate-y-0"
-                           : "opacity-0 translate-y-5"
-                       }`}
-          >
+          <div className="max-w-3xl space-y-1.5 sm:space-y-2 mb-4 md:mb-6">
             {section.title && (
               <h1
                 className="text-xl sm:text-3xl lg:text-4xl font-extrabold uppercase tracking-wider text-white drop-shadow-lg line-clamp-1"
@@ -130,15 +208,8 @@ export default function AestheticFullImage({
 
         {/* CTA Buttons — pill style, matches Banner carousel's "Shop Now" */}
         {section.ctaButtons && section.ctaButtons.length > 0 && (
-          <div
-            className={`flex flex-wrap justify-center gap-3 sm:gap-4
-                       transition-all duration-1000 delay-[400ms] ${
-                         isVisible
-                           ? "opacity-100 translate-y-0"
-                           : "opacity-0 translate-y-5"
-                       }`}
-          >
-            {section.ctaButtons
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
+            {[...section.ctaButtons]
               .sort((a, b) => (a.order || 0) - (b.order || 0))
               .map((btn) => {
                 const isPrimary = btn.style === "PRIMARY";
@@ -150,6 +221,11 @@ export default function AestheticFullImage({
                   <a
                     key={btn.id}
                     href={btn.url}
+                    aria-label={
+                      section.title
+                        ? `${btn.text} – ${section.title}`
+                        : btn.text
+                    }
                     target={btn.openNewTab ? "_blank" : "_self"}
                     rel={btn.openNewTab ? "noopener noreferrer" : undefined}
                     className={`
@@ -217,7 +293,7 @@ export default function AestheticFullImage({
                 <button
                   key={index}
                   type="button"
-                  onClick={() => setCurrentSlide(index)}
+                  onClick={() => goTo(index)}
                   aria-label={`Go to slide ${index + 1}`}
                   aria-current={isActive ? "true" : undefined}
                   className={`transition-all duration-300 rounded-full focus:outline-none focus:ring-2 focus:ring-black ${
