@@ -348,7 +348,7 @@ export default function AuthModal() {
                   onSubmit={mobileOtpMode ? async (e) => {
                     e.preventDefault();
                     setApiError("");
-                    if (!/^[6-9]\\d{9}$/.test(mobileNumber)) {
+                    if (!/^[6-9]\d{9}$/.test(mobileNumber)) {
                       setApiError("Enter a valid 10-digit mobile number.");
                       return;
                     }
@@ -421,7 +421,7 @@ export default function AuthModal() {
                           <span className="px-3 py-2.5 text-sm text-gray-500 border-r border-gray-200">+91</span>
                           <input id="mobile-number" type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={10} placeholder="10-digit mobile number"
                             className="min-w-0 flex-1 px-3 py-2.5 text-sm outline-none rounded-r-lg" value={mobileNumber}
-                            onChange={(e) => setMobileNumber(e.target.value.replace(/\\D/g, "").slice(0, 10))} disabled={isLoading || otpSent} />
+                            onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, "").slice(0, 10))} disabled={isLoading || otpSent} />
                         </div>
                       </div>
                       {otpSent && (
@@ -429,7 +429,7 @@ export default function AuthModal() {
                           <label htmlFor="mobile-otp" className="block text-sm font-medium text-gray-700 mb-1.5">6-digit OTP</label>
                           <input id="mobile-otp" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="Enter OTP"
                             className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm tracking-[0.3em]"
-                            value={mobileOtp} onChange={(e) => setMobileOtp(e.target.value.replace(/\\D/g, "").slice(0, 6))} disabled={isLoading} />
+                            value={mobileOtp} onChange={(e) => setMobileOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} disabled={isLoading} />
                           <div className="flex justify-between items-center mt-2">
                             <span className="text-xs text-gray-500">OTP expires in 5 minutes.</span>
                             <button type="button" disabled={isLoading} onClick={async () => { setIsLoading(true); setApiError(""); try { await authService.resendMobileOtp(mobileNumber); setMobileOtp(""); } catch (error: any) { setApiError(error?.response?.data?.message || "Unable to resend OTP."); } finally { setIsLoading(false); } }} className="text-xs font-medium text-gray-800 underline disabled:opacity-50">Resend OTP</button>
