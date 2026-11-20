@@ -37,6 +37,7 @@ export default function LandingPage({
     queryKey: ["home-sections-active"],
     queryFn: () => homeSectionService.getActiveSections(),
     initialData: initialSections,
+    staleTime: 60 * 1000,
   });
   const {
     data: banners_data = [],
@@ -46,6 +47,7 @@ export default function LandingPage({
     queryKey: ["active-banners"],
     queryFn: () => bannerService.getActiveBanners(),
     initialData: initialBanners,
+    staleTime: 60 * 1000,
   });
 
   const getDisplayTitle = (section: HomeSection) => {

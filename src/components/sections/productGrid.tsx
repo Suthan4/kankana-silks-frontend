@@ -7,9 +7,8 @@ import type { Swiper as SwiperType } from "swiper";
 import type { HomeSection } from "@/lib/api/home-section.api";
 import SmartImage from "../common/smartImage";
 
-// Mobile: 2 fluid cards per view. Tablet and up: fixed card widths, so cards
-// stay the same size on any screen (like the header menu) and the number
-// visible grows with the viewport.
+// Keep slide dimensions stable before and after Swiper initialisation.
+// The width already accounts for the gap between mobile slides.
 const SLIDE_CLASS =
   "!w-[calc((100%-0.75rem)/2)] md:!w-[240px] lg:!w-[270px] xl:!w-[290px]";
 
@@ -21,7 +20,6 @@ function ProductGrid({
   eagerCount = 0,
 }: {
   section: HomeSection;
-  /** How many leading cards are on the first screen (loaded immediately, not lazily). */
   eagerCount?: number;
 }) {
   const [swiper, setSwiper] = useState<SwiperType | null>(null);
@@ -52,15 +50,16 @@ function ProductGrid({
           <div className="mb-6 text-center md:mb-10">
             {section.showTitle && (
               <h2
-                className="mb-2 text-2xl font-semibold tracking-tight md:text-4xl"
+                className="mb-2 min-h-8 text-2xl font-semibold leading-8 tracking-tight md:min-h-10 md:text-4xl md:leading-10"
                 style={{ color: section.textColor }}
               >
                 {section.title}
               </h2>
             )}
+
             {section.showSubtitle && section.subtitle && (
               <p
-                className="mx-auto max-w-3xl text-base leading-relaxed opacity-80 md:text-xl"
+                className="mx-auto min-h-6 max-w-3xl text-base leading-relaxed opacity-80 md:text-xl"
                 style={{ color: section.textColor }}
               >
                 {section.subtitle}
@@ -92,6 +91,7 @@ function ProductGrid({
               </svg>
             </button>
           )}
+
           {scrollable && !isEnd && (
             <button
               type="button"
@@ -109,35 +109,33 @@ function ProductGrid({
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M9 5l7 7-7 7"
+                  d="M9 5l7-7-7 7"
                 />
               </svg>
             </button>
           )}
 
           <Swiper
+            className="[&_.swiper-wrapper]:gap-3 md:[&_.swiper-wrapper]:gap-5 lg:[&_.swiper-wrapper]:gap-6"
             slidesPerView="auto"
             slidesPerGroupAuto
-            spaceBetween={12}
-            breakpoints={{
-              768: { spaceBetween: 20 },
-              1024: { spaceBetween: 24 },
-            }}
+            spaceBetween={0}
             watchOverflow
             onSwiper={(s) => {
               setSwiper(s);
               sync(s);
             }}
             onSlideChange={sync}
-            onBreakpoint={sync}
             onResize={sync}
             onUpdate={sync}
           >
             {products.map((product, productIndex) => {
               const image = product.media?.[0]?.url;
               const inStock = product.stock?.some((s) => s.quantity > 0);
+
               const basePrice = Number(product.basePrice);
               const sellingPrice = Number(product.sellingPrice);
+
               const discount =
                 basePrice > sellingPrice
                   ? Math.round(((basePrice - sellingPrice) / basePrice) * 100)
@@ -146,15 +144,17 @@ function ProductGrid({
               return (
                 <SwiperSlide key={product.id} className={SLIDE_CLASS}>
                   <a
-                    href={`/products/${product.slug}`}
-                    className="group flex h-full flex-col min-w-0"
+                    href={`/${product.category.slug}/${product.slug}`}
+                    className="group flex h-full min-w-0 flex-col"
                   >
-                    <div className="relative aspect-[4/5] w-full overflow-hidden">
+                    <div className="relative aspect-[4/5] w-full overflow-hidden bg-gray-50">
                       {image ? (
                         <SmartImage
                           src={image}
                           alt={product.name}
                           fill
+                          quality={60}
+                          priority={productIndex < eagerCount}
                           loading={productIndex < eagerCount ? "eager" : "lazy"}
                           sizes="(min-width: 1280px) 290px, (min-width: 1024px) 270px, (min-width: 768px) 240px, 48vw"
                           draggable={false}
@@ -174,6 +174,7 @@ function ProductGrid({
                             Sold Out
                           </span>
                         )}
+
                         {discount > 0 && (
                           <span className="bg-main-primary/90 px-2.5 py-1 text-[11px] font-medium text-main-secondary backdrop-blur-md">
                             {discount}% OFF
@@ -186,13 +187,15 @@ function ProductGrid({
                       className="flex flex-1 flex-col pt-3"
                       style={{ color: section.textColor }}
                     >
-                      <h3 className="line-clamp-2 text-sm font-medium tracking-tight transition-opacity group-hover:opacity-80 md:text-[15px]">
+                      <h3 className="line-clamp-2 text-sm font-medium leading-5 tracking-tight transition-opacity group-hover:opacity-80 md:text-[15px]">
                         {product.name}
                       </h3>
+
                       <div className="mt-auto flex flex-wrap items-baseline gap-x-2 pt-1.5">
                         <span className="text-base font-semibold tracking-tight">
                           ₹{sellingPrice.toLocaleString("en-IN")}
                         </span>
+
                         {discount > 0 && (
                           <span className="text-xs text-gray-500 line-through">
                             ₹{basePrice.toLocaleString("en-IN")}
