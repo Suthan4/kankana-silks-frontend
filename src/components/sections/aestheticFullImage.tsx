@@ -1,7 +1,7 @@
 "use client";
 
 import { HomeSection } from "@/lib/api/home-section.api";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { getImageProps } from "next/image";
 import { preload } from "react-dom";
 import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
@@ -99,7 +99,6 @@ export default function AestheticFullImage({
   priority = false,
 }: AestheticFullImageProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
   // Slides that may be mounted. Only the current + next slide are loaded, so a
   // section with many slides doesn't download every image up front.
   const [mounted, setMounted] = useState<number[]>([0]);
@@ -107,9 +106,6 @@ export default function AestheticFullImage({
   const media = section.media?.length
     ? section.media
     : section.products?.flatMap((p) => p.media || []) || [];
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
 
   if (!media.length) return null;
 
@@ -180,14 +176,7 @@ export default function AestheticFullImage({
       <div className="absolute inset-x-0 bottom-8 sm:bottom-14 lg:bottom-16 z-10 px-6 sm:px-12 md:px-16 text-center flex flex-col items-center justify-center">
         {/* Subtitle / Overlay Text */}
         {((section.showSubtitle && section.subtitle) || section.title) && (
-          <div
-            className={`max-w-3xl space-y-1.5 sm:space-y-2 mb-4 md:mb-6
-                       transition-all duration-1000 delay-200 ${
-                         isVisible
-                           ? "opacity-100 translate-y-0"
-                           : "opacity-0 translate-y-5"
-                       }`}
-          >
+          <div className="max-w-3xl space-y-1.5 sm:space-y-2 mb-4 md:mb-6">
             {section.title && (
               <h1
                 className="text-xl sm:text-3xl lg:text-4xl font-extrabold uppercase tracking-wider text-white drop-shadow-lg line-clamp-1"
@@ -219,14 +208,7 @@ export default function AestheticFullImage({
 
         {/* CTA Buttons — pill style, matches Banner carousel's "Shop Now" */}
         {section.ctaButtons && section.ctaButtons.length > 0 && (
-          <div
-            className={`flex flex-wrap justify-center gap-3 sm:gap-4
-                       transition-all duration-1000 delay-[400ms] ${
-                         isVisible
-                           ? "opacity-100 translate-y-0"
-                           : "opacity-0 translate-y-5"
-                       }`}
-          >
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
             {[...section.ctaButtons]
               .sort((a, b) => (a.order || 0) - (b.order || 0))
               .map((btn) => {
@@ -239,6 +221,11 @@ export default function AestheticFullImage({
                   <a
                     key={btn.id}
                     href={btn.url}
+                    aria-label={
+                      section.title
+                        ? `${btn.text} – ${section.title}`
+                        : btn.text
+                    }
                     target={btn.openNewTab ? "_blank" : "_self"}
                     rel={btn.openNewTab ? "noopener noreferrer" : undefined}
                     className={`

@@ -293,7 +293,7 @@ export default function ProductCarousel({
 
           {/* Details */}
           <div className="flex min-w-0 flex-col justify-center">
-            <p className="mb-3 text-[11px] uppercase tracking-[0.22em] opacity-50">
+            <p className="mb-3 text-[11px] uppercase tracking-[0.22em] opacity-70">
               {currentProduct.category?.name || "Collection"}
             </p>
 
@@ -302,7 +302,7 @@ export default function ProductCarousel({
             </h3>
 
             {currentProduct.description && (
-              <p className="mt-4 line-clamp-3 max-w-xl text-sm leading-7 opacity-60 lg:text-[15px]">
+              <p className="mt-4 line-clamp-3 max-w-xl text-sm leading-7 opacity-75 lg:text-[15px]">
                 {stripHtml(currentProduct.description)}
               </p>
             )}
@@ -312,7 +312,7 @@ export default function ProductCarousel({
                 ₹{inr(currentProduct.sellingPrice)}
               </span>
               {currentDiscount && (
-                <span className="text-sm text-gray-400 line-through lg:text-base">
+                <span className="text-sm text-gray-500 line-through lg:text-base">
                   ₹{inr(currentProduct.basePrice)}
                 </span>
               )}

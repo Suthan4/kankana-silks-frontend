@@ -130,7 +130,11 @@ export default function CTASection() {
             sm:gap-4
           "
         >
-          <Link href={`/shop`} className="w-full sm:w-auto">
+          <Link
+            href={`/shop`}
+            aria-label="Shop Now – browse all sarees"
+            className="w-full sm:w-auto"
+          >
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
