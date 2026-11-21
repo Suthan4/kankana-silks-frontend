@@ -232,12 +232,13 @@ export default function AuthModal() {
     }
   };
 
-  if (!mounted || !isOpen) return null;
+  if (!mounted) return null;
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 bg-black/60 flex items-center justify-center p-3 z-50"
@@ -882,7 +883,8 @@ export default function AuthModal() {
             </AnimatePresence>
           </div>
         </motion.div>
-      </motion.div>
+        </motion.div>
+      )}
     </AnimatePresence>
   );
 }
