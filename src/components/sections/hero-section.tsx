@@ -77,6 +77,30 @@ function BannerPicture({
     });
   }
 
+  // Inactive banners are display:none, and Safari does not decode an image it
+  // has never painted. Without this, the swap decodes a full-screen image on
+  // the main thread and the hero flashes black for a moment (Chrome on Android
+  // decodes off-thread, which is why only iOS showed it). decode() warms the
+  // cache while the banner is still hidden.
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  useEffect(() => {
+    const img = imgRef.current;
+    if (!img || isActive || typeof img.decode !== "function") return;
+
+    const warm = () => {
+      img.decode().catch(() => {
+        /* a failed decode just falls back to decoding at swap time */
+      });
+    };
+
+    if (img.complete) {
+      warm();
+      return;
+    }
+    img.addEventListener("load", warm, { once: true });
+    return () => img.removeEventListener("load", warm);
+  }, [isActive]);
+
   return (
     <picture
       className="absolute inset-0 h-full w-full"
@@ -89,6 +113,7 @@ function BannerPicture({
       <img
         {...imgProps}
         ref={(node) => {
+          imgRef.current = node;
           // The image may finish loading before React hydrates.
           if (isFirst && node?.complete) onFirstSettled();
         }}
@@ -300,6 +325,7 @@ export default function HeroSection({
 
   return (
     <section
+      data-testid="hero-banner"
       className="
         relative mt-[108px]
         aspect-[16/10] h-auto w-full
@@ -411,7 +437,11 @@ export default function HeroSection({
         <AnimatePresence mode="wait">
           <motion.div
             key={activeBanner.id}
-            className="mx-auto w-full max-w-5xl text-center"
+            className="mx-auto w-full max-w-5xl text-center [backface-visibility:hidden]"
+            // Keep the reveal on a stable compositing layer for its whole
+            // lifetime. WebKit otherwise promotes it only while animating and
+            // re-rasterises the text when it is demoted, which looks like a pop.
+            style={{ willChange: "transform, opacity" }}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
@@ -424,7 +454,7 @@ export default function HeroSection({
               className="
                 text-xl font-semibold uppercase
                 leading-tight tracking-[0.08em]
-                text-white drop-shadow-lg
+                text-white text-shadow-hero
                 sm:text-4xl sm:tracking-[0.12em]
                 lg:text-5xl
               "
@@ -437,7 +467,7 @@ export default function HeroSection({
                 className="
                   mx-auto mt-4 hidden max-w-3xl
                   text-base font-light tracking-wide
-                  text-white/90 drop-shadow
+                  text-white/90 text-shadow-hero-sm
                   sm:block lg:text-lg
                 "
               >
@@ -451,10 +481,10 @@ export default function HeroSection({
                 className="
                   mt-4 inline-flex min-w-32
                   items-center justify-center
-                  border border-white bg-black/15
+                  border border-white bg-black/30 md:bg-black/15
                   px-5 py-2 text-[10px]
                   font-semibold uppercase tracking-[0.16em]
-                  text-white backdrop-blur-sm
+                  text-white md:backdrop-blur-sm
                   transition-colors
                   hover:bg-white hover:text-black
                   sm:mt-7 sm:min-w-40 sm:px-8
@@ -530,7 +560,7 @@ export default function HeroSection({
                 type="button"
                 onClick={() => goToSlide(index)}
                 className={`
-                  rounded-full transition-all duration-300
+                  rounded-full transition-[width,height,background-color] duration-300
                   ${
                     index === currentSlide
                       ? "h-[3px] w-10 bg-white"

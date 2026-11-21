@@ -125,7 +125,7 @@ export default function UnifiedSearchModal({
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[200] bg-black/60"
         >
-          <div className="flex items-start justify-center min-h-screen p-4 pt-[10vh]">
+          <div className="flex items-start justify-center min-h-dvh p-4 pt-[10vh]">
             <motion.div
               ref={modalRef}
               initial={{ opacity: 0, scale: 0.95, y: -20 }}

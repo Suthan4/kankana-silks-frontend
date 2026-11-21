@@ -217,7 +217,7 @@ const AccordionCard = ({
 const ProcessingOverlay = ({ step }: { step: 1 | 2 | 3 }) => {
   const steps = ["Creating Order", "Initiating Payment", "Verifying Payment"];
   return (
-    <div className="fixed inset-0 z-[9999] bg-white/5 backdrop-blur-sm flex items-center justify-center">
+    <div className="fixed inset-0 z-[9999] bg-white/40 md:bg-white/5 md:backdrop-blur-sm flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 w-[320px]">
         <div className="flex flex-col items-center gap-5">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-stone-100 text-stone-900">
@@ -275,7 +275,7 @@ const ProcessingOverlay = ({ step }: { step: 1 | 2 | 3 }) => {
 
 // ─── Order Success Overlay ────────────────────────────────────────────────────
 const OrderSuccessOverlay = () => (
-  <div className="fixed inset-0 z-[10000] bg-white/5 backdrop-blur-sm flex items-center justify-center">
+  <div className="fixed inset-0 z-[10000] bg-white/40 md:bg-white/5 md:backdrop-blur-sm flex items-center justify-center">
     <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 w-[320px] text-center">
       <div className="w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center mb-4">
         <svg

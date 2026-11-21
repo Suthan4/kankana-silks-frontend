@@ -100,8 +100,14 @@ export function ZoomGallery({
       if (!isMainImageLoaded) return;
       const rect = event.currentTarget.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
-      const x = Math.max(0, Math.min(100, ((event.clientX - rect.left) / rect.width) * 100));
-      const y = Math.max(0, Math.min(100, ((event.clientY - rect.top) / rect.height) * 100));
+      const x = Math.max(
+        0,
+        Math.min(100, ((event.clientX - rect.left) / rect.width) * 100),
+      );
+      const y = Math.max(
+        0,
+        Math.min(100, ((event.clientY - rect.top) / rect.height) * 100),
+      );
       setHoverOrigin(`${x}% ${y}%`);
     },
     [isMainImageLoaded],
@@ -213,11 +219,13 @@ export function ZoomGallery({
                     onError={() => handleMainImageError(img.url)}
                   />
 
-                  {idx === selectedImageIndex && discount > 0 && !isOutOfStock && (
-                    <div className="absolute left-3 top-9 z-10 rounded-full bg-main-primary px-2.5 py-1 text-xs font-semibold text-main-secondary">
-                      {discount}% OFF
-                    </div>
-                  )}
+                  {idx === selectedImageIndex &&
+                    discount > 0 &&
+                    !isOutOfStock && (
+                      <div className="absolute left-3 top-9 z-10 rounded-full bg-main-primary px-2.5 py-1 text-xs font-semibold text-main-secondary">
+                        {discount}% OFF
+                      </div>
+                    )}
 
                   {idx === selectedImageIndex && (
                     <button
@@ -246,7 +254,9 @@ export function ZoomGallery({
                   <motion.div
                     className="h-full bg-stone-900"
                     initial={false}
-                    animate={{ width: idx <= safeSelectedIndex ? "100%" : "0%" }}
+                    animate={{
+                      width: idx <= safeSelectedIndex ? "100%" : "0%",
+                    }}
                     transition={{ duration: 0.2, ease: "easeOut" }}
                   />
                 </div>
@@ -263,7 +273,10 @@ export function ZoomGallery({
       </div>
 
       {/* Desktop: contained hover zoom, never a floating panel over product details. */}
-      <div className="hidden w-full gap-3 md:flex" style={{ height: "clamp(360px, 48vw, 650px)" }}>
+      <div
+        className="hidden w-full gap-3 md:flex"
+        style={{ height: "clamp(360px, 48vw, 650px)" }}
+      >
         {images.length > 1 && (
           <div className="flex w-[72px] shrink-0 flex-col gap-2 overflow-y-auto pr-1">
             {images.map((img, idx) => (
@@ -315,7 +328,10 @@ export function ZoomGallery({
                 sizes="(max-width: 768px) 100vw, 48vw"
                 className="select-none object-cover object-top transition-transform duration-200 ease-out will-change-transform"
                 style={{
-                  transform: isHoverZoomed && isMainImageLoaded ? "scale(1.45)" : "scale(1)",
+                  transform:
+                    isHoverZoomed && isMainImageLoaded
+                      ? "scale(1.45)"
+                      : "scale(1)",
                   transformOrigin: hoverOrigin,
                 }}
                 onLoad={() => handleMainImageLoad(activeImageUrl)}
@@ -393,7 +409,7 @@ export function ZoomGallery({
               if (event.target === event.currentTarget) closeLightbox();
             }}
             ref={lightboxRef}
-            className="fixed inset-0 z-[10000] flex flex-col bg-[#121212]/[0.97] text-white backdrop-blur-md"
+            className="fixed inset-0 z-[10000] flex flex-col bg-[#121212]/[0.97] text-white"
           >
             <header className="relative z-10 flex min-h-[68px] items-center justify-between gap-4 border-b border-white/10 px-4 py-3 sm:px-7">
               <div className="min-w-0">
@@ -414,7 +430,11 @@ export function ZoomGallery({
                   title={isLightboxZoomed ? "Zoom out" : "Zoom in"}
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
                 >
-                  {isLightboxZoomed ? <ZoomOut className="h-5 w-5" /> : <ZoomIn className="h-5 w-5" />}
+                  {isLightboxZoomed ? (
+                    <ZoomOut className="h-5 w-5" />
+                  ) : (
+                    <ZoomIn className="h-5 w-5" />
+                  )}
                 </button>
                 <button
                   ref={closeButtonRef}
@@ -451,7 +471,9 @@ export function ZoomGallery({
                   quality={100}
                   sizes="100vw"
                   className={`select-none object-contain transition-transform duration-200 ease-out ${isLightboxZoomed ? "cursor-zoom-out" : "cursor-zoom-in"}`}
-                  style={{ transform: isLightboxZoomed ? "scale(1.8)" : "scale(1)" }}
+                  style={{
+                    transform: isLightboxZoomed ? "scale(1.8)" : "scale(1)",
+                  }}
                   onClick={() => setIsLightboxZoomed((value) => !value)}
                   draggable={false}
                 />

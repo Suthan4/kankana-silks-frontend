@@ -33,7 +33,6 @@ import { useRouter } from "next/navigation";
 import UnifiedSearchModal from "./unifiedSearchModal";
 import { cartApi } from "@/lib/api/cart.api";
 import { wishlistApi } from "@/lib/api/wishlist.api";
-import { useMobileHeaderScroll } from "@/hooks/useMobileHeaderScroll";
 
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -76,7 +75,6 @@ function Header() {
   const pathname = usePathname();
 
   const { user } = useAuthModal();
-  const showSearchRow = useMobileHeaderScroll();
   useOnClickOutside(userMenuRef, () => setUserMenuOpen(false));
   useOnClickOutside(locationRef, () => {
     if (window.innerWidth >= 768) setLocationModalOpen(false);
@@ -777,16 +775,15 @@ function Header() {
             <Link
               href="/"
               aria-label="Kankana Silks home"
-              className="relative block h-14 w-[180px] shrink-0"
+              className="relative block h-14 w-[180px]"
             >
               <Image
                 src="/removed-bg-logo.png"
                 alt="Kankana Silks"
-                width={360}
-                height={140}
+                fill
                 priority
                 sizes="180px"
-                className={`absolute inset-0 h-full w-full object-contain transition-opacity duration-150 ${
+                className={`object-contain transition-opacity duration-150 ${
                   isHeaderWhite ? "opacity-100" : "opacity-0"
                 }`}
               />
@@ -795,11 +792,10 @@ function Header() {
                 src="/removed-bg-logo.png"
                 alt=""
                 aria-hidden="true"
-                width={360}
-                height={140}
+                fill
                 priority
                 sizes="180px"
-                className={`absolute inset-0 h-full w-full object-contain brightness-0 invert transition-opacity duration-150 ${
+                className={`object-contain brightness-0 invert transition-opacity duration-150 ${
                   isHeaderWhite ? "opacity-0" : "opacity-100"
                 }`}
               />
@@ -1101,24 +1097,19 @@ function Header() {
                         aria-hidden="true"
                         initial={false}
                         animate={{
-                          scaleX: isActive ? 1 : 0.1,
+                          width: isActive ? "calc(100% - 32px)" : "10px",
                           opacity: isActive ? 1 : 0.65,
                         }}
                         transition={{
-                          scaleX: {
+                          width: {
                             duration: 0.28,
-                            ease: "easeOut",
+                            ease: [0.22, 1, 0.36, 1],
                           },
                           opacity: {
                             duration: 0.2,
-                            ease: "easeOut",
                           },
                         }}
-                        style={{
-                          transformOrigin: "center",
-                          willChange: "transform, opacity",
-                        }}
-                        className={`pointer-events-none absolute bottom-0 left-4 right-4 h-[2px] rounded-full ${
+                        className={`pointer-events-none absolute bottom-0 left-1/2 h-[2px] -translate-x-1/2 rounded-full ${
                           isHeaderWhite
                             ? "bg-black"
                             : "bg-white shadow-[0_0_8px_rgba(255,255,255,0.65)]"
@@ -1538,16 +1529,15 @@ function Header() {
           <Link
             href="/"
             aria-label="Kankana Silks home"
-            className="relative block h-9 w-[120px] shrink-0"
+            className="relative block h-9 w-[120px]"
           >
             <Image
               src="/removed-bg-logo.png"
               alt="Kankana Silks"
-              width={240}
-              height={72}
+              fill
               priority
-              sizes="120px"
-              className="h-full w-full object-contain"
+              sizes="180px"
+              className="object-contain"
             />
           </Link>
 

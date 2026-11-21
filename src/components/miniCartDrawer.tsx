@@ -341,7 +341,7 @@ export default function MiniCartDrawer() {
               fixed z-[151] bg-white shadow-2xl flex flex-col overflow-hidden
               ${
                 isMobile
-                  ? "bottom-0 left-0 right-0 max-h-[85vh] rounded-t-3xl"
+                  ? "bottom-0 left-0 right-0 max-h-[85dvh] rounded-t-3xl"
                   : "right-0 top-0 h-full w-full sm:w-[420px]"
               }
             `}

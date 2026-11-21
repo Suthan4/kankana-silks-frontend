@@ -193,7 +193,7 @@ export default function BannerSection({ section }: { section: HomeSection }) {
         >
           {/* Horizontal Track */}
           <div
-            className="flex h-full w-full transition-transform duration-500 ease-out motion-reduce:transition-none"
+            className="flex h-full w-full will-change-transform [backface-visibility:hidden] transition-transform duration-500 ease-out motion-reduce:transition-none"
             style={{ transform: `translateX(-${currentIndex * 100}%)` }}
           >
             {slides.map((slide, index) => {
@@ -227,6 +227,9 @@ export default function BannerSection({ section }: { section: HomeSection }) {
                       fill
                       sizes="100vw"
                       priority={index === 0}
+                      // Slides 2+ sit off-screen (translateX), so lazy loading never
+                      // fetched them until the swipe, and iOS showed a blank frame.
+                      loading={index === 0 ? undefined : "eager"}
                       className="object-cover object-center"
                       onError={() =>
                         setFailedImages((prev) => ({
@@ -246,7 +249,7 @@ export default function BannerSection({ section }: { section: HomeSection }) {
                   {/* Discount / Promo Badge */}
                   {slide.badge && (
                     <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-10">
-                      <span className="inline-block px-3 py-1 rounded-full bg-amber-600 text-white text-xs font-bold uppercase tracking-wider shadow-md backdrop-blur-sm">
+                      <span className="inline-block px-3 py-1 rounded-full bg-amber-600 text-white text-xs font-bold uppercase tracking-wider shadow-md">
                         {slide.badge}
                       </span>
                     </div>
@@ -254,12 +257,12 @@ export default function BannerSection({ section }: { section: HomeSection }) {
 
                   {/* Slide Content Overlay */}
                   <div className="absolute inset-x-0 bottom-6 sm:bottom-10 lg:bottom-12 z-10 px-6 sm:px-12 md:px-16 text-center flex flex-col items-center justify-center">
-                    <h3 className="text-xl sm:text-3xl lg:text-4xl font-extrabold uppercase tracking-wider text-white drop-shadow-lg max-w-3xl line-clamp-1">
+                    <h3 className="text-xl sm:text-3xl lg:text-4xl font-extrabold uppercase tracking-wider text-white text-shadow-hero max-w-3xl line-clamp-1">
                       {slide.title}
                     </h3>
 
                     {slide.subtitle && (
-                      <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm lg:text-base text-white/90 max-w-2xl font-light drop-shadow line-clamp-2">
+                      <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm lg:text-base text-white/90 max-w-2xl font-light text-shadow-hero-sm line-clamp-2">
                         {slide.subtitle}
                       </p>
                     )}
@@ -286,7 +289,7 @@ export default function BannerSection({ section }: { section: HomeSection }) {
                 type="button"
                 onClick={handlePrevManual}
                 aria-label="Previous banner"
-                className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md border border-white/20 flex items-center justify-center shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-white/80 active:scale-95"
+                className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/50 md:bg-black/40 hover:bg-black/70 text-white md:backdrop-blur-md border border-white/20 flex items-center justify-center shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-white/80 active:scale-95"
               >
                 <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
               </button>
@@ -295,14 +298,14 @@ export default function BannerSection({ section }: { section: HomeSection }) {
                 type="button"
                 onClick={handleNextManual}
                 aria-label="Next banner"
-                className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md border border-white/20 flex items-center justify-center shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-white/80 active:scale-95"
+                className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/50 md:bg-black/40 hover:bg-black/70 text-white md:backdrop-blur-md border border-white/20 flex items-center justify-center shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-white/80 active:scale-95"
               >
                 <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
               </button>
 
               {/* Black Pagination Dots */}
               <div
-                className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/85 backdrop-blur-md shadow-md border border-white/40"
+                className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 md:bg-white/85 md:backdrop-blur-md shadow-md border border-white/40"
                 role="tablist"
                 aria-label="Banner pagination"
               >
@@ -315,7 +318,7 @@ export default function BannerSection({ section }: { section: HomeSection }) {
                       onClick={() => handleDotClick(index)}
                       aria-label={`Go to banner ${index + 1}`}
                       aria-current={isActive ? "true" : undefined}
-                      className={`transition-all duration-300 rounded-full focus:outline-none focus:ring-2 focus:ring-black ${
+                      className={`transition-[width,height,background-color] duration-300 rounded-full focus:outline-none focus:ring-2 focus:ring-black ${
                         isActive
                           ? "w-7 sm:w-8 h-2.5 bg-black"
                           : "w-2.5 h-2.5 bg-gray-400 hover:bg-gray-700"
