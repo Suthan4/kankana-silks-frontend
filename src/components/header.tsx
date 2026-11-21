@@ -2061,9 +2061,7 @@ function Header() {
       {/* Mobile Bottom Navigation */}
       {!isMyAccountPage && !isProductDetailPage && !isCategoryPage && (
         <motion.nav
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
+          initial={false}
           className="md:hidden fixed bottom-0 left-0 right-0 bg-white z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.08)]"
         >
           <ul className="flex justify-around items-center py-3">
