@@ -232,675 +232,682 @@ export default function AuthModal() {
     }
   };
 
-  // Stay mounted while closed: <AnimatePresence> can only play the exit
-  // animation if it is still rendered when `isOpen` flips to false. Returning
-  // null here made the modal and its backdrop vanish in a single frame.
   if (!mounted) return null;
 
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          key="auth-modal-backdrop"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.18, ease: "easeOut" }}
-          className="fixed inset-0 bg-black/60 flex items-center justify-center p-3 z-50"
-          onClick={closeModal}
           role="presentation"
         >
           <motion.div
-            // iOS/WebKit: a spring on scale + opacity of a large, shadowed card
-            // drops the layer for a frame or two when it settles (the modal blinked
-            // in the recording) and re-rasterises the text while scaling. Use a
-            // short tween on opacity/translate only, and keep the layer promoted.
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            style={{
-              willChange: "transform, opacity",
-              WebkitBackfaceVisibility: "hidden",
-              backfaceVisibility: "hidden",
-            }}
-            onClick={(e) => e.stopPropagation()}
-            className="rounded-2xl shadow-xl w-full max-w-sm h-auto flex flex-col bg-white"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="modal-title"
+            key="auth-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 flex items-center justify-center p-3 z-50"
+            onClick={closeModal}
+            role="presentation"
           >
-            {/* Header - Compact mobile-first */}
-            <div className="relative bg-gradient-to-br from-gray-50 to-white px-4 py-2 sm:px-6 sm:pt-6 sm:pb-4 text-black flex-shrink-0 border-b border-gray-100">
-              <button
-                onClick={closeModal}
-                className="absolute top-3 right-3 sm:top-4 sm:right-4 p-1.5 hover:bg-gray-200 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
-                aria-label="Close dialog"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              <div className="flex justify-center mb-2">
-                <motion.img
-                  src="/image-removebg-preview.png"
-                  width={316}
-                  height={152}
-                  alt="Kankana Silks"
-                  // No layoutId: its only partner (the splash screen) is disabled, and
-                  // a layout-projected image inside a scaling modal visibly shakes on
-                  // iOS while the spring runs.
-                  className="h-9 w-auto object-contain"
-                />
-              </div>
-              <h2
-                id="modal-title"
-                className="text-lg sm:text-xl font-bold text-center"
-              >
-                {mode === "login"
-                  ? "Welcome Back"
-                  : mode === "register"
-                    ? "Create Account"
-                    : "Reset Password"}
-              </h2>
-              <p className="text-center text-xs sm:text-sm opacity-70 mt-1">
-                {mode === "login"
-                  ? "Sign in to continue"
-                  : mode === "register"
-                    ? "Join Kankana Silks"
-                    : "We'll send you a reset link"}
-              </p>
-            </div>
-
-            {/* Form - Non-scrollable, compact */}
-            <div className="bg-white px-4 py-4 sm:px-6 sm:py-6 flex-1 flex flex-col overflow-hidden">
-              {apiError && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2"
+            <motion.div
+              // iOS/WebKit: a spring on scale + opacity of a large, shadowed card
+              // drops the layer for a frame or two when it settles (the modal blinked
+              // in the recording) and re-rasterises the text while scaling. Use a
+              // short tween on opacity/translate only, and keep the layer promoted.
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              style={{
+                willChange: "transform, opacity",
+                WebkitBackfaceVisibility: "hidden",
+                backfaceVisibility: "hidden",
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="rounded-2xl shadow-xl w-full max-w-sm h-auto flex flex-col bg-white"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="modal-title"
+            >
+              {/* Header - Compact mobile-first */}
+              <div className="relative bg-gradient-to-br from-gray-50 to-white px-4 py-2 sm:px-6 sm:pt-6 sm:pb-4 text-black flex-shrink-0 border-b border-gray-100">
+                <button
+                  onClick={closeModal}
+                  className="absolute top-3 right-3 sm:top-4 sm:right-4 p-1.5 hover:bg-gray-200 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+                  aria-label="Close dialog"
                 >
-                  <AlertCircle
-                    className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5"
-                    aria-hidden="true"
+                  <X className="w-5 h-5" />
+                </button>
+                <div className="flex justify-center mb-2">
+                  <motion.img
+                    src="/image-removebg-preview.png"
+                    width={316}
+                    height={152}
+                    alt="Kankana Silks"
+                    // No layoutId: its only partner (the splash screen) is disabled, and
+                    // a layout-projected image inside a scaling modal visibly shakes on
+                    // iOS while the spring runs.
+                    className="h-9 w-auto object-contain"
                   />
-                  <p className="text-xs sm:text-sm text-red-700">{apiError}</p>
-                </motion.div>
-              )}
+                </div>
+                <h2
+                  id="modal-title"
+                  className="text-lg sm:text-xl font-bold text-center"
+                >
+                  {mode === "login"
+                    ? "Welcome Back"
+                    : mode === "register"
+                      ? "Create Account"
+                      : "Reset Password"}
+                </h2>
+                <p className="text-center text-xs sm:text-sm opacity-70 mt-1">
+                  {mode === "login"
+                    ? "Sign in to continue"
+                    : mode === "register"
+                      ? "Join Kankana Silks"
+                      : "We'll send you a reset link"}
+                </p>
+              </div>
 
-              <AnimatePresence mode="wait">
-                {/* Login Form */}
-                {mode === "login" && (
-                  <motion.form
-                    key="login"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="space-y-3 sm:space-y-4"
-                    onSubmit={handleLoginSubmit}
+              {/* Form - Non-scrollable, compact */}
+              <div className="bg-white px-4 py-4 sm:px-6 sm:py-6 flex-1 flex flex-col overflow-hidden">
+                {apiError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2"
                   >
-                    <div>
-                      <label
-                        htmlFor="login-email"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
-                      >
-                        Email
-                      </label>
-                      <div className="relative">
-                        <Mail
-                          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-                          aria-hidden="true"
-                        />
-                        <input
-                          id="login-email"
-                          type="email"
-                          placeholder="name@example.com"
-                          className={`w-full pl-9 pr-4 py-2 sm:py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition text-sm sm:text-base ${
-                            loginErrors.email
-                              ? "border-red-500 bg-red-50"
-                              : "border-gray-300 bg-white"
-                          }`}
-                          onChange={(e) =>
-                            setLoginData({
-                              ...loginData,
-                              email: e.target.value,
-                            })
-                          }
-                          value={loginData.email}
-                          disabled={isLoading}
-                          aria-invalid={!!loginErrors.email}
-                          aria-describedby={
-                            loginErrors.email ? "login-email-error" : undefined
-                          }
-                        />
-                      </div>
-                      {loginErrors.email && (
-                        <p
-                          id="login-email-error"
-                          className="mt-1 text-xs text-red-500"
-                        >
-                          {loginErrors.email}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="login-password"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
-                      >
-                        Password
-                      </label>
-                      <div className="relative">
-                        <Lock
-                          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-                          aria-hidden="true"
-                        />
-                        <input
-                          id="login-password"
-                          type={showPassword ? "text" : "password"}
-                          placeholder="••••••••"
-                          className={`w-full pl-9 pr-10 py-2 sm:py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition text-sm sm:text-base ${
-                            loginErrors.password
-                              ? "border-red-500 bg-red-50"
-                              : "border-gray-300 bg-white"
-                          }`}
-                          onChange={(e) =>
-                            setLoginData({
-                              ...loginData,
-                              password: e.target.value,
-                            })
-                          }
-                          value={loginData.password}
-                          disabled={isLoading}
-                          aria-invalid={!!loginErrors.password}
-                          aria-describedby={
-                            loginErrors.password
-                              ? "login-password-error"
-                              : undefined
-                          }
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-black rounded p-1"
-                          aria-label={
-                            showPassword ? "Hide password" : "Show password"
-                          }
-                        >
-                          {showPassword ? (
-                            <EyeOff className="w-4 h-4" />
-                          ) : (
-                            <Eye className="w-4 h-4" />
-                          )}
-                        </button>
-                      </div>
-                      {loginErrors.password && (
-                        <p
-                          id="login-password-error"
-                          className="mt-1 text-xs text-red-500"
-                        >
-                          {loginErrors.password}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs sm:text-sm">
-                      <label className="flex items-center gap-2 cursor-pointer hover:text-gray-700">
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4 accent-black rounded focus:ring-2 focus:ring-black"
-                          aria-label="Remember me"
-                        />
-                        <span className="text-gray-600">Remember me</span>
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setMode("forgot")}
-                        className="text-black hover:text-black/60 font-medium focus:outline-none focus:ring-2 focus:ring-black rounded px-1"
-                      >
-                        Forgot Password?
-                      </button>
-                    </div>
-
-                    <motion.button
-                      type="submit"
-                      whileHover={{ scale: isLoading ? 1 : 1.02 }}
-                      whileTap={{ scale: isLoading ? 1 : 0.98 }}
-                      disabled={isLoading}
-                      className="w-full bg-black text-white py-2 sm:py-2.5 rounded-lg font-semibold shadow-md text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed hover:bg-black/90 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition"
-                    >
-                      {isLoading ? "Signing in..." : "Sign In"}
-                    </motion.button>
-
-                    <p className="text-center text-xs sm:text-sm text-gray-600">
-                      Don't have an account?{" "}
-                      <button
-                        type="button"
-                        onClick={() => setMode("register")}
-                        className="text-black hover:text-black/60 font-medium focus:outline-none focus:ring-2 focus:ring-black rounded px-1"
-                      >
-                        Sign up
-                      </button>
+                    <AlertCircle
+                      className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5"
+                      aria-hidden="true"
+                    />
+                    <p className="text-xs sm:text-sm text-red-700">
+                      {apiError}
                     </p>
-                  </motion.form>
+                  </motion.div>
                 )}
 
-                {/* Register Form */}
-                {mode === "register" && (
-                  <motion.form
-                    key="register"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="space-y-3 sm:space-y-4"
-                    onSubmit={handleRegisterSubmit}
-                  >
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <AnimatePresence mode="wait">
+                  {/* Login Form */}
+                  {mode === "login" && (
+                    <motion.form
+                      key="login"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      className="space-y-3 sm:space-y-4"
+                      onSubmit={handleLoginSubmit}
+                    >
                       <div>
                         <label
-                          htmlFor="register-firstname"
+                          htmlFor="login-email"
                           className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
                         >
-                          First Name
+                          Email
                         </label>
                         <div className="relative">
-                          <User
+                          <Mail
                             className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
                             aria-hidden="true"
                           />
                           <input
-                            id="register-firstname"
-                            type="text"
-                            placeholder="Aisha"
+                            id="login-email"
+                            type="email"
+                            placeholder="name@example.com"
                             className={`w-full pl-9 pr-4 py-2 sm:py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition text-sm sm:text-base ${
-                              registerErrors.firstName
+                              loginErrors.email
                                 ? "border-red-500 bg-red-50"
                                 : "border-gray-300 bg-white"
                             }`}
                             onChange={(e) =>
-                              setRegisterData({
-                                ...registerData,
-                                firstName: e.target.value,
+                              setLoginData({
+                                ...loginData,
+                                email: e.target.value,
                               })
                             }
-                            value={registerData.firstName}
+                            value={loginData.email}
                             disabled={isLoading}
-                            aria-invalid={!!registerErrors.firstName}
+                            aria-invalid={!!loginErrors.email}
                             aria-describedby={
-                              registerErrors.firstName
-                                ? "register-firstname-error"
+                              loginErrors.email
+                                ? "login-email-error"
                                 : undefined
                             }
                           />
                         </div>
-                        {registerErrors.firstName && (
+                        {loginErrors.email && (
                           <p
-                            id="register-firstname-error"
+                            id="login-email-error"
                             className="mt-1 text-xs text-red-500"
                           >
-                            {registerErrors.firstName}
+                            {loginErrors.email}
                           </p>
                         )}
                       </div>
+
                       <div>
                         <label
-                          htmlFor="register-lastname"
+                          htmlFor="login-password"
                           className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
                         >
-                          Last Name
+                          Password
                         </label>
                         <div className="relative">
-                          <User
+                          <Lock
                             className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
                             aria-hidden="true"
                           />
                           <input
-                            id="register-lastname"
-                            type="text"
-                            placeholder="Kapoor"
-                            className={`w-full pl-9 pr-4 py-2 sm:py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition text-sm sm:text-base ${
-                              registerErrors.lastName
+                            id="login-password"
+                            type={showPassword ? "text" : "password"}
+                            placeholder="••••••••"
+                            className={`w-full pl-9 pr-10 py-2 sm:py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition text-sm sm:text-base ${
+                              loginErrors.password
                                 ? "border-red-500 bg-red-50"
                                 : "border-gray-300 bg-white"
                             }`}
                             onChange={(e) =>
-                              setRegisterData({
-                                ...registerData,
-                                lastName: e.target.value,
+                              setLoginData({
+                                ...loginData,
+                                password: e.target.value,
                               })
                             }
-                            value={registerData.lastName}
+                            value={loginData.password}
                             disabled={isLoading}
-                            aria-invalid={!!registerErrors.lastName}
+                            aria-invalid={!!loginErrors.password}
                             aria-describedby={
-                              registerErrors.lastName
-                                ? "register-lastname-error"
+                              loginErrors.password
+                                ? "login-password-error"
                                 : undefined
                             }
                           />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-black rounded p-1"
+                            aria-label={
+                              showPassword ? "Hide password" : "Show password"
+                            }
+                          >
+                            {showPassword ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </button>
                         </div>
-                        {registerErrors.lastName && (
+                        {loginErrors.password && (
                           <p
-                            id="register-lastname-error"
+                            id="login-password-error"
                             className="mt-1 text-xs text-red-500"
                           >
-                            {registerErrors.lastName}
+                            {loginErrors.password}
                           </p>
                         )}
                       </div>
-                    </div>
 
-                    <div>
-                      <label
-                        htmlFor="register-phone"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
-                      >
-                        Phone
-                      </label>
-                      <div className="relative">
-                        <Phone
-                          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-                          aria-hidden="true"
-                        />
-                        <input
-                          id="register-phone"
-                          type="tel"
-                          placeholder="9876543210"
-                          className={`w-full pl-9 pr-4 py-2 sm:py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition text-sm sm:text-base ${
-                            registerErrors.phone
-                              ? "border-red-500 bg-red-50"
-                              : "border-gray-300 bg-white"
-                          }`}
-                          onChange={(e) =>
-                            setRegisterData({
-                              ...registerData,
-                              phone: e.target.value,
-                            })
-                          }
-                          value={registerData.phone}
-                          disabled={isLoading}
-                          aria-invalid={!!registerErrors.phone}
-                          aria-describedby={
-                            registerErrors.phone
-                              ? "register-phone-error"
-                              : undefined
-                          }
-                        />
-                      </div>
-                      {registerErrors.phone && (
-                        <p
-                          id="register-phone-error"
-                          className="mt-1 text-xs text-red-500"
-                        >
-                          {registerErrors.phone}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="register-email"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
-                      >
-                        Email
-                      </label>
-                      <div className="relative">
-                        <Mail
-                          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-                          aria-hidden="true"
-                        />
-                        <input
-                          id="register-email"
-                          type="email"
-                          placeholder="name@example.com"
-                          className={`w-full pl-9 pr-4 py-2 sm:py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition text-sm sm:text-base ${
-                            registerErrors.email
-                              ? "border-red-500 bg-red-50"
-                              : "border-gray-300 bg-white"
-                          }`}
-                          onChange={(e) =>
-                            setRegisterData({
-                              ...registerData,
-                              email: e.target.value,
-                            })
-                          }
-                          value={registerData.email}
-                          disabled={isLoading}
-                          aria-invalid={!!registerErrors.email}
-                          aria-describedby={
-                            registerErrors.email
-                              ? "register-email-error"
-                              : undefined
-                          }
-                        />
-                      </div>
-                      {registerErrors.email && (
-                        <p
-                          id="register-email-error"
-                          className="mt-1 text-xs text-red-500"
-                        >
-                          {registerErrors.email}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="register-password"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
-                      >
-                        Password
-                      </label>
-                      <div className="relative">
-                        <Lock
-                          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-                          aria-hidden="true"
-                        />
-                        <input
-                          id="register-password"
-                          type={showPassword ? "text" : "password"}
-                          placeholder="••••••••"
-                          className={`w-full pl-9 pr-10 py-2 sm:py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition text-sm sm:text-base ${
-                            registerErrors.password
-                              ? "border-red-500 bg-red-50"
-                              : "border-gray-300 bg-white"
-                          }`}
-                          onChange={(e) =>
-                            setRegisterData({
-                              ...registerData,
-                              password: e.target.value,
-                            })
-                          }
-                          value={registerData.password}
-                          disabled={isLoading}
-                          aria-invalid={!!registerErrors.password}
-                          aria-describedby={
-                            registerErrors.password
-                              ? "register-password-error"
-                              : undefined
-                          }
-                        />
+                      <div className="flex items-center justify-between text-xs sm:text-sm">
+                        <label className="flex items-center gap-2 cursor-pointer hover:text-gray-700">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 accent-black rounded focus:ring-2 focus:ring-black"
+                            aria-label="Remember me"
+                          />
+                          <span className="text-gray-600">Remember me</span>
+                        </label>
                         <button
                           type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-black rounded p-1"
-                          aria-label={
-                            showPassword ? "Hide password" : "Show password"
-                          }
+                          onClick={() => setMode("forgot")}
+                          className="text-black hover:text-black/60 font-medium focus:outline-none focus:ring-2 focus:ring-black rounded px-1"
                         >
-                          {showPassword ? (
-                            <EyeOff className="w-4 h-4" />
-                          ) : (
-                            <Eye className="w-4 h-4" />
-                          )}
+                          Forgot Password?
                         </button>
                       </div>
-                      {registerErrors.password && (
-                        <p
-                          id="register-password-error"
-                          className="mt-1 text-xs text-red-500"
+
+                      <motion.button
+                        type="submit"
+                        whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                        whileTap={{ scale: isLoading ? 1 : 0.98 }}
+                        disabled={isLoading}
+                        className="w-full bg-black text-white py-2 sm:py-2.5 rounded-lg font-semibold shadow-md text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed hover:bg-black/90 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition"
+                      >
+                        {isLoading ? "Signing in..." : "Sign In"}
+                      </motion.button>
+
+                      <p className="text-center text-xs sm:text-sm text-gray-600">
+                        Don't have an account?{" "}
+                        <button
+                          type="button"
+                          onClick={() => setMode("register")}
+                          className="text-black hover:text-black/60 font-medium focus:outline-none focus:ring-2 focus:ring-black rounded px-1"
                         >
-                          {registerErrors.password}
-                        </p>
-                      )}
-                    </div>
+                          Sign up
+                        </button>
+                      </p>
+                    </motion.form>
+                  )}
 
-                    <div>
-                      <label className="flex items-start gap-2 cursor-pointer hover:text-gray-700">
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4 accent-black rounded focus:ring-2 focus:ring-black mt-0.5"
-                          checked={registerData.termsAccepted}
-                          onChange={(e) =>
-                            setRegisterData({
-                              ...registerData,
-                              termsAccepted: e.target.checked,
-                            })
-                          }
-                          disabled={isLoading}
-                          aria-invalid={!!registerErrors.termsAccepted}
-                          aria-describedby={
-                            registerErrors.termsAccepted
-                              ? "register-terms-error"
-                              : undefined
-                          }
-                        />
-
-                        <span className="text-xs text-gray-600 leading-tight">
-                          I agree to the{" "}
-                          <a
-                            href="/terms-and-conditions"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="underline font-medium hover:text-black"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            Terms of Service
-                          </a>{" "}
-                          and{" "}
-                          <a
-                            href="/privacy-policy"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="underline font-medium hover:text-black"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            Privacy Policy
-                          </a>
-                        </span>
-                      </label>
-                      {registerErrors.termsAccepted && (
-                        <p
-                          id="register-terms-error"
-                          className="mt-1 text-xs text-red-500"
-                        >
-                          {registerErrors.termsAccepted}
-                        </p>
-                      )}
-                    </div>
-
-                    <motion.button
-                      type="submit"
-                      whileHover={{ scale: isLoading ? 1 : 1.02 }}
-                      whileTap={{ scale: isLoading ? 1 : 0.98 }}
-                      disabled={isLoading}
-                      className="w-full bg-black text-white py-2 sm:py-2.5 rounded-lg font-semibold shadow-md text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed hover:bg-black/90 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition"
+                  {/* Register Form */}
+                  {mode === "register" && (
+                    <motion.form
+                      key="register"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      className="space-y-3 sm:space-y-4"
+                      onSubmit={handleRegisterSubmit}
                     >
-                      {isLoading ? "Creating Account..." : "Create Account"}
-                    </motion.button>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label
+                            htmlFor="register-firstname"
+                            className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
+                          >
+                            First Name
+                          </label>
+                          <div className="relative">
+                            <User
+                              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                              aria-hidden="true"
+                            />
+                            <input
+                              id="register-firstname"
+                              type="text"
+                              placeholder="Aisha"
+                              className={`w-full pl-9 pr-4 py-2 sm:py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition text-sm sm:text-base ${
+                                registerErrors.firstName
+                                  ? "border-red-500 bg-red-50"
+                                  : "border-gray-300 bg-white"
+                              }`}
+                              onChange={(e) =>
+                                setRegisterData({
+                                  ...registerData,
+                                  firstName: e.target.value,
+                                })
+                              }
+                              value={registerData.firstName}
+                              disabled={isLoading}
+                              aria-invalid={!!registerErrors.firstName}
+                              aria-describedby={
+                                registerErrors.firstName
+                                  ? "register-firstname-error"
+                                  : undefined
+                              }
+                            />
+                          </div>
+                          {registerErrors.firstName && (
+                            <p
+                              id="register-firstname-error"
+                              className="mt-1 text-xs text-red-500"
+                            >
+                              {registerErrors.firstName}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <label
+                            htmlFor="register-lastname"
+                            className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
+                          >
+                            Last Name
+                          </label>
+                          <div className="relative">
+                            <User
+                              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                              aria-hidden="true"
+                            />
+                            <input
+                              id="register-lastname"
+                              type="text"
+                              placeholder="Kapoor"
+                              className={`w-full pl-9 pr-4 py-2 sm:py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition text-sm sm:text-base ${
+                                registerErrors.lastName
+                                  ? "border-red-500 bg-red-50"
+                                  : "border-gray-300 bg-white"
+                              }`}
+                              onChange={(e) =>
+                                setRegisterData({
+                                  ...registerData,
+                                  lastName: e.target.value,
+                                })
+                              }
+                              value={registerData.lastName}
+                              disabled={isLoading}
+                              aria-invalid={!!registerErrors.lastName}
+                              aria-describedby={
+                                registerErrors.lastName
+                                  ? "register-lastname-error"
+                                  : undefined
+                              }
+                            />
+                          </div>
+                          {registerErrors.lastName && (
+                            <p
+                              id="register-lastname-error"
+                              className="mt-1 text-xs text-red-500"
+                            >
+                              {registerErrors.lastName}
+                            </p>
+                          )}
+                        </div>
+                      </div>
 
-                    <p className="text-center text-xs sm:text-sm text-gray-600">
-                      Already have an account?{" "}
+                      <div>
+                        <label
+                          htmlFor="register-phone"
+                          className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
+                        >
+                          Phone
+                        </label>
+                        <div className="relative">
+                          <Phone
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                            aria-hidden="true"
+                          />
+                          <input
+                            id="register-phone"
+                            type="tel"
+                            placeholder="9876543210"
+                            className={`w-full pl-9 pr-4 py-2 sm:py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition text-sm sm:text-base ${
+                              registerErrors.phone
+                                ? "border-red-500 bg-red-50"
+                                : "border-gray-300 bg-white"
+                            }`}
+                            onChange={(e) =>
+                              setRegisterData({
+                                ...registerData,
+                                phone: e.target.value,
+                              })
+                            }
+                            value={registerData.phone}
+                            disabled={isLoading}
+                            aria-invalid={!!registerErrors.phone}
+                            aria-describedby={
+                              registerErrors.phone
+                                ? "register-phone-error"
+                                : undefined
+                            }
+                          />
+                        </div>
+                        {registerErrors.phone && (
+                          <p
+                            id="register-phone-error"
+                            className="mt-1 text-xs text-red-500"
+                          >
+                            {registerErrors.phone}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="register-email"
+                          className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
+                        >
+                          Email
+                        </label>
+                        <div className="relative">
+                          <Mail
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                            aria-hidden="true"
+                          />
+                          <input
+                            id="register-email"
+                            type="email"
+                            placeholder="name@example.com"
+                            className={`w-full pl-9 pr-4 py-2 sm:py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition text-sm sm:text-base ${
+                              registerErrors.email
+                                ? "border-red-500 bg-red-50"
+                                : "border-gray-300 bg-white"
+                            }`}
+                            onChange={(e) =>
+                              setRegisterData({
+                                ...registerData,
+                                email: e.target.value,
+                              })
+                            }
+                            value={registerData.email}
+                            disabled={isLoading}
+                            aria-invalid={!!registerErrors.email}
+                            aria-describedby={
+                              registerErrors.email
+                                ? "register-email-error"
+                                : undefined
+                            }
+                          />
+                        </div>
+                        {registerErrors.email && (
+                          <p
+                            id="register-email-error"
+                            className="mt-1 text-xs text-red-500"
+                          >
+                            {registerErrors.email}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="register-password"
+                          className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
+                        >
+                          Password
+                        </label>
+                        <div className="relative">
+                          <Lock
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                            aria-hidden="true"
+                          />
+                          <input
+                            id="register-password"
+                            type={showPassword ? "text" : "password"}
+                            placeholder="••••••••"
+                            className={`w-full pl-9 pr-10 py-2 sm:py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition text-sm sm:text-base ${
+                              registerErrors.password
+                                ? "border-red-500 bg-red-50"
+                                : "border-gray-300 bg-white"
+                            }`}
+                            onChange={(e) =>
+                              setRegisterData({
+                                ...registerData,
+                                password: e.target.value,
+                              })
+                            }
+                            value={registerData.password}
+                            disabled={isLoading}
+                            aria-invalid={!!registerErrors.password}
+                            aria-describedby={
+                              registerErrors.password
+                                ? "register-password-error"
+                                : undefined
+                            }
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-black rounded p-1"
+                            aria-label={
+                              showPassword ? "Hide password" : "Show password"
+                            }
+                          >
+                            {showPassword ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                        {registerErrors.password && (
+                          <p
+                            id="register-password-error"
+                            className="mt-1 text-xs text-red-500"
+                          >
+                            {registerErrors.password}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="flex items-start gap-2 cursor-pointer hover:text-gray-700">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 accent-black rounded focus:ring-2 focus:ring-black mt-0.5"
+                            checked={registerData.termsAccepted}
+                            onChange={(e) =>
+                              setRegisterData({
+                                ...registerData,
+                                termsAccepted: e.target.checked,
+                              })
+                            }
+                            disabled={isLoading}
+                            aria-invalid={!!registerErrors.termsAccepted}
+                            aria-describedby={
+                              registerErrors.termsAccepted
+                                ? "register-terms-error"
+                                : undefined
+                            }
+                          />
+
+                          <span className="text-xs text-gray-600 leading-tight">
+                            I agree to the{" "}
+                            <a
+                              href="/terms-and-conditions"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="underline font-medium hover:text-black"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              Terms of Service
+                            </a>{" "}
+                            and{" "}
+                            <a
+                              href="/privacy-policy"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="underline font-medium hover:text-black"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              Privacy Policy
+                            </a>
+                          </span>
+                        </label>
+                        {registerErrors.termsAccepted && (
+                          <p
+                            id="register-terms-error"
+                            className="mt-1 text-xs text-red-500"
+                          >
+                            {registerErrors.termsAccepted}
+                          </p>
+                        )}
+                      </div>
+
+                      <motion.button
+                        type="submit"
+                        whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                        whileTap={{ scale: isLoading ? 1 : 0.98 }}
+                        disabled={isLoading}
+                        className="w-full bg-black text-white py-2 sm:py-2.5 rounded-lg font-semibold shadow-md text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed hover:bg-black/90 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition"
+                      >
+                        {isLoading ? "Creating Account..." : "Create Account"}
+                      </motion.button>
+
+                      <p className="text-center text-xs sm:text-sm text-gray-600">
+                        Already have an account?{" "}
+                        <button
+                          type="button"
+                          onClick={() => setMode("login")}
+                          className="text-black hover:text-black/60 font-medium focus:outline-none focus:ring-2 focus:ring-black rounded px-1"
+                        >
+                          Sign in
+                        </button>
+                      </p>
+                    </motion.form>
+                  )}
+
+                  {/* Forgot Password Form */}
+                  {mode === "forgot" && (
+                    <motion.form
+                      key="forgot"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      className="space-y-4"
+                      onSubmit={handleForgotSubmit}
+                    >
+                      <p className="text-xs sm:text-sm text-gray-600 text-center">
+                        Enter your email and we'll send you a link to reset your
+                        password
+                      </p>
+
+                      <div>
+                        <label
+                          htmlFor="forgot-email"
+                          className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
+                        >
+                          Email Address
+                        </label>
+                        <div className="relative">
+                          <Mail
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                            aria-hidden="true"
+                          />
+                          <input
+                            id="forgot-email"
+                            type="email"
+                            placeholder="name@example.com"
+                            className={`w-full pl-9 pr-4 py-2 sm:py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition text-sm sm:text-base ${
+                              forgotErrors.email
+                                ? "border-red-500 bg-red-50"
+                                : "border-gray-300 bg-white"
+                            }`}
+                            onChange={(e) =>
+                              setForgotData({ email: e.target.value })
+                            }
+                            value={forgotData.email}
+                            disabled={isLoading}
+                            aria-invalid={!!forgotErrors.email}
+                            aria-describedby={
+                              forgotErrors.email
+                                ? "forgot-email-error"
+                                : undefined
+                            }
+                          />
+                        </div>
+                        {forgotErrors.email && (
+                          <p
+                            id="forgot-email-error"
+                            className="mt-1 text-xs text-red-500"
+                          >
+                            {forgotErrors.email}
+                          </p>
+                        )}
+                      </div>
+
+                      <motion.button
+                        type="submit"
+                        whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                        whileTap={{ scale: isLoading ? 1 : 0.98 }}
+                        disabled={isLoading}
+                        className="w-full bg-black text-white py-2 sm:py-2.5 rounded-lg font-semibold shadow-md text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed hover:bg-black/90 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition"
+                      >
+                        {isLoading ? "Sending..." : "Send Reset Link"}
+                      </motion.button>
+
                       <button
                         type="button"
                         onClick={() => setMode("login")}
-                        className="text-black hover:text-black/60 font-medium focus:outline-none focus:ring-2 focus:ring-black rounded px-1"
+                        className="w-full text-xs sm:text-sm text-gray-600 hover:text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-black rounded px-1 py-2"
                       >
-                        Sign in
+                        ← Back to Sign In
                       </button>
-                    </p>
-                  </motion.form>
-                )}
-
-                {/* Forgot Password Form */}
-                {mode === "forgot" && (
-                  <motion.form
-                    key="forgot"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="space-y-4"
-                    onSubmit={handleForgotSubmit}
-                  >
-                    <p className="text-xs sm:text-sm text-gray-600 text-center">
-                      Enter your email and we'll send you a link to reset your
-                      password
-                    </p>
-
-                    <div>
-                      <label
-                        htmlFor="forgot-email"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
-                      >
-                        Email Address
-                      </label>
-                      <div className="relative">
-                        <Mail
-                          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-                          aria-hidden="true"
-                        />
-                        <input
-                          id="forgot-email"
-                          type="email"
-                          placeholder="name@example.com"
-                          className={`w-full pl-9 pr-4 py-2 sm:py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition text-sm sm:text-base ${
-                            forgotErrors.email
-                              ? "border-red-500 bg-red-50"
-                              : "border-gray-300 bg-white"
-                          }`}
-                          onChange={(e) =>
-                            setForgotData({ email: e.target.value })
-                          }
-                          value={forgotData.email}
-                          disabled={isLoading}
-                          aria-invalid={!!forgotErrors.email}
-                          aria-describedby={
-                            forgotErrors.email
-                              ? "forgot-email-error"
-                              : undefined
-                          }
-                        />
-                      </div>
-                      {forgotErrors.email && (
-                        <p
-                          id="forgot-email-error"
-                          className="mt-1 text-xs text-red-500"
-                        >
-                          {forgotErrors.email}
-                        </p>
-                      )}
-                    </div>
-
-                    <motion.button
-                      type="submit"
-                      whileHover={{ scale: isLoading ? 1 : 1.02 }}
-                      whileTap={{ scale: isLoading ? 1 : 0.98 }}
-                      disabled={isLoading}
-                      className="w-full bg-black text-white py-2 sm:py-2.5 rounded-lg font-semibold shadow-md text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed hover:bg-black/90 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition"
-                    >
-                      {isLoading ? "Sending..." : "Send Reset Link"}
-                    </motion.button>
-
-                    <button
-                      type="button"
-                      onClick={() => setMode("login")}
-                      className="w-full text-xs sm:text-sm text-gray-600 hover:text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-black rounded px-1 py-2"
-                    >
-                      ← Back to Sign In
-                    </button>
-                  </motion.form>
-                )}
-              </AnimatePresence>
-            </div>
+                    </motion.form>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
           </motion.div>
         </motion.div>
       )}

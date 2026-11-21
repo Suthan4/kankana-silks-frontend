@@ -2059,10 +2059,8 @@ function Header() {
       {/* Mobile Bottom Navigation */}
       {!isMyAccountPage && !isProductDetailPage && !isCategoryPage && (
         <motion.nav
-          // No slide-in on mount: it ran during page load, exactly while Safari
-          // is still settling its toolbar/viewport, so the bar visibly jumped.
           initial={false}
-          className="md:hidden fixed bottom-0 left-0 right-0 bg-white z-50 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_12px_rgba(0,0,0,0.08)]"
+          className="md:hidden fixed bottom-0 left-0 right-0 bg-white z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.08)]"
         >
           <ul className="flex justify-around items-center py-3">
             {icons

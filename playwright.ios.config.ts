@@ -18,10 +18,10 @@ const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:5174";
 
 export default defineConfig({
   testDir: "./e2e",
-  // `next dev` compiles each route on first visit; give the first load room.
-  timeout: 60_000,
-  expect: { timeout: 10_000 },
-  fullyParallel: true,
+  // WebKit browser contexts are expensive on constrained Windows laptops.
+  // Serial execution avoids parallel browser-startup timeouts in beforeEach.
+  fullyParallel: false,
+  workers: 1,
   retries: process.env.CI ? 1 : 0,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
