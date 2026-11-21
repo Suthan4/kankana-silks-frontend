@@ -375,7 +375,7 @@ export default function MiniCartDrawer() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            {/* BODY / ITEMS LIST */}+{" "}
+            {/* BODY / ITEMS LIST */}
             <div className="ios-modal-content flex-1 overflow-y-auto px-5 py-3 divide-y divide-gray-100">
               {displayItems.length === 0 && user && isCartLoading ? (
                 <div

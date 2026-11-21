@@ -312,7 +312,7 @@ export default function AuthModal() {
                       : "We'll send you a reset link"}
                 </p>
               </div>
-              {/* Form - Non-scrollable, compact */}+{" "}
+              {/* Form - Non-scrollable, compact */}
               <div className="ios-modal-content bg-white px-4 py-4 sm:px-6 sm:py-6 flex-1 flex flex-col overflow-hidden">
                 {apiError && (
                   <motion.div
