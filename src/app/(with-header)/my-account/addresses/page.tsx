@@ -336,7 +336,7 @@ export default function AddressesPage() {
       {/* Add/Edit Address — mobile-first iOS style sheet */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 z-[1000] flex items-end justify-center bg-black/45 backdrop-blur-[2px] md:items-center md:p-6"
+          className="fixed inset-0 z-[1000] flex items-end justify-center bg-black/50 md:bg-black/45 md:backdrop-blur-[2px] md:items-center md:p-6"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
               setIsModalOpen(false);
@@ -362,10 +362,15 @@ export default function AddressesPage() {
               <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-gray-300 md:hidden" />
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 id="address-modal-title" className="text-[18px] font-semibold tracking-tight text-gray-950">
+                  <h2
+                    id="address-modal-title"
+                    className="text-[18px] font-semibold tracking-tight text-gray-950"
+                  >
                     {editingAddress ? "Edit Address" : "Add New Address"}
                   </h2>
-                  <p className="mt-1 text-xs text-gray-500">Your delivery details</p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Your delivery details
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -384,7 +389,8 @@ export default function AddressesPage() {
 
             <form
               onSubmit={handleSubmit(onSubmit)}
-              id="address-editor-form" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 pb-8 space-y-5 sm:px-6"
+              id="address-editor-form"
+              className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 pb-8 space-y-5 sm:px-6"
             >
               {/* Address Type */}
               <div className="grid grid-cols-2 gap-3">
@@ -603,13 +609,14 @@ export default function AddressesPage() {
                   Set as default address
                 </label>
               </div>
-
-
             </form>
 
             {/* Fixed action area: stays visible while the fields scroll */}
-            <div className="shrink-0 border-t border-gray-100 bg-white px-5 pt-3 sm:px-6"
-              style={{ paddingBottom: "max(14px, env(safe-area-inset-bottom))" }}
+            <div
+              className="shrink-0 border-t border-gray-100 bg-white px-5 pt-3 sm:px-6"
+              style={{
+                paddingBottom: "max(14px, env(safe-area-inset-bottom))",
+              }}
             >
               <button
                 type="submit"

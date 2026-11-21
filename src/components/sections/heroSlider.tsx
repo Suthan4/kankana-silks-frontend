@@ -1,69 +1,73 @@
 "use client";
 
 import { HomeSection } from "@/lib/api/home-section.api";
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import SmartImage from "../common/smartImage";
 
+const AUTOPLAY_MS = 5000;
+const MIN_SWIPE_DISTANCE = 50;
+
 function HeroSlider({ section }: { section: HomeSection }) {
+  const slides = section.media ?? [];
+  const slideCount = slides.length;
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
-  if (!section.media || section.media.length === 0) return null;
+  // Touch tracking lives in refs: storing it in state re-rendered the whole
+  // slider (and its full-screen images) on every touchmove, which janks on iOS.
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
 
-  const slides = section.media;
-  const currentSlide = slides[currentIndex];
+  const handleNext = useCallback(() => {
+    setCurrentIndex((prev) => (prev + 1) % slideCount);
+  }, [slideCount]);
 
-  const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % slides.length);
-  };
-
-  const handlePrev = () => {
-    setCurrentIndex((prev) => (prev - 1 + slides.length) % slides.length);
-  };
+  const handlePrev = useCallback(() => {
+    setCurrentIndex((prev) => (prev - 1 + slideCount) % slideCount);
+  }, [slideCount]);
 
   const goToSlide = (index: number) => {
     setCurrentIndex(index);
     setIsAutoPlaying(false);
   };
 
-  const minSwipeDistance = 50;
-
   const onTouchStart = (e: React.TouchEvent) => {
-    setIsAutoPlaying(false); // 🔥 important
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
+    setIsAutoPlaying(false);
+    touchEndX.current = null;
+    touchStartX.current = e.targetTouches[0].clientX;
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
+    touchEndX.current = e.targetTouches[0].clientX;
   };
 
   const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
+    if (touchStartX.current === null || touchEndX.current === null) return;
 
-    const distance = touchStart - touchEnd;
+    const distance = touchStartX.current - touchEndX.current;
+    touchStartX.current = null;
+    touchEndX.current = null;
 
-    if (distance > minSwipeDistance) {
-      // Swipe left → next
-      handleNext();
-    } else if (distance < -minSwipeDistance) {
-      // Swipe right → prev
-      handlePrev();
+    if (distance > MIN_SWIPE_DISTANCE) {
+      handleNext(); // swipe left -> next
+    } else if (distance < -MIN_SWIPE_DISTANCE) {
+      handlePrev(); // swipe right -> prev
     }
   };
 
-  // Auto-play functionality
+  // Auto-play. currentIndex is a dependency so a manual change restarts the timer.
   useEffect(() => {
-    if (!isAutoPlaying || slides.length <= 1) return;
+    if (!isAutoPlaying || slideCount <= 1) return;
 
-    const interval = setInterval(handleNext, 5000);
+    const interval = setInterval(handleNext, AUTOPLAY_MS);
     return () => clearInterval(interval);
-  }, [isAutoPlaying, currentIndex, slides.length]);
+  }, [isAutoPlaying, currentIndex, slideCount, handleNext]);
 
   // Keyboard navigation
   useEffect(() => {
+    if (slideCount <= 1) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") handlePrev();
       if (e.key === "ArrowRight") handleNext();
@@ -71,11 +75,17 @@ function HeroSlider({ section }: { section: HomeSection }) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [slideCount, handleNext, handlePrev]);
+
+  // Hooks above must run on every render, so this early return stays below them.
+  if (slideCount === 0) return null;
 
   return (
     <section
-      className="relative w-full h-screen min-h-[600px] overflow-hidden"
+      data-testid="hero-slider"
+      // svh (not vh): iOS Safari's vh ignores the collapsing toolbar, so a
+      // vh-sized hero jumps/resizes as the toolbar shows and hides.
+      className="relative w-full h-svh min-h-[600px] overflow-hidden"
       style={{ backgroundColor: section.backgroundColor }}
     >
       {/* Slides */}
@@ -93,11 +103,9 @@ function HeroSlider({ section }: { section: HomeSection }) {
         {slides.map((slide, index) => (
           <div
             key={slide.id}
-            className={`absolute inset-0 transition-all duration-1000 ${
-              index === currentIndex
-                ? "opacity-100 scale-100"
-                : "opacity-0 scale-105"
-            }`}
+            className="hero-slide"
+            data-active={index === currentIndex}
+            aria-hidden={index !== currentIndex}
           >
             {slide.type === "IMAGE" ? (
               <SmartImage
@@ -106,7 +114,9 @@ function HeroSlider({ section }: { section: HomeSection }) {
                 fill
                 sizes="100vw"
                 quality={60}
-                loading={index === 0 ? "eager" : "lazy"}
+                // Eager for every slide: a lazy image is fetched and decoded only
+                // when first shown, which flashes blank on iOS mid-transition.
+                loading="eager"
                 className="object-cover"
               />
             ) : (
@@ -133,34 +143,21 @@ function HeroSlider({ section }: { section: HomeSection }) {
                     : "justify-center"
                 } items-center text-center px-4 md:px-8`}
               >
-                <div
-                  className={`max-w-5xl mx-auto space-y-4 md:space-y-6 ${
-                    index === currentIndex ? "animate-slideUp" : ""
-                  }`}
-                >
+                <div className="hero-text max-w-5xl mx-auto space-y-4 md:space-y-6">
                   {slide.overlayTitle && (
-                    <h1
-                      className="text-4xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-white tracking-tight leading-tight drop-shadow-2xl"
-                      style={{ animationDelay: "0.2s" }}
-                    >
+                    <h1 className="text-4xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-white tracking-tight leading-tight text-shadow-hero">
                       {slide.overlayTitle}
                     </h1>
                   )}
                   {slide.overlaySubtitle && (
-                    <p
-                      className="text-lg md:text-2xl lg:text-3xl text-white/90 max-w-3xl mx-auto leading-relaxed drop-shadow-lg"
-                      style={{ animationDelay: "0.4s" }}
-                    >
+                    <p className="text-lg md:text-2xl lg:text-3xl text-white/90 max-w-3xl mx-auto leading-relaxed text-shadow-hero-sm">
                       {slide.overlaySubtitle}
                     </p>
                   )}
 
                   {/* CTA Buttons */}
                   {section.ctaButtons && section.ctaButtons.length > 0 && (
-                    <div
-                      className="flex flex-wrap gap-4 justify-center pt-4"
-                      style={{ animationDelay: "0.6s" }}
-                    >
+                    <div className="flex flex-wrap gap-4 justify-center pt-4">
                       {section.ctaButtons.map((btn) => (
                         <a
                           key={btn.id}
@@ -168,7 +165,7 @@ function HeroSlider({ section }: { section: HomeSection }) {
                           target={btn.openNewTab ? "_blank" : "_self"}
                           rel={btn.openNewTab ? "noopener noreferrer" : ""}
                           className={`
-                            px-8 py-4 rounded-full font-semibold text-base md:text-lg transition-all duration-300 inline-flex items-center gap-3 shadow-2xl backdrop-blur-sm transform hover:scale-105
+                            px-8 py-4 rounded-full font-semibold text-base md:text-lg transition-all duration-300 inline-flex items-center gap-3 shadow-2xl md:backdrop-blur-sm transform hover:scale-105
                             ${
                               btn.style === "PRIMARY"
                                 ? "bg-white text-gray-900 hover:bg-gray-100"
@@ -272,8 +269,7 @@ function HeroSlider({ section }: { section: HomeSection }) {
               className="
         px-4 py-1.5
         rounded-full
-        bg-black/20
-        backdrop-blur-xl
+        bg-black/35
         border border-white/10
       "
             >
@@ -298,7 +294,7 @@ function HeroSlider({ section }: { section: HomeSection }) {
                 onClick={() => goToSlide(index)}
                 className={`
             rounded-full
-            transition-all duration-500
+            transition-[width,height,background-color] duration-500
             ${
               index === currentIndex
                 ? "w-10 h-[3px] bg-white"

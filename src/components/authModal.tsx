@@ -85,7 +85,6 @@ export default function AuthModal() {
     Partial<Record<keyof ForgotPasswordFormData, string>>
   >({});
   const [apiError, setApiError] = useState<string>("");
-  const [isMobile, setIsMobile] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -100,18 +99,6 @@ export default function AuthModal() {
   // Prevent hydration mismatch
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    const checkScreen = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    checkScreen();
-
-    window.addEventListener("resize", checkScreen);
-
-    return () => window.removeEventListener("resize", checkScreen);
   }, []);
 
   useModalScrollLock(isOpen);
@@ -283,13 +270,9 @@ export default function AuthModal() {
                 width={316}
                 height={152}
                 alt="Kankana Silks"
-                layoutId={isMobile ? "mobile-logo" : "desktop-logo"}
-                transition={{
-                  type: "spring",
-                  stiffness: 260,
-                  damping: 18,
-                  mass: 0.6,
-                }}
+                // No layoutId: its only partner (the splash screen) is disabled, and
+                // a layout-projected image inside a scaling modal visibly shakes on
+                // iOS while the spring runs.
                 className="h-9 w-auto object-contain"
               />
             </div>

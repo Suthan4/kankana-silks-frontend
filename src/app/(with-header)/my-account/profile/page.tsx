@@ -374,7 +374,7 @@ export default function ProfilePage() {
 
       {/* Update Profile Modal */}
       {showProfileModal && (
-        <div className="fixed inset-0 z-[999] flex items-end lg:items-center justify-center pb-20 lg:pb-0 bg-black/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[999] flex items-end lg:items-center justify-center pb-20 lg:pb-0 bg-black/50 md:bg-black/40 md:backdrop-blur-sm">
           {" "}
           <div className="bg-white w-full lg:max-w-lg rounded-t-3xl lg:rounded-2xl shadow-2xl animate-in slide-in-from-bottom lg:slide-in-from-bottom-0 fade-in duration-200 max-h-[90vh] flex flex-col">
             {/* HEADER */}
@@ -516,7 +516,7 @@ export default function ProfilePage() {
       {showProfileModal &&
         typeof window !== "undefined" &&
         createPortal(
-          <div className="fixed inset-0 z-[9999] flex items-end lg:items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[9999] flex items-end lg:items-center justify-center bg-black/50 md:bg-black/40 md:backdrop-blur-sm">
             <div className="bg-white w-full lg:max-w-lg rounded-t-3xl lg:rounded-2xl shadow-2xl animate-in slide-in-from-bottom lg:slide-in-from-bottom-0 fade-in duration-200 max-h-[90vh] flex flex-col">
               {/* HEADER */}
               <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
@@ -644,7 +644,7 @@ export default function ProfilePage() {
 
       {/* Change Password Modal */}
       {showPasswordModal && (
-        <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center bg-black/50 md:bg-black/40 md:backdrop-blur-sm">
           <div className="bg-white w-full lg:max-w-lg rounded-t-3xl lg:rounded-2xl shadow-2xl animate-in slide-in-from-bottom lg:slide-in-from-bottom-0 fade-in duration-200 max-h-[90vh] flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b flex-shrink-0">

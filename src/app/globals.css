@@ -201,18 +201,9 @@ body {
   animation: rotate 20s linear infinite;
 }
 
-/* Utility classes */
-.backdrop-blur-xs {
-  backdrop-filter: blur(2px);
-}
-
-.backdrop-blur-xl {
-  backdrop-filter: blur(24px);
-}
-
-.backdrop-blur-2xl {
-  backdrop-filter: blur(40px);
-}
+/* NOTE: do not redefine .backdrop-blur-* here. Unlayered CSS beats Tailwind's
+   layered utilities and the old overrides dropped -webkit-backdrop-filter,
+   which iOS Safari needs. Tailwind already emits both prefixes. */
 
 /* Custom gradients */
 .gradient-radial {
@@ -241,12 +232,14 @@ html {
 /* Glass morphism effect */
 .glass {
   background: rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .glass-dark {
   background: rgba(0, 0, 0, 0.3);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -421,4 +414,60 @@ html {
    shift as the browser scrollbar disappears. */
 html {
   scrollbar-gutter: stable;
+}
+
+/* ------------------------------------------------------------------
+   iOS / WebKit-safe slider helpers
+   - Text legibility uses text-shadow instead of filter: drop-shadow().
+     A filter on text inside an element whose opacity/transform animates
+     makes WebKit re-rasterise the text, which shows up as a flicker/pop.
+   - Slides are promoted to their own layer once and stay there.
+   ------------------------------------------------------------------ */
+.text-shadow-hero {
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.text-shadow-hero-sm {
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* Cross-fading hero slides (HeroSlider).
+   The incoming slide fades in ON TOP while the outgoing one stays fully
+   opaque underneath and only disappears after the fade has finished, so the
+   section background never shows through mid-transition. */
+.hero-slide {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transition: opacity 0s linear 700ms;
+}
+
+.hero-slide[data-active="true"] {
+  z-index: 10;
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 700ms ease-in-out;
+}
+
+/* Text reveal: pure CSS transition, no animation class to re-add (re-adding
+   a keyframe class restarts the animation and flashes on WebKit). */
+.hero-text {
+  opacity: 0;
+  transform: translate3d(0, 24px, 0);
+  transition:
+    opacity 300ms ease-out,
+    transform 300ms ease-out;
+}
+
+.hero-slide[data-active="true"] .hero-text {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition:
+    opacity 700ms ease-out 350ms,
+    transform 700ms ease-out 350ms;
 }
