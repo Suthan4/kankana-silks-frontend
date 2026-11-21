@@ -1552,9 +1552,7 @@ function Header() {
           }`}
         >
           <motion.div
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25 }}
+            initial={false}
             className="flex items-stretch overflow-hidden rounded-full border border-gray-200 bg-gray-50 shadow-sm"
           >
             {/* Location segment */}
@@ -2061,10 +2059,10 @@ function Header() {
       {/* Mobile Bottom Navigation */}
       {!isMyAccountPage && !isProductDetailPage && !isCategoryPage && (
         <motion.nav
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="md:hidden fixed bottom-0 left-0 right-0 bg-white z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.08)]"
+          // No slide-in on mount: it ran during page load, exactly while Safari
+          // is still settling its toolbar/viewport, so the bar visibly jumped.
+          initial={false}
+          className="md:hidden fixed bottom-0 left-0 right-0 bg-white z-50 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_12px_rgba(0,0,0,0.08)]"
         >
           <ul className="flex justify-around items-center py-3">
             {icons
