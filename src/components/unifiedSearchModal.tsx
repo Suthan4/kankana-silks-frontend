@@ -123,16 +123,16 @@ export default function UnifiedSearchModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[200] bg-black/60"
+          className="ios-modal-viewport ios-search-overlay ios-modal-motion fixed inset-0 z-[200] bg-black/60"
         >
-          <div className="flex items-start justify-center min-h-dvh p-4 pt-[10vh]">
+          <div className="ios-search-positioner flex items-start justify-center min-h-dvh p-4 pt-[10vh]">
             <motion.div
               ref={modalRef}
               initial={{ opacity: 0, scale: 0.95, y: -20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -20 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden"
+              className="ios-modal-panel ios-search-panel ios-modal-motion w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden"
             >
               {/* Search Input */}
               <div className="p-4 border-b border-gray-200">
@@ -196,7 +196,7 @@ export default function UnifiedSearchModal({
               </div>
 
               {/* Results Container */}
-              <div className="max-h-[60vh] overflow-y-auto">
+              <div className="ios-modal-content ios-search-results max-h-[60vh] overflow-y-auto">
                 {/* Loading State */}
                 {isLoading && (
                   <div className="flex items-center justify-center py-12">

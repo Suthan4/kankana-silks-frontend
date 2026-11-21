@@ -238,6 +238,7 @@ export default function AuthModal() {
     <AnimatePresence>
       {isOpen && (
         <motion.div
+          className="ios-auth-motion-root ios-modal-motion"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -248,7 +249,7 @@ export default function AuthModal() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 flex items-center justify-center p-3 z-50"
+            className="ios-auth-overlay ios-modal-viewport ios-modal-motion fixed inset-0 bg-black/60 flex items-center justify-center p-3 z-50"
             onClick={closeModal}
             role="presentation"
           >
@@ -267,7 +268,7 @@ export default function AuthModal() {
                 backfaceVisibility: "hidden",
               }}
               onClick={(e) => e.stopPropagation()}
-              className="rounded-2xl shadow-xl w-full max-w-sm h-auto flex flex-col bg-white"
+              className="ios-modal-panel ios-auth-panel ios-modal-motion rounded-2xl shadow-xl w-full max-w-sm h-auto flex flex-col bg-white"
               role="dialog"
               aria-modal="true"
               aria-labelledby="modal-title"
@@ -311,9 +312,8 @@ export default function AuthModal() {
                       : "We'll send you a reset link"}
                 </p>
               </div>
-
-              {/* Form - Non-scrollable, compact */}
-              <div className="bg-white px-4 py-4 sm:px-6 sm:py-6 flex-1 flex flex-col overflow-hidden">
+              {/* Form - Non-scrollable, compact */}+{" "}
+              <div className="ios-modal-content bg-white px-4 py-4 sm:px-6 sm:py-6 flex-1 flex flex-col overflow-hidden">
                 {apiError && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}

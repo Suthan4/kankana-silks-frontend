@@ -471,3 +471,296 @@ html {
     opacity 700ms ease-out 350ms,
     transform 700ms ease-out 350ms;
 }
+
+/* ==========================================================================
+   iOS MODAL LAYOUT STABILIZATION
+   Fixes Safari/WebKit viewport resizing, modal flickering, scroll conflicts,
+   and layout glitches on mobile dialogs.
+
+   Scoped to iOS WebKit and mobile widths.
+   Desktop, Android, and consultation modal remain untouched.
+   ========================================================================== */
+
+@supports (-webkit-touch-callout: none) {
+  @media screen and (max-width: 767px) {
+    html {
+      scrollbar-gutter: auto !important;
+      scroll-behavior: auto !important;
+    }
+
+    /* Disable motion only for affected modal surfaces on iOS */
+    .ios-modal-motion {
+      animation: none !important;
+      transition: none !important;
+      transform: none !important;
+      -webkit-transform: none !important;
+      opacity: 1 !important;
+      will-change: auto !important;
+    }
+
+    .ios-auth-motion-root {
+      display: contents !important;
+    }
+
+    /* Fixed viewport wrapper */
+    .ios-modal-viewport {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 100vh !important;
+      height: 100dvh !important;
+      max-height: none !important;
+      box-sizing: border-box;
+      overflow: hidden !important;
+      isolation: isolate;
+    }
+
+    /* Backdrop */
+    .ios-modal-backdrop {
+      position: fixed !important;
+      inset: 0 !important;
+      opacity: 1 !important;
+      pointer-events: auto;
+    }
+
+    /* Common dialog panel */
+    .ios-modal-panel {
+      position: relative !important;
+      display: flex;
+      flex: 0 1 auto;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+
+      max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px) !important;
+
+      box-sizing: border-box;
+      overflow: hidden !important;
+      background: #fff !important;
+      color: #111 !important;
+      isolation: isolate;
+    }
+
+    /* Inner content owns scrolling */
+    .ios-modal-content {
+      flex: 1 1 auto;
+      min-height: 0;
+
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
+    }
+
+    /* Prevent Safari auto-zoom on input focus */
+    .ios-modal-panel input:not([type="checkbox"]):not([type="radio"]),
+    .ios-modal-panel select,
+    .ios-modal-panel textarea,
+    .ios-location-sheet input,
+    .ios-location-sheet select,
+    .ios-location-sheet textarea {
+      font-size: 16px !important;
+    }
+
+    /* ------------------------------------------------------------------
+       SET LOCATION SHEET
+       ------------------------------------------------------------------ */
+
+    .ios-location-overlay {
+      background: transparent !important;
+    }
+
+    .ios-location-sheet {
+      position: absolute !important;
+      inset: auto 0 0 !important;
+
+      width: 100% !important;
+
+      max-height: calc(100dvh - env(safe-area-inset-top) - 8px) !important;
+
+      min-height: 0;
+
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+
+      padding-bottom: max(24px,
+          env(safe-area-inset-bottom)) !important;
+
+      border-radius: 24px 24px 0 0;
+
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
+    }
+
+    /* ------------------------------------------------------------------
+       AUTH MODAL
+       ------------------------------------------------------------------ */
+
+    .ios-auth-overlay {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+
+      padding:
+        max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) !important;
+
+      overflow: hidden !important;
+
+      background: rgba(0, 0, 0, 0.6) !important;
+    }
+
+    .ios-auth-panel {
+      width: min(100%, 24rem) !important;
+
+      max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px) !important;
+
+      flex: 0 1 auto;
+    }
+
+    /* ------------------------------------------------------------------
+       CART / SHOPPING BAG DRAWER
+       ------------------------------------------------------------------ */
+
+    .ios-cart-drawer {
+      position: fixed !important;
+      inset: auto 0 0 !important;
+
+      width: 100% !important;
+
+      max-height: calc(100dvh - env(safe-area-inset-top) - 8px) !important;
+
+      border-radius: 24px 24px 0 0;
+
+      padding-bottom: max(8px,
+          env(safe-area-inset-bottom)) !important;
+
+      touch-action: pan-y;
+    }
+
+    /* ------------------------------------------------------------------
+       CATEGORY FILTER & SORT SHEET
+       ------------------------------------------------------------------ */
+
+    .ios-filter-sheet {
+      position: fixed !important;
+      inset: auto 0 0 !important;
+
+      width: 100% !important;
+
+      max-height: calc(100dvh - env(safe-area-inset-top) - 8px) !important;
+
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+
+      padding-bottom: max(16px,
+          env(safe-area-inset-bottom)) !important;
+
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+
+    /* ------------------------------------------------------------------
+       SEARCH MODAL
+       ------------------------------------------------------------------ */
+
+    .ios-search-positioner {
+      min-height: 100dvh !important;
+
+      align-items: flex-start !important;
+      justify-content: center !important;
+
+      padding:
+        max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) !important;
+
+      box-sizing: border-box;
+    }
+
+    .ios-search-panel {
+      width: 100% !important;
+
+      max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px) !important;
+    }
+
+    .ios-search-results {
+      max-height: none !important;
+    }
+
+    /* ------------------------------------------------------------------
+       PRODUCT REQUEST MODAL
+       ------------------------------------------------------------------ */
+
+    .ios-request-modal-viewport {
+      align-items: flex-end !important;
+
+      padding-bottom: max(0px,
+          env(safe-area-inset-bottom)) !important;
+
+      pointer-events: none;
+    }
+
+    .ios-request-panel {
+      max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 8px) !important;
+
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+
+      border-radius: 24px 24px 0 0;
+
+      pointer-events: auto;
+
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* ------------------------------------------------------------------
+       ADDRESS MODAL & RETURN MODAL
+       ------------------------------------------------------------------ */
+
+    .ios-address-overlay,
+    .ios-return-overlay {
+      align-items: center !important;
+      justify-content: center !important;
+
+      padding:
+        max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) !important;
+    }
+
+    .ios-address-panel,
+    .ios-return-panel {
+      width: 100% !important;
+
+      max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px) !important;
+    }
+
+    /* ------------------------------------------------------------------
+       PRODUCT IMAGE — VIEW DETAILS LIGHTBOX
+       ------------------------------------------------------------------ */
+
+    .ios-product-lightbox {
+      position: fixed !important;
+      inset: 0 !important;
+
+      width: 100% !important;
+
+      height: 100vh !important;
+      height: 100dvh !important;
+
+      max-height: 100dvh !important;
+
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+
+      overflow: hidden !important;
+
+      background: #121212 !important;
+    }
+
+    .ios-lightbox-stage {
+      min-height: 0 !important;
+      flex: 1 1 auto !important;
+      overflow: hidden !important;
+    }
+  }
+}

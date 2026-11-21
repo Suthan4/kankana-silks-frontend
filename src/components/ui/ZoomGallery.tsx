@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import {
   ChevronLeft,
   ChevronRight,
@@ -42,6 +43,7 @@ export function ZoomGallery({
   const [hoverOrigin, setHoverOrigin] = useState("50% 50%");
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isLightboxZoomed, setIsLightboxZoomed] = useState(false);
+  useModalScrollLock(isLightboxOpen);
 
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const swiperRef = useRef<SwiperType | null>(null);
@@ -129,9 +131,6 @@ export function ZoomGallery({
   useEffect(() => {
     if (!isLightboxOpen) return;
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Tab") {
         const focusable = lightboxRef.current?.querySelectorAll<HTMLElement>(
@@ -173,7 +172,6 @@ export function ZoomGallery({
     closeButtonRef.current?.focus();
 
     return () => {
-      document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isLightboxOpen, images.length, prevImage, nextImage, closeLightbox]);
@@ -409,7 +407,7 @@ export function ZoomGallery({
               if (event.target === event.currentTarget) closeLightbox();
             }}
             ref={lightboxRef}
-            className="fixed inset-0 z-[10000] flex flex-col bg-[#121212]/[0.97] text-white"
+            className="ios-product-lightbox ios-modal-motion fixed inset-0 z-[10000] flex flex-col bg-[#121212]/[0.97] text-white"
           >
             <header className="relative z-10 flex min-h-[68px] items-center justify-between gap-4 border-b border-white/10 px-4 py-3 sm:px-7">
               <div className="min-w-0">
@@ -449,7 +447,8 @@ export function ZoomGallery({
               </div>
             </header>
 
-            <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden px-3 py-4 sm:px-16 sm:py-5">
+            <div className="ios-lightbox-stage relative flex min-h-0 flex-1 items-center justify-center overflow-hidden px-3 py-4 sm:px-16 sm:py-5">
+              {" "}
               {images.length > 1 && (
                 <button
                   type="button"
@@ -460,7 +459,6 @@ export function ZoomGallery({
                   <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
                 </button>
               )}
-
               <div className="relative h-full w-full max-w-6xl overflow-hidden">
                 <Image
                   key={`lightbox-${activeImageUrl}`}
@@ -478,7 +476,6 @@ export function ZoomGallery({
                   draggable={false}
                 />
               </div>
-
               {images.length > 1 && (
                 <button
                   type="button"
