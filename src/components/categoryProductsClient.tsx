@@ -2,6 +2,7 @@
 import { useState, useCallback, useMemo, memo, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import {
   Heart,
   ChevronLeft,
@@ -62,6 +63,13 @@ export default function CategoryProductsClient({
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [requestProduct, setRequestProduct] = useState<Product | null>(null);
   const [requestVariant, setRequestVariant] = useState<any>(null);
+  useModalScrollLock(
+    mobileFilterOpen &&
+      typeof window !== "undefined" &&
+      window.innerWidth < 768 &&
+      typeof CSS !== "undefined" &&
+      CSS.supports("-webkit-touch-callout", "none"),
+  );
 
   // Filter state - Initialize from URL
   const [priceRange, setPriceRange] = useState<[number, number]>(() => {
@@ -1363,14 +1371,14 @@ hover:bg-white
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={() => setMobileFilterOpen(false)}
-              className="fixed inset-0 bg-black/50 z-50 md:hidden"
+              className="ios-modal-backdrop ios-modal-motion fixed inset-0 bg-black/50 z-50 md:hidden"
             />
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", stiffness: 380, damping: 30 }}
-              className="fixed bottom-0 left-0 right-0 bg-white z-50 md:hidden max-h-[90vh] overflow-y-auto"
+              className="ios-modal-panel ios-filter-sheet ios-modal-motion fixed bottom-0 left-0 right-0 bg-white z-50 md:hidden max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between px-5 py-4 border-b sticky top-0 bg-white">
                 <span className="text-xs tracking-widest uppercase font-medium">

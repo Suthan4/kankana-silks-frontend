@@ -318,7 +318,7 @@ export default function MiniCartDrawer() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             onClick={close}
-            className="fixed inset-0 bg-black/60 z-[150]"
+            className="ios-modal-backdrop ios-modal-motion fixed inset-0 bg-black/60 z-[150]"
             aria-hidden="true"
           />
 
@@ -338,7 +338,7 @@ export default function MiniCartDrawer() {
               }
             }}
             className={`
-              fixed z-[151] bg-white shadow-2xl flex flex-col overflow-hidden
+            ios-modal-panel ios-cart-drawer ios-modal-motion fixed z-[151] bg-white shadow-2xl flex flex-col overflow-hidden
               ${
                 isMobile
                   ? "bottom-0 left-0 right-0 max-h-[85dvh] rounded-t-3xl"
@@ -352,7 +352,6 @@ export default function MiniCartDrawer() {
                 <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
               </div>
             )}
-
             {/* HEADER */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white">
               <div className="flex items-center gap-2.5">
@@ -376,9 +375,8 @@ export default function MiniCartDrawer() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-
             {/* BODY / ITEMS LIST */}
-            <div className="flex-1 overflow-y-auto px-5 py-3 divide-y divide-gray-100">
+            <div className="ios-modal-content flex-1 overflow-y-auto px-5 py-3 divide-y divide-gray-100">
               {displayItems.length === 0 && user && isCartLoading ? (
                 <div
                   role="status"
@@ -591,7 +589,6 @@ export default function MiniCartDrawer() {
                 })
               )}
             </div>
-
             {/* FOOTER */}
             {displayItems.length > 0 && (
               <div className="p-5 border-t border-gray-100 bg-white/95 backdrop-blur-xs space-y-3">

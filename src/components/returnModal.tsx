@@ -7,7 +7,12 @@ import { X, AlertCircle, Info, Loader2, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "@/store/useToastStore";
 import { useCreateReturn } from "@/hooks/useUserReturns";
-import { getReturnReasonLabel, isFreeReturnReason, RefundMethod, ReturnReason } from "@/lib/api/return.api";
+import {
+  getReturnReasonLabel,
+  isFreeReturnReason,
+  RefundMethod,
+  ReturnReason,
+} from "@/lib/api/return.api";
 
 interface ReturnModalProps {
   order: any;
@@ -107,14 +112,14 @@ export function ReturnModal({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="ios-modal-viewport ios-return-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/60"
+            className="ios-modal-backdrop ios-modal-motion absolute inset-0 bg-black/60"
           />
 
           {/* Modal */}
@@ -122,7 +127,7 @@ export function ReturnModal({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+            className="ios-modal-panel ios-return-panel ios-modal-motion relative bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b">
@@ -144,7 +149,7 @@ export function ReturnModal({
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div className="ios-modal-content flex-1 overflow-y-auto p-6 space-y-6">
               {/* Free vs Paid Return Info */}
               <div
                 className={`${

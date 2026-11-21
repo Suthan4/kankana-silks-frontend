@@ -102,9 +102,14 @@ function BannerPicture({
   }, [isActive]);
 
   return (
+    // .hero-slide (globals.css) cross-fades: the incoming slide fades in on top
+    // while the outgoing one stays fully opaque underneath and only drops out
+    // after the fade, so the black section background never shows through.
+    // Inactive slides stay painted at opacity 0 (not display:none) so Safari
+    // has already decoded them when they are revealed.
     <picture
-      className="absolute inset-0 h-full w-full"
-      style={{ display: isActive ? "block" : "none" }}
+      className="hero-slide"
+      data-active={isActive}
       aria-hidden={!isActive}
     >
       <source media="(max-width: 767px)" srcSet={mobile.srcSet} sizes="100vw" />
@@ -131,6 +136,14 @@ export default function HeroSection({
   isLoading,
 }: IHeroSection) {
   const [currentSlide, setCurrentSlide] = useState(0);
+  // The slide that was showing before the current one. It must stay mounted
+  // while the new slide fades in over it (see .hero-slide in globals.css).
+  const [trackedSlide, setTrackedSlide] = useState(0);
+  const [previousSlide, setPreviousSlide] = useState<number | null>(null);
+  if (trackedSlide !== currentSlide) {
+    setTrackedSlide(currentSlide);
+    setPreviousSlide(trackedSlide);
+  }
   const [autoPlay, setAutoPlay] = useState(true);
   // The first banner decides when autoplay may start and when the next
   // banner is allowed to download (never all banners at once).
@@ -339,8 +352,8 @@ export default function HeroSection({
       aria-label="Promotional banners"
     >
       {/* =====================================
-          STABLE BANNER SLIDER
-          No image animations or crossfades.
+          BANNER SLIDER
+          Opacity-only cross-fade (.hero-slide); no layout or filter animation.
       ====================================== */}
 
       <div
@@ -359,12 +372,13 @@ export default function HeroSection({
 
           // Image banners.
           if (banner.type === MediaType.IMAGE) {
-            // Mount the visible slide and, once the first banner is ready,
-            // only the NEXT one (never all banners at once).
+            // Mount the visible slide, the one fading out, and, once the
+            // first banner is ready, only the NEXT one (never all at once).
             const nextIndex = (currentSlide + 1) % totalSlides;
             const shouldMount =
               index === 0 ||
               index === currentSlide ||
+              index === previousSlide ||
               (ready && index === nextIndex);
             if (!shouldMount) return null;
 
@@ -429,7 +443,7 @@ export default function HeroSection({
         className="
           relative z-10
           flex h-full items-end justify-center
-          px-5 pb-8
+          px-5 pb-12
           sm:px-8 sm:pb-20
           lg:pb-20
         "

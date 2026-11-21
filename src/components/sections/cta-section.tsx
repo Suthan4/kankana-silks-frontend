@@ -1,23 +1,17 @@
 "use client";
 
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { useRef } from "react";
 
+// No scroll-linked scale/parallax here on purpose. It was driven by
+// useScroll/useTransform on the main thread, and the progress is recomputed
+// every time iOS Safari's toolbar collapses or expands (the viewport height
+// changes), so the content jumped by up to ~80px while the page loaded.
+// Entrance animations also run once (not on every enter/leave of the viewport).
 export default function CTASection() {
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start center", "end center"],
-  });
-
-  const scale = useTransform(scrollYProgress, [0, 0.5, 1], [0.95, 1, 1.05]);
-  const y = useTransform(scrollYProgress, [0, 1], [40, -40]);
-
   return (
     <section
-      ref={ref}
       className="
         relative
         overflow-hidden
@@ -58,15 +52,12 @@ export default function CTASection() {
         />
       </div>
 
-      <motion.div
-        style={{ scale, y }}
-        className="relative z-10 mx-auto max-w-4xl text-center"
-      >
+      <div className="relative z-10 mx-auto max-w-4xl text-center">
         <motion.div
           initial={{ opacity: 0, scaleX: 0 }}
           whileInView={{ opacity: 1, scaleX: 1 }}
           transition={{ duration: 0.6 }}
-          viewport={{ once: false, amount: 0.1 }}
+          viewport={{ once: true, amount: 0.1 }}
           className="mx-auto mb-4 h-px w-10 bg-white/40 sm:mb-6 sm:w-14"
         />
 
@@ -74,7 +65,7 @@ export default function CTASection() {
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          viewport={{ once: false, amount: 0.1 }}
+          viewport={{ once: true, amount: 0.1 }}
           className="
             mb-4
             text-balance
@@ -97,7 +88,7 @@ export default function CTASection() {
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.15 }}
-          viewport={{ once: false, amount: 0.1 }}
+          viewport={{ once: true, amount: 0.1 }}
           className="
             mb-8
             text-sm
@@ -115,7 +106,7 @@ export default function CTASection() {
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          viewport={{ once: false, amount: 0.1 }}
+          viewport={{ once: true, amount: 0.1 }}
           className="
             mx-auto
             flex
@@ -207,7 +198,7 @@ export default function CTASection() {
           <p>Free shipping on orders over ₹5,000</p>
           <p>30-day returns • Authentic craftsmanship • Certified silk</p>
         </motion.div> */}
-      </motion.div>
+      </div>
     </section>
   );
 }

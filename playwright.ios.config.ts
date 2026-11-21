@@ -4,8 +4,10 @@ import { defineConfig, devices } from "@playwright/test";
  * iOS-vs-Android regression config. Separate from playwright.config.ts, which
  * is the manual "headed Safari" debugging setup (timeout: 0, one project).
  *
- *   npm run test:ios                       # starts `npm run dev` on :5174
- *   E2E_BASE_URL=https://staging... npm run test:ios   # against a deployed env
+ *   bun run test:ios                       # starts `bun run dev` on :5174
+ *   E2E_BASE_URL=https://staging... bun run test:ios   # against a deployed env
+ *
+ * First time only: bunx playwright install webkit chromium
  *
  * NOTE: "ios-webkit" is Playwright's WebKit engine with an iPhone profile. It
  * is NOT real Safari. It catches layout/DOM/behaviour regressions but cannot
@@ -16,7 +18,10 @@ const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:5174";
 
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: true,
+  // WebKit browser contexts are expensive on constrained Windows laptops.
+  // Serial execution avoids parallel browser-startup timeouts in beforeEach.
+  fullyParallel: false,
+  workers: 1,
   retries: process.env.CI ? 1 : 0,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
@@ -28,7 +33,7 @@ export default defineConfig({
   webServer: process.env.E2E_BASE_URL
     ? undefined
     : {
-        command: "npm run dev",
+        command: "bun run dev",
         url: baseURL,
         reuseExistingServer: true,
         timeout: 120_000,

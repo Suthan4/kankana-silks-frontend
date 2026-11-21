@@ -133,7 +133,7 @@ export default function AddressModal({
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 bg-black/60 flex items-end md:items-center justify-center p-0 md:p-4"
+        className="ios-modal-viewport ios-address-overlay ios-modal-motion fixed inset-0 z-50 bg-black/60 flex items-end md:items-center justify-center p-0 md:p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -146,6 +146,7 @@ export default function AddressModal({
           exit={{ y: "100%" }}
           transition={{ type: "spring", damping: 30 }}
           className="
+            ios-modal-panel ios-address-panel ios-modal-motion
             w-full md:max-w-2xl bg-white
             rounded-t-3xl md:rounded-2xl
             flex flex-col
@@ -175,7 +176,7 @@ export default function AddressModal({
           {/* ── Form — scrollable only on mobile ── */}
           <form
             onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-col flex-1 overflow-y-auto md:overflow-visible"
+            className="ios-modal-content flex flex-col flex-1 overflow-y-auto md:overflow-visible"
           >
             <div className="px-5 py-4 space-y-3">
               {/* Row 1 — Full Name + Phone */}

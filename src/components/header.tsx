@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import {
   MessageCircle,
   ShoppingCart,
@@ -82,7 +83,13 @@ function Header() {
   useOnClickOutside(mobileLocationRef, () => {
     if (window.innerWidth < 768) setLocationModalOpen(false);
   });
-
+  useModalScrollLock(
+    locationModalOpen &&
+      typeof window !== "undefined" &&
+      window.innerWidth < 768 &&
+      typeof CSS !== "undefined" &&
+      CSS.supports("-webkit-touch-callout", "none"),
+  );
   const isMyAccountPage = pathname?.startsWith("/my-account");
   const isProductDetailPage = !!(
     pathname?.match(/^\/products\/[^/]+$/) ||
@@ -1552,9 +1559,7 @@ function Header() {
           }`}
         >
           <motion.div
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25 }}
+            initial={false}
             className="flex items-stretch overflow-hidden rounded-full border border-gray-200 bg-gray-50 shadow-sm"
           >
             {/* Location segment */}
@@ -1599,13 +1604,13 @@ function Header() {
       <AnimatePresence>
         {locationModalOpen && (
           <motion.div
-            className="md:hidden fixed inset-0 z-[100] h-[100dvh] overflow-hidden"
+            className="ios-location-overlay ios-modal-motion md:hidden fixed inset-0 z-[100] h-[100dvh] overflow-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <div
-              className="absolute inset-0 bg-black/50 z-10"
+              className="ios-modal-backdrop absolute inset-0 bg-black/50 z-10"
               onClick={(e) => {
                 e.stopPropagation();
                 setLocationModalOpen(false);
@@ -1617,7 +1622,7 @@ function Header() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="absolute inset-x-0 bottom-0 z-20 max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain rounded-t-3xl bg-white pb-[env(safe-area-inset-bottom)]"
+              className="ios-modal-panel ios-location-sheet ios-modal-motion absolute inset-x-0 bottom-0 z-20 max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain rounded-t-3xl bg-white pb-[env(safe-area-inset-bottom)]"
               style={{ WebkitOverflowScrolling: "touch" }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -2061,9 +2066,7 @@ function Header() {
       {/* Mobile Bottom Navigation */}
       {!isMyAccountPage && !isProductDetailPage && !isCategoryPage && (
         <motion.nav
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
+          initial={false}
           className="md:hidden fixed bottom-0 left-0 right-0 bg-white z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.08)]"
         >
           <ul className="flex justify-around items-center py-3">
