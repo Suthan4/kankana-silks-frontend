@@ -921,14 +921,7 @@ function CategoryProductsContent({
                 </button>
               </div>
             ) : (
-              <div className="relative">
-                {/* Fetching overlay */}
-                {isFetching && (
-                  <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-20 flex items-center justify-center">
-                    <div className="w-8 h-8 border border-gray-300 border-t-black rounded-full animate-spin" />
-                  </div>
-                )}
-
+              <div className="relative" aria-busy={isFetching}>
                 {/*
                   ═══════════════════════════════════════
                   EDITORIAL GRID
@@ -940,8 +933,20 @@ function CategoryProductsContent({
                   - Add to Cart button: full-width, black, flat
                   ═══════════════════════════════════════
                 */}
-                <div
-                  className={`
+                {isFetching ? (
+                  <ProductGridSkeleton
+                    count={6}
+                    className={`grid ${mobileGrid === 1 ? "grid-cols-1" : "grid-cols-2"} ${
+                      gridCols === 2
+                        ? "md:grid-cols-3 xl:grid-cols-3"
+                        : gridCols === 3
+                          ? "md:grid-cols-4 xl:grid-cols-4"
+                          : "md:grid-cols-5 xl:grid-cols-5"
+                    } gap-x-3 md:gap-x-6 gap-y-8 md:gap-y-12`}
+                  />
+                ) : (
+                  <div
+                    className={`
     grid
     ${mobileGrid === 1 ? "grid-cols-1" : "grid-cols-2"}
 
@@ -962,7 +967,7 @@ ${
                     const variants = product.variants ?? [];
                     const hasVariants = product.hasVariants && variants.length > 0;
                     const selectedVariant =
-                      hasVariants && variants.length === 1 ? variants[0] : null;
+                      hasVariants && variants.length === 1 ? variants[0] ?? null : null;
 
                     const cartItem = effectiveCartItems.find((item: CartLineLike) => {
                       const itemProductId = String(item.productId ?? item.product?.id ?? "");
@@ -1025,7 +1030,8 @@ ${
                       />
                     );
                   })}
-                </div>
+                  </div>
+                )}
               </div>
             )}
 
