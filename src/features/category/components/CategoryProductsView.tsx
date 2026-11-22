@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { ProductVariant } from "@/lib/api/product.api";
@@ -79,23 +80,31 @@ export function CategoryProductsView({
         />
 
         <div className="flex">
-          <aside className={`hidden flex-shrink-0 overflow-hidden border-r border-gray-100 transition-[width] duration-200 xl:block ${ui.desktopFilterOpen ? "w-[260px]" : "w-0 border-r-0"}`}>
+          <AnimatePresence>
             {ui.desktopFilterOpen && (
-              <div className="w-[260px] p-6 pt-8">
-                <CategoryFilterSidebar
-                  category={category}
-                  selectedSubCategory={filters.selectedSubCategory}
-                  onSubCategoryChange={filters.handleSubCategoryChange}
-                  onClearFilters={filters.clearAllFilters}
-                  priceRange={filters.priceRange}
-                  onPriceRangeChange={filters.setPriceRange}
-                  materials={filters.materials}
-                  selectedFabric={filters.selectedFabric}
-                  onFabricChange={filters.handleFabricChange}
-                />
-              </div>
+              <motion.aside
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 260 }}
+                exit={{ opacity: 0, width: 0 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="hidden flex-shrink-0 overflow-hidden border-r border-gray-100 xl:block"
+              >
+                <div className="w-[260px] p-6 pt-8">
+                  <CategoryFilterSidebar
+                    category={category}
+                    selectedSubCategory={filters.selectedSubCategory}
+                    onSubCategoryChange={filters.handleSubCategoryChange}
+                    onClearFilters={filters.clearAllFilters}
+                    priceRange={filters.priceRange}
+                    onPriceRangeChange={filters.handlePriceRangeChange}
+                    materials={filters.materials}
+                    selectedFabric={filters.selectedFabric}
+                    onFabricChange={filters.handleFabricChange}
+                  />
+                </div>
+              </motion.aside>
             )}
-          </aside>
+          </AnimatePresence>
 
           <div className="min-w-0 flex-1 px-4 pb-16 pt-10 md:px-8 md:pt-20 xl:px-10">
             <CategoryProductGrid
@@ -142,7 +151,7 @@ export function CategoryProductsView({
         onClose={() => ui.setMobileFilterOpen(false)}
         onSubCategoryChange={filters.handleSubCategoryChange}
         onClearFilters={filters.clearAllFilters}
-        onPriceRangeChange={filters.setPriceRange}
+        onPriceRangeChange={filters.handlePriceRangeChange}
         onFabricChange={filters.handleFabricChange}
       />
 
