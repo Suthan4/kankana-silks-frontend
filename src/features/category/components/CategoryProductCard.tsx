@@ -7,7 +7,10 @@ import { AlertCircle, Heart } from "lucide-react";
 import type { Product, ProductVariant } from "@/lib/api/product.api";
 import type { CartLineLike } from "@/lib/utils/cartItems";
 import { formatMaskedPrice } from "@/lib/utils/priceMasked";
-import { getCartItemStockState } from "@/lib/utils/cartStock";
+import {
+  getCartItemStockState,
+  canIncreaseCartItemQuantity,
+} from "@/lib/utils/cartStock";
 
 interface CategoryProductCardProps {
   product: Product;
@@ -50,13 +53,15 @@ export function CategoryProductCard({
       : 0;
   const variants = product.variants ?? [];
   const hasVariants = product.hasVariants && variants.length > 0;
-  const cartStockState = getCartItemStockState({
+  const cartStockItem = {
     product,
     variant: selectedVariant ?? undefined,
     variantId: selectedVariant?.id,
     quantity: cartItem?.quantity ?? 0,
     allowOutOfStockOrders: product.allowOutOfStockOrders,
-  });
+  };
+  const cartStockState = getCartItemStockState(cartStockItem);
+  const canIncreaseQuantity = canIncreaseCartItemQuantity(cartStockItem);
 
   return (
     <motion.div
@@ -148,7 +153,7 @@ export function CategoryProductCard({
                   type="button"
                   onClick={onIncrease}
                   aria-label={`Increase ${product.name} quantity`}
-                  disabled={Number(cartItem.quantity) >= cartStockState.maxAllowed}
+                  disabled={!canIncreaseQuantity}
                   className="flex-1 py-2.5 text-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   +

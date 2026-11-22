@@ -14,17 +14,18 @@ import { toast } from "sonner";
 import { useEffect, useState, useMemo } from "react";
 import { extractVariantAttributes } from "@/lib/utils/variant.utils";
 import { mergeCartLines } from "@/lib/utils/cartItems";
-import { getCartItemStockState } from "@/lib/utils/cartStock";
+import {
+  getCartItemStockState,
+  canIncreaseCartItemQuantity,
+} from "@/lib/utils/cartStock";
 import { cartKeys, cartQueryPolicy } from "@/lib/query/cartQuery";
 import { CartDrawerSkeleton } from "@/features/cart/components/CartDrawerSkeleton";
 
 export default function MiniCartDrawer() {
   const { isOpen, close } = useCartDrawer();
-  const {
-    items: localItems,
-    updateQuantity: updateQuantityLocal,
-    removeItem: removeItemLocal,
-  } = useCartStore();
+  const localItems = useCartStore((state) => state.items);
+  const updateQuantityLocal = useCartStore((state) => state.updateQuantity);
+  const removeItemLocal = useCartStore((state) => state.removeItem);
   const { user } = useAuthModal();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -280,8 +281,17 @@ export default function MiniCartDrawer() {
     }
 
     const stockState = getStockState(item);
-    if (stockState.isOutOfStock) {
-      toast.error("This product is out of stock.");
+    const currentQuantity = Number(item.quantity) || 0;
+    if (newQty > currentQuantity && !canIncreaseCartItemQuantity(item, newQty)) {
+      toast.error(
+        !stockState.hasStockData
+          ? "Stock availability could not be verified. Please refresh your cart."
+          : stockState.isOutOfStock
+            ? "This product is out of stock."
+            : stockState.isLimited
+              ? "Only 1 item can be ordered for this low-stock product."
+              : `Only ${stockState.maxAllowed} item(s) are available in stock.`,
+      );
       return;
     }
     if (newQty > stockState.maxAllowed) {
@@ -403,26 +413,6 @@ export default function MiniCartDrawer() {
                   const itemPrice = getItemPrice(item);
                   const imageUrl = getItemImage(item);
                   const stockState = getStockState(item);
-                  console.log("MINI CART STOCK DEBUG", {
-                    product: item?.product?.name,
-                    quantityInCart: item?.quantity,
-
-                    variantId: item?.variantId ?? item?.variant?.id,
-
-                    productStock: item?.product?.stock,
-                    variantStock: item?.variant?.stock,
-
-                    productAllowOutOfStock:
-                      item?.product?.allowOutOfStockOrders,
-
-                    variantAllowOutOfStock:
-                      item?.variant?.allowOutOfStockOrders,
-
-                    rootAllowOutOfStock: item?.allowOutOfStockOrders,
-
-                    calculatedStockState: stockState,
-                  });
-
                   const stockQty = stockState.available;
                   const cartQuantity = Math.max(0, Number(item.quantity) || 0);
 
@@ -549,8 +539,7 @@ export default function MiniCartDrawer() {
                               }
                               disabled={
                                 updateQuantityMutation.isPending ||
-                                stockState.isOutOfStock ||
-                                cartQuantity >= stockState.maxAllowed
+                                !canIncreaseCartItemQuantity(item)
                               }
                               aria-label="Increase quantity"
                               className="p-1 sm:p-1.5 text-gray-500 hover:text-black transition disabled:opacity-30 disabled:cursor-not-allowed"

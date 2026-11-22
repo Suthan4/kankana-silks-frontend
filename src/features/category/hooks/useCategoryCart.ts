@@ -9,7 +9,10 @@ import { mergeCartLines, type CartLineLike } from "@/lib/utils/cartItems";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { useCartStore } from "@/store/useCartStore";
 import { useCartDrawer } from "@/store/useCartDrawer";
-import { getCartItemStockState } from "@/lib/utils/cartStock";
+import {
+  getCartItemStockState,
+  canIncreaseCartItemQuantity,
+} from "@/lib/utils/cartStock";
 import { cartKeys, cartQueryPolicy } from "@/lib/query/cartQuery";
 
 
@@ -130,7 +133,7 @@ export function useCategoryCart() {
     }
     const stock = getCartItemStockState(cartItem);
     const nextQuantity = Number(cartItem.quantity ?? 0) + 1;
-    if (nextQuantity > stock.maxAllowed) {
+    if (!canIncreaseCartItemQuantity(cartItem, nextQuantity)) {
       toast.error(
         stock.isLimited
           ? "Only one item can be ordered at this time."

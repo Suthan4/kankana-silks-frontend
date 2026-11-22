@@ -36,6 +36,7 @@ import { mergeCartLines } from "@/lib/utils/cartItems";
 import {
   getCartItemStockState,
   getCartItemStockMessage,
+  canIncreaseCartItemQuantity,
   validateCartForCheckout,
 } from "@/lib/utils/cartStock";
 import { CartPageSkeleton } from "@/features/cart/components/CartPageSkeleton";
@@ -69,19 +70,12 @@ export default function CartPage() {
   const { user } = useAuthModal();
   const queryClient = useQueryClient();
 
-  const {
-    items,
-    appliedCoupon,
-    removeItem,
-    updateQuantity,
-    clearCart,
-    applyCoupon,
-    removeCoupon,
-    getTotalItems,
-    getSubtotal,
-    getDiscount,
-    getTotal,
-  } = useCartStore();
+  const items = useCartStore((state) => state.items);
+  const appliedCoupon = useCartStore((state) => state.appliedCoupon);
+  const removeItem = useCartStore((state) => state.removeItem);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
+  const applyCoupon = useCartStore((state) => state.applyCoupon);
+  const removeCoupon = useCartStore((state) => state.removeCoupon);
 
   const [couponCode, setCouponCode] = useState("");
   const [showCouponDropdown, setShowCouponDropdown] = useState(false);
@@ -609,26 +603,13 @@ export default function CartPage() {
               <div className="flex-1 overflow-y-auto space-y-3 pr-1">
                 <AnimatePresence mode="popLayout">
                   {displayItems.map((item: any, index: number) => {
-                    console.log("CART STOCK DEBUG", {
-                      productName: item.product?.name,
-                      variantId: item.variantId ?? item.variant?.id,
-                      cartQuantity: item.quantity,
-                      availableStock: item.availableStock,
-                      variantStock: item.variant?.stock,
-                      productStock: item.product?.stock,
-                      productStockQuantity: item.product?.stockQuantity,
-                      allowOutOfStockOrders:
-                        item.product?.allowOutOfStockOrders,
-                    });
                     const stockState = getCartItemStockState(item);
                     const stockMessage = getCartItemStockMessage(item);
 
                     const cartQuantity = Number(item.quantity) || 0;
 
                     const canIncreaseQuantity =
-                      stockState.hasStockData &&
-                      !stockState.isOutOfStock &&
-                      cartQuantity < stockState.maxAllowed;
+                      canIncreaseCartItemQuantity(item);
 
                     const customerStockMessage = stockMessage;
 

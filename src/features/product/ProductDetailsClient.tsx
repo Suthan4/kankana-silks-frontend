@@ -31,6 +31,7 @@ import { useProductVariants } from "@/features/product/hooks/useProductVariants"
 import { useProductDelivery } from "@/features/product/hooks/useProductDelivery";
 import { useProductCart } from "@/features/product/hooks/useProductCart";
 import { getProductStock } from "@/features/product/utils/productStockAdapter";
+import { canIncreaseCartItemQuantity } from "@/lib/utils/cartStock";
 
 import VideoConsultationModal from "@/components/video-consultationModal";
 interface ProductDetailsClientProps {
@@ -70,7 +71,7 @@ export default function ProductDetailsClient({
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
-  const { state: stockState, message: stockMessage } = getProductStock({
+  const { item: stockItem, state: stockState, message: stockMessage } = getProductStock({
     product,
     variant: hasVariants ? selectedVariant : undefined,
     quantity,
@@ -78,6 +79,9 @@ export default function ProductDetailsClient({
   const availableStock = stockState.available;
   const maxAllowedQuantity = stockState.maxAllowed;
   const isOutOfStock = stockState.isOutOfStock;
+  const canIncreaseQuantity =
+    (!hasVariants || Boolean(selectedVariant)) &&
+    canIncreaseCartItemQuantity({ ...stockItem, quantity }, quantity + 1);
 
   useEffect(() => {
     setQuantity((current) =>
@@ -256,7 +260,7 @@ export default function ProductDetailsClient({
     } catch (error) {
       toast.error("Failed to proceed to checkout");
     }
-    console.log("buyNowItem", buyNowItem);
+  
   };
 
   const nextImage = () => {
@@ -389,6 +393,7 @@ export default function ProductDetailsClient({
                   isOutOfStock={isOutOfStock}
                   quantity={quantity}
                   maxAllowedQuantity={maxAllowedQuantity}
+                  canIncreaseQuantity={canIncreaseQuantity}
                   onQuantityChange={setQuantity}
                 />
               </div>

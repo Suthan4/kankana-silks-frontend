@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { mergeCartLinesForStorage } from "@/lib/utils/cartItems";
+import { getCartItemStockState } from "@/lib/utils/cartStock";
 
 type VariantStock = {
   id: string;
@@ -130,6 +131,14 @@ export const useCartStore = create<CartState>()(
               variantId: item.variantId ?? item.variant?.id ?? null,
               quantity: nextQuantity,
             };
+            const stock = getCartItemStockState(nextItem);
+            if (
+              !stock.hasStockData ||
+              stock.isOutOfStock ||
+              nextQuantity > stock.maxAllowed
+            ) {
+              return { items: state.items };
+            }
             const remaining = normalizedItems.filter((candidate) => !sameLine(candidate));
             return { items: [...remaining, nextItem] };
           }
@@ -172,6 +181,18 @@ export const useCartStore = create<CartState>()(
               : String(value);
           const target = state.items.find((item) => normalizeId(item.id) === normalizeId(id));
           if (!target) return { items: state.items };
+
+          const currentQuantity = Number(target.quantity) || 0;
+          if (quantity > currentQuantity) {
+            const stock = getCartItemStockState(target);
+            if (
+              !stock.hasStockData ||
+              stock.isOutOfStock ||
+              quantity > stock.maxAllowed
+            ) {
+              return { items: state.items };
+            }
+          }
 
           const targetProductId = normalizeId(target.productId ?? target.product?.id);
           const targetVariantId = normalizeId(target.variantId ?? target.variant?.id);

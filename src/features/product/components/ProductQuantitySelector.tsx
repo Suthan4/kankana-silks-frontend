@@ -5,6 +5,7 @@ interface ProductQuantitySelectorProps {
   isOutOfStock: boolean;
   quantity: number;
   maxAllowedQuantity: number;
+  canIncreaseQuantity: boolean;
   onQuantityChange: (quantity: number) => void;
 }
 
@@ -12,6 +13,7 @@ export function ProductQuantitySelector({
   isOutOfStock,
   quantity,
   maxAllowedQuantity,
+  canIncreaseQuantity,
   onQuantityChange,
 }: ProductQuantitySelectorProps) {
   return (
@@ -34,10 +36,12 @@ export function ProductQuantitySelector({
                       </span>
                       <motion.button
                         whileTap={{ scale: 0.9 }}
-                        onClick={() =>
-                          onQuantityChange(Math.min(maxAllowedQuantity, quantity + 1))
-                        }
-                        disabled={quantity >= maxAllowedQuantity}
+                        onClick={() => {
+                          if (canIncreaseQuantity) {
+                            onQuantityChange(Math.min(maxAllowedQuantity, quantity + 1));
+                          }
+                        }}
+                        disabled={!canIncreaseQuantity}
                         className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center font-bold text-sm disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         +
