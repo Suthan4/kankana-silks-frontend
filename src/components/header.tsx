@@ -28,17 +28,58 @@ function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const mobileLocationRef = useRef<HTMLDivElement | null>(null);
 
-  const { user, openModal, cartItemsCount, wishlistCount, categories, isCategoriesLoading: loading, addresses, defaultAddress, handleLogout } = useHeaderData();
-  const locationState = useHeaderLocation({ user, defaultAddress, locationModalOpen, onClose: () => setLocationModalOpen(false) });
-  const { pathname, hasHeroBehindHeader, isScrolled, showNav, navBottom, navRef, handleHeaderEnter, handleHeaderLeave, handleCategoryHover } = useHeaderScroll({
-    setHoveredCategory, setUserMenuOpen, setLocationModalOpen, setIsHeaderHovered,
+  const {
+    user,
+    openModal,
+    cartItemsCount,
+    wishlistCount,
+    categories,
+    isCategoriesLoading: loading,
+    addresses,
+    defaultAddress,
+    handleLogout: handleSessionLogout,
+  } = useHeaderData();
+  const locationState = useHeaderLocation({
+    user,
+    defaultAddress,
+    locationModalOpen,
+    onClose: () => setLocationModalOpen(false),
+  });
+  const {
+    pathname,
+    hasHeroBehindHeader,
+    isScrolled,
+    showNav,
+    navBottom,
+    navRef,
+    handleHeaderEnter,
+    handleHeaderLeave,
+    handleCategoryHover,
+  } = useHeaderScroll({
+    setHoveredCategory,
+    setUserMenuOpen,
+    setLocationModalOpen,
+    setIsHeaderHovered,
   });
 
-  useModalScrollLock(locationModalOpen && typeof window !== "undefined" && window.innerWidth < 768 && typeof CSS !== "undefined" && CSS.supports("-webkit-touch-callout", "none"));
+  useModalScrollLock(
+    locationModalOpen &&
+      typeof window !== "undefined" &&
+      window.innerWidth < 768 &&
+      typeof CSS !== "undefined" &&
+      CSS.supports("-webkit-touch-callout", "none"),
+  );
 
   const isMyAccountPage = pathname?.startsWith("/my-account");
-  const isProductDetailPage = Boolean(pathname?.match(/^\/products\/[^/]+$/) || (pathname?.match(/^\/[^/]+\/[^/]+$/) && !pathname?.startsWith("/shop/") && !pathname?.startsWith("/my-account")));
-  const isCategoryPage = Boolean(pathname?.match(/^\/shop\/[^/]+$/) || pathname?.match(/^\/[^/]+\/[^/]+$/));
+  const isProductDetailPage = Boolean(
+    pathname?.match(/^\/products\/[^/]+$/) ||
+    (pathname?.match(/^\/[^/]+\/[^/]+$/) &&
+      !pathname?.startsWith("/shop/") &&
+      !pathname?.startsWith("/my-account")),
+  );
+  const isCategoryPage = Boolean(
+    pathname?.match(/^\/shop\/[^/]+$/) || pathname?.match(/^\/[^/]+\/[^/]+$/),
+  );
 
   const { getCategoryUrl, icons } = useHeaderNavigation({
     user,
@@ -52,8 +93,17 @@ function Header() {
     locationState.setLocation(null);
   };
   const megaMenu = useHeaderMegaMenuModel(categories, hoveredCategory);
-  const isHeaderWhite = !hasHeroBehindHeader || isScrolled || isHeaderHovered || Boolean(hoveredCategory) || locationModalOpen || userMenuOpen;
-  const portalRoot = typeof document !== "undefined" ? document.getElementById("portal-root") : null;
+  const isHeaderWhite =
+    !hasHeroBehindHeader ||
+    isScrolled ||
+    isHeaderHovered ||
+    Boolean(hoveredCategory) ||
+    locationModalOpen ||
+    userMenuOpen;
+  const portalRoot =
+    typeof document !== "undefined"
+      ? document.getElementById("portal-root")
+      : null;
 
   return (
     <>
@@ -96,13 +146,74 @@ function Header() {
         getCategoryUrl={getCategoryUrl}
       />
 
-      <MobileHeaderBar mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} isProductDetailPage={isProductDetailPage} isCategoryPage={isCategoryPage} location={locationState.location} onOpenLocation={() => setLocationModalOpen(true)} onOpenSearch={() => setIsSearchOpen(true)} />
-      <MobileLocationSheet open={locationModalOpen} onClose={() => setLocationModalOpen(false)} user={user} addresses={addresses} location={locationState.location} setLocation={locationState.setLocation} pincode={locationState.pincode} setPincode={locationState.setPincode} isCheckingPincode={locationState.isCheckingPincode} isGettingLocation={locationState.isGettingLocation} onSubmitPincode={locationState.handlePincodeSubmit} onUseCurrentLocation={locationState.handleUseCurrentLocation} onLogin={() => openModal("login")} mobileLocationRef={mobileLocationRef} />
-      <MobileMenuDrawer open={mobileMenuOpen} portalRoot={portalRoot} categories={categories} loading={loading} user={user} activeNav={activeNav} setActiveNav={setActiveNav} activeSubNav={activeSubNav} setActiveSubNav={setActiveSubNav} getCategoryUrl={getCategoryUrl} onClose={() => setMobileMenuOpen(false)} onLogin={() => openModal("login")} onLogout={() => { setMobileMenuOpen(false); handleLogout(); }} />
-      <MobileBottomNavigation items={icons} user={user} pathname={pathname} isMyAccountPage={Boolean(isMyAccountPage)} isProductDetailPage={isProductDetailPage} isCategoryPage={isCategoryPage} onAccountClick={() => { if (!user) openModal("login"); else { window.dispatchEvent(new Event("app:navigation-start")); router.push("/my-account"); } }} openLogin={() => openModal("login")} />
+      <MobileHeaderBar
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+        isProductDetailPage={isProductDetailPage}
+        isCategoryPage={isCategoryPage}
+        location={locationState.location}
+        onOpenLocation={() => setLocationModalOpen(true)}
+        onOpenSearch={() => setIsSearchOpen(true)}
+      />
+      <MobileLocationSheet
+        open={locationModalOpen}
+        onClose={() => setLocationModalOpen(false)}
+        user={user}
+        addresses={addresses}
+        location={locationState.location}
+        setLocation={locationState.setLocation}
+        pincode={locationState.pincode}
+        setPincode={locationState.setPincode}
+        isCheckingPincode={locationState.isCheckingPincode}
+        isGettingLocation={locationState.isGettingLocation}
+        onSubmitPincode={locationState.handlePincodeSubmit}
+        onUseCurrentLocation={locationState.handleUseCurrentLocation}
+        onLogin={() => openModal("login")}
+        mobileLocationRef={mobileLocationRef}
+      />
+      <MobileMenuDrawer
+        open={mobileMenuOpen}
+        portalRoot={portalRoot}
+        categories={categories}
+        loading={loading}
+        user={user}
+        activeNav={activeNav}
+        setActiveNav={setActiveNav}
+        activeSubNav={activeSubNav}
+        setActiveSubNav={setActiveSubNav}
+        getCategoryUrl={getCategoryUrl}
+        onClose={() => setMobileMenuOpen(false)}
+        onLogin={() => openModal("login")}
+        onLogout={() => {
+          setMobileMenuOpen(false);
+          handleLogout();
+        }}
+      />
+      <MobileBottomNavigation
+        items={icons}
+        user={user}
+        pathname={pathname}
+        isMyAccountPage={Boolean(isMyAccountPage)}
+        isProductDetailPage={isProductDetailPage}
+        isCategoryPage={isCategoryPage}
+        onAccountClick={() => {
+          if (!user) openModal("login");
+          else {
+            window.dispatchEvent(new Event("app:navigation-start"));
+            router.push("/my-account");
+          }
+        }}
+        openLogin={() => openModal("login")}
+      />
 
-      <UnifiedSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
-      <VideoConsultationModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <UnifiedSearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
+      <VideoConsultationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </>
   );
 }
