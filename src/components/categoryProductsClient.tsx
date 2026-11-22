@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback, useMemo, memo, useRef, useEffect } from "react";
+import { Suspense, useState, useCallback, useMemo, memo, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
@@ -43,7 +43,7 @@ interface CategoryProductsClientProps {
   initialProducts?: Awaited<ReturnType<typeof productApi.getProducts>>;
 }
 
-export default function CategoryProductsClient({
+function CategoryProductsContent({
   category,
   initialProducts,
 }: CategoryProductsClientProps) {
@@ -1422,5 +1422,29 @@ hover:bg-white
         />
       )}
     </div>
+  );
+}
+
+
+/**
+ * useSearchParams() must stay below a local Suspense boundary so Next.js can
+ * build the route safely without forcing the entire page into a CSR bailout.
+ * The server page still supplies category metadata, JSON-LD and initial data.
+ */
+export default function CategoryProductsClient(
+  props: CategoryProductsClientProps,
+) {
+  return (
+    <Suspense
+      fallback={
+        <div
+          aria-label="Loading category products"
+          aria-busy="true"
+          className="min-h-[50vh] w-full"
+        />
+      }
+    >
+      <CategoryProductsContent {...props} />
+    </Suspense>
   );
 }
