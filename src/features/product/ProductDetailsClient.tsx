@@ -38,11 +38,8 @@ import { ProductVariantSelector } from "@/features/product/components/ProductVar
 import { useProductVariants } from "@/features/product/hooks/useProductVariants";
 import { getProductStock } from "@/features/product/utils/productStockAdapter";
 
-import VideoConsultationModal from "../video-consultationModal";
-import WishlistButton from "../ui/WishlistButton";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { trackAddToCart, trackViewItem } from "@/lib/analytics";
-
+import VideoConsultationModal from "@/components/video-consultationModal";
+import WishlistButton from "@/components/ui/WishlistButton";
 interface ProductDetailsClientProps {
   initialProduct: Product;
 }
