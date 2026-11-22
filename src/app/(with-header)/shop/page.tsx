@@ -1,7 +1,5 @@
 import { Metadata } from "next";
 import ShopClient from "@/components/sections/shopClient";
-import axios from "axios";
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 interface Category {
@@ -22,13 +20,26 @@ interface Category {
 // Fetch categories (server-side)
 async function getCategories(): Promise<Category[]> {
   try {
-    const response = await axios.get(`${API_BASE_URL}/categories/tree`, {
+    if (!API_BASE_URL) {
+      throw new Error("NEXT_PUBLIC_API_URL is not configured");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/categories/tree`, {
       headers: {
         "Content-Type": "application/json",
       },
+      next: {
+        revalidate: 60,
+        tags: ["categories-tree"],
+      },
     });
 
-    return response.data.data || [];
+    if (!response.ok) {
+      throw new Error(`Category request failed with status ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result?.data ?? [];
   } catch (error) {
     console.error("Error fetching categories:", error);
     return [];
@@ -36,9 +47,7 @@ async function getCategories(): Promise<Category[]> {
 }
 
 // Generate metadata for SEO
-// Categories are fetched with axios, which Next's data cache can't see. Without
-// this the page would be frozen at build time now that the layout is no longer
-// force-dynamic. 60s keeps admin edits visible quickly.
+// Keep the route ISR interval aligned with its tagged category fetch cache.
 export const revalidate = 60;
 
 export async function generateMetadata(): Promise<Metadata> {

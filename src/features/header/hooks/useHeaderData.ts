@@ -9,6 +9,7 @@ import categoryService from "@/lib/api/category.api";
 import { cartApi } from "@/lib/api/cart.api";
 import { wishlistApi } from "@/lib/api/wishlist.api";
 import { toast } from "@/store/useToastStore";
+import { cartKeys, cartQueryPolicy } from "@/lib/query/cartQuery";
 
 export function useHeaderData() {
   const { user, openModal } = useAuthModal();
@@ -17,13 +18,13 @@ export function useHeaderData() {
   const localCartItemsCount = useCartStore((state) => state.getTotalItems());
 
   const { data: cartData } = useQuery({
-    queryKey: ["cartApi", user?.id],
+    queryKey: cartKeys.user(user?.id),
     queryFn: async () => {
       const response = await cartApi.getCart();
       return response.data;
     },
     enabled: !!user,
-    staleTime: 0,
+    ...cartQueryPolicy,
     placeholderData: { items: [] },
   });
 

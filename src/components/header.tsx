@@ -1,9 +1,10 @@
 "use client";
 import { useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
-import VideoConsultationModal from "./video-consultationModal";
-import UnifiedSearchModal from "./unifiedSearchModal";
+const VideoConsultationModal = dynamic(() => import("./video-consultationModal"));
+const UnifiedSearchModal = dynamic(() => import("./unifiedSearchModal"));
 import { useHeaderData } from "@/features/header/hooks/useHeaderData";
 import { useHeaderLocation } from "@/features/header/hooks/useHeaderLocation";
 import { useHeaderScroll } from "@/features/header/hooks/useHeaderScroll";
@@ -206,14 +207,18 @@ function Header() {
         openLogin={() => openModal("login")}
       />
 
-      <UnifiedSearchModal
-        isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-      />
-      <VideoConsultationModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
+      {isSearchOpen && (
+        <UnifiedSearchModal
+          isOpen={isSearchOpen}
+          onClose={() => setIsSearchOpen(false)}
+        />
+      )}
+      {isModalOpen && (
+        <VideoConsultationModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+        />
+      )}
     </>
   );
 }
