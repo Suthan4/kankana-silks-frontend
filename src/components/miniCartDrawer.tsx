@@ -18,7 +18,6 @@ import { getCartItemStockState } from "@/lib/utils/cartStock";
 import { cartKeys, cartQueryPolicy } from "@/lib/query/cartQuery";
 import { CartDrawerSkeleton } from "@/features/cart/components/CartDrawerSkeleton";
 
-
 export default function MiniCartDrawer() {
   const { isOpen, close } = useCartDrawer();
   const {
@@ -381,7 +380,7 @@ export default function MiniCartDrawer() {
             <div className="ios-modal-content flex-1 overflow-y-auto px-5 py-3 divide-y divide-gray-100">
               {displayItems.length === 0 && user && isCartLoading ? (
                 <CartDrawerSkeleton />
-              ) : displayItems.length === 0 ? (              ) : displayItems.length === 0 ? (
+              ) : displayItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full py-16 text-center">
                   <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 mb-4">
                     <ShoppingBag className="w-8 h-8" />
