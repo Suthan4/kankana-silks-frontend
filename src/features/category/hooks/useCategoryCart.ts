@@ -9,6 +9,7 @@ import { mergeCartLines, type CartLineLike } from "@/lib/utils/cartItems";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { useCartStore } from "@/store/useCartStore";
 import { useCartDrawer } from "@/store/useCartDrawer";
+import { getCartItemStockState } from "@/lib/utils/cartStock";
 
 export function useCategoryCart() {
   const { user } = useAuthModal();
@@ -55,7 +56,10 @@ export function useCategoryCart() {
             altText: product.name,
             isActive: true,
           }],
-          stock: [{ quantity: product.stock?.[0]?.quantity ?? 0 }],
+          stock: product.stock?.map((stock) => ({
+            ...stock,
+            lowStockThreshold: stock.lowStockThreshold ?? 0,
+          })) ?? [],
         },
         variant: variant ? {
           id: variant.id,
@@ -123,9 +127,18 @@ export function useCategoryCart() {
       addProduct(product, variant);
       return;
     }
-    const quantity = Number(cartItem.quantity ?? 0) + 1;
-    if (user) updateMutation.mutate({ itemId: String(cartItem.id), quantity });
-    else updateItemLocal(String(cartItem.id), quantity);
+    const stock = getCartItemStockState(cartItem);
+    const nextQuantity = Number(cartItem.quantity ?? 0) + 1;
+    if (nextQuantity > stock.maxAllowed) {
+      toast.error(
+        stock.isLimited
+          ? "Only one item can be ordered at this time."
+          : "Only " + stock.maxAllowed + " item(s) are available.",
+      );
+      return;
+    }
+    if (user) updateMutation.mutate({ itemId: String(cartItem.id), quantity: nextQuantity });
+    else updateItemLocal(String(cartItem.id), nextQuantity);
   };
 
   const decreaseQuantity = (cartItem: CartLineLike | null) => {

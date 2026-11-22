@@ -49,6 +49,7 @@ import { cartApi } from "@/lib/api/cart.api";
 import {
   getCartItemStockMessage,
   getCartItemStockState,
+  validateCartItemForCheckout,
 } from "@/lib/utils/cartStock";
 import { shippingApi } from "@/lib/api/shipping.api";
 import confetti from "canvas-confetti";
@@ -522,17 +523,11 @@ export default function CheckoutClient() {
   const invalidCartItems = displayItems
     .map((item: any, index: number) => {
       const productIssue = getCheckoutItemIssue(item);
-      const stockState = getCartItemStockState(item);
-      const quantity = Number(item?.quantity);
-      let stockIssue: string | null = null;
-
-      if (!productIssue && stockState.isOutOfStock) {
-        stockIssue = `${item?.product?.name || "This product"} is out of stock. Remove it from your cart.`;
-      } else if (!productIssue && quantity > stockState.maxAllowed) {
-        stockIssue = stockState.isLimited
-          ? `${item?.product?.name || "This product"} has limited availability. Only 1 item can be ordered. Reduce the quantity in your cart.`
-          : `${item?.product?.name || "This product"} has only ${stockState.available} item(s) available. Reduce the quantity or remove it.`;
-      }
+      const stockValidation = validateCartItemForCheckout(item);
+      const stockIssue =
+        !productIssue && !stockValidation.valid
+          ? stockValidation.message
+          : null;
 
       return { item, index, message: productIssue ?? stockIssue };
     })

@@ -41,11 +41,12 @@ import ProductRequestModal from "@/components/productRequestModal";
 import { formatMaskedPrice } from "@/lib/utils/priceMasked";
 import VideoConsultationModal from "../video-consultationModal";
 import WishlistButton from "../ui/WishlistButton";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatColorText } from "@/lib/utils/colorValidationwithText";
 import DOMPurify from "isomorphic-dompurify";
 import { ZoomGallery } from "../ui/ZoomGallery";
 import { trackAddToCart, trackViewItem } from "@/lib/analytics";
+import { getCartItemStockMessage, getCartItemStockState } from "@/lib/utils/cartStock";
 
 interface ProductDetailsClientProps {
   initialProduct: Product;
@@ -104,7 +105,6 @@ export default function ProductDetailsClient({
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [activeTab, setActiveTab] = useState<"details" | "specs">("details");
   const detailsSwiperRef = useRef<SwiperInstance | null>(null);
-  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
@@ -168,19 +168,24 @@ export default function ProductDetailsClient({
     setSelectedImageIndex(0);
   }, [selectedVariant?.id]);
 
-  // Use the selected variant's stock as the source of truth for variants.
-  // This avoids a zero-stock parent record blocking a variant that has stock.
-  const availableStock = hasVariants
-    ? (selectedVariant?.stock?.[0]?.quantity ?? 0)
-    : (product.stock?.[0]?.quantity ?? 0);
+  // The selected variant is the inventory source of truth for variant products.
+  // Parent product stock must not block a variant with its own available stock.
+  const stockItem = {
+    product,
+    variant: hasVariants ? selectedVariant ?? undefined : undefined,
+    variantId: hasVariants ? selectedVariant?.id : undefined,
+    quantity,
+    allowOutOfStockOrders: product.allowOutOfStockOrders,
+  };
+  const stockState = getCartItemStockState(stockItem);
+  const stockMessage = getCartItemStockMessage(stockItem);
+  const availableStock = stockState.available;
+  const maxAllowedQuantity = stockState.maxAllowed;
+  const isOutOfStock = stockState.isOutOfStock;
 
-  const isOutOfStock =
-    availableStock === 0 ||
-    (hasVariants &&
-      (selectedVariant?.stock?.[0]?.quantity ?? 0) <
-        (selectedVariant?.stock?.[0]?.lowStockThreshold ?? 0)) ||
-    (product.stock?.[0]?.quantity ?? 0) <
-      (product.stock?.[0]?.lowStockThreshold ?? 0);
+  useEffect(() => {
+    setQuantity((current) => Math.max(1, Math.min(current, maxAllowedQuantity)));
+  }, [selectedVariant?.id, maxAllowedQuantity]);
 
   const hasVideoConsultation = product.hasVideoConsultation ?? false;
   const videoPurchasingEnabled = product.videoPurchasingEnabled ?? false;
@@ -305,14 +310,38 @@ export default function ProductDetailsClient({
 
   useEffect(() => {
     if (user) checkWishlistStatus();
-    fetchRelatedProducts();
-    const savedLocation = localStorage.getItem("userLocation");
-    if (savedLocation) {
-      const location = JSON.parse(savedLocation);
-      setPincode(location.pincode);
-      checkDeliveryAvailability(location.pincode);
-    }
   }, [user, product.id]);
+
+  useEffect(() => {
+    const savedLocation = localStorage.getItem("userLocation");
+    if (!savedLocation) return;
+    try {
+      const location = JSON.parse(savedLocation);
+      if (location?.pincode) {
+        setPincode(location.pincode);
+        checkDeliveryAvailability(location.pincode);
+      }
+    } catch {
+      localStorage.removeItem("userLocation");
+    }
+  }, [product.id]);
+
+  const { data: relatedProducts = [] } = useQuery({
+    queryKey: ["relatedProducts", product.categoryId, product.id],
+    queryFn: async () => {
+      const response = await productApi.getProducts({
+        categoryId: product.categoryId,
+        limit: 8,
+        isActive: true,
+      });
+      return response.data.products
+        .filter((relatedProduct) => relatedProduct.id !== product.id)
+        .slice(0, 4);
+    },
+    enabled: Boolean(product.categoryId),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
 
   const checkWishlistStatus = async () => {
     if (!user) return;
@@ -321,22 +350,6 @@ export default function ProductDetailsClient({
       setIsWishlisted(response.data.isInWishlist);
     } catch (error) {
       console.error("Error checking wishlist:", error);
-    }
-  };
-
-  const fetchRelatedProducts = async () => {
-    try {
-      const response = await productApi.getProducts({
-        categoryId: product.categoryId,
-        limit: 4,
-        isActive: true,
-      });
-      const filtered = response.data.products.filter(
-        (p) => p.id !== product.id,
-      );
-      setRelatedProducts(filtered.slice(0, 4));
-    } catch (error) {
-      console.error("Error fetching related products:", error);
     }
   };
 
@@ -443,17 +456,18 @@ export default function ProductDetailsClient({
     mutationFn: async ({
       product,
       variant,
+      quantity,
     }: {
       product: Product;
       variant?: ProductVariant | null;
+      quantity: number;
     }) => {
-      const availableStock = product.stock?.[0]?.quantity ?? 0;
       const cartItem = {
         id: crypto.randomUUID(),
         cartId: "local",
         productId: product.id,
         variantId: variant?.id,
-        quantity: 1,
+        quantity,
         product: {
           id: product.id,
           name: product.name,
@@ -471,7 +485,10 @@ export default function ProductDetailsClient({
               isActive: true,
             },
           ],
-          stock: [{ quantity: availableStock }],
+          stock: product.stock?.map((stock) => ({
+            ...stock,
+            lowStockThreshold: stock.lowStockThreshold ?? 0,
+          })) ?? [],
         },
         variant: variant
           ? {
@@ -494,7 +511,7 @@ export default function ProductDetailsClient({
         await cartApi.addToCart({
           productId: product.id,
           variantId: variant?.id,
-          quantity: 1,
+          quantity,
         });
     },
     onSuccess: (_data, variables) => {
@@ -504,7 +521,7 @@ export default function ProductDetailsClient({
         item_category: variables.product.category?.name,
         item_variant: variables.variant?.id,
         price: Number(variables.variant?.sellingPrice ?? variables.variant?.price ?? variables.product.sellingPrice),
-        quantity: 1,
+        quantity: variables.quantity,
       });
       if (user) {
         queryClient.invalidateQueries({ queryKey: ["cartApi"] });
@@ -523,20 +540,21 @@ export default function ProductDetailsClient({
       toast.error("Please select product options before adding to cart.");
       return;
     }
-    if (isOutOfStock && !allowOutOfStockOrders) {
-      toast.error("This product is currently unavailable");
+    if (stockState.isOutOfStock || 1 > maxAllowedQuantity) {
+      toast.error(stockMessage?.message ?? "This product is currently unavailable");
       return;
     }
-    addToCartMutation.mutate({ product, variant });
+    addToCartMutation.mutate({ product, variant, quantity });
   };
 
   const handleBuyNow = async () => {
-    if (isOutOfStock && !allowOutOfStockOrders) {
-      toast.error("Product is out of stock");
-      return;
-    }
-    if (quantity > availableStock && !allowOutOfStockOrders) {
-      toast.error(`Only ${availableStock} items available`);
+    if (stockState.isOutOfStock || quantity > maxAllowedQuantity) {
+      toast.error(
+        stockMessage?.message ??
+          (stockState.isLimited
+            ? "Only one item can be ordered at this time."
+            : "Only " + availableStock + " items available"),
+      );
       return;
     }
     if (hasVariants && !selectedVariant) {
@@ -847,21 +865,23 @@ export default function ProductDetailsClient({
 
                 {/* Stock Status */}
                 <div>
-                  {isOutOfStock && !allowOutOfStockOrders ? (
+                  {stockState.isOutOfStock ? (
+                    <p className="text-red-600 font-medium text-sm flex items-center gap-1.5">
+                      <AlertCircle className="w-4 h-4" /> Out of Stock
+                    </p>
+                  ) : (
                     <div className="space-y-1">
-                      <p className="text-red-600 font-medium text-sm flex items-center gap-1.5">
-                        <AlertCircle className="w-4 h-4" /> Out of Stock
+                      <p className="text-main-secondary font-medium text-sm">
+                        ✓ {stockState.hasStockData
+                          ? "In Stock (" + availableStock + " available)"
+                          : "Availability confirmed at checkout"}
                       </p>
-                      {allowOutOfStockOrders && (
-                        <p className="text-xs text-gray-500">
-                          Request to be notified when back in stock.
+                      {stockMessage && (
+                        <p className="text-amber-700 text-xs font-medium">
+                          {stockMessage.message}
                         </p>
                       )}
                     </div>
-                  ) : (
-                    <p className="text-main-secondary font-medium text-sm">
-                      ✓ In Stock ({availableStock} available)
-                    </p>
                   )}
                 </div>
 
@@ -954,9 +974,10 @@ export default function ProductDetailsClient({
                       <motion.button
                         whileTap={{ scale: 0.9 }}
                         onClick={() =>
-                          setQuantity(Math.min(availableStock, quantity + 1))
+                          setQuantity(Math.min(maxAllowedQuantity, quantity + 1))
                         }
-                        className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center font-bold text-sm"
+                        disabled={quantity >= maxAllowedQuantity}
+                        className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center font-bold text-sm disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         +
                       </motion.button>
@@ -969,7 +990,7 @@ export default function ProductDetailsClient({
               <div className="hidden md:block flex-none pt-3 space-y-2.5 border-t border-gray-200 mt-2">
                 {/* Action Buttons */}
                 <div className="flex gap-2.5">
-                  {isOutOfStock || !allowOutOfStockOrders ? (
+                  {isOutOfStock ? (
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -1079,7 +1100,7 @@ export default function ProductDetailsClient({
           className="flex items-center gap-2 px-4 pb-4 pt-1"
           style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
         >
-          {isOutOfStock || !allowOutOfStockOrders ? (
+          {isOutOfStock ? (
             /* Out of stock — Request button full width */
             <motion.button
               whileTap={{ scale: 0.97 }}
