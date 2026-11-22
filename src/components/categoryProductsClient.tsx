@@ -971,7 +971,7 @@ ${
 
                     const cartItem = effectiveCartItems.find((item: CartLineLike) => {
                       const itemProductId = String(item.productId ?? item.product?.id ?? "");
-                      const itemVariantId = String(item.variantId ?? item.variant?.id ?? "");
+                      const itemVariantId = String(item.variantId ?? "");
                       return itemProductId === product.id &&
                         itemVariantId === (selectedVariant?.id ?? "");
                     });
