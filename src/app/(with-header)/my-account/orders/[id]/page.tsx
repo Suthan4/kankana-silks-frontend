@@ -21,7 +21,6 @@ import { OrderNotices } from "@/features/orders/components/OrderNotices";
 import { OrderAddressPaymentSection } from "@/features/orders/components/OrderAddressPaymentSection";
 import { toast } from "sonner";
 
-
 export default function OrderDetailsPage() {
   const router = useRouter();
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -40,12 +39,8 @@ export default function OrderDetailsPage() {
   const cancelRestrictionReason = canCancelData?.reason;
 
   // ✅ Get order actions (tracking, return, etc.)
-  const {
-    canReturn,
-    returnWindowClosed,
-    returnEligibility,
-    hoursRemaining,
-  } = useOrderActions(order);
+  const { canReturn, returnWindowClosed, returnEligibility, hoursRemaining } =
+    useOrderActions(order);
 
   // ✅ Helper functions for button visibility
   const isInvoiceAvailable =
@@ -167,7 +162,9 @@ export default function OrderDetailsPage() {
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Package className="w-10 h-10 text-red-400" />
           </div>
-          <p className="text-red-500 text-lg font-medium">{error ? "Unable to load this order" : "Order not found"}</p>
+          <p className="text-red-500 text-lg font-medium">
+            {error ? "Unable to load this order" : "Order not found"}
+          </p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             {error && (
               <button
@@ -248,14 +245,18 @@ export default function OrderDetailsPage() {
           hoursRemaining={hoursRemaining}
           canCancel={Boolean(canCancel)}
           cancelPending={cancelMutation.isPending}
-          onTrackOrder={() => router.push(`/my-account/order-tracking/${order.id}`)}
-          onReturnOrder={() => router.push(`/my-account/returns/create?orderId=${order.id}`)}
+          onTrackOrder={() =>
+            router.push(`/my-account/order-tracking/${order.id}`)
+          }
+          onReturnOrder={() =>
+            router.push(`/my-account/returns/create?orderId=${order.id}`)
+          }
           onCancelOrder={() => setShowCancelModal(true)}
         />
 
         <OrderNotices
           order={order}
-          returnWindowClosed={returnWindowClosed}
+          returnWindowClosed={Boolean(returnWindowClosed)}
           returnReason={returnEligibility?.reason}
           invoiceAvailable={Boolean(isInvoiceAvailable)}
           isDownloadingInvoice={isDownloadingInvoice}
@@ -267,7 +268,10 @@ export default function OrderDetailsPage() {
 
         <OrderItemsSection items={order.items} />
 
-        <OrderAddressPaymentSection order={order} paymentDisplay={paymentDisplay} />
+        <OrderAddressPaymentSection
+          order={order}
+          paymentDisplay={paymentDisplay}
+        />
 
         {/* Shipment Details */}
         {order.shipment && (
@@ -301,7 +305,12 @@ export default function OrderDetailsPage() {
 
       {/* Cancel Modal */}
       {showCancelModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="cancel-order-title">
+        <div
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cancel-order-title"
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -313,7 +322,9 @@ export default function OrderDetailsPage() {
                   <XCircle className="w-6 h-6 text-red-600" />
                 </div>
                 <div>
-                  <h3 id="cancel-order-title" className="font-bold text-lg">Cancel Order</h3>
+                  <h3 id="cancel-order-title" className="font-bold text-lg">
+                    Cancel Order
+                  </h3>
                   <p className="text-sm text-gray-500">Are you sure?</p>
                 </div>
               </div>
