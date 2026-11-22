@@ -4,11 +4,9 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   ShoppingCart,
-  Check,
   Zap,
   Video,
   AlertCircle,
-  Palette,
   Loader2,
 } from "lucide-react";
 import Image from "next/image";
@@ -18,7 +16,6 @@ import {
   ProductVariant,
   type Product,
 } from "@/lib/api/product.api";
-import { wishlistApi } from "@/lib/api/wishlist.api";
 import { cartApi } from "@/lib/api/cart.api";
 import { shipmentApi } from "@/lib/api/shipment.api";
 import { useAuthModal } from "@/store/useAuthModalStore";
@@ -57,7 +54,6 @@ export default function ProductDetailsClient({
   const {hasVariants,selectedVariant,images,options:variantOptions,getSelectedAttributeValue,getSwatchImage,selectAttribute}=useProductVariants(initialProduct);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [isWishlisted, setIsWishlisted] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
@@ -68,7 +64,6 @@ export default function ProductDetailsClient({
     checked: boolean;
   } | null>(null);
   const [isCheckingDelivery, setIsCheckingDelivery] = useState(false);
-  console.log("product", product);
 
   const { state: stockState, message: stockMessage } = getProductStock({
     product,
@@ -86,7 +81,6 @@ export default function ProductDetailsClient({
   const hasVideoConsultation = product.hasVideoConsultation ?? false;
   const videoPurchasingEnabled = product.videoPurchasingEnabled ?? false;
   const videoConsultationNote = product.videoConsultationNote;
-  const allowOutOfStockOrders = product.allowOutOfStockOrders ?? false;
 
   const displayPrice =
     hasVariants && selectedVariant
@@ -125,10 +119,6 @@ export default function ProductDetailsClient({
   }, [product.id, product.name, product.category?.name, selectedVariant?.id, hasVariants, displayPrice]);
 
   useEffect(() => {
-    if (user) checkWishlistStatus();
-  }, [user, product.id]);
-
-  useEffect(() => {
     const savedLocation = localStorage.getItem("userLocation");
     if (!savedLocation) return;
     try {
@@ -158,16 +148,6 @@ export default function ProductDetailsClient({
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
-
-  const checkWishlistStatus = async () => {
-    if (!user) return;
-    try {
-      const response = await wishlistApi.checkProduct(product.id);
-      setIsWishlisted(response.data.isInWishlist);
-    } catch (error) {
-      console.error("Error checking wishlist:", error);
-    }
-  };
 
   const checkDeliveryAvailability = async (pincodeToCheck: string) => {
     if (pincodeToCheck.length !== 6 || !/^\d+$/.test(pincodeToCheck)) {
@@ -213,32 +193,6 @@ export default function ProductDetailsClient({
   };
 
   const handleCheckDelivery = () => checkDeliveryAvailability(pincode);
-
-  const toggleWishlist = async () => {
-    if (!user) {
-      openModal("login");
-      return;
-    }
-    try {
-      if (isWishlisted) {
-        const wishlist = await wishlistApi.getWishlist();
-        const item = wishlist.data.items?.find(
-          (i: any) => i.productId === product.id,
-        );
-        if (item) {
-          await wishlistApi.removeFromWishlist(item.id);
-          setIsWishlisted(false);
-          toast.success("Removed from wishlist");
-        }
-      } else {
-        await wishlistApi.addToWishlist({ productId: product.id });
-        setIsWishlisted(true);
-        toast.success("Added to wishlist");
-      }
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update wishlist");
-    }
-  };
 
   const handleVideoConsultation = () => {
     if (!user) {
