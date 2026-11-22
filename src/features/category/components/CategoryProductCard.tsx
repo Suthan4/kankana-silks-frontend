@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -21,15 +22,15 @@ interface CategoryProductCardProps {
   cartItem: CartLineLike | null;
   isWishlisted: boolean;
   isAddingToCart: boolean;
-  onToggleWishlist: () => void;
-  onViewOptions: () => void;
-  onRequestProduct: () => void;
-  onAddToCart: () => void;
-  onIncrease: () => void;
-  onDecrease: () => void;
+  onToggleWishlist: (productId: string) => void;
+  onViewOptions: (product: Product) => void;
+  onRequestProduct: (product: Product, variant: ProductVariant | null) => void;
+  onAddToCart: (product: Product, variant: ProductVariant | null) => void;
+  onIncrease: (product: Product, variant: ProductVariant | null, item: CartLineLike | null) => void;
+  onDecrease: (item: CartLineLike | null) => void;
 }
 
-export function CategoryProductCard({
+export const CategoryProductCard = memo(function CategoryProductCard({
   product,
   index,
   isOutOfStock,
@@ -92,7 +93,7 @@ export function CategoryProductCard({
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                onToggleWishlist();
+                onToggleWishlist(product.id);
               }}
               aria-label={isWishlisted ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
               aria-pressed={isWishlisted}
@@ -131,7 +132,7 @@ export function CategoryProductCard({
             hasVariants && variants.length > 1 ? (
               <button
                 type="button"
-                onClick={onViewOptions}
+                onClick={() => onViewOptions(product)}
                 className="w-full border border-black py-2.5 text-xs uppercase tracking-widest transition-colors hover:bg-black hover:text-white"
               >
                 View Options
@@ -140,7 +141,7 @@ export function CategoryProductCard({
               <div className="flex items-center border border-gray-200">
                 <button
                   type="button"
-                  onClick={onDecrease}
+                  onClick={() => onDecrease(cartItem)}
                   aria-label={`Decrease ${product.name} quantity`}
                   className="flex-1 py-2.5 text-sm transition-colors hover:bg-gray-50"
                 >
@@ -151,7 +152,7 @@ export function CategoryProductCard({
                 </span>
                 <button
                   type="button"
-                  onClick={onIncrease}
+                  onClick={() => onIncrease(product, selectedVariant, cartItem)}
                   aria-label={`Increase ${product.name} quantity`}
                   disabled={!canIncreaseQuantity}
                   className="flex-1 py-2.5 text-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
@@ -162,7 +163,7 @@ export function CategoryProductCard({
             ) : (
               <button
                 type="button"
-                onClick={onAddToCart}
+                onClick={() => onAddToCart(product, selectedVariant)}
                 disabled={isAddingToCart}
                 aria-busy={isAddingToCart}
                 className="w-full bg-black py-2.5 text-xs uppercase tracking-widest text-white transition-colors hover:bg-gray-900 disabled:cursor-wait disabled:opacity-70"
@@ -174,7 +175,7 @@ export function CategoryProductCard({
             <motion.button
               type="button"
               whileTap={{ scale: 0.97 }}
-              onClick={onRequestProduct}
+              onClick={() => onRequestProduct(product, selectedVariant)}
               className="flex w-full items-center justify-center gap-2 bg-black py-2.5 text-xs uppercase tracking-widest text-white transition-colors hover:bg-gray-900 disabled:cursor-wait disabled:opacity-70"
             >
               <AlertCircle className="h-4 w-4" />
@@ -185,4 +186,4 @@ export function CategoryProductCard({
       </div>
     </motion.div>
   );
-}
+});

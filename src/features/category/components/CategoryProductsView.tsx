@@ -1,10 +1,11 @@
 "use client";
 
+import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { ProductVariant } from "@/lib/api/product.api";
+import type { Product, ProductVariant } from "@/lib/api/product.api";
 import { useWishlist } from "@/hooks/useWishlist";
 import ProductRequestModal from "@/components/productRequestModal";
 import { CategoryFilterSidebar } from "./CategoryFilterSidebar";
@@ -39,6 +40,18 @@ export function CategoryProductsView({
   const wishlist = useWishlist();
   const ui = useCategoryPageUI(cart.user);
   const scroller = useCategorySubcategoryScroller(category.children);
+  const canAddProductToCart = useCallback(
+    (product: Product) => !isProductUnavailable(product),
+    [],
+  );
+  const handleViewOptions = useCallback((product: Product) => {
+    router.push(`/${product.category?.slug}/${product.slug}`);
+    toast.info("Please select product options");
+  }, [router]);
+  const handleRequestProduct = useCallback((
+    product: Product,
+    variant: ProductVariant | null,
+  ) => ui.openRequestModal(product, variant), [ui.openRequestModal]);
 
   if (productsQuery.isError) {
     return (
@@ -115,7 +128,7 @@ export function CategoryProductsView({
               gridCols={ui.gridCols}
               getCartItem={cart.getCartItem}
               isOutOfStock={isProductOutOfStock}
-              canAddToCart={(product) => !isProductUnavailable(product)}
+              canAddToCart={canAddProductToCart}
               isWishlisted={wishlist.isProductWishlisted}
               isAddingToCart={cart.isAddingToCart}
               onClearFilters={filters.clearAllFilters}
@@ -123,11 +136,8 @@ export function CategoryProductsView({
               onIncrease={cart.increaseQuantity}
               onDecrease={cart.decreaseQuantity}
               onToggleWishlist={wishlist.toggleWishlist}
-              onViewOptions={(product) => {
-                router.push(`/${product.category?.slug}/${product.slug}`);
-                toast.info("Please select product options");
-              }}
-              onRequestProduct={(product, variant: ProductVariant | null) => ui.openRequestModal(product, variant)}
+              onViewOptions={handleViewOptions}
+              onRequestProduct={handleRequestProduct}
             />
             <CategoryPagination
               currentPage={productsQuery.currentPage}

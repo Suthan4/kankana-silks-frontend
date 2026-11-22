@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { wishlistApi } from "@/lib/api/wishlist.api";
 import { useAuthModal } from "@/store/useAuthModalStore";
@@ -151,7 +152,7 @@ export function useWishlist() {
 
   // ─── Toggle ────────────────────────────────────────────────────────────────
 
-  const toggleWishlist = async (productId: string) => {
+  const toggleWishlist = useCallback(async (productId: string) => {
     if (!user) {
       openModal("login");
       toast.info("Please login to add to wishlist");
@@ -168,19 +169,23 @@ export function useWishlist() {
     } else {
       await addToWishlistMutation.mutateAsync(productId);
     }
-  };
+  }, [
+    user,
+    openModal,
+    wishlistData?.items,
+    removeFromWishlistMutation.mutateAsync,
+    addToWishlistMutation.mutateAsync,
+  ]);
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
 
   // ✅ String coercion on both sides — prevents id type mismatch (number vs string)
-  const isProductWishlisted = (productId: string): boolean => {
+  const isProductWishlisted = useCallback((productId: string): boolean => {
     const wishlistItems = wishlistData?.items || [];
-    // const wishlistItems = wishlistData?.data || [];
-    console.log("Checking if product is wishlisted:", productId, wishlistItems,wishlistData);
     return wishlistItems.some(
       (item: any) => String(item.productId) === String(productId)
     );
-  };
+  }, [wishlistData?.items]);
 
   const wishlistCount = wishlistData?.totalItems ?? 0;
 

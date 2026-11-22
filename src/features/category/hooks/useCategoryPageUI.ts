@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { useAuthModal, type User } from "@/store/useAuthModalStore";
 import { toast } from "sonner";
@@ -27,7 +27,7 @@ export function useCategoryPageUI(user: User | null) {
       CSS.supports("-webkit-touch-callout", "none"),
   );
 
-  const openRequestModal = (product: Product, variant: ProductVariant | null) => {
+  const openRequestModal = useCallback((product: Product, variant: ProductVariant | null) => {
     if (!user) {
       openModal("login");
       toast.info("Please login to request this product");
@@ -36,13 +36,13 @@ export function useCategoryPageUI(user: User | null) {
     setRequestProduct(product);
     setRequestVariant(variant);
     setIsRequestModalOpen(true);
-  };
+  }, [user, openModal]);
 
-  const closeRequestModal = () => {
+  const closeRequestModal = useCallback(() => {
     setIsRequestModalOpen(false);
     setRequestProduct(null);
     setRequestVariant(null);
-  };
+  }, []);
 
   return {
     isMounted,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { cartApi } from "@/lib/api/cart.api";
@@ -113,16 +113,22 @@ export function useCategoryCart() {
     onError: () => toast.error("Failed to remove item"),
   });
 
-  const getCartItem = (productId: string, variantId: string | null) =>
-    cartItems.find((item) =>
-      String(item.productId ?? item.product?.id ?? "") === productId &&
-      String(item.variantId ?? "") === (variantId ?? ""),
-    ) ?? null;
+  const getCartItem = useCallback(
+    (productId: string, variantId: string | null) =>
+      cartItems.find((item) =>
+        String(item.productId ?? item.product?.id ?? "") === productId &&
+        String(item.variantId ?? "") === (variantId ?? ""),
+      ) ?? null,
+    [cartItems],
+  );
 
-  const addProduct = (product: Product, variant: ProductVariant | null) =>
-    addMutation.mutate({ product, variant });
+  const addProduct = useCallback(
+    (product: Product, variant: ProductVariant | null) =>
+      addMutation.mutate({ product, variant }),
+    [addMutation.mutate],
+  );
 
-  const increaseQuantity = (
+  const increaseQuantity = useCallback((
     product: Product,
     variant: ProductVariant | null,
     cartItem: CartLineLike | null,
@@ -143,9 +149,9 @@ export function useCategoryCart() {
     }
     if (user) updateMutation.mutate({ itemId: String(cartItem.id), quantity: nextQuantity });
     else updateItemLocal(String(cartItem.id), nextQuantity);
-  };
+  }, [addProduct, user, updateMutation.mutate, updateItemLocal]);
 
-  const decreaseQuantity = (cartItem: CartLineLike | null) => {
+  const decreaseQuantity = useCallback((cartItem: CartLineLike | null) => {
     if (!cartItem) return;
     const quantity = Number(cartItem.quantity ?? 0) - 1;
     if (quantity <= 0) {
@@ -155,7 +161,7 @@ export function useCategoryCart() {
     }
     if (user) updateMutation.mutate({ itemId: String(cartItem.id), quantity });
     else updateItemLocal(String(cartItem.id), quantity);
-  };
+  }, [user, removeMutation.mutate, updateMutation.mutate, removeItemLocal, updateItemLocal]);
 
   return {
     user,

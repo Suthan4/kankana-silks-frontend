@@ -52,7 +52,7 @@ export function CategoryProductGrid({
         : "md:grid-cols-5 xl:grid-cols-5"
   } gap-x-3 md:gap-x-6 gap-y-8 md:gap-y-12`;
 
-  if (isLoading && products.length === 0) {
+  if ((isLoading || isFetching) && products.length === 0) {
     return <ProductGridSkeleton count={6} className="grid grid-cols-2 gap-px bg-gray-100 md:grid-cols-3" />;
   }
 
@@ -71,10 +71,8 @@ export function CategoryProductGrid({
     );
   }
 
-  if (isFetching) return <ProductGridSkeleton count={6} className={gridClass} />;
-
   return (
-    <div className={gridClass}>
+    <div className={gridClass} aria-busy={isFetching}>
       {products.map((product, index) => {
         const variants = product.variants ?? [];
         const hasVariants = product.hasVariants && variants.length > 0;
@@ -94,12 +92,12 @@ export function CategoryProductGrid({
             cartItem={cartItem}
             isWishlisted={isWishlisted(product.id)}
             isAddingToCart={isAddingToCart}
-            onToggleWishlist={() => onToggleWishlist(product.id)}
-            onViewOptions={() => onViewOptions(product)}
-            onRequestProduct={() => onRequestProduct(product, selectedVariant)}
-            onAddToCart={() => onAddToCart(product, selectedVariant)}
-            onIncrease={() => onIncrease(product, selectedVariant, cartItem)}
-            onDecrease={() => onDecrease(cartItem)}
+            onToggleWishlist={onToggleWishlist}
+            onViewOptions={onViewOptions}
+            onRequestProduct={onRequestProduct}
+            onAddToCart={onAddToCart}
+            onIncrease={onIncrease}
+            onDecrease={onDecrease}
           />
         );
       })}
