@@ -69,7 +69,7 @@ export default function OrdersPage() {
   );
 
   const isInvoiceAvailable = (order: any) =>
-    ["PROCESSING", "SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED", "COMPLETED"].includes(order.status);
+    ["SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED", "COMPLETED"].includes(order.status);
 
   // ✅ Invoice download handler
   const handleDownloadInvoice = useCallback(async (e: React.MouseEvent, order: any) => {

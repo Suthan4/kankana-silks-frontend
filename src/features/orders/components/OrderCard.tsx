@@ -29,11 +29,10 @@ function OrderCardComponent({
     firstItem?.product?.media?.[0]?.url ||
     "/images/placeholder.png";
   const canTrack = !!(order.shipment?.awbCode || order.shipment?.trackingNumber);
-  const hasInvoice = ["PROCESSING", "SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED", "COMPLETED"].includes(order.status);
+  const hasInvoice = ["SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED", "COMPLETED"].includes(order.status);
 
   return (
 <motion.div
-                  key={order.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   whileHover={{ scale: 1.01 }}

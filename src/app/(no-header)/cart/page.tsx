@@ -38,7 +38,6 @@ import {
   getCartItemStockMessage,
   validateCartForCheckout,
 } from "@/lib/utils/cartStock";
-import { cartKeys, cartQueryPolicy } from "@/lib/query/cartQuery";
 import { CartPageSkeleton } from "@/features/cart/components/CartPageSkeleton";
 
 const normalizeAttributes = (attrs: any) => {
