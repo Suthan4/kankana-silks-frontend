@@ -37,7 +37,8 @@ export function ProductDeliveryChecker({
   onCheckDeliveryAvailability,
 }: ProductDeliveryCheckerProps) {
   return (
-    {!isOutOfStock && (
+    <>
+      {!isOutOfStock && (
                   <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
                     <div className="flex items-center gap-1.5 mb-2">
                       <MapPin className="w-4 h-4 text-gray-700" />
@@ -104,6 +105,7 @@ export function ProductDeliveryChecker({
                     )}
                   </div>
                 )}
+    </>
   );
 }
 
@@ -121,7 +123,8 @@ export function ProductQuantitySelector({
   onQuantityChange,
 }: ProductQuantitySelectorProps) {
   return (
-    {!isOutOfStock && (
+    <>
+      {!isOutOfStock && (
                   <div>
                     <h3 className="font-semibold text-gray-900 text-xs mb-1.5">
                       Quantity
@@ -150,6 +153,7 @@ export function ProductQuantitySelector({
                     </div>
                   </div>
                 )}
+    </>
   );
 }
 
@@ -249,7 +253,8 @@ export function RelatedProducts({ products }: RelatedProductsProps) {
   const relatedProducts = products;
 
   return (
-    {relatedProducts.length > 0 && (
+    <>
+      {relatedProducts.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -303,5 +308,6 @@ export function RelatedProducts({ products }: RelatedProductsProps) {
               </div>
             </motion.div>
           )}
+    </>
   );
 }
