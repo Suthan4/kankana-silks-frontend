@@ -60,7 +60,7 @@ export function useProductVariants(product: Product) {
   const variants = product.variants ?? [];
   const hasVariants = Boolean(product.hasVariants && variants.length > 0);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
-    variants[0] ?? null,
+    hasVariants ? variants[0] ?? null : null,
   );
 
   const images = useMemo(() => {
