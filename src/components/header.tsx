@@ -2146,6 +2146,7 @@ function Header() {
                   if (!user) {
                     openModal("login");
                   } else {
+                    window.dispatchEvent(new Event("app:navigation-start"));
                     router.push("/my-account");
                   }
                 }}
