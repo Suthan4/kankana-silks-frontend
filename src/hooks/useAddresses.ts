@@ -6,21 +6,22 @@ import type {
   UpdateAddressDTO,
 } from "@/lib/api/addresses.api";
 import { toast } from "sonner";
+import { useAuthModal } from "@/store/useAuthModalStore";
+import { addressKeys, addressQueryPolicy } from "@/lib/query/addressQuery";
 
-// Query Keys
-export const addressKeys = {
-  all: ["addresses"] as const,
-  lists: () => [...addressKeys.all, "list"] as const,
-  detail: (id: string) => [...addressKeys.all, "detail", id] as const,
-  default: () => [...addressKeys.all, "default"] as const,
-};
+export { addressKeys } from "@/lib/query/addressQuery";
+
+// Query keys and freshness are shared with checkout and the global header.
 
 // Get all addresses
 export function useAddresses() {
+  const { user } = useAuthModal();
+
   return useQuery({
-    queryKey: addressKeys.lists(),
+    queryKey: addressKeys.user(user?.id),
     queryFn: () => addressApi.getAddresses(),
-    staleTime: 60000, // 1 minute
+    enabled: !!user,
+    ...addressQueryPolicy,
   });
 }
 
@@ -50,7 +51,7 @@ export function useCreateAddress() {
   return useMutation({
     mutationFn: (data: CreateAddressDTO) => addressApi.createAddress(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: addressKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: addressKeys.all });
       queryClient.invalidateQueries({ queryKey: addressKeys.default() });
       toast.success("Address added successfully!");
     },
@@ -68,7 +69,7 @@ export function useUpdateAddress() {
     mutationFn: ({ id, data }: { id: string; data: UpdateAddressDTO }) =>
       addressApi.updateAddress(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: addressKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: addressKeys.all });
       queryClient.invalidateQueries({
         queryKey: addressKeys.detail(variables.id),
       });
@@ -88,7 +89,7 @@ export function useSetDefaultAddress() {
   return useMutation({
     mutationFn: (id: string) => addressApi.setAsDefault(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: addressKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: addressKeys.all });
       queryClient.invalidateQueries({ queryKey: addressKeys.default() });
       toast.success("Default address updated!");
     },
@@ -107,7 +108,7 @@ export function useDeleteAddress() {
   return useMutation({
     mutationFn: (id: string) => addressApi.deleteAddress(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: addressKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: addressKeys.all });
       queryClient.invalidateQueries({ queryKey: addressKeys.default() });
       toast.success("Address deleted successfully!");
     },

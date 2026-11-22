@@ -10,6 +10,7 @@ import { cartApi } from "@/lib/api/cart.api";
 import { wishlistApi } from "@/lib/api/wishlist.api";
 import { toast } from "@/store/useToastStore";
 import { cartKeys, cartQueryPolicy } from "@/lib/query/cartQuery";
+import { addressKeys, addressQueryPolicy } from "@/lib/query/addressQuery";
 
 export function useHeaderData() {
   const { user, openModal } = useAuthModal();
@@ -38,7 +39,7 @@ export function useHeaderData() {
   });
 
   const { data: addresses = [] } = useQuery({
-    queryKey: ["addresses", user?.id],
+    queryKey: addressKeys.user(user?.id),
     queryFn: async () => {
       const response = await import("@/lib/api/addresses.api").then((module) =>
         module.addressApi.getAddresses(),
@@ -46,7 +47,7 @@ export function useHeaderData() {
       return response.data;
     },
     enabled: !!user,
-    staleTime: 1000 * 60 * 5,
+    ...addressQueryPolicy,
     placeholderData: [],
   });
 

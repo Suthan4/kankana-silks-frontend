@@ -28,6 +28,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCartStore } from "@/store/useCartStore";
 import { cartKeys, cartQueryPolicy } from "@/lib/query/cartQuery";
+import { addressKeys, addressQueryPolicy } from "@/lib/query/addressQuery";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { toast } from "@/store/useToastStore";
 import AddressModal from "@/components/addressModal";
@@ -386,9 +387,10 @@ export default function CheckoutClient() {
   }, []);
 
   const { data: addressesData, isLoading: isLoadingAddresses } = useQuery({
-    queryKey: ["addresses", user?.id],
+    queryKey: addressKeys.user(user?.id),
     queryFn: async () => (await addressApi.getAddresses()).data,
     enabled: !!user,
+    ...addressQueryPolicy,
   });
 
   const { data: cartData, isLoading: isLoadingCartApi } = useQuery({
