@@ -59,6 +59,7 @@ export function useCategoryCart() {
         },
         variant: variant ? {
           id: variant.id,
+          price: Number(variant.price),
           sellingPrice: Number(variant.sellingPrice),
           basePrice: Number(variant.basePrice),
           attributes: variant.attributes,
