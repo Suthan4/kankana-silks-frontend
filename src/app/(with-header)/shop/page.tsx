@@ -2,8 +2,7 @@ import { Metadata } from "next";
 import ShopClient from "@/components/sections/shopClient";
 import axios from "axios";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 interface Category {
   id: string;
@@ -37,6 +36,11 @@ async function getCategories(): Promise<Category[]> {
 }
 
 // Generate metadata for SEO
+// Categories are fetched with axios, which Next's data cache can't see. Without
+// this the page would be frozen at build time now that the layout is no longer
+// force-dynamic. 60s keeps admin edits visible quickly.
+export const revalidate = 60;
+
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Shop Silk Sarees Online | Mysore & Bengaluru",

@@ -2,7 +2,7 @@ import { LoaderCircle, ShieldCheck, ShoppingBag } from "lucide-react";
 
 export default function CheckoutLoadingState() {
   return (
-    <main
+    <div
       role="status"
       aria-live="polite"
       aria-label="Loading secure checkout"
@@ -30,6 +30,6 @@ export default function CheckoutLoadingState() {
           Your order is not placed until you confirm payment.
         </div>
       </div>
-    </main>
+    </div>
   );
 }

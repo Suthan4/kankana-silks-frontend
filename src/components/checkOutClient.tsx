@@ -1306,7 +1306,7 @@ export default function CheckoutClient() {
 
   if (displayItems.length === 0) {
     return (
-      <main className="min-h-[70vh] bg-[#faf9f6] px-4 py-12 flex items-center justify-center">
+      <div className="min-h-[70vh] bg-[#faf9f6] px-4 py-12 flex items-center justify-center">
         <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-8 text-center shadow-sm">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-stone-100 text-stone-700">
             <PackageX className="h-7 w-7" />
@@ -1324,7 +1324,7 @@ export default function CheckoutClient() {
             <ArrowLeft className="h-4 w-4" /> Return to cart
           </Link>
         </div>
-      </main>
+      </div>
     );
   }
 

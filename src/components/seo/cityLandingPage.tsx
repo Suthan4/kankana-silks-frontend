@@ -121,7 +121,7 @@ export default async function CityLandingPage({
   };
 
   return (
-    <main className="bg-[#faf7f2]">
+    <div className="bg-[#faf7f2]">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -260,6 +260,6 @@ export default async function CityLandingPage({
           </aside>
         )}
       </section>
-    </main>
+    </div>
   );
 }

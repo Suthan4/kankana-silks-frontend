@@ -1001,7 +1001,7 @@ function Header() {
         <motion.nav
           ref={navRef}
           data-testid="desktop-nav"
-          aria-label="Primary navigation"
+          aria-label="Main"
           initial={false}
           animate={{
             opacity: showNav ? 1 : 0,
@@ -2066,6 +2066,7 @@ function Header() {
       {/* Mobile Bottom Navigation */}
       {!isMyAccountPage && !isProductDetailPage && !isCategoryPage && (
         <motion.nav
+          aria-label="Quick links"
           initial={false}
           className="md:hidden fixed bottom-0 left-0 right-0 bg-white z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.08)]"
         >

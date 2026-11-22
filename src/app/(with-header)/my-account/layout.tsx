@@ -62,7 +62,7 @@ export default function MyAccountLayout({
                     </div>
 
                     {/* Menu Items */}
-                    <nav className="p-3">
+                    <nav aria-label="Account" className="p-3">
                       {/* Home Button */}
                       {/* <button
                     onClick={() => router.push("/")}
@@ -109,20 +109,22 @@ export default function MyAccountLayout({
                     </div>
                   </div>
                 </aside>
-
-                {/* Main Content */}
-                <main className="flex-1 min-w-0">{children}</main>
+                {/* Main Content */}+{" "}
+                <div className="flex-1 min-w-0">{children}</div>
               </div>
             </div>
           </div>
 
           {/* Mobile Layout */}
           <div className="lg:hidden">
-            <main className="pb-20 pt-12">{children}</main>
-
+            <div className="pb-20 pt-12">{children}</div>
             {/* Bottom Navigation */}
             {!showPasswordModal && (
-              <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg">
+              <nav
+                aria-label="Account quick links"
+                className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg"
+              >
+                {" "}
                 <div className="grid grid-cols-5 h-16">
                   {/* Home Button */}
                   <button

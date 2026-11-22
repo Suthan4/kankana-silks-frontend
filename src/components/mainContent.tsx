@@ -13,6 +13,8 @@ export default function MainContent({ children }: MainContentProps) {
 
   return (
     <main
+      id="main-content"
+      tabIndex={-1}
       className={`overflow-x-hidden ${isHomePage ? "pt-0 md:pt-0" : "md:pt-[120px]"}`}
     >
       {children}

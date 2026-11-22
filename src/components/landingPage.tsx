@@ -215,7 +215,7 @@ export default function LandingPage({
   }
 
   return (
-    <main className="min-h-screen">
+    <div className="min-h-screen">
       {banners_data?.length > 0 && (
         <HeroSection
           banners={banners_data}
@@ -235,6 +235,6 @@ export default function LandingPage({
       )}
 
       <CTASection />
-    </main>
+    </div>
   );
 }
