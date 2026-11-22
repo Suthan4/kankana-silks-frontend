@@ -11,19 +11,19 @@ const FINISH_MS = 250;
  * Thin progress bar at the top of the viewport while a page navigation is in
  * flight. Dependency-free.
  *
- * START: a capture-phase click listener sees clicks on same-origin links that
- *        lead to a different path or query (next/link renders plain <a>).
- * FINISH: the URL (pathname or search) actually changed, i.e. the new route
- *        has committed. A failsafe finishes the bar if navigation never lands.
+ * START: capture-phase same-origin link clicks work across desktop, tablet and
+ *        mobile. Imperative navigation dispatches app:navigation-start first.
+ * FINISH: the pathname or query changes after the route commits. A failsafe
+ *         finishes the bar if navigation never lands.
  *
  * It is decorative (aria-hidden): sighted users get feedback, and screen
  * readers already get the new page title / focus handling from Next.js.
- * Programmatic router.push() calls don't show the bar; navigation that
- * matters should be a <Link>, which is what the refactor converts them to.
  */
 export function NavigationProgress() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const searchKey = searchParams?.toString() ?? "";
+  const currentUrlRef = useRef("");
 
   const [progress, setProgress] = useState(0);
   const [visible, setVisible] = useState(false);
@@ -106,13 +106,25 @@ export function NavigationProgress() {
 
     // Capture phase, so we see the click before next/link calls preventDefault.
     document.addEventListener("click", onClick, true);
-    return () => document.removeEventListener("click", onClick, true);
+
+    // Also support app-initiated router.push()/router.replace() navigation.
+    const onProgrammaticNavigation = () => start();
+    window.addEventListener("app:navigation-start", onProgrammaticNavigation);
+
+    return () => {
+      document.removeEventListener("click", onClick, true);
+      window.removeEventListener("app:navigation-start", onProgrammaticNavigation);
+    };
   }, [start]);
 
-  // The route committed: complete the bar.
+  // Finish only after the actual URL changes.
   useEffect(() => {
-    finish();
-  }, [pathname, searchParams, finish]);
+    const nextUrl = `${pathname ?? ""}?${searchKey}`;
+    if (currentUrlRef.current && currentUrlRef.current !== nextUrl) {
+      finish();
+    }
+    currentUrlRef.current = nextUrl;
+  }, [pathname, searchKey, finish]);
 
   // Clear timers on unmount.
   useEffect(() => clearTimers, [clearTimers]);
