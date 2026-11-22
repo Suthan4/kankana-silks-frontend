@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import {
@@ -7,8 +7,6 @@ import {
   ShoppingCart,
   Heart,
   User,
-  Menu,
-  X,
   Search,
   ChevronDown,
   Video,
@@ -16,8 +14,6 @@ import {
   Check,
   Home,
 } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
 import { useOnClickOutside } from "@/hooks/useClickOutside";
 import { toast } from "@/store/useToastStore";
 import { buildCategoryQuery } from "@/lib/shared/builders/productCategoryQuery.builder.ts";
@@ -31,6 +27,8 @@ import { MobileHeaderBar } from "@/features/header/components/MobileHeaderBar";
 import { MobileLocationSheet } from "@/features/header/components/MobileLocationSheet";
 import { MobileBottomNavigation, type HeaderQuickLink } from "@/features/header/components/MobileBottomNavigation";
 import { MobileMenuDrawer } from "@/features/header/components/MobileMenuDrawer";
+import { useHeaderMegaMenuModel } from "@/features/header/hooks/useHeaderMegaMenuModel";
+import { DesktopCategoryNavigation } from "@/features/header/components/DesktopCategoryNavigation";
 
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -183,60 +181,14 @@ function Header() {
     },
   ];
 
-  const activeCategory = categories.find((cat) => cat.id === hoveredCategory);
-  const activeCategoryImages =
-    activeCategory?.children?.filter((sub) => Boolean(sub.image)) ?? [];
-  const hasCategoryImages =
-    activeCategoryImages.length > 0 &&
-    (activeCategory?.children?.length ?? 0) < 4;
-  const hasGrandchildren =
-    activeCategory?.children?.some(
-      (sub) => sub.children && sub.children.length > 0,
-    ) ?? false;
-  // Categories without grandchildren display vertically.
-  const useVerticalCategoryList = !hasGrandchildren;
-  const balancedTextColumns = useMemo(() => {
-    const childCategories = activeCategory?.children ?? [];
-
-    if (hasCategoryImages || childCategories.length === 0) {
-      return [];
-    }
-
-    type CategoryItem = (typeof childCategories)[number];
-
-    const columnCount = Math.min(5, childCategories.length);
-
-    const columns: Array<{
-      items: CategoryItem[];
-      estimatedHeight: number;
-    }> = Array.from({ length: columnCount }, () => ({
-      items: [],
-      estimatedHeight: 0,
-    }));
-
-    childCategories.forEach((category) => {
-      const grandchildrenCount = category.children?.length ?? 0;
-
-      // Parent heading, children and spacing.
-      const estimatedCategoryHeight = 48 + grandchildrenCount * 36 + 28;
-
-      const shortestColumn = columns.reduce((shortest, current) =>
-        current.estimatedHeight < shortest.estimatedHeight ? current : shortest,
-      );
-
-      shortestColumn.items.push(category);
-      shortestColumn.estimatedHeight += estimatedCategoryHeight;
-    });
-
-    return columns.map((column) => column.items);
-  }, [activeCategory, hasCategoryImages]);
-  const totalGrandchildren =
-    activeCategory?.children?.reduce(
-      (acc, child) => acc + (child.children?.length || 0),
-      0,
-    ) ?? 0;
-  const shouldUseGrid =
-    (activeCategory?.children?.length ?? 0) > 4 || totalGrandchildren > 8;
+  const {
+    activeCategory,
+    activeCategoryImages,
+    hasCategoryImages,
+    useVerticalCategoryList,
+    balancedTextColumns,
+    shouldUseGrid,
+  } = useHeaderMegaMenuModel(categories, hoveredCategory);
   const isHeaderWhite =
     !hasHeroBehindHeader ||
     isScrolled ||
@@ -731,495 +683,24 @@ function Header() {
                 </li>
               ) : (
                 categories.map((category) => {
-                  const isActive = hoveredCategory === category.id;
-
-                  return (
-                    <li
-                      key={category.id}
-                      onMouseEnter={() => {
-                        if (hoverTimeoutRef.current) {
-                          clearTimeout(hoverTimeoutRef.current);
-                        }
-
-                        setHoveredCategory(category.id);
-
-                        if (navRef.current) {
-                          setNavBottom(
-                            navRef.current.getBoundingClientRect().bottom,
-                          );
-                        }
-                      }}
-                      className="relative flex h-full items-center"
-                    >
-                      <Link
-                        href={getCategoryUrl(category.slug)}
-                        onFocus={() => {
-                          setHoveredCategory(category.id);
-
-                          if (navRef.current) {
-                            setNavBottom(
-                              navRef.current.getBoundingClientRect().bottom,
-                            );
-                          }
-                        }}
-                        className={`relative flex h-14 items-center px-5 text-sm font-medium uppercase tracking-[0.12em] transition-colors duration-300 ${
-                          isHeaderWhite
-                            ? isActive
-                              ? "text-black"
-                              : "text-black hover:text-black"
-                            : "text-white hover:text-white"
-                        }`}
-                      >
-                        {category.name}
-                      </Link>
-
-                      {/* {isActive && (
-                        <motion.span
-                          layoutId="desktopNavUnderline"
-                          className={`pointer-events-none absolute inset-x-4 bottom-0 z-[60] h-[2px] ${
-                            isHeaderWhite ? "bg-black" : "bg-white"
-                          }`}
-                          transition={{
-                            type: "spring",
-                            stiffness: 500,
-                            damping: 42,
-                          }}
-                        />
-                      )} */}
-                      <motion.span
-                        aria-hidden="true"
-                        initial={false}
-                        animate={{
-                          width: isActive ? "calc(100% - 32px)" : "10px",
-                          opacity: isActive ? 1 : 0.65,
-                        }}
-                        transition={{
-                          width: {
-                            duration: 0.28,
-                            ease: [0.22, 1, 0.36, 1],
-                          },
-                          opacity: {
-                            duration: 0.2,
-                          },
-                        }}
-                        className={`pointer-events-none absolute bottom-0 left-1/2 h-[2px] -translate-x-1/2 rounded-full ${
-                          isHeaderWhite
-                            ? "bg-black"
-                            : "bg-white shadow-[0_0_8px_rgba(255,255,255,0.65)]"
-                        }`}
-                      />
-                    </li>
-                  );
-                })
-              )}
-            </ul>
-          </div>
-
-          {/* Mega menu */}
-          <AnimatePresence>
-            {hoveredCategory && activeCategory && (
-              <>
-                {/* Page overlay */}
-                <motion.div
-                  aria-hidden="true"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{
-                    duration: 0.18,
-                  }}
-                  className="pointer-events-none absolute inset-x-0 top-full z-40 h-screen bg-black/30"
-                />
-
-                {/* Dropdown */}
-                <motion.div
-                  initial={{
-                    opacity: 0,
-                    y: -8,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  exit={{
-                    opacity: 0,
-                    y: -6,
-                  }}
-                  transition={{
-                    duration: 0.2,
-                    ease: [0.22, 1, 0.36, 1],
-                  }}
-                  style={{
-                    maxHeight:
-                      navBottom > 0
-                        ? `calc(100dvh - ${navBottom}px)`
-                        : "calc(100dvh - 150px)",
-                  }}
-                  className="absolute inset-x-0 top-full z-50 overflow-hidden border-t border-gray-200 bg-white text-black shadow-xl"
-                >
-                  <div
-                    style={{
-                      maxHeight:
-                        navBottom > 0
-                          ? `calc(100dvh - ${navBottom}px)`
-                          : "calc(100dvh - 150px)",
-                    }}
-                    className="mx-auto w-full max-w-[1600px] overflow-hidden"
-                  >
-                    {activeCategory.children &&
-                    activeCategory.children.length > 0 ? (
-                      <div
-                        style={{
-                          maxHeight:
-                            navBottom > 0
-                              ? `calc(100dvh - ${navBottom}px)`
-                              : "calc(100dvh - 150px)",
-                        }}
-                        className={`grid overflow-hidden ${
-                          !hasCategoryImages
-                            ? "grid-cols-1"
-                            : useVerticalCategoryList
-                              ? "min-h-[445px] grid-cols-[280px_minmax(0,1fr)]"
-                              : "min-h-[445px] grid-cols-[minmax(380px,1fr)_minmax(700px,900px)]"
-                        }`}
-                      >
-                        {/* Left category section */}
-                        <section className="flex min-h-0 min-w-0 flex-col overflow-hidden">
-                          {/* Scrollable category links */}
-                          <div
-                            className={
-                              !hasCategoryImages
-                                ? "h-[440px] overflow-y-auto px-8 py-7 lg:px-10 2xl:h-[470px]"
-                                : useVerticalCategoryList
-                                  ? "min-h-0 flex-1 overflow-y-auto px-10 py-9"
-                                  : "min-h-0 flex-1 overflow-y-auto px-8 py-9 lg:px-10"
-                            }
-                          >
-                            {!hasCategoryImages ? (
-                              <div className="grid grid-cols-2 items-start gap-x-8 gap-y-8 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 xl:gap-x-10">
-                                {balancedTextColumns.map(
-                                  (column, columnIndex) => (
-                                    <div
-                                      key={`category-column-${columnIndex}`}
-                                      className="flex min-w-0 flex-col gap-7"
-                                    >
-                                      {column.map((sub, itemIndex) => (
-                                        <motion.div
-                                          key={sub.id}
-                                          initial={{
-                                            opacity: 0,
-                                            y: 8,
-                                          }}
-                                          animate={{
-                                            opacity: 1,
-                                            y: 0,
-                                          }}
-                                          transition={{
-                                            duration: 0.16,
-                                            delay:
-                                              (columnIndex + itemIndex) * 0.025,
-                                          }}
-                                          className="min-w-0"
-                                        >
-                                          {/* Parent category */}
-                                          <Link
-                                            href={getCategoryUrl(sub.slug)}
-                                            onClick={() => {
-                                              setHoveredCategory(null);
-                                            }}
-                                            className="group flex w-fit items-center gap-2 text-base font-semibold tracking-wide text-gray-900"
-                                          >
-                                            <span className="h-[1.5px] w-0 shrink-0 bg-black transition-all duration-200 group-hover:w-4" />
-
-                                            <span className="transition-colors duration-200 group-hover:text-black">
-                                              {sub.name}
-                                            </span>
-                                          </Link>
-
-                                          {/* Subcategories */}
-                                          {sub.children &&
-                                            sub.children.length > 0 && (
-                                              <ul className="mt-3 flex flex-col gap-2.5 border-l border-gray-100 pl-4">
-                                                {sub.children.map(
-                                                  (
-                                                    grandchild,
-                                                    grandchildIndex,
-                                                  ) => (
-                                                    <motion.li
-                                                      key={grandchild.id}
-                                                      initial={{
-                                                        opacity: 0,
-                                                        x: -5,
-                                                      }}
-                                                      animate={{
-                                                        opacity: 1,
-                                                        x: 0,
-                                                      }}
-                                                      transition={{
-                                                        duration: 0.12,
-                                                        delay:
-                                                          grandchildIndex *
-                                                          0.015,
-                                                      }}
-                                                    >
-                                                      <Link
-                                                        href={getCategoryUrl(
-                                                          grandchild.slug,
-                                                        )}
-                                                        onClick={() => {
-                                                          setHoveredCategory(
-                                                            null,
-                                                          );
-                                                        }}
-                                                        className="block text-[15px] leading-6 text-gray-500 transition-colors duration-200 hover:text-black"
-                                                      >
-                                                        {grandchild.name}
-                                                      </Link>
-                                                    </motion.li>
-                                                  ),
-                                                )}
-                                              </ul>
-                                            )}
-                                        </motion.div>
-                                      ))}
-                                    </div>
-                                  ),
-                                )}
-                              </div>
-                            ) : (
-                              <div
-                                className={
-                                  useVerticalCategoryList
-                                    ? "flex flex-col items-start gap-6"
-                                    : shouldUseGrid
-                                      ? "grid grid-cols-2 gap-x-8 gap-y-8 lg:grid-cols-3 xl:grid-cols-4"
-                                      : "grid grid-cols-1 gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-3"
-                                }
-                              >
-                                {activeCategory.children.map((sub, index) => (
-                                  <motion.div
-                                    key={sub.id}
-                                    initial={{
-                                      opacity: 0,
-                                      y: 8,
-                                    }}
-                                    animate={{
-                                      opacity: 1,
-                                      y: 0,
-                                    }}
-                                    transition={{
-                                      duration: 0.16,
-                                      delay: index * 0.025,
-                                    }}
-                                    className={
-                                      useVerticalCategoryList
-                                        ? "w-full"
-                                        : "min-w-0"
-                                    }
-                                  >
-                                    <Link
-                                      href={getCategoryUrl(sub.slug)}
-                                      onClick={() => {
-                                        setHoveredCategory(null);
-                                      }}
-                                      className="group flex w-fit items-center gap-2 text-base font-semibold tracking-wide text-gray-900"
-                                    >
-                                      <span className="h-[1.5px] w-0 shrink-0 bg-black transition-all duration-200 group-hover:w-4" />
-
-                                      <span className="transition-colors duration-200 group-hover:text-black">
-                                        {sub.name}
-                                      </span>
-                                    </Link>
-
-                                    {sub.children &&
-                                      sub.children.length > 0 && (
-                                        <ul className="mt-3 flex flex-col gap-3 border-l border-gray-100 pl-4">
-                                          {sub.children.map((grandchild) => (
-                                            <li key={grandchild.id}>
-                                              <Link
-                                                href={getCategoryUrl(
-                                                  grandchild.slug,
-                                                )}
-                                                onClick={() => {
-                                                  setHoveredCategory(null);
-                                                }}
-                                                className="block text-[15px] leading-6 text-gray-500 transition-colors duration-200 hover:text-black"
-                                              >
-                                                {grandchild.name}
-                                              </Link>
-                                            </li>
-                                          ))}
-                                        </ul>
-                                      )}
-                                  </motion.div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Always-visible View All */}
-                          <div className="sticky bottom-0 z-10 shrink-0 border-t border-gray-200 bg-white px-10 py-4">
-                            <Link
-                              href={getCategoryUrl(activeCategory.slug)}
-                              onClick={() => {
-                                setHoveredCategory(null);
-                              }}
-                              className="group inline-flex items-center gap-3 text-sm font-bold uppercase tracking-[0.16em] text-black"
-                            >
-                              <span className="border-b border-transparent transition-colors duration-200 group-hover:border-black">
-                                View All
-                              </span>
-
-                              <span className="transition-transform duration-200 group-hover:translate-x-1">
-                                →
-                              </span>
-                            </Link>
-                          </div>
-                        </section>
-
-                        {/* Right portrait images */}
-                        {hasCategoryImages && (
-                          <aside className="min-h-0 overflow-y-auto border-l border-gray-200 px-6 py-8 lg:px-8 xl:px-10">
-                            <div
-                              className={`grid w-fit content-start justify-start gap-x-5 gap-y-8 ${
-                                activeCategoryImages.length === 1
-                                  ? "grid-cols-1"
-                                  : activeCategoryImages.length === 2
-                                    ? "grid-cols-2"
-                                    : "grid-cols-3"
-                              }`}
-                            >
-                              {activeCategoryImages.map((sub, index) => (
-                                <motion.article
-                                  key={sub.id}
-                                  initial={{
-                                    opacity: 0,
-                                    y: 12,
-                                  }}
-                                  animate={{
-                                    opacity: 1,
-                                    y: 0,
-                                  }}
-                                  transition={{
-                                    duration: 0.22,
-                                    delay: index * 0.05,
-                                    ease: [0.22, 1, 0.36, 1],
-                                  }}
-                                  className="w-[190px] lg:w-[210px] xl:w-[240px] 2xl:w-[250px]"
-                                >
-                                  <Link
-                                    href={getCategoryUrl(sub.slug)}
-                                    onClick={() => {
-                                      setHoveredCategory(null);
-                                    }}
-                                    className="group block"
-                                  >
-                                    <div className="relative aspect-[4/5] w-full overflow-hidden bg-[#f4f4f4]">
-                                      <Image
-                                        src={sub.image!}
-                                        alt={sub.name}
-                                        fill
-                                        sizes="(min-width: 1536px) 250px, (min-width: 1280px) 240px, (min-width: 1024px) 210px, 190px"
-                                        className="object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.025]"
-                                      />
-                                    </div>
-
-                                    <h3 className="mt-3 whitespace-normal text-[13px] font-semibold uppercase leading-[1.4] tracking-[0.09em] text-gray-900">
-                                      {sub.name}
-                                    </h3>
-                                  </Link>
-                                </motion.article>
-                              ))}
-                            </div>
-                          </aside>
-                        )}
-                      </div>
-                    ) : (
-                      /* Category without children */
-                      <section
-                        style={{
-                          maxHeight:
-                            navBottom > 0
-                              ? `calc(100dvh - ${navBottom}px)`
-                              : "calc(100dvh - 150px)",
-                        }}
-                        className="flex min-h-[400px] items-stretch overflow-hidden"
-                      >
-                        {activeCategory.image && (
-                          <div className="relative aspect-[640/894] w-[340px] shrink-0 overflow-hidden bg-gray-100">
-                            <Image
-                              src={activeCategory.image}
-                              alt={activeCategory.name}
-                              fill
-                              sizes="340px"
-                              className="object-cover object-center transition-transform duration-700 hover:scale-[1.025]"
-                            />
-
-                            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/30 to-transparent" />
-                          </div>
-                        )}
-
-                        <div className="flex max-w-xl flex-col justify-center overflow-y-auto px-12 py-12">
-                          <span className="mb-5 block h-[2px] w-8 bg-[#c4a882]" />
-
-                          <h3 className="mb-4 font-serif text-3xl font-light uppercase tracking-[0.18em] text-gray-900">
-                            {activeCategory.name}
-                          </h3>
-
-                          {activeCategory.description && (
-                            <p className="line-clamp-4 text-base leading-relaxed text-gray-500">
-                              {activeCategory.description}
-                            </p>
-                          )}
-
-                          <Link
-                            href={getCategoryUrl(activeCategory.slug)}
-                            onClick={() => {
-                              setHoveredCategory(null);
-                            }}
-                            className="group mt-8 inline-flex w-fit items-center gap-3 text-sm font-semibold uppercase tracking-[0.16em] text-black"
-                          >
-                            <span className="border-b border-transparent transition-colors duration-200 group-hover:border-black">
-                              Explore Collection
-                            </span>
-
-                            <span className="transition-transform duration-200 group-hover:translate-x-1">
-                              →
-                            </span>
-                          </Link>
-                        </div>
-                      </section>
-                    )}
-                  </div>
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
-        </motion.nav>
-      </motion.header>
-
-      <MobileHeaderBar mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} isProductDetailPage={Boolean(isProductDetailPage)} isCategoryPage={Boolean(isCategoryPage)} location={location} onOpenLocation={() => setLocationModalOpen(true)} onOpenSearch={() => setIsSearchOpen(true)}/>
-      <MobileLocationSheet open={locationModalOpen} onClose={() => setLocationModalOpen(false)} user={user} addresses={addresses} location={location} setLocation={setLocation} pincode={pincode} setPincode={setPincode} isCheckingPincode={isCheckingPincode} isGettingLocation={isGettingLocation} onSubmitPincode={handlePincodeSubmit} onUseCurrentLocation={handleUseCurrentLocation} onLogin={() => openModal("login")} mobileLocationRef={mobileLocationRef}/>
-      <MobileMenuDrawer
-        open={mobileMenuOpen}
-        portalRoot={portalRoot}
-        categories={categories}
-        loading={loading}
-        user={user}
-        activeNav={activeNav}
-        setActiveNav={setActiveNav}
-        activeSubNav={activeSubNav}
-        setActiveSubNav={setActiveSubNav}
-        getCategoryUrl={getCategoryUrl}
-        onClose={() => setMobileMenuOpen(false)}
-        onLogin={() => openModal("login")}
-        onLogout={() => {
-          setMobileMenuOpen(false);
-          handleLogout();
-        }}
-      />
-
-      <MobileBottomNavigation items={icons} user={user} pathname={pathname} isMyAccountPage={Boolean(isMyAccountPage)} isProductDetailPage={Boolean(isProductDetailPage)} isCategoryPage={Boolean(isCategoryPage)} onAccountClick={() => { if (!user) openModal("login"); else { window.dispatchEvent(new Event("app:navigation-start")); router.push("/my-account"); } }} openLogin={() => openModal("login")}/>
+                  const isActive = hoveredCategory === category.id;        <DesktopCategoryNavigation
+          navRef={navRef}
+          showNav={showNav}
+          categories={categories}
+          loading={loading}
+          hoveredCategory={hoveredCategory}
+          setHoveredCategory={setHoveredCategory}
+          isHeaderWhite={isHeaderWhite}
+          activeCategory={activeCategory}
+          activeCategoryImages={activeCategoryImages}
+          hasCategoryImages={hasCategoryImages}
+          useVerticalCategoryList={useVerticalCategoryList}
+          shouldUseGrid={shouldUseGrid}
+          balancedTextColumns={balancedTextColumns}
+          navBottom={navBottom}
+          onHoverCategory={handleCategoryHover}
+          getCategoryUrl={getCategoryUrl}
+        /> } }} openLogin={() => openModal("login")}/>
       <UnifiedSearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
