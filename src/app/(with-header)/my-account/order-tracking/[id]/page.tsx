@@ -9,6 +9,7 @@ import {
   Phone,
   Clock,
 } from "lucide-react";
+import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useOrder } from "@/hooks/useOrders";
 import { shipmentApi } from "@/lib/api/shipment.api";
@@ -78,11 +79,6 @@ export default function OrderTrackingPage() {
         completed: order?.payment?.status === "SUCCESS",
       },
       {
-        status: "Payment Confirmed",
-        date: order?.payment?.status === "SUCCESS" ? "Confirmed" : "Pending",
-        completed: order?.payment?.status === "SUCCESS",
-      },
-      {
         status: "Processing",
         date:
           order?.status === "PROCESSING" ||
@@ -138,7 +134,7 @@ export default function OrderTrackingPage() {
     return defaultTimeline;
   };
 
-  const timeline = buildTimeline();
+  const timeline = useMemo(() => buildTimeline(), [tracking, order]);
   const statusInfo = shipmentApi.formatTrackingStatus(
     order?.status || "processing",
   );

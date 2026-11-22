@@ -11,7 +11,6 @@ import { useCartStore } from "@/store/useCartStore";
 import { useCartDrawer } from "@/store/useCartDrawer";
 import { getCartItemStockState } from "@/lib/utils/cartStock";
 import { cartKeys, cartQueryPolicy } from "@/lib/query/cartQuery";
-import { cartKeys, cartQueryPolicy } from "@/lib/query/cartQuery";
 
 
 export function useCategoryCart() {

@@ -4,20 +4,10 @@ import { useState } from "react";
 import {
   ArrowLeft,
   Package,
-  MapPin,
-  CreditCard,
-  Phone,
   Loader2,
   XCircle,
-  AlertCircle,
-  CheckCircle2,
-  Truck,
-  Calendar,
   Info,
   Download,
-  FileText,
-  RotateCcw,
-  Navigation,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useOrder, useCancelOrder, useCanCancelOrder } from "@/hooks/useOrders";
@@ -51,7 +41,6 @@ export default function OrderDetailsPage() {
 
   // ✅ Get order actions (tracking, return, etc.)
   const {
-    canTrack,
     canReturn,
     returnWindowClosed,
     returnEligibility,

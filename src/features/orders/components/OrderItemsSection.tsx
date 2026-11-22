@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { motion } from "framer-motion";
 import SmartImage from "@/components/common/smartImage";
 import { extractVariantAttributes } from "@/lib/utils/variant.utils";
@@ -7,8 +8,7 @@ import { extractVariantAttributes } from "@/lib/utils/variant.utils";
 interface OrderItemsSectionProps {
   items: any[];
 }
-
-export function OrderItemsSection({ items }: OrderItemsSectionProps) {
+function OrderItemsSectionComponent({ items }: OrderItemsSectionProps) {
   return (
 <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -79,3 +79,6 @@ export function OrderItemsSection({ items }: OrderItemsSectionProps) {
         </motion.div>
   );
 }
+
+export const OrderItemsSection = memo(OrderItemsSectionComponent);
+OrderItemsSection.displayName = "OrderItemsSection";

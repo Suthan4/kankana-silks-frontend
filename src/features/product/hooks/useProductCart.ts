@@ -9,7 +9,6 @@ import { useCartStore } from "@/store/useCartStore";
 import { useCartDrawer } from "@/store/useCartDrawer";
 import { trackAddToCart } from "@/lib/analytics";
 import { cartKeys } from "@/lib/query/cartQuery";
-import { cartKeys } from "@/lib/query/cartQuery";
 
 export function useProductCart() {
   const { user } = useAuthModal();

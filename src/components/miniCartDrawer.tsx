@@ -16,7 +16,6 @@ import { extractVariantAttributes } from "@/lib/utils/variant.utils";
 import { mergeCartLines } from "@/lib/utils/cartItems";
 import { getCartItemStockState } from "@/lib/utils/cartStock";
 import { cartKeys, cartQueryPolicy } from "@/lib/query/cartQuery";
-import { cartKeys, cartQueryPolicy } from "@/lib/query/cartQuery";
 
 
 export default function MiniCartDrawer() {
