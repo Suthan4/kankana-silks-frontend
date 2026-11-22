@@ -30,7 +30,7 @@ async function getCategories(): Promise<Category[]> {
       },
       next: {
         revalidate: 60,
-        tags: ["categories-tree"],
+        tags: ["category-tree"],
       },
     });
 
