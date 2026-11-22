@@ -1007,10 +1007,7 @@ export default function ProductDetailsClient({
                         onClick={() =>
                           handleAddToCart(product, selectedVariant)
                         }
-                        disabled={
-                          (availableStock === 0 && !allowOutOfStockOrders) ||
-                          addToCartMutation.isPending
-                        }
+                        disabled={stockState.isOutOfStock || addToCartMutation.isPending}
                         className="flex-1 bg-gray-900 text-white py-3 rounded-xl font-semibold shadow hover:shadow-md transition flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {addToCartMutation.isPending ? (
@@ -1029,7 +1026,7 @@ export default function ProductDetailsClient({
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={handleBuyNow}
-                        disabled={isOutOfStock && !allowOutOfStockOrders}
+                        disabled={stockState.isOutOfStock}
                         className="flex-1 bg-main-primary text-main-secondary py-3 rounded-xl font-semibold shadow hover:shadow-md transition flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Zap className="w-4 h-4" /> Buy Now
@@ -1116,10 +1113,7 @@ export default function ProductDetailsClient({
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={() => handleAddToCart(product, selectedVariant)}
-                disabled={
-                  (isOutOfStock && !allowOutOfStockOrders) ||
-                  addToCartMutation.isPending
-                }
+                disabled={stockState.isOutOfStock || addToCartMutation.isPending}
                 className="flex-1 bg-gray-900 text-white py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {addToCartMutation.isPending ? (
@@ -1139,7 +1133,7 @@ export default function ProductDetailsClient({
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={handleBuyNow}
-                disabled={isOutOfStock && !allowOutOfStockOrders}
+                disabled={stockState.isOutOfStock}
                 className="flex-1 bg-main-primary text-main-secondary py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Zap className="w-4 h-4" />
