@@ -1,8 +1,8 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import axios from "axios";
 import CategoryProductsClient from "@/components/categoryProductsClient";
-import { getCategoryProducts } from "@/lib/seo/server-api";
+import { getCategoryBySlug, getCategoryProducts } from "@/lib/seo/server-api";
+import type { Category } from "@/lib/api/category.api";
 import { JsonLd, SITE_URL, breadcrumbJsonLd } from "@/lib/seo/json-ld";
 
 type Props = {
@@ -10,45 +10,6 @@ type Props = {
 };
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-
-// Define Category interface
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  metaTitle?: string | null;
-  metaDesc?: string | null;
-  image?: string;
-  parentId?: string;
-  children: Category[];
-  isActive: boolean;
-  order: number;
-  createdAt: string;
-  updatedAt: string;
-  isRoot: boolean;
-  hasVideoConsultation: boolean;
-  videoPurchasingEnabled: boolean;
-}
-
-// Fetch category data (server-side) - Using axios without localStorage
-async function getCategoryBySlug(slug: string): Promise<Category | null> {
-  try {
-    const response = await axios.get(
-      `${API_BASE_URL}/categories/slug/${slug}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      },
-    );
-
-    return response.data.data;
-  } catch (error) {
-    console.error("Error fetching category:", error);
-    return null;
-  }
-}
 
 // Generate dynamic metadata for SEO
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -115,17 +76,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-// Generate static params for all categories (optional, for static generation)
+// Generate static params for known category routes at build time.
 export async function generateStaticParams() {
   try {
-    // Using axios without localStorage
-    const response = await axios.get(`${API_BASE_URL}/categories/tree`, {
-      headers: {
-        "Content-Type": "application/json",
-      },
+    const response = await fetch(`${API_BASE_URL}/categories/tree`, {
+      headers: { "Content-Type": "application/json" },
+      next: { revalidate: 60 },
     });
+    if (!response.ok) {
+      throw new Error(`Category tree request failed: ${response.status}`);
+    }
 
-    const categories = response.data.data;
+    const result = await response.json();
+    const categories: Category[] = result.data;
 
     // Flatten the category tree to get all slugs
     const flattenCategories = (cats: Category[]): string[] => {
@@ -152,15 +115,20 @@ export async function generateStaticParams() {
 // Main page component
 export default async function CategoryPage({ params }: Props) {
   const { slug } = await params;
-  const category = await getCategoryBySlug(slug);
+
+  // Category details and the first product page are independent backend reads.
+  // Fetch them concurrently while retaining the shared 60-second server cache.
+  const [category, initialProducts] = await Promise.all([
+    getCategoryBySlug(slug),
+    getCategoryProducts(slug),
+  ]);
 
   if (!category) {
     notFound();
   }
 
-  // First page of products is rendered on the server so crawlers (and AI bots
-  // that do not run JavaScript) see real product links in the initial HTML.
-  const initialProducts = await getCategoryProducts(slug);
+  // The first page remains server-rendered so crawlers see product links in
+  // the initial HTML. The client component handles filters and interactions.
   const listed = initialProducts?.data?.products ?? [];
 
   return (

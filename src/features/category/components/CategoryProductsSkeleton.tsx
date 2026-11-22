@@ -1,7 +1,33 @@
-import { Skeleton } from "@/components/ui/Skeleton";
+import { Skeleton, SkeletonGroup } from "@/components/ui/Skeleton";
 
 interface CategoryProductsSkeletonProps {
   categoryName?: string;
+}
+
+interface ProductGridSkeletonProps {
+  count?: number;
+  className?: string;
+}
+
+/** Product-card placeholders shared by full-page and in-page loading states. */
+export function ProductGridSkeleton({
+  count = 6,
+  className = "grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-4 md:gap-x-6 md:gap-y-12",
+}: ProductGridSkeletonProps) {
+  return (
+    <div className={className}>
+      {Array.from({ length: count }, (_, index) => (
+        <div key={index} className="min-w-0 bg-white">
+          <Skeleton className="aspect-[3/4] w-full rounded-none bg-gray-100" />
+          <div className="space-y-2 pt-3">
+            <Skeleton className="h-4 w-4/5 rounded-none bg-gray-100" />
+            <Skeleton className="h-4 w-2/5 rounded-none bg-gray-100" />
+            <Skeleton className="mt-3 h-9 w-full rounded-none bg-gray-100" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 /**
@@ -12,10 +38,8 @@ export function CategoryProductsSkeleton({
   categoryName,
 }: CategoryProductsSkeletonProps) {
   return (
-    <div
-      role="status"
-      aria-label={categoryName ? `Loading ${categoryName} products` : "Loading category products"}
-      aria-busy="true"
+    <SkeletonGroup
+      label={categoryName ? `Loading ${categoryName} products` : "Loading category products"}
       className="min-h-screen bg-white"
     >
       {/* Mobile category heading and sort controls */}
@@ -56,20 +80,8 @@ export function CategoryProductsSkeleton({
       </div>
 
       <div className="mx-auto max-w-[1450px] px-4 pb-16 pt-10 md:px-8 md:pt-20 xl:px-10">
-        <div className="grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-4 md:gap-x-6 md:gap-y-12">
-          {Array.from({ length: 8 }, (_, index) => (
-            <div key={index} className="min-w-0 bg-white">
-              <Skeleton className="aspect-[3/4] w-full" />
-              <div className="space-y-2 pt-3">
-                <Skeleton className="h-4 w-4/5 rounded" />
-                <Skeleton className="h-4 w-2/5 rounded" />
-                <Skeleton className="mt-3 h-9 w-full rounded-sm" />
-              </div>
-            </div>
-          ))}
-        </div>
+        <ProductGridSkeleton count={8} />
       </div>
-      <span className="sr-only">Loading products</span>
-    </div>
+    </SkeletonGroup>
   );
 }

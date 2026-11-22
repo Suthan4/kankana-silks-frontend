@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useState, useCallback, useMemo, memo, useRef, useEffect } from "react";
+import { Suspense, useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
@@ -7,35 +7,35 @@ import {
   Heart,
   ChevronLeft,
   SlidersHorizontal,
-  Search,
   X,
-  ShoppingCart,
-  Video,
-  AlertCircle,
-  Palette,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import {
   productApi,
   type Product,
   type ProductQueryParams,
+  type ProductVariant,
+  type ProductStock,
 } from "@/lib/api/product.api";
 import { cartApi } from "@/lib/api/cart.api";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { toast } from "sonner";
-import { Category } from "@/lib/api/category.api";
+import type { Category } from "@/lib/api/category.api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCartStore } from "@/store/useCartStore";
-import { formatMaskedPrice } from "@/lib/utils/priceMasked";
-import { mergeCartLines } from "@/lib/utils/cartItems";
+import { mergeCartLines, type CartLineLike } from "@/lib/utils/cartItems";
 import { getColorHex, isValidCSSColor } from "@/lib/utils/colorValidation";
 import { useWishlist } from "@/hooks/useWishlist";
 import SortDropdown from "./customDropdown";
 import { useCartDrawer } from "@/store/useCartDrawer";
 import ProductRequestModal from "./productRequestModal";
-import PriceRangeSlider from "./ui/PriceRangeSlider";
 import { wishlistApi } from "@/lib/api/wishlist.api";
+import { CategoryFilterSidebar } from "@/features/category/components/CategoryFilterSidebar";
+import {
+  CategoryProductsSkeleton,
+  ProductGridSkeleton,
+} from "@/features/category/components/CategoryProductsSkeleton";
+import { CategoryProductCard } from "@/features/category/components/CategoryProductCard";
 
 interface CategoryProductsClientProps {
   category: Category;
@@ -62,7 +62,7 @@ function CategoryProductsContent({
   const [mobileGrid, setMobileGrid] = useState<1 | 2>(2);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [requestProduct, setRequestProduct] = useState<Product | null>(null);
-  const [requestVariant, setRequestVariant] = useState<any>(null);
+  const [requestVariant, setRequestVariant] = useState<ProductVariant | null>(null);
   useModalScrollLock(
     mobileFilterOpen &&
       typeof window !== "undefined" &&
@@ -87,7 +87,7 @@ function CategoryProductsContent({
   >(() => {
     const sortByParam = searchParams.get("sortBy") || "price";
     const sortOrderParam = searchParams.get("sortOrder") || "desc";
-    return `${sortByParam}-${sortOrderParam}` as any;
+    return `${sortByParam}-${sortOrderParam}` as typeof sortBy;
   });
 
   const [searchQuery, setSearchQuery] = useState(
@@ -156,7 +156,7 @@ function CategoryProductsContent({
     });
   };
 
-  const handleRequestProduct = (product: Product, variant: any = null) => {
+  const handleRequestProduct = (product: Product, variant: ProductVariant | null = null) => {
     if (!user) {
       openModal("login");
       toast.info("Please login to request this product");
@@ -260,8 +260,8 @@ function CategoryProductsContent({
     if (maxPrice && maxPrice > 0 && maxPrice < 100000)
       params.maxPrice = maxPrice;
 
-    params.sortBy = (searchParams.get("sortBy") || "price") as any;
-    params.sortOrder = (searchParams.get("sortOrder") || "desc") as any;
+    params.sortBy = (searchParams.get("sortBy") || "price") as ProductQueryParams["sortBy"];
+    params.sortOrder = (searchParams.get("sortOrder") || "desc") as ProductQueryParams["sortOrder"];
 
     const color = searchParams.get("color");
     if (color) params.color = color;
@@ -294,6 +294,17 @@ function CategoryProductsContent({
     queryParams.sortBy === "price" &&
     queryParams.sortOrder === "desc";
 
+  const productsQueryKey = useMemo(
+    () => ["products", category.slug, JSON.stringify(queryParams)] as const,
+    [category.slug, queryParams],
+  );
+
+  useEffect(() => {
+    if (isDefaultQuery && initialProducts) {
+      queryClient.setQueryData(productsQueryKey, initialProducts);
+    }
+  }, [initialProducts, isDefaultQuery, productsQueryKey, queryClient]);
+
   const {
     data: productRes,
     isLoading,
@@ -301,7 +312,7 @@ function CategoryProductsContent({
     isError,
     error,
   } = useQuery({
-    queryKey: ["products", category.slug, JSON.stringify(queryParams)],
+    queryKey: productsQueryKey,
     initialData: isDefaultQuery ? initialProducts : undefined,
     queryFn: async () => {
       const result = await productApi.getProducts(queryParams);
@@ -330,7 +341,7 @@ function CategoryProductsContent({
       variant,
     }: {
       product: Product;
-      variant?: any;
+      variant?: ProductVariant | null;
     }) => {
       const availableStock = product.stock?.[0]?.quantity ?? 0;
       const cartItem = {
@@ -368,7 +379,7 @@ function CategoryProductsContent({
               color: variant.color,
               fabric: variant.fabric,
               stock:
-                variant.stock?.map((stock: any) => ({
+                variant.stock?.map((stock: ProductStock) => ({
                   ...stock,
                   lowStockThreshold: stock.lowStockThreshold ?? 0,
                 })) ?? [],
@@ -482,25 +493,6 @@ function CategoryProductsContent({
     return Number(product.stock?.[0]?.quantity ?? 0) <= 0;
   };
 
-  const handleAddToCart = (product: Product) => {
-    if (!canAddToCart(product)) {
-      toast.error("This product is currently unavailable");
-      return;
-    }
-    const variants = product.variants ?? [];
-    const hasVariants = product.hasVariants && variants.length > 0;
-    if (hasVariants && variants.length === 1) {
-      addToCartMutation.mutate({ product, variant: variants[0] });
-      return;
-    }
-    if (hasVariants && variants.length > 1) {
-      router.push(`/${product.category?.slug}/${product.slug}`);
-      toast.info("Please select product options");
-      return;
-    }
-    addToCartMutation.mutate({ product, variant: null });
-  };
-
   const handleVideoConsultation = (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
     e.stopPropagation();
@@ -582,107 +574,6 @@ function CategoryProductsContent({
     setSearchQuery("");
     router.push(`/shop/${category.slug}`);
   };
-
-  /* ------------------ FILTER SIDEBAR (logic unchanged) ------------------ */
-
-  const FilterSidebar = memo(({ isMobile = false }: { isMobile?: boolean }) => (
-    <motion.div
-      initial={false}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className={`${isMobile ? "p-6" : ""}`}
-    >
-      <div className="mb-6">
-        <button
-          onClick={clearAllFilters}
-          className="text-sm text-red-600 hover:text-red-700 font-medium"
-        >
-          Clear All Filters
-        </button>
-      </div>
-
-      {category.children && category.children.length > 0 && (
-        <div className="mb-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Subcategories</h3>
-          <ul className="space-y-2">
-            <motion.li
-              whileTap={{ scale: 0.98 }}
-              onClick={() => handleSubCategoryChange(null)}
-              className={`cursor-pointer py-2 px-3 rounded-lg transition-colors ${
-                selectedSubCategory === null
-                  ? "bg-yellow-50 text-yellow-700 font-medium"
-                  : "text-gray-700 hover:bg-gray-50"
-              }`}
-            >
-              All {category.name}
-            </motion.li>
-            {category.children.map((subCat) => (
-              <motion.li
-                key={subCat.id}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => handleSubCategoryChange(subCat.id)}
-                className={`cursor-pointer py-2 px-3 rounded-lg transition-colors ${
-                  selectedSubCategory === subCat.id
-                    ? "bg-yellow-50 text-yellow-700 font-medium"
-                    : "text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                {subCat.name}
-              </motion.li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* <div className="mb-6">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={inStockOnly}
-            onChange={(e) => handleInStockChange(e.target.checked)}
-            className="w-4 h-4 accent-main-primary rounded"
-          />
-          <span className="text-sm font-medium text-gray-700">
-            In Stock Only
-          </span>
-        </label>
-      </div> */}
-
-      <div className="mb-6">
-        <h3 className="font-semibold text-gray-900 mb-4">Price Range</h3>
-        <div className="space-y-4">
-          <PriceRangeSlider
-            value={priceRange}
-            min={0}
-            max={100000}
-            step={500}
-            onChange={setPriceRange}
-          />
-        </div>
-      </div>
-
-      <div className="mb-6">
-        <h3 className="font-semibold text-gray-900 mb-4">Fabric</h3>
-        <ul className="space-y-2">
-          {materials.map((material) => (
-            <motion.li
-              key={material}
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center gap-2"
-            >
-              <input
-                type="checkbox"
-                checked={selectedFabric.includes(material)}
-                onChange={() => handleFabricChange(material)}
-                className="w-4 h-4 accent-main-primary"
-              />
-              <label className="text-gray-700 cursor-pointer">{material}</label>
-            </motion.li>
-          ))}
-        </ul>
-      </div>
-    </motion.div>
-  ));
 
   /* ------------------ ERROR STATE ------------------ */
 
@@ -975,7 +866,7 @@ function CategoryProductsContent({
             {/* Sort dropdown */}
             <SortDropdown
               value={sortBy}
-              onChange={(val) => handleSortChange(val as any)}
+              onChange={(val) => handleSortChange(val as typeof sortBy)}
             />
           </div>
         </div>
@@ -993,7 +884,17 @@ function CategoryProductsContent({
                 className="hidden xl:block flex-shrink-0 border-r border-gray-100 overflow-hidden"
               >
                 <div className="w-[260px] p-6 pt-8">
-                  <FilterSidebar />
+                  <CategoryFilterSidebar
+                    category={category}
+                    selectedSubCategory={selectedSubCategory}
+                    onSubCategoryChange={handleSubCategoryChange}
+                    onClearFilters={clearAllFilters}
+                    priceRange={priceRange}
+                    onPriceRangeChange={setPriceRange}
+                    materials={materials}
+                    selectedFabric={selectedFabric}
+                    onFabricChange={handleFabricChange}
+                  />
                 </div>
               </motion.aside>
             )}
@@ -1003,17 +904,10 @@ function CategoryProductsContent({
           <div className="flex-1 min-w-0 px-4 md:px-8 xl:px-10 pt-10 md:pt-20 pb-16">
             {/* Loading skeleton */}
             {isLoading && !productRes ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-px bg-gray-100">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="bg-white animate-pulse">
-                    <div className="aspect-[3/4] bg-gray-100" />
-                    <div className="p-4 space-y-2">
-                      <div className="h-3 bg-gray-100 rounded w-3/4" />
-                      <div className="h-3 bg-gray-100 rounded w-1/3" />
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <ProductGridSkeleton
+                count={6}
+                className="grid grid-cols-2 md:grid-cols-3 gap-px bg-gray-100"
+              />
             ) : products.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-40">
                 <p className="text-xs tracking-widest uppercase text-gray-400 mb-6">
@@ -1064,235 +958,71 @@ ${
   `}
                 >
                   {" "}
-                  {products?.map((product: Product, index: number) => {
-                    const isOutOfStock = isProductOutOfStock(product);
-                    const showAddToCart = canAddToCart(product);
-                    const displayPrice = Number(product.sellingPrice);
-                    const basePrice = Number(product.basePrice);
-                    const discount =
-                      basePrice > displayPrice
-                        ? Math.round(
-                            ((basePrice - displayPrice) / basePrice) * 100,
-                          )
-                        : 0;
+                  {products.map((product: Product, index: number) => {
                     const variants = product.variants ?? [];
-                    const hasVariants =
-                      product.hasVariants && variants.length > 0;
+                    const hasVariants = product.hasVariants && variants.length > 0;
                     const selectedVariant =
                       hasVariants && variants.length === 1 ? variants[0] : null;
 
-                    const cartItem = effectiveCartItems.find((i: any) => {
-                      if (!selectedVariant)
-                        return i.productId === product.id && !i.variantId;
-                      return (
-                        i.productId === product.id &&
-                        i.variantId === selectedVariant.id
-                      );
+                    const cartItem = effectiveCartItems.find((item: CartLineLike) => {
+                      const itemProductId = String(item.productId ?? item.product?.id ?? "");
+                      const itemVariantId = String(item.variantId ?? item.variant?.id ?? "");
+                      return itemProductId === product.id &&
+                        itemVariantId === (selectedVariant?.id ?? "");
                     });
 
                     const handleIncrease = () => {
                       if (!cartItem) {
-                        addToCartMutation.mutate({
-                          product,
-                          variant: selectedVariant,
-                        });
+                        addToCartMutation.mutate({ product, variant: selectedVariant });
                         return;
                       }
-                      const newQty = Number(cartItem.quantity) + 1;
-                      if (user)
-                        updateQtyMutation.mutate({
-                          itemId: String(cartItem.id),
-                          quantity: newQty,
-                        });
-                      else updateQuantityLocal(String(cartItem.id), newQty);
+                      const newQty = Number(cartItem.quantity ?? 0) + 1;
+                      if (user) {
+                        updateQtyMutation.mutate({ itemId: String(cartItem.id), quantity: newQty });
+                      } else {
+                        updateQuantityLocal(String(cartItem.id), newQty);
+                      }
                     };
 
                     const handleDecrease = () => {
                       if (!cartItem) return;
-                      const newQty = Number(cartItem.quantity) - 1;
+                      const newQty = Number(cartItem.quantity ?? 0) - 1;
                       if (newQty <= 0) {
-                        if (user)
+                        if (user) {
                           removeItemMutation.mutate(String(cartItem.id));
-                        else removeItemLocal(String(cartItem.id));
+                        } else {
+                          removeItemLocal(String(cartItem.id));
+                        }
                         return;
                       }
-                      if (user)
-                        updateQtyMutation.mutate({
-                          itemId: String(cartItem.id),
-                          quantity: newQty,
-                        });
-                      else updateQuantityLocal(String(cartItem.id), newQty);
+                      if (user) {
+                        updateQtyMutation.mutate({ itemId: String(cartItem.id), quantity: newQty });
+                      } else {
+                        updateQuantityLocal(String(cartItem.id), newQty);
+                      }
                     };
 
                     return (
-                      <motion.div
+                      <CategoryProductCard
                         key={product.id}
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35, delay: index * 0.04 }}
-                        className="group"
-                      >
-                        {/* ── IMAGE BLOCK ── */}
-                        <Link
-                          href={`/${product.category?.slug}/${product.slug}`}
-                        >
-                          <div className="relative overflow-hidden bg-[#f5f2ee]">
-                            {/*
-                              Use calc-based height: fill remaining viewport after
-                              site header (~110px) + top bar (~44px) + card info (~90px).
-                              = calc(100vh - 244px) for the image.
-                              Capped at 520px so it never overflows on tall monitors.
-                              On mobile (2-col) the shorter width naturally constrains height.
-                            */}
-                            <div className="relative w-full overflow-hidden bg-[#f5f2ee] aspect-[3/4]">
-                              {" "}
-                              <Image
-                                src={
-                                  product.media?.[0]?.url || "/placeholder.jpg"
-                                }
-                                alt={product.name}
-                                fill
-                                priority={index < 3}
-                                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                                className="object-cover object-top transition-transform duration-700 group-hover:scale-[1.03]"
-                              />
-                              {/* Subtle bottom gradient */}
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                              {/* Discount badge — top left, matches shop page style */}
-                              {!isOutOfStock && discount > 0 && (
-                                <div className="absolute top-3 left-3 bg-main-primary text-main-secondary px-2.5 py-0.5 text-[10px] tracking-widest uppercase">
-                                  {discount}% Off
-                                </div>
-                              )}
-                              {/* Wishlist button */}
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  toggleWishlist(product.id);
-                                }}
-                                className="
-absolute top-3 right-3 z-10
-flex items-center justify-center
-w-9 h-9 rounded-full
-bg-white/90 backdrop-blur-sm shadow-sm
-opacity-100 md:opacity-0 md:group-hover:opacity-100
-transition-all duration-300
-hover:bg-white
-"
-                              >
-                                <Heart
-                                  className={`w-4 h-4 ${
-                                    isProductWishlisted(product.id)
-                                      ? "fill-black text-black"
-                                      : "text-black"
-                                  }`}
-                                />
-                              </button>
-                            </div>
-                          </div>
-                        </Link>
-
-                        {/* ── CARD INFO — minimal, editorial ── */}
-                        <div className="pt-3">
-                          {/* Name — hover underline like shop page arrow */}
-                          <Link
-                            href={`/${product.category?.slug}/${product.slug}`}
-                          >
-                            <h3 className="min-h-[38px] md:min-h-[44px] text-[13px] md:text-sm text-gray-900 leading-[1.35] line-clamp-2 tracking-tight hover:underline underline-offset-2 decoration-gray-300">
-                              {product.name}
-                            </h3>
-                          </Link>
-
-                          {/* Price row */}
-                          <div className="mt-1.5 flex items-baseline gap-2">
-                            <span className="text-sm font-medium text-black tracking-tight">
-                              {isOutOfStock
-                                ? formatMaskedPrice(displayPrice)
-                                : `₹${displayPrice.toLocaleString("en-IN")}`}
-                            </span>
-                            {basePrice > displayPrice && (
-                              <span className="text-xs text-gray-400 line-through">
-                                {isOutOfStock
-                                  ? formatMaskedPrice(basePrice)
-                                  : `₹${basePrice.toLocaleString("en-IN")}`}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Action button */}
-                          <div className="mt-3">
-                            {showAddToCart ? (
-                              hasVariants && variants.length > 1 ? (
-                                <button
-                                  onClick={() =>
-                                    router.push(
-                                      `/${product.category?.slug}/${product.slug}`,
-                                    )
-                                  }
-                                  className="w-full py-2.5 border border-black text-xs tracking-widest uppercase hover:bg-black hover:text-white transition-colors"
-                                >
-                                  View Options
-                                </button>
-                              ) : cartItem && Number(cartItem.quantity) > 0 ? (
-                                <div className="flex items-center border border-gray-200">
-                                  <button
-                                    onClick={handleDecrease}
-                                    className="flex-1 py-2.5 text-sm hover:bg-gray-50 transition-colors"
-                                  >
-                                    −
-                                  </button>
-                                  <span className="flex-1 text-center text-sm font-medium">
-                                    {cartItem.quantity}
-                                  </span>
-                                  <button
-                                    onClick={handleIncrease}
-                                    disabled={
-                                      Number(cartItem.quantity) >=
-                                      Number(
-                                        selectedVariant?.stock?.[0]?.quantity ??
-                                          product.stock?.[0]?.quantity ??
-                                          0,
-                                      )
-                                    }
-                                    className="flex-1 py-2.5 text-sm hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                  >
-                                    +
-                                  </button>
-                                </div>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    addToCartMutation.mutate({
-                                      product,
-                                      variant: selectedVariant,
-                                    })
-                                  }
-                                  disabled={addToCartMutation.isPending}
-                                  aria-busy={addToCartMutation.isPending}
-                                  className="w-full py-2.5 bg-black text-white text-xs tracking-widest uppercase hover:bg-gray-900 transition-colors disabled:cursor-wait disabled:opacity-70"
-                                >
-                                  {addToCartMutation.isPending
-                                    ? "Adding..."
-                                    : "Add to Cart"}
-                                </button>
-                              )
-                            ) : (
-                              <motion.button
-                                whileTap={{ scale: 0.97 }}
-                                onClick={() =>
-                                  handleRequestProduct(product, selectedVariant)
-                                }
-                                className="w-full py-2.5 flex items-center justify-center gap-2 bg-black text-white text-xs tracking-widest uppercase hover:bg-gray-900 transition-colors disabled:cursor-wait disabled:opacity-70"
-                              >
-                                <AlertCircle className="w-4 h-4" />
-                                Request Product
-                              </motion.button>
-                            )}
-                          </div>
-                        </div>
-                      </motion.div>
+                        product={product}
+                        index={index}
+                        isOutOfStock={isProductOutOfStock(product)}
+                        showAddToCart={canAddToCart(product)}
+                        selectedVariant={selectedVariant}
+                        cartItem={cartItem ?? null}
+                        isWishlisted={isProductWishlisted(product.id)}
+                        isAddingToCart={addToCartMutation.isPending}
+                        onToggleWishlist={() => toggleWishlist(product.id)}
+                        onViewOptions={() => {
+                          router.push(`/${product.category?.slug}/${product.slug}`);
+                          toast.info("Please select product options");
+                        }}
+                        onRequestProduct={() => handleRequestProduct(product, selectedVariant)}
+                        onAddToCart={() => addToCartMutation.mutate({ product, variant: selectedVariant })}
+                        onIncrease={handleIncrease}
+                        onDecrease={handleDecrease}
+                      />
                     );
                   })}
                 </div>
@@ -1391,7 +1121,18 @@ hover:bg-white
                   <X className="w-5 h-5" />
                 </motion.button>
               </div>
-              <FilterSidebar isMobile />
+              <CategoryFilterSidebar
+                    isMobile
+                    category={category}
+                    selectedSubCategory={selectedSubCategory}
+                    onSubCategoryChange={handleSubCategoryChange}
+                    onClearFilters={clearAllFilters}
+                    priceRange={priceRange}
+                    onPriceRangeChange={setPriceRange}
+                    materials={materials}
+                    selectedFabric={selectedFabric}
+                    onFabricChange={handleFabricChange}
+                  />
               <div className="p-5 border-t sticky bottom-0 bg-white">
                 <motion.button
                   whileTap={{ scale: 0.98 }}
@@ -1436,13 +1177,7 @@ export default function CategoryProductsClient(
 ) {
   return (
     <Suspense
-      fallback={
-        <div
-          aria-label="Loading category products"
-          aria-busy="true"
-          className="min-h-[50vh] w-full"
-        />
-      }
+      fallback={<CategoryProductsSkeleton categoryName={props.category.name} />}
     >
       <CategoryProductsContent {...props} />
     </Suspense>
