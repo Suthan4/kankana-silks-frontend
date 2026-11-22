@@ -10,12 +10,14 @@ interface UseHeaderLocationOptions {
   user: User | null;
   defaultAddress?: HeaderAddress;
   locationModalOpen: boolean;
+  onClose: () => void;
 }
 
 export function useHeaderLocation({
   user,
   defaultAddress,
   locationModalOpen,
+  onClose,
 }: UseHeaderLocationOptions) {
   const [location, setLocation] = useState<HeaderLocation | null>(null);
   const [pincode, setPincode] = useState("");
@@ -77,6 +79,7 @@ export function useHeaderLocation({
     } else {
       toast.error("Sorry, delivery not available to this pincode yet");
     }
+    onClose();
     return isServiceable;
   };
 
@@ -106,6 +109,7 @@ export function useHeaderLocation({
             };
             setLocation(nextLocation);
             localStorage.setItem("userLocation", JSON.stringify(nextLocation));
+            onClose();
             if (isServiceable) {
               toast.success(`Location detected: ${detectedPincode}. Delivery available!`);
             } else {

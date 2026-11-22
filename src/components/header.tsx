@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
@@ -18,25 +18,19 @@ import {
   Home,
 } from "lucide-react";
 import Image from "next/image";
-import { authModalStore, useAuthModal } from "@/store/useAuthModalStore";
 import Link from "next/link";
 import { useOnClickOutside } from "@/hooks/useClickOutside";
-import clientApiService from "@/lib/api/api.client.service";
-import categoryService from "@/lib/api/category.api";
 import { toast } from "@/store/useToastStore";
 import { buildCategoryQuery } from "@/lib/shared/builders/productCategoryQuery.builder.ts";
-import { useCartStore } from "@/store/useCartStore";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { usePathname } from "next/navigation";
-import { shipmentApi } from "@/lib/api/shipment.api";
 import VideoConsultationModal from "./video-consultationModal";
 import { useRouter } from "next/navigation";
 import UnifiedSearchModal from "./unifiedSearchModal";
+import { useHeaderData } from "@/features/header/hooks/useHeaderData";
+import { useHeaderLocation } from "@/features/header/hooks/useHeaderLocation";
+import { useHeaderScroll } from "@/features/header/hooks/useHeaderScroll";
 import { MobileHeaderBar } from "@/features/header/components/MobileHeaderBar";
 import { MobileLocationSheet } from "@/features/header/components/MobileLocationSheet";
 import { MobileBottomNavigation, type HeaderQuickLink } from "@/features/header/components/MobileBottomNavigation";
-import { cartApi } from "@/lib/api/cart.api";
-import { wishlistApi } from "@/lib/api/wishlist.api";
 
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -44,41 +38,64 @@ function Header() {
   const [activeSubNav, setActiveSubNav] = useState("");
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
-  const openModal = useAuthModal((state) => state.openModal);
-  const [showNav, setShowNav] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
-  const [pincode, setPincode] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const scrollRafRef = useRef<number | null>(null);
-  const lastScrollYRef = useRef(0);
-  const accumulatedScrollRef = useRef(0);
 
-  // ✅ Prevents hydration mismatch: badge counts come from localStorage/API
-  // which the server doesn't have. Only render counts after first client paint.
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-  const localCartItemsCount = useCartStore((s) => s.getTotalItems());
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  const [location, setLocation] = useState<{
-    city: string;
-    pincode: string;
-    isServiceable?: boolean;
-  } | null>(null);
-  const [isCheckingPincode, setIsCheckingPincode] = useState(false);
-  const [isGettingLocation, setIsGettingLocation] = useState(false);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const locationRef = useRef<HTMLDivElement | null>(null);
   const mobileLocationRef = useRef<HTMLDivElement | null>(null);
-  const pathname = usePathname();
 
-  const { user } = useAuthModal();
+  const {
+    user,
+    openModal,
+    cartItemsCount,
+    wishlistCount,
+    isMounted,
+    categories,
+    isCategoriesLoading: loading,
+    addresses,
+    defaultAddress,
+    handleLogout,
+  } = useHeaderData();
+
+  const {
+    location,
+    setLocation,
+    pincode,
+    setPincode,
+    isCheckingPincode,
+    isGettingLocation,
+    handlePincodeSubmit,
+    handleUseCurrentLocation,
+  } = useHeaderLocation({
+    user,
+    defaultAddress,
+    locationModalOpen,
+    onClose: () => setLocationModalOpen(false),
+  });
+
+  const headerScroll = useHeaderScroll({
+    setHoveredCategory,
+    setUserMenuOpen,
+    setLocationModalOpen,
+    setIsHeaderHovered,
+  });
+  const {
+    pathname,
+    hasHeroBehindHeader,
+    isScrolled,
+    showNav,
+    navBottom,
+    navRef,
+    handleHeaderEnter,
+    handleHeaderLeave,
+    handleCategoryHover,
+    clearHoverTimeout,
+  } = headerScroll;
+
   useOnClickOutside(userMenuRef, () => setUserMenuOpen(false));
   useOnClickOutside(locationRef, () => {
     if (window.innerWidth >= 768) setLocationModalOpen(false);
@@ -93,6 +110,7 @@ function Header() {
       typeof CSS !== "undefined" &&
       CSS.supports("-webkit-touch-callout", "none"),
   );
+
   const isMyAccountPage = pathname?.startsWith("/my-account");
   const isProductDetailPage = !!(
     pathname?.match(/^\/products\/[^/]+$/) ||
@@ -103,282 +121,6 @@ function Header() {
   const isCategoryPage =
     pathname?.match(/^\/shop\/[^/]+$/) || pathname?.match(/^\/[^/]+\/[^/]+$/);
 
-  // ✅ Only the homepage has a full-bleed hero sitting behind the header.
-  // Everywhere else the header should just be solid white from the start.
-  const hasHeroBehindHeader = pathname === "/";
-
-  /* -------------------- STABLE SCROLL STATE -------------------- */
-  const [isScrolled, setIsScrolled] = useState(!hasHeroBehindHeader);
-
-  useEffect(() => {
-    const getSafeScrollY = () => Math.max(0, window.scrollY);
-
-    lastScrollYRef.current = getSafeScrollY();
-    accumulatedScrollRef.current = 0;
-
-    setIsScrolled(!hasHeroBehindHeader || lastScrollYRef.current > 40);
-    setShowNav(lastScrollYRef.current < 80);
-
-    const updateHeader = () => {
-      const currentScrollY = getSafeScrollY();
-      const delta = currentScrollY - lastScrollYRef.current;
-
-      setIsScrolled(!hasHeroBehindHeader || currentScrollY > 40);
-
-      // Close open header overlays as soon as the page starts moving.
-      if (delta !== 0) {
-        setHoveredCategory(null);
-        setUserMenuOpen(false);
-        // iOS Safari may scroll the document when an input receives focus and
-        // the keyboard opens. Keep the mobile location sheet open during that
-        // viewport adjustment; desktop overlays retain the existing behavior.
-        if (window.innerWidth >= 768) setLocationModalOpen(false);
-        setIsHeaderHovered(false);
-
-        if (hoverTimeoutRef.current) {
-          clearTimeout(hoverTimeoutRef.current);
-          hoverTimeoutRef.current = null;
-        }
-      }
-
-      if (currentScrollY < 80) {
-        accumulatedScrollRef.current = 0;
-        setShowNav(true);
-      } else if (delta !== 0) {
-        const previousDirection = Math.sign(accumulatedScrollRef.current);
-        const currentDirection = Math.sign(delta);
-
-        if (previousDirection !== 0 && previousDirection !== currentDirection) {
-          accumulatedScrollRef.current = 0;
-        }
-
-        accumulatedScrollRef.current += delta;
-
-        // MacBook trackpads emit many small momentum-scroll events.
-        // Accumulating them avoids rapid hide/show flicker.
-        if (accumulatedScrollRef.current >= 24) {
-          setShowNav(false);
-          accumulatedScrollRef.current = 0;
-        } else if (accumulatedScrollRef.current <= -24) {
-          setShowNav(true);
-          accumulatedScrollRef.current = 0;
-        }
-      }
-
-      lastScrollYRef.current = currentScrollY;
-      scrollRafRef.current = null;
-    };
-
-    const handleScroll = () => {
-      if (scrollRafRef.current !== null) return;
-
-      scrollRafRef.current = window.requestAnimationFrame(updateHeader);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-
-      if (scrollRafRef.current !== null) {
-        window.cancelAnimationFrame(scrollRafRef.current);
-        scrollRafRef.current = null;
-      }
-    };
-  }, [hasHeroBehindHeader]);
-
-  // When true, header should render as transparent/white-text overlay.
-  const isTransparent = hasHeroBehindHeader && !isScrolled;
-
-  /* -------------------- CART API QUERY -------------------- */
-  const { data: cartData } = useQuery({
-    queryKey: ["cartApi", user?.id],
-    queryFn: async () => {
-      const res = await cartApi.getCart();
-      return res.data;
-    },
-    enabled: !!user,
-    staleTime: 0,
-    placeholderData: { items: [] }, // ✅ no undefined flash on mount
-  });
-
-  /* -------------------- WISHLIST API QUERY -------------------- */
-  const { data: wishlistData } = useQuery({
-    queryKey: ["wishlist", user?.id],
-    queryFn: async () => {
-      const res = await wishlistApi.getWishlist();
-      return res.data;
-    },
-    enabled: !!user,
-  });
-
-  /* -------------------- CALCULATE COUNTS -------------------- */
-  const apiCartItems = cartData?.items ?? [];
-  const cartItemsCount = isMounted
-    ? user
-      ? apiCartItems.length
-      : localCartItemsCount
-    : 0;
-  const wishlistCount = isMounted
-    ? user
-      ? (wishlistData?.totalItems ?? 0)
-      : 0
-    : 0;
-
-  /* -------------------- GET DEFAULT ADDRESS -------------------- */
-  const { data: addressesData } = useQuery({
-    queryKey: ["addresses", user?.id],
-    queryFn: async () => {
-      const response = await import("@/lib/api/addresses.api").then((mod) =>
-        mod.addressApi.getAddresses(),
-      );
-      return response.data;
-    },
-    enabled: !!user,
-    staleTime: 1000 * 60 * 5,
-    placeholderData: [],
-  });
-
-  const addresses = addressesData || [];
-  const defaultAddress = addresses.find((addr) => addr.isDefault);
-
-  /* -------------------- LOCATION LOGIC -------------------- */
-  useEffect(() => {
-    if (user && defaultAddress) {
-      const locationData = {
-        city: defaultAddress.city?.trim() || "Your Area",
-        pincode: defaultAddress.pincode,
-        isServiceable: true,
-      };
-      setLocation(locationData);
-      localStorage.setItem("userLocation", JSON.stringify(locationData));
-    } else if (!user) {
-      const savedLocation = localStorage.getItem("userLocation");
-      if (savedLocation) {
-        const parsed = JSON.parse(savedLocation);
-        setLocation({ ...parsed, city: parsed.city?.trim() || "Your Area" });
-      }
-    }
-  }, [user, defaultAddress]);
-
-  useEffect(() => {
-    if (locationModalOpen && location?.pincode) {
-      setPincode(location.pincode);
-    }
-  }, [locationModalOpen]);
-
-  const checkPincodeServiceability = async (pincode: string) => {
-    setIsCheckingPincode(true);
-    try {
-      const response = await shipmentApi.checkServiceability({
-        pickupPincode: process.env.NEXT_PUBLIC_WAREHOUSE_PINCODE || "110001",
-        deliveryPincode: pincode,
-      });
-      return response.data.serviceable;
-    } catch (error) {
-      console.error("Error checking pincode:", error);
-      return true;
-    } finally {
-      setIsCheckingPincode(false);
-    }
-  };
-
-  const handlePincodeSubmit = async () => {
-    if (pincode.length !== 6 || !/^\d+$/.test(pincode)) {
-      toast.error("Please enter a valid 6-digit pincode");
-      return;
-    }
-    const isServiceable = await checkPincodeServiceability(pincode);
-    const locationData = { city: "Your Area", pincode, isServiceable };
-    setLocation(locationData);
-    localStorage.setItem("userLocation", JSON.stringify(locationData));
-    setPincode("");
-    setLocationModalOpen(false);
-    if (isServiceable) {
-      toast.success("Delivery available to your location!");
-    } else {
-      toast.error("Sorry, delivery not available to this pincode yet");
-    }
-  };
-
-  const handleUseCurrentLocation = async () => {
-    if (!navigator.geolocation) {
-      toast.error("Geolocation is not supported by your browser");
-      return;
-    }
-    setIsGettingLocation(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
-            { headers: { "User-Agent": "KankanaSilks/1.0" } },
-          );
-          const data = await response.json();
-          const detectedPincode = data.address?.postcode;
-          if (detectedPincode) {
-            setPincode(detectedPincode);
-            const isServiceable =
-              await checkPincodeServiceability(detectedPincode);
-            const locationData = {
-              city: data.address?.city || data.address?.town || "Your Area",
-              pincode: detectedPincode,
-              isServiceable,
-            };
-            setLocation(locationData);
-            localStorage.setItem("userLocation", JSON.stringify(locationData));
-            setLocationModalOpen(false);
-            if (isServiceable) {
-              toast.success(
-                `Location detected: ${detectedPincode}. Delivery available!`,
-              );
-            } else {
-              toast.error(
-                `Location detected: ${detectedPincode}. Not serviceable yet.`,
-              );
-            }
-          } else {
-            toast.error("Could not detect pincode from your location");
-          }
-        } catch (error) {
-          toast.error("Failed to get location details");
-        } finally {
-          setIsGettingLocation(false);
-        }
-      },
-      (error) => {
-        setIsGettingLocation(false);
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            toast.error("Location access denied.");
-            break;
-          case error.POSITION_UNAVAILABLE:
-            toast.error("Location information unavailable");
-            break;
-          case error.TIMEOUT:
-            toast.error("Location request timed out");
-            break;
-          default:
-            toast.error("Failed to get your location");
-        }
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
-    );
-  };
-
-  /* -------------------- FETCH CATEGORIES -------------------- */
-  const { data: categories = [], isLoading: loading } = useQuery({
-    queryKey: ["categories-tree"],
-    queryFn: async () => {
-      return await categoryService.getCategoryTree();
-    },
-    staleTime: 1000 * 60 * 60,
-    gcTime: 1000 * 60 * 60 * 24,
-    placeholderData: [],
-    retry: 1,
-  });
-
   /* -------------------- HELPERS -------------------- */
   const authGuard = (cb?: () => void) => {
     if (!user) {
@@ -386,47 +128,6 @@ function Header() {
       return;
     }
     cb?.();
-  };
-
-  const handleLogout = async () => {
-    try {
-      await clientApiService.logout();
-    } catch (error) {
-      // Always clear this browser session even if the logout request fails.
-      console.warn(
-        "Server logout request failed; clearing local session.",
-        error,
-      );
-    } finally {
-      authModalStore.getState().logout();
-      queryClient.clear();
-      localStorage.removeItem("userLocation");
-      localStorage.removeItem("cart-storage");
-      localStorage.removeItem("auth-modal-storage");
-      setLocation(null);
-      toast.success("Logged out successfully");
-    }
-  };
-
-  const handleHeaderEnter = () => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-    }
-
-    setIsHeaderHovered(true);
-  };
-
-  const handleHeaderLeave = () => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-    }
-
-    hoverTimeoutRef.current = setTimeout(() => {
-      setIsHeaderHovered(false);
-      setHoveredCategory(null);
-      setUserMenuOpen(false);
-      setLocationModalOpen(false);
-    }, 100);
   };
 
   /* -------------------- GENERATE CATEGORY URL -------------------- */
@@ -481,24 +182,6 @@ function Header() {
       badgeCount: wishlistCount,
     },
   ];
-
-  const navRef = useRef<HTMLElement>(null);
-  const [navBottom, setNavBottom] = useState(140);
-
-  useEffect(() => {
-    const updateNavBottom = () => {
-      if (navRef.current) {
-        setNavBottom(navRef.current.getBoundingClientRect().bottom);
-      }
-    };
-
-    updateNavBottom();
-    window.addEventListener("resize", updateNavBottom);
-
-    return () => {
-      window.removeEventListener("resize", updateNavBottom);
-    };
-  }, [showNav]);
 
   const activeCategory = categories.find((cat) => cat.id === hoveredCategory);
   const activeCategoryImages =
