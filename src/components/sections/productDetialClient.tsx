@@ -41,7 +41,7 @@ import ProductRequestModal from "@/components/productRequestModal";
 import { formatMaskedPrice } from "@/lib/utils/priceMasked";
 import VideoConsultationModal from "../video-consultationModal";
 import WishlistButton from "../ui/WishlistButton";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatColorText } from "@/lib/utils/colorValidationwithText";
 import DOMPurify from "isomorphic-dompurify";
 import { ZoomGallery } from "../ui/ZoomGallery";
@@ -105,7 +105,6 @@ export default function ProductDetailsClient({
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [activeTab, setActiveTab] = useState<"details" | "specs">("details");
   const detailsSwiperRef = useRef<SwiperInstance | null>(null);
-  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
@@ -311,14 +310,38 @@ export default function ProductDetailsClient({
 
   useEffect(() => {
     if (user) checkWishlistStatus();
-    fetchRelatedProducts();
-    const savedLocation = localStorage.getItem("userLocation");
-    if (savedLocation) {
-      const location = JSON.parse(savedLocation);
-      setPincode(location.pincode);
-      checkDeliveryAvailability(location.pincode);
-    }
   }, [user, product.id]);
+
+  useEffect(() => {
+    const savedLocation = localStorage.getItem("userLocation");
+    if (!savedLocation) return;
+    try {
+      const location = JSON.parse(savedLocation);
+      if (location?.pincode) {
+        setPincode(location.pincode);
+        checkDeliveryAvailability(location.pincode);
+      }
+    } catch {
+      localStorage.removeItem("userLocation");
+    }
+  }, [product.id]);
+
+  const { data: relatedProducts = [] } = useQuery({
+    queryKey: ["relatedProducts", product.categoryId, product.id],
+    queryFn: async () => {
+      const response = await productApi.getProducts({
+        categoryId: product.categoryId,
+        limit: 8,
+        isActive: true,
+      });
+      return response.data.products
+        .filter((relatedProduct) => relatedProduct.id !== product.id)
+        .slice(0, 4);
+    },
+    enabled: Boolean(product.categoryId),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
 
   const checkWishlistStatus = async () => {
     if (!user) return;
@@ -327,22 +350,6 @@ export default function ProductDetailsClient({
       setIsWishlisted(response.data.isInWishlist);
     } catch (error) {
       console.error("Error checking wishlist:", error);
-    }
-  };
-
-  const fetchRelatedProducts = async () => {
-    try {
-      const response = await productApi.getProducts({
-        categoryId: product.categoryId,
-        limit: 4,
-        isActive: true,
-      });
-      const filtered = response.data.products.filter(
-        (p) => p.id !== product.id,
-      );
-      setRelatedProducts(filtered.slice(0, 4));
-    } catch (error) {
-      console.error("Error fetching related products:", error);
     }
   };
 
