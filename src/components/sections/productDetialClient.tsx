@@ -1,18 +1,10 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
-  ChevronLeft,
-  ChevronRight,
-  Heart,
   ShoppingCart,
-  Truck,
-  RotateCcw,
-  Shield,
-  MapPin,
   Check,
-  X,
   Zap,
   Video,
   AlertCircle,
@@ -43,7 +35,12 @@ import { formatColorText } from "@/lib/utils/colorValidationwithText";
 import { ZoomGallery } from "../ui/ZoomGallery";
 import { trackAddToCart, trackViewItem } from "@/lib/analytics";
 import { getCartItemStockMessage, getCartItemStockState } from "@/lib/utils/cartStock";
-import { ProductDeliveryChecker, ProductQuantitySelector, ProductDetailsTabs, RelatedProducts } from "./product-detail/ProductDetailSections";
+import {
+  ProductDeliveryChecker,
+  ProductQuantitySelector,
+  ProductDetailsTabs,
+  RelatedProducts,
+} from "./product-detail/ProductDetailSections";
 
 interface ProductDetailsClientProps {
   initialProduct: Product;
@@ -100,7 +97,6 @@ export default function ProductDetailsClient({
   );
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
