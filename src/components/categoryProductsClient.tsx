@@ -87,7 +87,12 @@ function CategoryProductsContent({
   >(() => {
     const sortByParam = searchParams.get("sortBy") || "price";
     const sortOrderParam = searchParams.get("sortOrder") || "desc";
-    return `${sortByParam}-${sortOrderParam}` as typeof sortBy;
+    return `${sortByParam}-${sortOrderParam}` as
+      | "createdAt-desc"
+      | "price-asc"
+      | "price-desc"
+      | "popularity-desc"
+      | "name-asc";
   });
 
   const [searchQuery, setSearchQuery] = useState(
@@ -375,9 +380,9 @@ function CategoryProductsContent({
               sellingPrice: Number(variant.sellingPrice),
               basePrice: Number(variant.basePrice),
               attributes: variant.attributes,
-              size: variant.size,
-              color: variant.color,
-              fabric: variant.fabric,
+              size: variant.size ?? undefined,
+              color: variant.color ?? undefined,
+              fabric: variant.fabric ?? undefined,
               stock:
                 variant.stock?.map((stock: ProductStock) => ({
                   ...stock,
