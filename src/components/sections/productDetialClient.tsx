@@ -449,16 +449,18 @@ export default function ProductDetailsClient({
     mutationFn: async ({
       product,
       variant,
+      quantity,
     }: {
       product: Product;
       variant?: ProductVariant | null;
+      quantity: number;
     }) => {
       const cartItem = {
         id: crypto.randomUUID(),
         cartId: "local",
         productId: product.id,
         variantId: variant?.id,
-        quantity: 1,
+        quantity,
         product: {
           id: product.id,
           name: product.name,
@@ -502,7 +504,7 @@ export default function ProductDetailsClient({
         await cartApi.addToCart({
           productId: product.id,
           variantId: variant?.id,
-          quantity: 1,
+          quantity,
         });
     },
     onSuccess: (_data, variables) => {
@@ -512,7 +514,7 @@ export default function ProductDetailsClient({
         item_category: variables.product.category?.name,
         item_variant: variables.variant?.id,
         price: Number(variables.variant?.sellingPrice ?? variables.variant?.price ?? variables.product.sellingPrice),
-        quantity: 1,
+        quantity: variables.quantity,
       });
       if (user) {
         queryClient.invalidateQueries({ queryKey: ["cartApi"] });
@@ -535,7 +537,7 @@ export default function ProductDetailsClient({
       toast.error(stockMessage?.message ?? "This product is currently unavailable");
       return;
     }
-    addToCartMutation.mutate({ product, variant });
+    addToCartMutation.mutate({ product, variant, quantity });
   };
 
   const handleBuyNow = async () => {
@@ -981,7 +983,7 @@ export default function ProductDetailsClient({
               <div className="hidden md:block flex-none pt-3 space-y-2.5 border-t border-gray-200 mt-2">
                 {/* Action Buttons */}
                 <div className="flex gap-2.5">
-                  {isOutOfStock || !allowOutOfStockOrders ? (
+                  {isOutOfStock ? (
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -1091,7 +1093,7 @@ export default function ProductDetailsClient({
           className="flex items-center gap-2 px-4 pb-4 pt-1"
           style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
         >
-          {isOutOfStock || !allowOutOfStockOrders ? (
+          {isOutOfStock ? (
             /* Out of stock — Request button full width */
             <motion.button
               whileTap={{ scale: 0.97 }}
