@@ -7,13 +7,14 @@ import {
   CheckCircle2,
   MapPin,
   Phone,
-  Loader2,
   Clock,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useOrder } from "@/hooks/useOrders";
 import { shipmentApi } from "@/lib/api/shipment.api";
 import { useTracking } from "@/hooks/useTracking";
+import { OrderTrackingPageSkeleton } from "@/features/orders/components/OrderPageSkeletons";
+import SmartImage from "@/components/common/smartImage";
 
 export default function OrderTrackingPage() {
   const params = useParams<{ id: string }>();
@@ -138,13 +139,7 @@ export default function OrderTrackingPage() {
     order?.status || "processing",
   );
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-      </div>
-    );
-  }
+  if (isLoading) return <OrderTrackingPageSkeleton />;
 
   if (!order) {
     return (
@@ -385,7 +380,7 @@ export default function OrderTrackingPage() {
           <h3 className="font-semibold mb-4">Items in this Order</h3>
           <div className="space-y-3">
             {order.items.map((item) => {
-              console.log("item", item);
+              
 
               return (
                 <div
@@ -393,11 +388,15 @@ export default function OrderTrackingPage() {
                   className="flex gap-3 p-3 bg-gray-50 rounded-lg"
                 >
                   {item.image && (
-                    <img
-                      src={item.image}
-                      alt={item.productName}
-                      className="w-16 h-16 rounded-lg object-cover"
-                    />
+                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg">
+                      <SmartImage
+                        src={item.image}
+                        alt={item.productName}
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                      />
+                    </div>
                   )}
                   <div className="flex-1">
                     <p className="font-medium text-sm">{item.productName}</p>
