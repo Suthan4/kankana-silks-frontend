@@ -2,9 +2,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Trash2,
-  Plus,
-  Minus,
   ArrowLeft,
   ArrowRight,
   Lock,
@@ -606,8 +603,6 @@ export default function CartPage() {
                   {displayItems.map((item: any, index: number) => {
                     const stockState = getCartItemStockState(item);
                     const stockMessage = getCartItemStockMessage(item);
-
-                    const cartQuantity = Number(item.quantity) || 0;
 
                     const canIncreaseQuantity =
                       canIncreaseCartItemQuantity(item);

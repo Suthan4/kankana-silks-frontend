@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
@@ -289,6 +289,9 @@ export default function CheckoutClient() {
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const paymentMethodRef = useRef<PaymentMethodType>("UPI");
+  const handlePaymentMethodChange = useCallback((method: PaymentMethodType) => {
+    paymentMethodRef.current = method;
+  }, []);
   const [isProcessing, setIsProcessing] = useState(false);
   const [buyNowItem, setBuyNowItem] = useState<any>(null);
   const [selectedCourier, setSelectedCourier] = useState<any>(null);
@@ -1775,9 +1778,7 @@ export default function CheckoutClient() {
                   isOpen={openSections.payment}
                   onToggle={() => toggleSection("payment")}
                   isCODAvailable={isCODAvailable}
-                  onPaymentMethodChange={(method) => {
-                    paymentMethodRef.current = method;
-                  }}
+                  onPaymentMethodChange={handlePaymentMethodChange}
                 />
               </div>
 
