@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Search,
   Package,
@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useOrders } from "@/hooks/useOrders";
+import { orderApi } from "@/lib/api/order.api";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { OrderCard } from "@/features/orders/components/OrderCard";
@@ -18,8 +19,14 @@ import { OrdersPageSkeleton } from "@/features/orders/components/OrderPageSkelet
 
 export default function OrdersPage() {
   const router = useRouter();
-  const openOrder = (orderId: string) => router.push(`/my-account/orders/${orderId}`);
-  const trackOrder = (orderId: string) => router.push(`/my-account/order-tracking/${orderId}`);
+  const openOrder = useCallback(
+    (orderId: string) => router.push(`/my-account/orders/${orderId}`),
+    [router],
+  );
+  const trackOrder = useCallback(
+    (orderId: string) => router.push(`/my-account/order-tracking/${orderId}`),
+    [router],
+  );
   const [activeTab, setActiveTab] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -61,8 +68,11 @@ export default function OrdersPage() {
     [orders, searchQuery],
   );
 
+  const isInvoiceAvailable = (order: any) =>
+    ["PROCESSING", "SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED", "COMPLETED"].includes(order.status);
+
   // ✅ Invoice download handler
-  const handleDownloadInvoice = async (e: React.MouseEvent, order: any) => {
+  const handleDownloadInvoice = useCallback(async (e: React.MouseEvent, order: any) => {
     e.stopPropagation();
 
     if (!isInvoiceAvailable(order)) {
@@ -103,7 +113,7 @@ export default function OrdersPage() {
         return newSet;
       });
     }
-  };
+  }, [downloadingInvoices]);
 
   return (
     <div className="min-h-screen bg-gray-50">

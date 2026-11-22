@@ -21,11 +21,15 @@ export default function OrderTrackingPage() {
   const id = params?.id;
   const router = useRouter();
 
-  const { data: orderData, isLoading: orderLoading } = useOrder(id);
+  const { data: orderData, isLoading: orderLoading, error: orderError, refetch: refetchOrder } = useOrder(id);
   const trackingNumber = orderData?.data?.shipment?.trackingNumber;
 
-  const { data: trackingData, isLoading: trackingLoading } =
-    useTracking(trackingNumber);
+  const {
+    data: trackingData,
+    isLoading: trackingLoading,
+    error: trackingError,
+    refetch: refetchTracking,
+  } = useTracking(trackingNumber);
 
   const order = orderData?.data;
   const tracking = trackingData?.data;
@@ -141,20 +145,32 @@ export default function OrderTrackingPage() {
 
   if (isLoading) return <OrderTrackingPageSkeleton />;
 
-  if (!order) {
+  if (orderError || !order) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Package className="w-10 h-10 text-red-400" />
           </div>
-          <p className="text-red-500 text-lg font-medium">Order not found</p>
-          <button
-            onClick={() => router.back()}
-            className="mt-4 px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800"
-          >
-            Go Back
-          </button>
+          <p className="text-red-500 text-lg font-medium">{orderError ? "Unable to load this order" : "Order not found"}</p>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            {orderError && (
+              <button
+                type="button"
+                onClick={() => void refetchOrder()}
+                className="rounded-lg bg-black px-5 py-2 text-sm font-semibold text-white"
+              >
+                Try again
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="rounded-lg border border-gray-200 px-5 py-2 text-sm font-semibold hover:bg-gray-50"
+            >
+              Go Back
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -281,6 +297,15 @@ export default function OrderTrackingPage() {
                 <span>Destination: {currentShipmentTrack.destination}</span>
               </div>
             )}
+          </div>
+        )}
+
+        {trackingError && trackingNumber && (
+          <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <p className="text-sm text-amber-900">Live tracking could not be refreshed. The order status below is still available.</p>
+            <button type="button" onClick={() => void refetchTracking()} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white">
+              Retry tracking
+            </button>
           </div>
         )}
 
