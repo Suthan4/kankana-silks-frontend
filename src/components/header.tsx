@@ -1,36 +1,22 @@
 "use client";
 import { useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
-import {
-  MessageCircle,
-  ShoppingCart,
-  Heart,
-  User,
-  Search,
-  ChevronDown,
-  Video,
-  MapPin,
-  Check,
-  Home,
-} from "lucide-react";
-import { useOnClickOutside } from "@/hooks/useClickOutside";
-import { toast } from "@/store/useToastStore";
-import { buildCategoryQuery } from "@/lib/shared/builders/productCategoryQuery.builder.ts";
-import VideoConsultationModal from "./video-consultationModal";
 import { useRouter } from "next/navigation";
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
+import VideoConsultationModal from "./video-consultationModal";
 import UnifiedSearchModal from "./unifiedSearchModal";
 import { useHeaderData } from "@/features/header/hooks/useHeaderData";
 import { useHeaderLocation } from "@/features/header/hooks/useHeaderLocation";
 import { useHeaderScroll } from "@/features/header/hooks/useHeaderScroll";
+import { useHeaderMegaMenuModel } from "@/features/header/hooks/useHeaderMegaMenuModel";
+import { useHeaderNavigation } from "@/features/header/hooks/useHeaderNavigation";
 import { MobileHeaderBar } from "@/features/header/components/MobileHeaderBar";
 import { MobileLocationSheet } from "@/features/header/components/MobileLocationSheet";
-import { MobileBottomNavigation, type HeaderQuickLink } from "@/features/header/components/MobileBottomNavigation";
+import { MobileBottomNavigation } from "@/features/header/components/MobileBottomNavigation";
 import { MobileMenuDrawer } from "@/features/header/components/MobileMenuDrawer";
-import { useHeaderMegaMenuModel } from "@/features/header/hooks/useHeaderMegaMenuModel";
-import { DesktopCategoryNavigation } from "@/features/header/components/DesktopCategoryNavigation";
+import { DesktopHeader } from "@/features/header/components/DesktopHeader";
 
 function Header() {
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeNav, setActiveNav] = useState("");
   const [activeSubNav, setActiveSubNav] = useState("");
@@ -40,675 +26,79 @@ function Header() {
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-
-  const router = useRouter();
-  const userMenuRef = useRef<HTMLDivElement | null>(null);
-  const locationRef = useRef<HTMLDivElement | null>(null);
   const mobileLocationRef = useRef<HTMLDivElement | null>(null);
 
-  const {
-    user,
-    openModal,
-    cartItemsCount,
-    wishlistCount,
-    isMounted,
-    categories,
-    isCategoriesLoading: loading,
-    addresses,
-    defaultAddress,
-    handleLogout,
-  } = useHeaderData();
-
-  const {
-    location,
-    setLocation,
-    pincode,
-    setPincode,
-    isCheckingPincode,
-    isGettingLocation,
-    handlePincodeSubmit,
-    handleUseCurrentLocation,
-  } = useHeaderLocation({
-    user,
-    defaultAddress,
-    locationModalOpen,
-    onClose: () => setLocationModalOpen(false),
+  const { user, openModal, cartItemsCount, wishlistCount, categories, isCategoriesLoading: loading, addresses, defaultAddress, handleLogout } = useHeaderData();
+  const locationState = useHeaderLocation({ user, defaultAddress, locationModalOpen, onClose: () => setLocationModalOpen(false) });
+  const { pathname, hasHeroBehindHeader, isScrolled, showNav, navBottom, navRef, handleHeaderEnter, handleHeaderLeave, handleCategoryHover } = useHeaderScroll({
+    setHoveredCategory, setUserMenuOpen, setLocationModalOpen, setIsHeaderHovered,
   });
 
-  const headerScroll = useHeaderScroll({
-    setHoveredCategory,
-    setUserMenuOpen,
-    setLocationModalOpen,
-    setIsHeaderHovered,
-  });
-  const {
-    pathname,
-    hasHeroBehindHeader,
-    isScrolled,
-    showNav,
-    navBottom,
-    navRef,
-    handleHeaderEnter,
-    handleHeaderLeave,
-    handleCategoryHover,
-    clearHoverTimeout,
-  } = headerScroll;
-
-  useOnClickOutside(userMenuRef, () => setUserMenuOpen(false));
-  useOnClickOutside(locationRef, () => {
-    if (window.innerWidth >= 768) setLocationModalOpen(false);
-  });
-  useOnClickOutside(mobileLocationRef, () => {
-    if (window.innerWidth < 768) setLocationModalOpen(false);
-  });
-  useModalScrollLock(
-    locationModalOpen &&
-      typeof window !== "undefined" &&
-      window.innerWidth < 768 &&
-      typeof CSS !== "undefined" &&
-      CSS.supports("-webkit-touch-callout", "none"),
-  );
+  useModalScrollLock(locationModalOpen && typeof window !== "undefined" && window.innerWidth < 768 && typeof CSS !== "undefined" && CSS.supports("-webkit-touch-callout", "none"));
 
   const isMyAccountPage = pathname?.startsWith("/my-account");
-  const isProductDetailPage = !!(
-    pathname?.match(/^\/products\/[^/]+$/) ||
-    (pathname?.match(/^\/[^/]+\/[^/]+$/) &&
-      !pathname?.startsWith("/shop/") &&
-      !pathname?.startsWith("/my-account"))
-  );
-  const isCategoryPage =
-    pathname?.match(/^\/shop\/[^/]+$/) || pathname?.match(/^\/[^/]+\/[^/]+$/);
+  const isProductDetailPage = Boolean(pathname?.match(/^\/products\/[^/]+$/) || (pathname?.match(/^\/[^/]+\/[^/]+$/) && !pathname?.startsWith("/shop/") && !pathname?.startsWith("/my-account")));
+  const isCategoryPage = Boolean(pathname?.match(/^\/shop\/[^/]+$/) || pathname?.match(/^\/[^/]+\/[^/]+$/));
 
-  /* -------------------- HELPERS -------------------- */
-  const authGuard = (cb?: () => void) => {
-    if (!user) {
-      openModal("login");
-      return;
-    }
-    cb?.();
-  };
-
-  /* -------------------- GENERATE CATEGORY URL -------------------- */
-  const getCategoryUrl = (slug: string) => {
-    const queryParams = buildCategoryQuery(slug);
-    const searchParams = new URLSearchParams();
-    Object.entries(queryParams).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        searchParams.append(key, String(value));
-      }
-    });
-    return `/shop/${slug}?${searchParams.toString()}`;
-  };
-
-  const icons: HeaderQuickLink[] = [
-    { name: "Home", icon: Home, type: "link", url: "/", requiresAuth: false },
-    {
-      name: "Consultation",
-      icon: Video,
-      type: "action",
-      requiresAuth: false,
-      onClick: () => {
-        if (!user?.email) setIsModalOpen(!isModalOpen);
-      },
-    },
-    {
-      name: "Whatsapp",
-      icon: MessageCircle,
-      type: "action",
-      requiresAuth: false,
-      onClick: () => {
-        window.open(
-          "https://api.whatsapp.com/send?phone=916364945568&text=Hello%20Kankana%20Silks,%20I%E2%80%99m%20interested%20in%20exploring%20your%20saree%20collection.",
-          "_blank",
-        );
-      },
-    },
-    {
-      name: "Cart",
-      icon: ShoppingCart,
-      type: "link",
-      url: "/cart",
-      requiresAuth: false,
-      badgeCount: cartItemsCount,
-    },
-    {
-      name: "Wishlist",
-      icon: Heart,
-      type: "link",
-      requiresAuth: false,
-      url: "/wishlist",
-      badgeCount: wishlistCount,
-    },
-  ];
-
-  const {
-    activeCategory,
-    activeCategoryImages,
-    hasCategoryImages,
-    useVerticalCategoryList,
-    balancedTextColumns,
-    shouldUseGrid,
-  } = useHeaderMegaMenuModel(categories, hoveredCategory);
-  const isHeaderWhite =
-    !hasHeroBehindHeader ||
-    isScrolled ||
-    isHeaderHovered ||
-    Boolean(hoveredCategory) ||
-    locationModalOpen ||
-    userMenuOpen;
-
-  // Render the mobile drawer outside the header subtree. This prevents
-  // fixed-position overlays and their animations from invalidating the hero layer.
-  const portalRoot =
-    typeof document !== "undefined"
-      ? document.getElementById("portal-root")
-      : null;
+  const { getCategoryUrl, icons } = useHeaderNavigation({
+    user,
+    cartItemsCount,
+    wishlistCount,
+    isModalOpen,
+    setIsModalOpen,
+  });
+  const megaMenu = useHeaderMegaMenuModel(categories, hoveredCategory);
+  const isHeaderWhite = !hasHeroBehindHeader || isScrolled || isHeaderHovered || Boolean(hoveredCategory) || locationModalOpen || userMenuOpen;
+  const portalRoot = typeof document !== "undefined" ? document.getElementById("portal-root") : null;
 
   return (
     <>
-      {/* ─────────────────────────────────────────────
-          DESKTOP HEADER — always solid white,
-          no transparent/border styling
-      ───────────────────────────────────────────── */}
-      <motion.header
-        data-testid="desktop-header"
-        initial={false}
+      <DesktopHeader
+        isHeaderWhite={isHeaderWhite}
         onMouseEnter={handleHeaderEnter}
         onMouseLeave={handleHeaderLeave}
-        className={`fixed inset-x-0 top-0 z-40 hidden transition-[background-color,color,box-shadow] duration-200 md:block ${
-          isHeaderWhite
-            ? "bg-white text-black shadow-sm"
-            : "bg-transparent text-white shadow-none"
-        }`}
-      >
-        {/* ── SINGLE COMPACT TOP BAR ── */}
-        <div
-          className="flex items-center justify-between px-8"
-          style={{ height: "65px" }}
-        >
-          {/* LEFT — Location */}
-          <div className="relative flex items-center gap-6 w-[260px]">
-            <div ref={locationRef} className="relative">
-              <button
-                onClick={() => setLocationModalOpen((p) => !p)}
-                className={`flex items-center gap-1.5 text-sm transition-colors duration-300 ${
-                  isHeaderWhite
-                    ? "text-gray-700 hover:text-black"
-                    : "text-white"
-                }`}
-              >
-                <MapPin className="w-4 h-4 flex-shrink-0" />
-                <div className="flex flex-col items-start leading-tight">
-                  <span
-                    className={`text-[11px] uppercase tracking-wider ${
-                      isHeaderWhite ? "text-gray-600" : "text-white/90"
-                    }`}
-                  >
-                    Deliver to
-                  </span>
-                  <span
-                    className={`font-semibold text-sm ${
-                      isHeaderWhite ? "text-gray-900" : "text-white"
-                    }`}
-                  >
-                    {location
-                      ? `${location.city || "Your Area"} – ${location.pincode}`
-                      : "Select Location"}
-                  </span>
-                </div>
-                <ChevronDown
-                  className={`w-3.5 h-3.5 transition-all duration-200 ${
-                    isHeaderWhite ? "text-gray-400" : "text-white/80"
-                  } ${locationModalOpen ? "rotate-180" : ""}`}
-                />
-              </button>
-
-              <AnimatePresence>
-                {locationModalOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 8 }}
-                    className="absolute left-0 mt-3 w-96 bg-white rounded-xl shadow-2xl overflow-hidden z-50 border border-gray-100"
-                  >
-                    <div className="p-5">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-base font-bold text-gray-900">
-                          Choose your location
-                        </h3>
-                        <button
-                          onClick={() => setLocationModalOpen(false)}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                      {user && addresses.length > 0 && (
-                        <div className="mb-4">
-                          <h4 className="text-xs font-semibold text-gray-900 mb-3 uppercase tracking-wider">
-                            Your Addresses
-                          </h4>
-                          <div className="space-y-2 max-h-48 overflow-y-auto">
-                            {addresses.map((address) => (
-                              <button
-                                key={address.id}
-                                onClick={() => {
-                                  const locationData = {
-                                    city: address.city,
-                                    pincode: address.pincode,
-                                    isServiceable: true,
-                                  };
-                                  setLocation(locationData);
-                                  localStorage.setItem(
-                                    "userLocation",
-                                    JSON.stringify(locationData),
-                                  );
-                                  setLocationModalOpen(false);
-                                  toast.success(
-                                    `Delivering to ${address.city}, ${address.pincode}`,
-                                  );
-                                }}
-                                className="w-full text-left p-3 border border-gray-200 rounded-lg hover:border-black transition-colors"
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <p className="font-semibold text-xs text-gray-900">
-                                      {address.fullName}
-                                    </p>
-                                    <p className="text-xs text-gray-500">
-                                      {address.city} – {address.pincode}
-                                    </p>
-                                  </div>
-                                  {address.isDefault && (
-                                    <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                                      Default
-                                    </span>
-                                  )}
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                          <Link
-                            href="/my-account/addresses"
-                            onClick={() => setLocationModalOpen(false)}
-                            className="block mt-3 text-xs text-gray-500 hover:text-black font-medium text-center py-1 underline underline-offset-2"
-                          >
-                            Manage addresses
-                          </Link>
-                          <div className="border-t border-gray-100 my-4" />
-                        </div>
-                      )}
-                      <div>
-                        <h4 className="text-xs font-semibold text-gray-900 mb-3 uppercase tracking-wider">
-                          {user && addresses.length > 0
-                            ? "Or enter a different pincode"
-                            : "Enter pincode"}
-                        </h4>
-                        <div className="flex gap-2 mb-3">
-                          <input
-                            type="text"
-                            placeholder="6-digit pincode"
-                            value={pincode}
-                            onChange={(e) => setPincode(e.target.value)}
-                            maxLength={6}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-black text-sm"
-                            onKeyPress={(e) => {
-                              if (e.key === "Enter") handlePincodeSubmit();
-                            }}
-                          />
-                          <button
-                            onClick={handlePincodeSubmit}
-                            disabled={isCheckingPincode || pincode.length !== 6}
-                            className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-40 text-xs font-medium"
-                          >
-                            {isCheckingPincode ? "…" : "Check"}
-                          </button>
-                        </div>
-                        <button
-                          onClick={handleUseCurrentLocation}
-                          disabled={isGettingLocation}
-                          className="w-full mb-3 py-2 border border-gray-300 rounded-lg hover:border-black transition-colors flex items-center justify-center gap-2 text-xs font-medium text-gray-600 hover:text-black disabled:opacity-50"
-                        >
-                          <MapPin className="w-3.5 h-3.5" />
-                          {isGettingLocation
-                            ? "Getting location…"
-                            : "Use my current location"}
-                        </button>
-                        {location && location.isServiceable !== undefined && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            className={`p-3 rounded-lg border ${location.isServiceable ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}
-                          >
-                            <div className="flex items-center gap-2">
-                              {location.isServiceable ? (
-                                <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
-                              ) : (
-                                <X className="w-4 h-4 text-red-600 flex-shrink-0" />
-                              )}
-                              <p
-                                className={`text-xs font-semibold ${location.isServiceable ? "text-green-800" : "text-red-800"}`}
-                              >
-                                {location.isServiceable
-                                  ? "Delivery available!"
-                                  : "Not serviceable yet"}
-                              </p>
-                            </div>
-                          </motion.div>
-                        )}
-                      </div>
-                      {!user && (
-                        <button
-                          onClick={() => {
-                            setLocationModalOpen(false);
-                            openModal("login");
-                          }}
-                          className="w-full mt-4 py-2.5 text-xs text-gray-600 hover:text-black font-medium border border-gray-200 rounded-lg hover:border-black transition-colors"
-                        >
-                          Sign in to use your saved addresses
-                        </button>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-
-          {/* CENTER — Logo */}
-          <div className="absolute left-1/2 -translate-x-1/2">
-            <Link
-              href="/"
-              aria-label="Kankana Silks home"
-              className="relative block h-14 w-[180px]"
-            >
-              <Image
-                src="/removed-bg-logo.png"
-                alt="Kankana Silks"
-                fill
-                priority
-                sizes="180px"
-                className={`object-contain transition-opacity duration-150 ${
-                  isHeaderWhite ? "opacity-100" : "opacity-0"
-                }`}
-              />
-
-              <Image
-                src="/removed-bg-logo.png"
-                alt=""
-                aria-hidden="true"
-                fill
-                priority
-                sizes="180px"
-                className={`object-contain brightness-0 invert transition-opacity duration-150 ${
-                  isHeaderWhite ? "opacity-0" : "opacity-100"
-                }`}
-              />
-            </Link>
-          </div>
-
-          {/* RIGHT — Search + Icons + User */}
-          <div className="flex items-center gap-4 flex-shrink-0 justify-end">
-            {/* Search */}
-            <button
-              onClick={() => setIsSearchOpen(true)}
-              className={`flex min-w-[160px] items-center gap-2 rounded-full border px-4 py-2 text-sm transition-[background-color,border-color,color] duration-200 ${
-                isHeaderWhite
-                  ? "border-gray-200 bg-gray-50 text-gray-500 hover:bg-white hover:border-gray-400 hover:text-gray-700"
-                  : "border-white/50 bg-black/10 text-white hover:bg-white/10 hover:border-white"
-              }`}
-            >
-              <Search className="w-4 h-4 flex-shrink-0" />
-              <span>Search…</span>
-            </button>
-            <div className="flex items-center justify-center gap-3 h-full">
-              {/* Cart / Wishlist */}
-              {icons
-                .filter((i) => ["Cart", "Wishlist"].includes(i.name))
-                .map((item) => {
-                  const Icon = item.icon;
-                  const Btn = (
-                    <div className="relative group">
-                      <motion.button
-                        whileHover={{ scale: 0.92 }}
-                        whileTap={{ scale: 0.86 }}
-                        onClick={() => {
-                          if (item.requiresAuth) authGuard(item.onClick);
-                          else item.onClick?.();
-                        }}
-                        aria-label={
-                          "badgeCount" in item && item.badgeCount! > 0
-                            ? `${item.name}, ${item.badgeCount} items`
-                            : item.name
-                        }
-                        className={`relative flex items-center justify-center w-10 h-10 transition-colors duration-300 ${
-                          isHeaderWhite
-                            ? "text-gray-700 hover:text-black"
-                            : "text-white"
-                        }`}
-                      >
-                        <Icon style={{ width: "20px", height: "20px" }} />
-                        {"badgeCount" in item && item.badgeCount! > 0 && (
-                          <span className="absolute -top-[0.1rem] -right-[0.1rem] text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-medium bg-black text-white">
-                            {item.badgeCount}
-                          </span>
-                        )}
-                      </motion.button>
-
-                      {/* Tooltip */}
-                      <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-0.5 z-[50] whitespace-nowrap rounded-full bg-black/95 px-3 py-1.5 text-[10px] font-medium tracking-[0.08em] text-white opacity-0 shadow-lg transition-all duration-200 -translate-y-1 group-hover:translate-y-0 group-hover:opacity-100">
-                        {item.name}
-                        <span className="absolute left-1/2 -translate-x-1/2 bottom-full w-0 h-0 border-x-4 border-x-transparent border-b-4 border-b-black/95" />
-                      </span>
-                    </div>
-                  );
-
-                  if (item.type === "link") {
-                    return (
-                      <Link
-                        key={item.name}
-                        href={item.url!}
-                        onClick={(e) => {
-                          if (item.requiresAuth && !user) {
-                            e.preventDefault();
-                            openModal("login");
-                          }
-                        }}
-                      >
-                        {Btn}
-                      </Link>
-                    );
-                  }
-                  return <div key={item.name}>{Btn}</div>;
-                })}
-
-              <div className="relative group">
-                <motion.button
-                  whileHover={{ scale: 0.92 }}
-                  whileTap={{ scale: 0.86 }}
-                  onClick={() =>
-                    window.open(
-                      "https://api.whatsapp.com/send?phone=916364945568&text=Hello%20Kankana%20Silks,%20I%E2%80%99m%20interested%20in%20exploring%20your%20saree%20collection.",
-                      "_blank",
-                    )
-                  }
-                  aria-label="Chat with us on WhatsApp"
-                  className={`flex items-center justify-center w-10 h-10 transition-colors duration-300 ${
-                    isHeaderWhite
-                      ? "text-gray-700 hover:text-black"
-                      : "text-white"
-                  }`}
-                >
-                  <MessageCircle style={{ width: "20px", height: "20px" }} />
-                </motion.button>
-
-                <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-0.5 z-[50] whitespace-nowrap rounded-full bg-black/95 px-3 py-1.5 text-[10px] font-medium tracking-[0.08em] text-white opacity-0 shadow-lg transition-all duration-200 -translate-y-1 group-hover:translate-y-0 group-hover:opacity-100">
-                  Connect on WhatsApp
-                  <span className="absolute left-1/2 -translate-x-1/2 bottom-full w-0 h-0 border-x-4 border-x-transparent border-b-4 border-b-black/95" />
-                </span>
-              </div>
-
-              {/* User */}
-              <div
-                className="relative group"
-                onMouseEnter={() => user && setUserMenuOpen(true)}
-                onMouseLeave={() => setUserMenuOpen(false)}
-              >
-                <button
-                  onClick={() => {
-                    if (!user) openModal("login");
-                    else setUserMenuOpen((p) => !p);
-                  }}
-                  aria-label={user ? "Open account menu" : "Sign in"}
-                  className={`flex items-center justify-center gap-1 h-10 px-1 transition-colors duration-300 ${
-                    isHeaderWhite
-                      ? "text-gray-700 hover:text-black"
-                      : "text-white"
-                  }`}
-                >
-                  {!user && <User style={{ width: "20px", height: "20px" }} />}
-                  {!user && (
-                    <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-0.5 z-[50] whitespace-nowrap rounded-full bg-black/95 px-3 py-1.5 text-[10px] font-medium tracking-[0.08em] text-white opacity-0 shadow-lg transition-all duration-200 -translate-y-1 group-hover:translate-y-0 group-hover:opacity-100">
-                      Sign In
-                      <span className="absolute left-1/2 -translate-x-1/2 bottom-full w-0 h-0 border-x-4 border-x-transparent border-b-4 border-b-black/95" />
-                    </span>
-                  )}
-                  {user && (
-                    <>
-                      <span
-                        className={`text-sm font-semibold hidden lg:block ${
-                          isHeaderWhite ? "text-gray-900" : "text-white"
-                        }`}
-                      >
-                        {user.firstName}
-                      </span>
-                      <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-                    </>
-                  )}
-                </button>
-                <AnimatePresence>
-                  {user && userMenuOpen && (
-                    <motion.div
-                      ref={userMenuRef}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 8 }}
-                      className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-2xl overflow-hidden z-50 border border-gray-100"
-                    >
-                      <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-xs font-semibold text-gray-900">
-                          {user.firstName}
-                        </p>
-                        <p className="text-[10px] text-gray-600 truncate">
-                          {" "}
-                          {user.email}
-                        </p>
-                      </div>
-                      {[
-                        ["My Account", "/my-account"],
-                        ["My Orders", "/my-account/orders"],
-                        ["Addresses", "/my-account/addresses"],
-                      ].map(([label, href]) => (
-                        <Link
-                          key={href}
-                          href={href}
-                          onClick={() => setUserMenuOpen(false)}
-                          className="block px-4 py-2.5 text-xs hover:bg-gray-50 transition-colors text-gray-700 hover:text-black"
-                        >
-                          {label}
-                        </Link>
-                      ))}
-                      <button
-                        onClick={() => {
-                          setUserMenuOpen(false);
-                          handleLogout();
-                        }}
-                        className="w-full text-left px-4 py-2.5 text-xs text-red-600 hover:bg-red-50 transition-colors border-t border-gray-100"
-                      >
-                        Sign Out
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── NAV BAR — Sabyasachi style ── */}
-        <motion.nav
-          ref={navRef}
-          data-testid="desktop-nav"
-          aria-label="Main"
-          initial={false}
-          animate={{
-            opacity: showNav ? 1 : 0,
-            y: showNav ? 0 : -6,
-          }}
-          transition={{
-            duration: 0.16,
-            ease: [0.22, 1, 0.36, 1],
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") {
-              setHoveredCategory(null);
-            }
-          }}
-          style={{
-            height: showNav ? 42 : 0,
-          }}
-          className={`relative z-40 hidden md:block ${
-            showNav
-              ? "pointer-events-auto overflow-visible"
-              : "pointer-events-none overflow-hidden"
-          }`}
-        >
-          {/* Navigation links */}
-          <div className="h-10 overflow-hidden">
-            <ul className="flex h-10 items-center justify-center gap-2">
-              {loading ? (
-                [80, 100, 72, 88, 96, 76].map((width, index) => (
-                  <li key={index} className="px-5">
-                    <div
-                      className="h-3 animate-pulse rounded-full bg-gray-200/70"
-                      style={{
-                        width: `${width}px`,
-                      }}
-                    />
-                  </li>
-                ))
-              ) : categories.length === 0 ? (
-                <li className="text-base text-gray-400">
-                  No categories available
-                </li>
-              ) : (
-                categories.map((category) => {
-                  const isActive = hoveredCategory === category.id;        <DesktopCategoryNavigation
-          navRef={navRef}
-          showNav={showNav}
-          categories={categories}
-          loading={loading}
-          hoveredCategory={hoveredCategory}
-          setHoveredCategory={setHoveredCategory}
-          isHeaderWhite={isHeaderWhite}
-          activeCategory={activeCategory}
-          activeCategoryImages={activeCategoryImages}
-          hasCategoryImages={hasCategoryImages}
-          useVerticalCategoryList={useVerticalCategoryList}
-          shouldUseGrid={shouldUseGrid}
-          balancedTextColumns={balancedTextColumns}
-          navBottom={navBottom}
-          onHoverCategory={handleCategoryHover}
-          getCategoryUrl={getCategoryUrl}
-        /> } }} openLogin={() => openModal("login")}/>
-      <UnifiedSearchModal
-        isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
+        location={locationState.location}
+        setLocation={locationState.setLocation}
+        addresses={addresses}
+        user={user}
+        locationModalOpen={locationModalOpen}
+        setLocationModalOpen={setLocationModalOpen}
+        pincode={locationState.pincode}
+        setPincode={locationState.setPincode}
+        isCheckingPincode={locationState.isCheckingPincode}
+        isGettingLocation={locationState.isGettingLocation}
+        onSubmitPincode={locationState.handlePincodeSubmit}
+        onUseCurrentLocation={locationState.handleUseCurrentLocation}
+        onLogin={() => openModal("login")}
+        icons={icons}
+        userMenuOpen={userMenuOpen}
+        setUserMenuOpen={setUserMenuOpen}
+        onSearch={() => setIsSearchOpen(true)}
+        onLogout={handleLogout}
+        navRef={navRef}
+        showNav={showNav}
+        categories={categories}
+        loading={loading}
+        hoveredCategory={hoveredCategory}
+        setHoveredCategory={setHoveredCategory}
+        activeCategory={megaMenu.activeCategory}
+        activeCategoryImages={megaMenu.activeCategoryImages}
+        hasCategoryImages={megaMenu.hasCategoryImages}
+        useVerticalCategoryList={megaMenu.useVerticalCategoryList}
+        shouldUseGrid={megaMenu.shouldUseGrid}
+        balancedTextColumns={megaMenu.balancedTextColumns}
+        navBottom={navBottom}
+        onHoverCategory={handleCategoryHover}
+        getCategoryUrl={getCategoryUrl}
       />
-      <VideoConsultationModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
+
+      <MobileHeaderBar mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} isProductDetailPage={isProductDetailPage} isCategoryPage={isCategoryPage} location={locationState.location} onOpenLocation={() => setLocationModalOpen(true)} onOpenSearch={() => setIsSearchOpen(true)} />
+      <MobileLocationSheet open={locationModalOpen} onClose={() => setLocationModalOpen(false)} user={user} addresses={addresses} location={locationState.location} setLocation={locationState.setLocation} pincode={locationState.pincode} setPincode={locationState.setPincode} isCheckingPincode={locationState.isCheckingPincode} isGettingLocation={locationState.isGettingLocation} onSubmitPincode={locationState.handlePincodeSubmit} onUseCurrentLocation={locationState.handleUseCurrentLocation} onLogin={() => openModal("login")} mobileLocationRef={mobileLocationRef} />
+      <MobileMenuDrawer open={mobileMenuOpen} portalRoot={portalRoot} categories={categories} loading={loading} user={user} activeNav={activeNav} setActiveNav={setActiveNav} activeSubNav={activeSubNav} setActiveSubNav={setActiveSubNav} getCategoryUrl={getCategoryUrl} onClose={() => setMobileMenuOpen(false)} onLogin={() => openModal("login")} onLogout={() => { setMobileMenuOpen(false); handleLogout(); }} />
+      <MobileBottomNavigation items={icons} user={user} pathname={pathname} isMyAccountPage={Boolean(isMyAccountPage)} isProductDetailPage={isProductDetailPage} isCategoryPage={isCategoryPage} onAccountClick={() => { if (!user) openModal("login"); else { window.dispatchEvent(new Event("app:navigation-start")); router.push("/my-account"); } }} openLogin={() => openModal("login")} />
+
+      <UnifiedSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      <VideoConsultationModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </>
   );
 }
