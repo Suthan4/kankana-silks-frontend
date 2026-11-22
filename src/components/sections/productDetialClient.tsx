@@ -46,6 +46,7 @@ import { formatColorText } from "@/lib/utils/colorValidationwithText";
 import DOMPurify from "isomorphic-dompurify";
 import { ZoomGallery } from "../ui/ZoomGallery";
 import { trackAddToCart, trackViewItem } from "@/lib/analytics";
+import { getCartItemStockMessage, getCartItemStockState } from "@/lib/utils/cartStock";
 
 interface ProductDetailsClientProps {
   initialProduct: Product;
@@ -168,19 +169,24 @@ export default function ProductDetailsClient({
     setSelectedImageIndex(0);
   }, [selectedVariant?.id]);
 
-  // Use the selected variant's stock as the source of truth for variants.
-  // This avoids a zero-stock parent record blocking a variant that has stock.
-  const availableStock = hasVariants
-    ? (selectedVariant?.stock?.[0]?.quantity ?? 0)
-    : (product.stock?.[0]?.quantity ?? 0);
+  // The selected variant is the inventory source of truth for variant products.
+  // Parent product stock must not block a variant with its own available stock.
+  const stockItem = {
+    product,
+    variant: hasVariants ? selectedVariant ?? undefined : undefined,
+    variantId: hasVariants ? selectedVariant?.id : undefined,
+    quantity,
+    allowOutOfStockOrders: product.allowOutOfStockOrders,
+  };
+  const stockState = getCartItemStockState(stockItem);
+  const stockMessage = getCartItemStockMessage(stockItem);
+  const availableStock = stockState.available;
+  const maxAllowedQuantity = stockState.maxAllowed;
+  const isOutOfStock = stockState.isOutOfStock;
 
-  const isOutOfStock =
-    availableStock === 0 ||
-    (hasVariants &&
-      (selectedVariant?.stock?.[0]?.quantity ?? 0) <
-        (selectedVariant?.stock?.[0]?.lowStockThreshold ?? 0)) ||
-    (product.stock?.[0]?.quantity ?? 0) <
-      (product.stock?.[0]?.lowStockThreshold ?? 0);
+  useEffect(() => {
+    setQuantity((current) => Math.max(1, Math.min(current, maxAllowedQuantity)));
+  }, [selectedVariant?.id, maxAllowedQuantity]);
 
   const hasVideoConsultation = product.hasVideoConsultation ?? false;
   const videoPurchasingEnabled = product.videoPurchasingEnabled ?? false;
@@ -447,7 +453,6 @@ export default function ProductDetailsClient({
       product: Product;
       variant?: ProductVariant | null;
     }) => {
-      const availableStock = product.stock?.[0]?.quantity ?? 0;
       const cartItem = {
         id: crypto.randomUUID(),
         cartId: "local",
@@ -471,7 +476,10 @@ export default function ProductDetailsClient({
               isActive: true,
             },
           ],
-          stock: [{ quantity: availableStock }],
+          stock: product.stock?.map((stock) => ({
+            ...stock,
+            lowStockThreshold: stock.lowStockThreshold ?? 0,
+          })) ?? [],
         },
         variant: variant
           ? {
@@ -523,20 +531,21 @@ export default function ProductDetailsClient({
       toast.error("Please select product options before adding to cart.");
       return;
     }
-    if (isOutOfStock && !allowOutOfStockOrders) {
-      toast.error("This product is currently unavailable");
+    if (stockState.isOutOfStock || 1 > maxAllowedQuantity) {
+      toast.error(stockMessage?.message ?? "This product is currently unavailable");
       return;
     }
     addToCartMutation.mutate({ product, variant });
   };
 
   const handleBuyNow = async () => {
-    if (isOutOfStock && !allowOutOfStockOrders) {
-      toast.error("Product is out of stock");
-      return;
-    }
-    if (quantity > availableStock && !allowOutOfStockOrders) {
-      toast.error(`Only ${availableStock} items available`);
+    if (stockState.isOutOfStock || quantity > maxAllowedQuantity) {
+      toast.error(
+        stockMessage?.message ??
+          (stockState.isLimited
+            ? "Only one item can be ordered at this time."
+            : "Only " + availableStock + " items available"),
+      );
       return;
     }
     if (hasVariants && !selectedVariant) {
@@ -847,21 +856,23 @@ export default function ProductDetailsClient({
 
                 {/* Stock Status */}
                 <div>
-                  {isOutOfStock && !allowOutOfStockOrders ? (
+                  {stockState.isOutOfStock ? (
+                    <p className="text-red-600 font-medium text-sm flex items-center gap-1.5">
+                      <AlertCircle className="w-4 h-4" /> Out of Stock
+                    </p>
+                  ) : (
                     <div className="space-y-1">
-                      <p className="text-red-600 font-medium text-sm flex items-center gap-1.5">
-                        <AlertCircle className="w-4 h-4" /> Out of Stock
+                      <p className="text-main-secondary font-medium text-sm">
+                        ✓ {stockState.hasStockData
+                          ? "In Stock (" + availableStock + " available)"
+                          : "Availability confirmed at checkout"}
                       </p>
-                      {allowOutOfStockOrders && (
-                        <p className="text-xs text-gray-500">
-                          Request to be notified when back in stock.
+                      {stockMessage && (
+                        <p className="text-amber-700 text-xs font-medium">
+                          {stockMessage.message}
                         </p>
                       )}
                     </div>
-                  ) : (
-                    <p className="text-main-secondary font-medium text-sm">
-                      ✓ In Stock ({availableStock} available)
-                    </p>
                   )}
                 </div>
 
@@ -954,9 +965,10 @@ export default function ProductDetailsClient({
                       <motion.button
                         whileTap={{ scale: 0.9 }}
                         onClick={() =>
-                          setQuantity(Math.min(availableStock, quantity + 1))
+                          setQuantity(Math.min(maxAllowedQuantity, quantity + 1))
                         }
-                        className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center font-bold text-sm"
+                        disabled={quantity >= maxAllowedQuantity}
+                        className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center font-bold text-sm disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         +
                       </motion.button>

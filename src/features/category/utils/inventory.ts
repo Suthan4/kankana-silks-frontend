@@ -1,41 +1,24 @@
-import type { Product } from "@/lib/api/product.api";
+import type { Product, ProductVariant } from "@/lib/api/product.api";
+import { getCartItemStockState } from "@/lib/utils/cartStock";
+
+const getProductStockState = (product: Product, variant?: ProductVariant | null) =>
+  getCartItemStockState({
+    product,
+    variant: variant ?? undefined,
+    variantId: variant?.id,
+    allowOutOfStockOrders: product.allowOutOfStockOrders,
+  });
 
 export function isProductUnavailable(product: Product): boolean {
-  const allowOutOfStockOrders = product.allowOutOfStockOrders ?? false;
   const variants = product.hasVariants ? (product.variants ?? []) : [];
-  const allVariantsHaveInventory =
-    variants.length > 0 &&
-    variants.every((variant) => Array.isArray(variant.stock) && variant.stock.length > 0);
-
-  if (allVariantsHaveInventory) {
-    return variants.every((variant) => {
-      const quantity = Number(variant.stock?.[0]?.quantity ?? 0);
-      const threshold = Number(variant.stock?.[0]?.lowStockThreshold ?? 0);
-      if (quantity <= 0) return true;
-      if (allowOutOfStockOrders) return false;
-      return quantity <= threshold;
-    });
-  }
-
-  const quantity = Number(product.stock?.[0]?.quantity ?? 0);
-  const threshold = Number(product.stock?.[0]?.lowStockThreshold ?? 0);
-  if (quantity <= 0) return true;
-  if (allowOutOfStockOrders) return false;
-  return quantity <= threshold;
+  return variants.length > 0
+    ? variants.every((variant) => getProductStockState(product, variant).isOutOfStock)
+    : getProductStockState(product).isOutOfStock;
 }
 
 export function isProductOutOfStock(product: Product): boolean {
-  if (product.hasVariants && product.variants?.length) {
-    const everyVariantHasInventory = product.variants.every(
-      (variant) => Array.isArray(variant.stock) && variant.stock.length > 0,
-    );
-    return (
-      everyVariantHasInventory &&
-      product.variants.every((variant) => {
-        const quantity = Number(variant.stock?.[0]?.quantity ?? 0);
-        return Number.isFinite(quantity) && quantity <= 0;
-      })
-    );
-  }
-  return Number(product.stock?.[0]?.quantity ?? 0) <= 0;
+  const variants = product.hasVariants ? (product.variants ?? []) : [];
+  return variants.length > 0
+    ? variants.every((variant) => getProductStockState(product, variant).isZeroStock)
+    : getProductStockState(product).isZeroStock;
 }
