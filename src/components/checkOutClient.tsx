@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   ShoppingBag,
   MapPin,
-  CreditCard,
   Truck,
   Lock,
   Plus,
@@ -53,9 +52,10 @@ import {
 } from "@/lib/utils/cartStock";
 import { shippingApi } from "@/lib/api/shipping.api";
 import confetti from "canvas-confetti";
-import PaymentLogos from "./paymentLogos";
 import { extractVariantAttributes } from "@/lib/utils/variant.utils";
 import CheckoutLoadingState from "@/components/checkoutLoadingState";
+import { CheckoutAccordionCard as AccordionCard } from "@/features/checkout/components/CheckoutAccordionCard";
+import { CheckoutPaymentSection } from "@/features/checkout/components/CheckoutPaymentSection";
 
 declare global {
   interface Window {
@@ -150,69 +150,6 @@ const getCheckoutItemIssue = (item: any): string | null => {
 
 // ─── Accordion Section Component ─────────────────────────────────────────────
 type AccordionSection = "items" | "address" | "courier" | "payment";
-
-interface AccordionProps {
-  id: AccordionSection;
-  title: string;
-  icon: React.ReactNode;
-  badge?: React.ReactNode;
-  isOpen: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-  isDone?: boolean;
-}
-
-const AccordionCard = ({
-  title,
-  icon,
-  badge,
-  isOpen,
-  onToggle,
-  children,
-  isDone,
-}: AccordionProps) => (
-  <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-2.5">
-    <button
-      onClick={onToggle}
-      className="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-gray-50 transition text-left"
-    >
-      <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center flex-shrink-0">
-        {icon}
-      </div>
-      <span className="font-bold text-gray-900 text-sm flex-1">{title}</span>
-      {badge && (
-        <span
-          className={`text-xs px-2 py-0.5 rounded-full border flex items-center gap-1 ${
-            isDone
-              ? "bg-green-50 text-green-700 border-green-200"
-              : "bg-gray-100 text-gray-500 border-gray-200"
-          }`}
-        >
-          {isDone && <Check className="w-3 h-3" />}
-          {badge}
-        </span>
-      )}
-      <ChevronDown
-        className={`w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0 ${
-          isOpen ? "rotate-180" : ""
-        }`}
-      />
-    </button>
-    <AnimatePresence initial={false}>
-      {isOpen && (
-        <motion.div
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: "auto", opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          transition={{ duration: 0.2, ease: "easeInOut" }}
-          className="overflow-hidden border-t border-gray-100"
-        >
-          <div className="p-3">{children}</div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  </div>
-);
 
 // ─── Processing Overlay ────────────────────────────────────────────────────────
 const ProcessingOverlay = ({ step }: { step: 1 | 2 | 3 }) => {
@@ -315,15 +252,13 @@ export default function CheckoutClient() {
   const [couponErrorMsg, setCouponErrorMsg] = useState("");
 
   const { user, openModal } = useAuthModal();
-  const {
-    items: cartItems,
-    appliedCoupon,
-    clearCart,
-    applyCoupon,
-    removeCoupon,
-    removeItem,
-    updateQuantity,
-  } = useCartStore();
+  const cartItems = useCartStore((state) => state.items);
+  const appliedCoupon = useCartStore((state) => state.appliedCoupon);
+  const clearCart = useCartStore((state) => state.clearCart);
+  const applyCoupon = useCartStore((state) => state.applyCoupon);
+  const removeCoupon = useCartStore((state) => state.removeCoupon);
+  const removeItem = useCartStore((state) => state.removeItem);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
 
   const [isCartHydrated, setIsCartHydrated] = useState(false);
   useEffect(() => {
@@ -353,7 +288,7 @@ export default function CheckoutClient() {
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>("UPI");
+  const paymentMethodRef = useRef<PaymentMethodType>("UPI");
   const [isProcessing, setIsProcessing] = useState(false);
   const [buyNowItem, setBuyNowItem] = useState<any>(null);
   const [selectedCourier, setSelectedCourier] = useState<any>(null);
@@ -420,59 +355,6 @@ export default function CheckoutClient() {
       setOpenSections((prev) => ({ ...prev, courier: true }));
     }
   }, [selectedAddress?.id]);
-
-  const paymentMethods = [
-    {
-      id: "UPI" as PaymentMethodType,
-      title: "UPI",
-      subtitle: "Google Pay, PhonePe, Paytm & more",
-      icon: "upi",
-      recommended: true,
-      razorpay: true,
-    },
-    {
-      id: "CARD" as PaymentMethodType,
-      title: "Credit / Debit Card",
-      subtitle: "Visa, Mastercard, RuPay",
-      icon: "card",
-      razorpay: true,
-    },
-    {
-      id: "NETBANKING" as PaymentMethodType,
-      title: "Net Banking",
-      subtitle: "All major banks",
-      icon: "bank",
-      razorpay: true,
-    },
-    {
-      id: "WALLET" as PaymentMethodType,
-      title: "Wallets",
-      subtitle: "Paytm, Amazon Pay & more",
-      icon: "wallet",
-      razorpay: true,
-    },
-    {
-      id: "PAYLATER" as PaymentMethodType,
-      title: "Pay Later",
-      subtitle: "Simpl, LazyPay, ICICI PayLater",
-      icon: "paylater",
-      razorpay: true,
-    },
-    {
-      id: "EMI" as PaymentMethodType,
-      title: "EMI",
-      subtitle: "Credit card EMI options",
-      icon: "emi",
-      razorpay: true,
-    },
-    {
-      id: "COD" as PaymentMethodType,
-      title: "Cash on Delivery",
-      subtitle: "Pay when you receive",
-      icon: "cod",
-      razorpay: false,
-    },
-  ];
 
   useEffect(() => {
     if (isBuyNowMode) {
@@ -1126,7 +1008,7 @@ export default function CheckoutClient() {
     }
   };
 
-  const handleRazorpayPayment = async (orderData: any) => {
+  const handleRazorpayPayment = async (orderData: any, method: PaymentMethodType) => {
     try {
       const options = {
         key: orderData.razorpayKeyId,
@@ -1159,7 +1041,7 @@ export default function CheckoutClient() {
                 instruments: [{ method: "paylater" }],
               },
             },
-            sequence: [getRazorpayBlock(paymentMethod)],
+            sequence: [getRazorpayBlock(method)],
             preferences: { show_default_blocks: true },
           },
         },
@@ -1208,6 +1090,8 @@ export default function CheckoutClient() {
   };
 
   const handlePlaceOrder = async () => {
+    const paymentMethod = paymentMethodRef.current;
+
     if (displayItems.length === 0) {
       toast.error("Your cart is empty.");
       router.push("/cart");
@@ -1278,11 +1162,14 @@ export default function CheckoutClient() {
         }, 1500);
         return;
       } else {
-        await handleRazorpayPayment({
-          razorpayOrderId: response.data.razorpayOrderId,
-          razorpayKeyId: response.data.razorpayKeyId,
-          amountInPaise: response.data.amountInPaise,
-        });
+        await handleRazorpayPayment(
+          {
+            razorpayOrderId: response.data.razorpayOrderId,
+            razorpayKeyId: response.data.razorpayKeyId,
+            amountInPaise: response.data.amountInPaise,
+          },
+          paymentMethod,
+        );
       }
     } catch (error: any) {
       console.error("Order creation error:", error);
@@ -1331,8 +1218,6 @@ export default function CheckoutClient() {
   const courierBadge = selectedCourier
     ? selectedCourier.courier_name
     : "Not selected";
-  const paymentBadge =
-    paymentMethods.find((m) => m.id === paymentMethod)?.title || "UPI";
 
   return (
     <>
@@ -1886,67 +1771,14 @@ export default function CheckoutClient() {
                   )}
                 </AccordionCard>
 
-                {/* 4. Payment Method */}
-                <AccordionCard
-                  id="payment"
-                  title="Payment Method"
-                  icon={<CreditCard className="w-3.5 h-3.5 text-white" />}
-                  badge={paymentBadge}
-                  isDone={true}
+                <CheckoutPaymentSection
                   isOpen={openSections.payment}
                   onToggle={() => toggleSection("payment")}
-                >
-                  <div className="space-y-2">
-                    {paymentMethods.map((method) => {
-                      const isSelected = paymentMethod === method.id;
-                      const isCOD = method.id === "COD";
-                      const isDisabled = isCOD && !isCODAvailable;
-                      return (
-                        <div
-                          key={method.id}
-                          onClick={() =>
-                            !isDisabled && setPaymentMethod(method.id)
-                          }
-                          className={`border rounded-xl p-3 cursor-pointer transition ${isSelected ? "border-black bg-gray-50 shadow-sm" : "border-gray-200 hover:border-gray-400"} ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? "border-black bg-black" : "border-gray-300"}`}
-                            >
-                              {isSelected && (
-                                <Check className="w-2.5 h-2.5 text-white" />
-                              )}
-                            </div>
-                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-                              <CreditCard className="w-4 h-4 text-gray-700" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <p className="font-semibold text-sm text-gray-900">
-                                  {method.title}
-                                </p>
-                                {method.recommended && (
-                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                                    Recommended
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-xs text-gray-500">
-                                {method.subtitle}
-                              </p>
-                              <PaymentLogos type={method.id} />
-                              {method.razorpay && (
-                                <p className="text-[10px] text-gray-400 mt-0.5">
-                                  Secured by Razorpay
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </AccordionCard>
+                  isCODAvailable={isCODAvailable}
+                  onPaymentMethodChange={(method) => {
+                    paymentMethodRef.current = method;
+                  }}
+                />
               </div>
 
               {/* ── Right: Order Summary (2/5) ───────────────────────────── */}
