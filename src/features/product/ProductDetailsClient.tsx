@@ -16,23 +16,21 @@ import {
   ProductVariant,
   type Product,
 } from "@/lib/api/product.api";
-import { cartApi } from "@/lib/api/cart.api";
-import { shipmentApi } from "@/lib/api/shipment.api";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { toast } from "sonner";
-import { useCartStore } from "@/store/useCartStore";
-import { useCartDrawer } from "@/store/useCartDrawer";
 import { useRouter } from "next/navigation";
 import ProductRequestModal from "@/components/productRequestModal";
 import { formatMaskedPrice } from "@/lib/utils/priceMasked";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { trackAddToCart, trackViewItem } from "@/lib/analytics";
+import { useQuery } from "@tanstack/react-query";
+import { trackViewItem } from "@/lib/analytics";
 import { ProductDeliveryChecker, ProductQuantitySelector, ProductDetailsTabs, RelatedProducts } from "@/features/product/components/ProductDetailSections";
 import { ProductInformation } from "@/features/product/components/ProductInformation";
 import { ProductStockStatus } from "@/features/product/components/ProductStockStatus";
 import { ProductImageGallery } from "@/features/product/components/ProductImageGallery";
 import { ProductVariantSelector } from "@/features/product/components/ProductVariantSelector";
 import { useProductVariants } from "@/features/product/hooks/useProductVariants";
+import { useProductDelivery } from "@/features/product/hooks/useProductDelivery";
+import { useProductCart } from "@/features/product/hooks/useProductCart";
 import { getProductStock } from "@/features/product/utils/productStockAdapter";
 
 import VideoConsultationModal from "@/components/video-consultationModal";
@@ -45,25 +43,24 @@ export default function ProductDetailsClient({
   initialProduct,
 }: ProductDetailsClientProps) {
   const { user, openModal } = useAuthModal();
-  const { addItem: addToLocalCart } = useCartStore();
-  const { open: openCartDrawer } = useCartDrawer();
   const router = useRouter();
-  const queryClient = useQueryClient();
 
   const [product] = useState<Product>(initialProduct);
   const {hasVariants,selectedVariant,images,options:variantOptions,getSelectedAttributeValue,getSwatchImage,selectAttribute}=useProductVariants(initialProduct);
+  const {
+    pincode,
+    setPincode,
+    deliveryInfo,
+    isCheckingDelivery,
+    checkDeliveryAvailability,
+    checkDelivery: handleCheckDelivery,
+  } = useProductDelivery(initialProduct.id);
+  const { addToCartMutation } = useProductCart();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  useEffect(() => { setSelectedImageIndex(0); }, [selectedVariant?.id]);
   const [quantity, setQuantity] = useState(1);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
-
-  const [pincode, setPincode] = useState("");
-  const [deliveryInfo, setDeliveryInfo] = useState<{
-    isServiceable: boolean;
-    estimatedDays: string;
-    checked: boolean;
-  } | null>(null);
-  const [isCheckingDelivery, setIsCheckingDelivery] = useState(false);
 
   const { state: stockState, message: stockMessage } = getProductStock({
     product,
@@ -118,20 +115,6 @@ export default function ProductDetailsClient({
     });
   }, [product.id, product.name, product.category?.name, selectedVariant?.id, hasVariants, displayPrice]);
 
-  useEffect(() => {
-    const savedLocation = localStorage.getItem("userLocation");
-    if (!savedLocation) return;
-    try {
-      const location = JSON.parse(savedLocation);
-      if (location?.pincode) {
-        setPincode(location.pincode);
-        checkDeliveryAvailability(location.pincode);
-      }
-    } catch {
-      localStorage.removeItem("userLocation");
-    }
-  }, [product.id]);
-
   const { data: relatedProducts = [] } = useQuery({
     queryKey: ["relatedProducts", product.categoryId, product.id],
     queryFn: async () => {
@@ -148,51 +131,6 @@ export default function ProductDetailsClient({
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
-
-  const checkDeliveryAvailability = async (pincodeToCheck: string) => {
-    if (pincodeToCheck.length !== 6 || !/^\d+$/.test(pincodeToCheck)) {
-      toast.error("Please enter a valid 6-digit pincode");
-      return;
-    }
-    setIsCheckingDelivery(true);
-    try {
-      const response = await shipmentApi.checkServiceability({
-        pickupPincode: process.env.NEXT_PUBLIC_WAREHOUSE_PINCODE || "110001",
-        deliveryPincode: pincodeToCheck,
-      });
-      const couriers = response.data.couriers;
-      const isServiceable = response.data.serviceable && couriers.length > 0;
-      let estimatedDays = "3-5 days";
-      if (isServiceable && couriers.length > 0) {
-        const fastestCourier = couriers.reduce((prev: any, curr: any) => {
-          const prevDays = parseInt(prev.estimated_delivery_days.split("-")[0]);
-          const currDays = parseInt(curr.estimated_delivery_days.split("-")[0]);
-          return prevDays < currDays ? prev : curr;
-        });
-        estimatedDays = fastestCourier.estimated_delivery_days + " days";
-      }
-      setDeliveryInfo({ isServiceable, estimatedDays, checked: true });
-      localStorage.setItem(
-        "userLocation",
-        JSON.stringify({ pincode: pincodeToCheck, isServiceable }),
-      );
-      if (isServiceable)
-        toast.success(`Delivery available! Expected in ${estimatedDays}`);
-      else toast.error("Sorry, delivery not available to this pincode");
-    } catch (error) {
-      console.error("Error checking delivery:", error);
-      toast.error("Failed to check delivery availability");
-      setDeliveryInfo({
-        isServiceable: false,
-        estimatedDays: "N/A",
-        checked: true,
-      });
-    } finally {
-      setIsCheckingDelivery(false);
-    }
-  };
-
-  const handleCheckDelivery = () => checkDeliveryAvailability(pincode);
 
   const handleVideoConsultation = () => {
     if (!user) {
@@ -211,86 +149,6 @@ export default function ProductDetailsClient({
     }
     setIsRequestModalOpen(true);
   };
-
-  const addToCartMutation = useMutation({
-    mutationFn: async ({
-      product,
-      variant,
-      quantity,
-    }: {
-      product: Product;
-      variant?: ProductVariant | null;
-      quantity: number;
-    }) => {
-      const cartItem = {
-        id: crypto.randomUUID(),
-        cartId: "local",
-        productId: product.id,
-        variantId: variant?.id,
-        quantity,
-        product: {
-          id: product.id,
-          name: product.name,
-          slug: product.slug,
-          categoryId: product.categoryId,
-          isActive: product.isActive,
-          hasVariants: product.hasVariants ?? false,
-          allowOutOfStockOrders: product.allowOutOfStockOrders ?? false,
-          sellingPrice: Number(product.sellingPrice),
-          basePrice: Number(product.basePrice),
-          media: [
-            {
-              url: product.media?.[0]?.url ?? "/placeholder.jpg",
-              altText: product.name,
-              isActive: true,
-            },
-          ],
-          stock: product.stock?.map((stock) => ({
-            ...stock,
-            lowStockThreshold: stock.lowStockThreshold ?? 0,
-          })) ?? [],
-        },
-        variant: variant
-          ? {
-              id: variant.id,
-              sellingPrice: Number(variant.sellingPrice),
-              basePrice: Number(variant.basePrice),
-              size: variant.size ?? undefined,
-              color: variant.color ?? undefined,
-              fabric: variant.fabric ?? undefined,
-              attributes: variant.attributes,
-              stock: variant.stock?.map((s) => ({
-                ...s,
-                lowStockThreshold: s.lowStockThreshold ?? 0,
-              })),
-            }
-          : undefined,
-      };
-      if (!user) addToLocalCart(cartItem);
-      if (user)
-        await cartApi.addToCart({
-          productId: product.id,
-          variantId: variant?.id,
-          quantity,
-        });
-    },
-    onSuccess: (_data, variables) => {
-      trackAddToCart({
-        item_id: variables.product.id,
-        item_name: variables.product.name,
-        item_category: variables.product.category?.name,
-        item_variant: variables.variant?.id,
-        price: Number(variables.variant?.sellingPrice ?? variables.variant?.price ?? variables.product.sellingPrice),
-        quantity: variables.quantity,
-      });
-      if (user) {
-        queryClient.invalidateQueries({ queryKey: ["cartApi"] });
-      }
-      toast.success("Added to cart");
-      openCartDrawer();
-    },
-    onError: () => toast.error("Failed to add to cart"),
-  });
 
   const handleAddToCart = (
     product: Product,
