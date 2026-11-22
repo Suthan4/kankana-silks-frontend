@@ -20,7 +20,10 @@ import { ProductQuantitySelector } from "@/features/product/components/ProductQu
 import { ProductDetailsTabs } from "@/features/product/components/ProductDetailsTabs";
 import { RelatedProducts } from "@/features/product/components/RelatedProducts";
 import { ProductInformation } from "@/features/product/components/ProductInformation";
-import { ProductDesktopPurchaseActions, ProductMobilePurchaseActions } from "@/features/product/components/ProductPurchaseActions";
+import {
+  ProductDesktopPurchaseActions,
+  ProductMobilePurchaseActions,
+} from "@/features/product/components/ProductPurchaseActions";
 import { ProductStockStatus } from "@/features/product/components/ProductStockStatus";
 import { ProductImageGallery } from "@/features/product/components/ProductImageGallery";
 import { ProductVariantSelector } from "@/features/product/components/ProductVariantSelector";
@@ -41,7 +44,15 @@ export default function ProductDetailsClient({
   const router = useRouter();
 
   const [product] = useState<Product>(initialProduct);
-  const {hasVariants,selectedVariant,images,options:variantOptions,getSelectedAttributeValue,getSwatchImage,selectAttribute}=useProductVariants(initialProduct);
+  const {
+    hasVariants,
+    selectedVariant,
+    images,
+    options: variantOptions,
+    getSelectedAttributeValue,
+    getSwatchImage,
+    selectAttribute,
+  } = useProductVariants(initialProduct);
   const {
     pincode,
     setPincode,
@@ -52,7 +63,9 @@ export default function ProductDetailsClient({
   } = useProductDelivery(initialProduct.id);
   const { addToCartMutation } = useProductCart();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  useEffect(() => { setSelectedImageIndex(0); }, [selectedVariant?.id]);
+  useEffect(() => {
+    setSelectedImageIndex(0);
+  }, [selectedVariant?.id]);
   const [quantity, setQuantity] = useState(1);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
@@ -67,7 +80,9 @@ export default function ProductDetailsClient({
   const isOutOfStock = stockState.isOutOfStock;
 
   useEffect(() => {
-    setQuantity((current) => Math.max(1, Math.min(current, maxAllowedQuantity)));
+    setQuantity((current) =>
+      Math.max(1, Math.min(current, maxAllowedQuantity)),
+    );
   }, [selectedVariant?.id, maxAllowedQuantity]);
 
   const hasVideoConsultation = product.hasVideoConsultation ?? false;
@@ -108,7 +123,14 @@ export default function ProductDetailsClient({
       item_variant: selectedVariant?.id,
       price: displayPrice,
     });
-  }, [product.id, product.name, product.category?.name, selectedVariant?.id, hasVariants, displayPrice]);
+  }, [
+    product.id,
+    product.name,
+    product.category?.name,
+    selectedVariant?.id,
+    hasVariants,
+    displayPrice,
+  ]);
 
   const { data: relatedProducts = [] } = useQuery({
     queryKey: ["relatedProducts", product.categoryId, product.id],
@@ -154,7 +176,9 @@ export default function ProductDetailsClient({
       return;
     }
     if (stockState.isOutOfStock || 1 > maxAllowedQuantity) {
-      toast.error(stockMessage?.message ?? "This product is currently unavailable");
+      toast.error(
+        stockMessage?.message ?? "This product is currently unavailable",
+      );
       return;
     }
     addToCartMutation.mutate({ product, variant, quantity });
@@ -297,7 +321,14 @@ export default function ProductDetailsClient({
             >
               {/* Scrollable content area */}
               <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-                <ProductInformation name={product.name} categoryName={product.category?.name} displayPrice={displayPrice} basePrice={basePrice} discount={discount} isOutOfStock={isOutOfStock} />
+                <ProductInformation
+                  name={product.name}
+                  categoryName={product.category?.name}
+                  displayPrice={displayPrice}
+                  basePrice={basePrice}
+                  discount={discount}
+                  isOutOfStock={isOutOfStock}
+                />
 
                 {/* Video Consultation */}
                 {hasVideoConsultation &&
@@ -309,7 +340,7 @@ export default function ProductDetailsClient({
                       className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-3"
                     >
                       <div className="flex items-center gap-3">
-                        <Video className="w-5 h-5 text-purple-600 flex-shrink-0" />
+                        <Video className="w-5 h-5 text-main-primary flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-gray-900 text-sm">
                             Video Consultation Available
@@ -322,7 +353,7 @@ export default function ProductDetailsClient({
                         </div>
                         <button
                           onClick={handleVideoConsultation}
-                          className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 hover:shadow-md transition flex-shrink-0"
+                          className="bg-main-primary text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 hover:shadow-md transition flex-shrink-0"
                         >
                           <Video className="w-3 h-3" /> Book
                         </button>
@@ -330,9 +361,19 @@ export default function ProductDetailsClient({
                     </motion.div>
                   )}
 
-                <ProductVariantSelector hasVariants={hasVariants} options={variantOptions} getSelectedAttributeValue={getSelectedAttributeValue} getSwatchImage={getSwatchImage} onSelectAttribute={handleSelectAnyAttribute} />
+                <ProductVariantSelector
+                  hasVariants={hasVariants}
+                  options={variantOptions}
+                  getSelectedAttributeValue={getSelectedAttributeValue}
+                  getSwatchImage={getSwatchImage}
+                  onSelectAttribute={handleSelectAnyAttribute}
+                />
 
-                <ProductStockStatus stockState={stockState} availableStock={availableStock} stockMessage={stockMessage} />
+                <ProductStockStatus
+                  stockState={stockState}
+                  availableStock={availableStock}
+                  stockMessage={stockMessage}
+                />
 
                 <ProductDeliveryChecker
                   isOutOfStock={isOutOfStock}
@@ -373,7 +414,6 @@ export default function ProductDetailsClient({
           Fixed to bottom, above everything. Hidden on md+ screens.
           Shows: Add to Cart | Buy Now | Wishlist icon
       ══════════════════════════════════════════════════════════════ */}
-
 
       <ProductMobilePurchaseActions
         productId={product.id}

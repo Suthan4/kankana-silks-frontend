@@ -61,7 +61,7 @@ export function DesktopAccountActions({
         </div>
 
         <div ref={userMenuRef} className="group relative" onMouseEnter={() => user && setUserMenuOpen(true)} onMouseLeave={() => setUserMenuOpen(false)}>
-          <button type="button" onClick={() => { if (!user) openLogin(); else setUserMenuOpen((previous) => !previous); }} aria-label={user ? "Open account menu" : "Sign in"} className={`flex h-10 items-center justify-center gap-1 px-1 transition-colors duration-300 ${isHeaderWhite ? "text-gray-700 hover:text-black" : "text-white"}`}>
+          <button type="button" onClick={() => { if (!user) openLogin(); else setUserMenuOpen(!userMenuOpen); }} aria-label={user ? "Open account menu" : "Sign in"} className={`flex h-10 items-center justify-center gap-1 px-1 transition-colors duration-300 ${isHeaderWhite ? "text-gray-700 hover:text-black" : "text-white"}`}>
             {!user && (
               <>
                 <User style={{ width: "20px", height: "20px" }} />
