@@ -4,28 +4,40 @@ import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartDrawer } from "@/store/useCartDrawer";
 import { useCartStore } from "@/store/useCartStore";
-import Image from "next/image";
-import { X, ShoppingBag, Trash2, Plus, Minus, ArrowRight } from "lucide-react";
+import { X, ShoppingBag } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { cartApi } from "@/lib/api/cart.api";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { toast } from "sonner";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { extractVariantAttributes } from "@/lib/utils/variant.utils";
 import { mergeCartLines } from "@/lib/utils/cartItems";
-import { getCartItemStockState } from "@/lib/utils/cartStock";
+import {
+  getCartItemStockState,
+  canIncreaseCartItemQuantity,
+} from "@/lib/utils/cartStock";
+import { cartKeys, cartQueryPolicy } from "@/lib/query/cartQuery";
+import { CartDrawerSkeleton } from "@/features/cart/components/CartDrawerSkeleton";
+import { MiniCartItemRow } from "@/features/cart/components/MiniCartItemRow";
+import { MiniCartFooter } from "@/features/cart/components/MiniCartFooter";
 
 export default function MiniCartDrawer() {
   const { isOpen, close } = useCartDrawer();
-  const {
-    items: localItems,
-    updateQuantity: updateQuantityLocal,
-    removeItem: removeItemLocal,
-  } = useCartStore();
+  const localItems = useCartStore((state) => state.items);
+  const updateQuantityLocal = useCartStore((state) => state.updateQuantity);
+  const removeItemLocal = useCartStore((state) => state.removeItem);
   const { user } = useAuthModal();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const handleCheckoutNavigation = useCallback(() => {
+    close();
+    router.push("/checkout");
+  }, [close, router]);
+  const handleCartNavigation = useCallback(() => {
+    close();
+    router.push("/cart");
+  }, [close, router]);
 
   /* -------------------- MOBILE DETECTION -------------------- */
   const [isMobile, setIsMobile] = useState(() => {
@@ -57,11 +69,10 @@ export default function MiniCartDrawer() {
 
   /* -------------------- FETCH CART -------------------- */
   const { data: cartData, isLoading: isCartLoading } = useQuery({
-    queryKey: ["cartApi", user?.id],
+    queryKey: cartKeys.user(user?.id),
     queryFn: async () => (await cartApi.getCart()).data,
     enabled: !!user,
-    staleTime: 15_000,
-    refetchOnWindowFocus: false,
+    ...cartQueryPolicy,
   });
 
   // Never mix stale guest rows with a signed-in server cart. Normalize legacy
@@ -155,7 +166,7 @@ export default function MiniCartDrawer() {
       return await cartApi.updateCartItem(itemId, { quantity });
     },
     onMutate: async ({ itemId, quantity }) => {
-      const queryKey = ["cartApi", user?.id];
+      const queryKey = cartKeys.user(user?.id);
       await queryClient.cancelQueries({ queryKey });
       const previousCart = queryClient.getQueryData<any>(queryKey);
       if (previousCart?.items) {
@@ -211,13 +222,13 @@ export default function MiniCartDrawer() {
         "Failed to update quantity. Please try again.";
       toast.error(message);
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["cartApi"] }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: cartKeys.all }),
   });
 
   const removeItemMutation = useMutation({
     mutationFn: async (itemId: string) => await cartApi.removeFromCart(itemId),
     onMutate: async (itemId) => {
-      const queryKey = ["cartApi", user?.id];
+      const queryKey = cartKeys.user(user?.id);
       await queryClient.cancelQueries({ queryKey });
       const previousCart = queryClient.getQueryData<any>(queryKey);
       if (previousCart?.items) {
@@ -268,7 +279,7 @@ export default function MiniCartDrawer() {
       toast.error("Failed to remove item. Please try again.");
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["cartApi"] });
+      queryClient.invalidateQueries({ queryKey: cartKeys.all });
     },
   });
 
@@ -279,8 +290,17 @@ export default function MiniCartDrawer() {
     }
 
     const stockState = getStockState(item);
-    if (stockState.isOutOfStock) {
-      toast.error("This product is out of stock.");
+    const currentQuantity = Number(item.quantity) || 0;
+    if (newQty > currentQuantity && !canIncreaseCartItemQuantity(item, newQty)) {
+      toast.error(
+        !stockState.hasStockData
+          ? "Stock availability could not be verified. Please refresh your cart."
+          : stockState.isOutOfStock
+            ? "This product is out of stock."
+            : stockState.isLimited
+              ? "Only 1 item can be ordered for this low-stock product."
+              : `Only ${stockState.maxAllowed} item(s) are available in stock.`,
+      );
       return;
     }
     if (newQty > stockState.maxAllowed) {
@@ -378,19 +398,7 @@ export default function MiniCartDrawer() {
             {/* BODY / ITEMS LIST */}
             <div className="ios-modal-content flex-1 overflow-y-auto px-5 py-3 divide-y divide-gray-100">
               {displayItems.length === 0 && user && isCartLoading ? (
-                <div
-                  role="status"
-                  aria-live="polite"
-                  className="flex flex-col items-center justify-center h-full py-16 text-center"
-                >
-                  <ShoppingBag className="w-7 h-7 text-gray-400 mb-3" />
-                  <p className="text-sm font-medium text-gray-800">
-                    Refreshing your bag…
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    This should only take a moment.
-                  </p>
-                </div>
+                <CartDrawerSkeleton />
               ) : displayItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full py-16 text-center">
                   <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 mb-4">
@@ -414,26 +422,6 @@ export default function MiniCartDrawer() {
                   const itemPrice = getItemPrice(item);
                   const imageUrl = getItemImage(item);
                   const stockState = getStockState(item);
-                  console.log("MINI CART STOCK DEBUG", {
-                    product: item?.product?.name,
-                    quantityInCart: item?.quantity,
-
-                    variantId: item?.variantId ?? item?.variant?.id,
-
-                    productStock: item?.product?.stock,
-                    variantStock: item?.variant?.stock,
-
-                    productAllowOutOfStock:
-                      item?.product?.allowOutOfStockOrders,
-
-                    variantAllowOutOfStock:
-                      item?.variant?.allowOutOfStockOrders,
-
-                    rootAllowOutOfStock: item?.allowOutOfStockOrders,
-
-                    calculatedStockState: stockState,
-                  });
-
                   const stockQty = stockState.available;
                   const cartQuantity = Math.max(0, Number(item.quantity) || 0);
 
@@ -454,188 +442,33 @@ export default function MiniCartDrawer() {
                     : [];
 
                   return (
-                    <div
+                    <MiniCartItemRow
                       key={item.id}
-                      className="py-4 flex gap-3.5 items-start group"
-                    >
-                      {/* PRODUCT THUMBNAIL */}
-                      <div className="relative w-18 h-22 sm:w-20 sm:h-24 shrink-0 rounded-lg overflow-hidden bg-gray-50 border border-gray-100">
-                        <Image
-                          src={imageUrl}
-                          alt={item.product?.name || "Cart item"}
-                          fill
-                          sizes="80px"
-                          className="object-cover"
-                        />
-                      </div>
-
-                      {/* PRODUCT DETAILS */}
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-xs sm:text-sm font-medium text-gray-900 line-clamp-2 leading-snug">
-                          {item.product?.name || "Product"}
-                        </h4>
-
-                        {/* VARIANT ATTRIBUTES */}
-                        {variantAttrs.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {variantAttrs.map((attr, idx) => (
-                              <span
-                                key={idx}
-                                className="inline-flex items-center text-[10px] bg-neutral-100 text-neutral-600 px-1.5 py-0.5 rounded font-normal"
-                              >
-                                {attr.key}: {attr.value}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* STOCK AVAILABILITY */}
-
-                        {/* STOCK AVAILABILITY */}
-                        {stockState.isOutOfStock ? (
-                          <div className="mt-1">
-                            <span className="inline-flex items-center text-[11px] font-medium text-red-700 bg-red-50 border border-red-200/70 px-2 py-0.5 rounded-md">
-                              Out of stock
-                            </span>
-                          </div>
-                        ) : isLastOneInCart ? (
-                          <div className="mt-1">
-                            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                              Last one available — order yours now!
-                            </span>
-                          </div>
-                        ) : stockState.isLimited ? (
-                          <div className="mt-1">
-                            <span className="inline-flex items-center text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
-                              Limited availability — order yours now!
-                            </span>
-                          </div>
-                        ) : hasOnlyOneRemaining ? (
-                          <div className="mt-1">
-                            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                              Only 1 left in stock
-                            </span>
-                          </div>
-                        ) : stockState.hasStockData &&
-                          remainingStock > 1 &&
-                          remainingStock <= 5 ? (
-                          <div className="mt-1">
-                            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                              Only {remainingStock} left in stock
-                            </span>
-                          </div>
-                        ) : null}
-
-                        {/* PRICE & QUANTITY CONTROLS */}
-                        <div className="flex items-center justify-between mt-3">
-                          <div className="flex items-center border border-gray-200 rounded-md bg-white">
-                            <button
-                              onClick={() =>
-                                handleUpdateQuantity(
-                                  item,
-                                  Number(item.quantity) - 1,
-                                )
-                              }
-                              disabled={
-                                Number(item.quantity) <= 1 ||
-                                updateQuantityMutation.isPending
-                              }
-                              aria-label="Decrease quantity"
-                              className="p-1 sm:p-1.5 text-gray-500 hover:text-black transition disabled:opacity-30 disabled:cursor-not-allowed"
-                            >
-                              <Minus className="w-3 h-3" />
-                            </button>
-                            <span className="px-2 text-xs font-semibold min-w-[20px] text-center text-gray-800 select-none">
-                              {item.quantity}
-                            </span>
-                            <button
-                              onClick={() =>
-                                handleUpdateQuantity(
-                                  item,
-                                  Number(item.quantity) + 1,
-                                )
-                              }
-                              disabled={updateQuantityMutation.isPending}
-                              aria-label="Increase quantity"
-                              className="p-1 sm:p-1.5 text-gray-500 hover:text-black transition disabled:opacity-30 disabled:cursor-not-allowed"
-                            >
-                              <Plus className="w-3 h-3" />
-                            </button>
-                          </div>
-
-                          <div className="flex items-center gap-3">
-                            <span className="font-semibold text-xs sm:text-sm text-gray-900">
-                              ₹
-                              {(
-                                itemPrice * (Number(item.quantity) || 1)
-                              ).toLocaleString("en-IN")}
-                            </span>
-                            <button
-                              onClick={() => handleRemove(item)}
-                              disabled={removeItemMutation.isPending}
-                              aria-label="Remove item"
-                              className="text-gray-400 hover:text-red-500 transition p-1"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                      item={item}
+                      itemPrice={itemPrice}
+                      imageUrl={imageUrl}
+                      stockState={stockState}
+                      isLastOneInCart={isLastOneInCart}
+                      hasOnlyOneRemaining={hasOnlyOneRemaining}
+                      remainingStock={remainingStock}
+                      variantAttrs={variantAttrs}
+                      isUpdating={updateQuantityMutation.isPending}
+                      isRemoving={removeItemMutation.isPending}
+                      onQuantityChange={(quantity) => handleUpdateQuantity(item, quantity)}
+                      onRemove={() => handleRemove(item)}
+                    />
                   );
                 })
               )}
             </div>
-            {/* FOOTER */}
             {displayItems.length > 0 && (
-              <div className="p-5 border-t border-gray-100 bg-white/95 backdrop-blur-xs space-y-3">
-                {/* SUBTOTAL ROW */}
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">
-                    Subtotal ({totalItems} items)
-                  </span>
-                  <span className="font-bold text-base text-gray-900">
-                    ₹{subtotal.toLocaleString("en-IN")}
-                  </span>
-                </div>
-                <p className="text-[11px] text-gray-400">
-                  Shipping and taxes calculated at checkout.
-                </p>
-
-                {/* ACTION BUTTONS */}
-                <div className="flex flex-col gap-2 pt-1">
-                  <button
-                    onClick={() => {
-                      close();
-                      router.push("/checkout");
-                    }}
-                    className="w-full bg-black text-white hover:bg-neutral-800 transition-colors py-3 rounded-xl font-semibold text-xs sm:text-sm shadow-sm flex items-center justify-center gap-2"
-                  >
-                    <span>Proceed to Checkout</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      close();
-                      router.push("/cart");
-                    }}
-                    className="w-full bg-white text-black border border-gray-300 hover:bg-gray-50 transition-colors py-2.5 rounded-xl font-medium text-xs sm:text-sm"
-                  >
-                    View Full Cart
-                  </button>
-
-                  <button
-                    onClick={close}
-                    className="text-xs text-gray-500 hover:text-gray-900 text-center py-1 transition-colors"
-                  >
-                    Continue Shopping
-                  </button>
-                </div>
-              </div>
+              <MiniCartFooter
+                totalItems={totalItems}
+                subtotal={subtotal}
+                onCheckout={handleCheckoutNavigation}
+                onViewCart={handleCartNavigation}
+                onClose={close}
+              />
             )}
           </motion.div>
         </>

@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import type React from "react";
 import type { Metadata } from "next";
+// @ts-ignore Next.js processes this stylesheet import during the build.
 import "./globals.css";
 import AuthModalProvider from "@/components/authModalProvider";
 import ClientLayout from "@/components/clientLayout";
@@ -7,6 +9,8 @@ import Providers from "@/components/provider/tanstackProvider";
 import { Toaster } from "sonner";
 import MiniCartDrawer from "@/components/miniCartDrawerProvider";
 import AnalyticsConsent from "@/components/analytics/analytics-consent";
+import { SkipLink } from "@/components/ui/SkipLink";
+import { NavigationProgress } from "@/components/ui/NavigationProgress";
 
 const SITE_URL = "https://www.kankanasilks.com";
 const SITE_LOGO = SITE_URL + "/kankana-silks-logo.png";
@@ -192,13 +196,9 @@ export default function RootLayout({
   return (
     <html lang="en-IN">
       <head>
-        {/* Open the font connections early; Typekit CSS is render-blocking. */}
         <link rel="preconnect" href="https://use.typekit.net" crossOrigin="" />
         <link rel="preconnect" href="https://p.typekit.net" crossOrigin="" />
         <link rel="stylesheet" href="https://use.typekit.net/gmp5qfk.css" />
-        <noscript>
-          <link rel="stylesheet" href="https://use.typekit.net/gmp5qfk.css" />
-        </noscript>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -211,6 +211,11 @@ export default function RootLayout({
       </head>
 
       <body className="bg-[#faf7f2] text-neutral-900 antialiased overflow-x-hidden">
+        <SkipLink />
+        {/* useSearchParams inside needs a Suspense boundary. */}
+        <Suspense fallback={null}>
+          <NavigationProgress />
+        </Suspense>
         <AnalyticsConsent />
         <Providers>
           <ClientLayout>{children}</ClientLayout>

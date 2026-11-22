@@ -7,7 +7,7 @@ export default function LegalWithHeader({ children }: { children: ReactNode }) {
   return (
     <>
       <PolicyHeader />
-      <main className="overflow-x-hidden">
+      <main id="main-content" tabIndex={-1} className="overflow-x-hidden">
         <ScrollToTop />
         {children}
       </main>

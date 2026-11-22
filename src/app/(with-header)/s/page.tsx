@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Suspense } from "react";
@@ -51,8 +52,12 @@ function SearchContent() {
   useEffect(() => {
     if (!query) {
       setResults(null);
+      setError(null);
+      setLoading(false);
       return;
     }
+
+    const controller = new AbortController();
 
     const fetchResults = async () => {
       setLoading(true);
@@ -69,6 +74,7 @@ function SearchContent() {
 
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/search?${params}`,
+          { signal: controller.signal },
         );
 
         if (!response.ok) {
@@ -78,13 +84,19 @@ function SearchContent() {
         const data: SearchResponse = await response.json();
         setResults(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err.message : "An error occurred");
+        }
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchResults();
+    void fetchResults();
+
+    return () => controller.abort();
   }, [query, page, type]);
 
   const handlePageChange = (newPage: number) => {
@@ -206,10 +218,12 @@ function SearchContent() {
                       {/* Product Card */}
                       <div className="aspect-square bg-gray-100 relative">
                         {result.image ? (
-                          <img
+                          <Image
                             src={result.image}
                             alt={result.name}
-                            className="w-full h-full object-cover"
+                            fill
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                            className="object-cover"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -249,10 +263,12 @@ function SearchContent() {
                       {/* Category Card */}
                       <div className="aspect-video bg-gradient-to-br from-amber-50 to-amber-100 relative">
                         {result.image ? (
-                          <img
+                          <Image
                             src={result.image}
                             alt={result.name}
-                            className="w-full h-full object-cover"
+                            fill
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                            className="object-cover"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">

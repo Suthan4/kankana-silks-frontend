@@ -209,7 +209,7 @@ export function ZoomGallery({
                     src={img.url}
                     alt={product?.name ?? "Product image"}
                     fill
-                    priority={idx === selectedImageIndex}
+                    priority={idx === 0}
                     quality={95}
                     sizes="100vw"
                     className="object-cover object-top"
@@ -321,7 +321,7 @@ export function ZoomGallery({
                 src={activeImageUrl}
                 alt={product?.name ?? "Product image"}
                 fill
-                priority
+                priority={safeSelectedIndex === 0}
                 quality={95}
                 sizes="(max-width: 768px) 100vw, 48vw"
                 className="select-none object-cover object-top transition-transform duration-200 ease-out will-change-transform"

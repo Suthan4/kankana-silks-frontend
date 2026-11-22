@@ -314,6 +314,13 @@ html {
   outline-offset: 2px;
 }
 
+
+/* The skip link moves focus to <main>; a ring around the whole page body is
+   noise, not a useful focus indicator. Higher specificity than the rule above. */
+#main-content:focus {
+  outline: none;
+}
+
 /* Custom selection colors */
 ::selection {
   background-color: rgba(0, 0, 0, 0.2);

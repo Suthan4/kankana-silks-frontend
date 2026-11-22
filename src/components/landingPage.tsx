@@ -1,23 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import HeroSection from "./sections/hero-section";
 import CTASection from "./sections/cta-section";
 import homeSectionService, {
-  HomeSection,
+  type HomeSection,
   SectionType,
 } from "@/lib/api/home-section.api";
 
-// Import all section components
-import HeroSlider from "./sections/heroSlider";
-import ProductGrid from "./sections/productGrid";
-import ProductCarousel from "./sections/productCarousel";
-import CategoryShowcase from "./sections/Categoryshowcase";
-import MediaGridSection from "./sections/mediaGridSection";
 import { useQuery } from "@tanstack/react-query";
-import AestheticFullImage from "./sections/aestheticFullImage";
-import BannerSection from "./sections/bannerSection";
-import bannerService, { Banner } from "@/lib/api/banner.api";
+import type { Banner } from "@/lib/api/banner.api";
+
+const HeroSlider = dynamic(() => import("./sections/heroSlider"));
+const ProductGrid = dynamic(() => import("./sections/productGrid"));
+const ProductCarousel = dynamic(() => import("./sections/productCarousel"));
+const CategoryShowcase = dynamic(() => import("./sections/Categoryshowcase"));
+const MediaGridSection = dynamic(() => import("./sections/mediaGridSection"));
+const AestheticFullImage = dynamic(() => import("./sections/aestheticFullImage"));
+const BannerSection = dynamic(() => import("./sections/bannerSection"));
 
 export default function LandingPage({
   initialSections,
@@ -45,7 +45,10 @@ export default function LandingPage({
     isError: isBannerError,
   } = useQuery<Banner[]>({
     queryKey: ["active-banners"],
-    queryFn: () => bannerService.getActiveBanners(),
+    queryFn: async () => {
+      const module = await import("@/lib/api/banner.api");
+      return module.default.getActiveBanners();
+    },
     initialData: initialBanners,
     staleTime: 60 * 1000,
   });
@@ -215,7 +218,7 @@ export default function LandingPage({
   }
 
   return (
-    <main className="min-h-screen">
+    <div className="min-h-screen">
       {banners_data?.length > 0 && (
         <HeroSection
           banners={banners_data}
@@ -235,6 +238,6 @@ export default function LandingPage({
       )}
 
       <CTASection />
-    </main>
+    </div>
   );
 }

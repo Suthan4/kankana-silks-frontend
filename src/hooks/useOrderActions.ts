@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { ReturnApiService } from "@/lib/api/return.api";
+import { orderKeys, orderQueryPolicy } from "@/hooks/useOrders";
 
 /**
  * ✅ Hook to determine which actions are available for an order
@@ -10,13 +11,13 @@ import { ReturnApiService } from "@/lib/api/return.api";
 export function useOrderActions(order: any) {
   // ✅ Check return eligibility
   const { data: returnEligibility } = useQuery({
-    queryKey: ["return-eligibility", order?.id],
+    queryKey: orderKeys.returnEligibility(order?.id ?? ""),
     queryFn: () =>
       order?.id
         ? ReturnApiService.checkReturnEligibility(order.id)
         : Promise.resolve(null),
     enabled: !!order && order.status === "DELIVERED",
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    ...orderQueryPolicy,
   });
 
   // ✅ Determine if tracking is available

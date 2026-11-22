@@ -1,11 +1,10 @@
 "use client";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
   ShoppingBag,
   MapPin,
-  CreditCard,
   Truck,
   Lock,
   Plus,
@@ -28,6 +27,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCartStore } from "@/store/useCartStore";
+import { cartKeys, cartQueryPolicy } from "@/lib/query/cartQuery";
+import { addressKeys, addressQueryPolicy } from "@/lib/query/addressQuery";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { toast } from "@/store/useToastStore";
 import AddressModal from "@/components/addressModal";
@@ -49,12 +50,14 @@ import { cartApi } from "@/lib/api/cart.api";
 import {
   getCartItemStockMessage,
   getCartItemStockState,
+  validateCartItemForCheckout,
 } from "@/lib/utils/cartStock";
 import { shippingApi } from "@/lib/api/shipping.api";
 import confetti from "canvas-confetti";
-import PaymentLogos from "./paymentLogos";
 import { extractVariantAttributes } from "@/lib/utils/variant.utils";
 import CheckoutLoadingState from "@/components/checkoutLoadingState";
+import { CheckoutAccordionCard as AccordionCard } from "@/features/checkout/components/CheckoutAccordionCard";
+import { CheckoutPaymentSection } from "@/features/checkout/components/CheckoutPaymentSection";
 
 declare global {
   interface Window {
@@ -149,69 +152,6 @@ const getCheckoutItemIssue = (item: any): string | null => {
 
 // ─── Accordion Section Component ─────────────────────────────────────────────
 type AccordionSection = "items" | "address" | "courier" | "payment";
-
-interface AccordionProps {
-  id: AccordionSection;
-  title: string;
-  icon: React.ReactNode;
-  badge?: React.ReactNode;
-  isOpen: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-  isDone?: boolean;
-}
-
-const AccordionCard = ({
-  title,
-  icon,
-  badge,
-  isOpen,
-  onToggle,
-  children,
-  isDone,
-}: AccordionProps) => (
-  <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-2.5">
-    <button
-      onClick={onToggle}
-      className="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-gray-50 transition text-left"
-    >
-      <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center flex-shrink-0">
-        {icon}
-      </div>
-      <span className="font-bold text-gray-900 text-sm flex-1">{title}</span>
-      {badge && (
-        <span
-          className={`text-xs px-2 py-0.5 rounded-full border flex items-center gap-1 ${
-            isDone
-              ? "bg-green-50 text-green-700 border-green-200"
-              : "bg-gray-100 text-gray-500 border-gray-200"
-          }`}
-        >
-          {isDone && <Check className="w-3 h-3" />}
-          {badge}
-        </span>
-      )}
-      <ChevronDown
-        className={`w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0 ${
-          isOpen ? "rotate-180" : ""
-        }`}
-      />
-    </button>
-    <AnimatePresence initial={false}>
-      {isOpen && (
-        <motion.div
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: "auto", opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          transition={{ duration: 0.2, ease: "easeInOut" }}
-          className="overflow-hidden border-t border-gray-100"
-        >
-          <div className="p-3">{children}</div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  </div>
-);
 
 // ─── Processing Overlay ────────────────────────────────────────────────────────
 const ProcessingOverlay = ({ step }: { step: 1 | 2 | 3 }) => {
@@ -314,15 +254,13 @@ export default function CheckoutClient() {
   const [couponErrorMsg, setCouponErrorMsg] = useState("");
 
   const { user, openModal } = useAuthModal();
-  const {
-    items: cartItems,
-    appliedCoupon,
-    clearCart,
-    applyCoupon,
-    removeCoupon,
-    removeItem,
-    updateQuantity,
-  } = useCartStore();
+  const cartItems = useCartStore((state) => state.items);
+  const appliedCoupon = useCartStore((state) => state.appliedCoupon);
+  const clearCart = useCartStore((state) => state.clearCart);
+  const applyCoupon = useCartStore((state) => state.applyCoupon);
+  const removeCoupon = useCartStore((state) => state.removeCoupon);
+  const removeItem = useCartStore((state) => state.removeItem);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
 
   const [isCartHydrated, setIsCartHydrated] = useState(false);
   useEffect(() => {
@@ -352,7 +290,10 @@ export default function CheckoutClient() {
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>("UPI");
+  const paymentMethodRef = useRef<PaymentMethodType>("UPI");
+  const handlePaymentMethodChange = useCallback((method: PaymentMethodType) => {
+    paymentMethodRef.current = method;
+  }, []);
   const [isProcessing, setIsProcessing] = useState(false);
   const [buyNowItem, setBuyNowItem] = useState<any>(null);
   const [selectedCourier, setSelectedCourier] = useState<any>(null);
@@ -377,12 +318,12 @@ export default function CheckoutClient() {
         } catch (err) {
           console.warn("Failed to clear cart on server:", err);
         }
-        queryClient.setQueryData(["cartApi", user.id], {
+        queryClient.setQueryData(cartKeys.user(user.id), {
           items: [],
           totalItems: 0,
           subtotal: 0,
         });
-        await queryClient.invalidateQueries({ queryKey: ["cartApi"] });
+        await queryClient.invalidateQueries({ queryKey: cartKeys.all });
       }
     } else {
       sessionStorage.removeItem("buyNowItem");
@@ -420,59 +361,6 @@ export default function CheckoutClient() {
     }
   }, [selectedAddress?.id]);
 
-  const paymentMethods = [
-    {
-      id: "UPI" as PaymentMethodType,
-      title: "UPI",
-      subtitle: "Google Pay, PhonePe, Paytm & more",
-      icon: "upi",
-      recommended: true,
-      razorpay: true,
-    },
-    {
-      id: "CARD" as PaymentMethodType,
-      title: "Credit / Debit Card",
-      subtitle: "Visa, Mastercard, RuPay",
-      icon: "card",
-      razorpay: true,
-    },
-    {
-      id: "NETBANKING" as PaymentMethodType,
-      title: "Net Banking",
-      subtitle: "All major banks",
-      icon: "bank",
-      razorpay: true,
-    },
-    {
-      id: "WALLET" as PaymentMethodType,
-      title: "Wallets",
-      subtitle: "Paytm, Amazon Pay & more",
-      icon: "wallet",
-      razorpay: true,
-    },
-    {
-      id: "PAYLATER" as PaymentMethodType,
-      title: "Pay Later",
-      subtitle: "Simpl, LazyPay, ICICI PayLater",
-      icon: "paylater",
-      razorpay: true,
-    },
-    {
-      id: "EMI" as PaymentMethodType,
-      title: "EMI",
-      subtitle: "Credit card EMI options",
-      icon: "emi",
-      razorpay: true,
-    },
-    {
-      id: "COD" as PaymentMethodType,
-      title: "Cash on Delivery",
-      subtitle: "Pay when you receive",
-      icon: "cod",
-      razorpay: false,
-    },
-  ];
-
   useEffect(() => {
     if (isBuyNowMode) {
       const storedItem = sessionStorage.getItem("buyNowItem");
@@ -499,16 +387,17 @@ export default function CheckoutClient() {
   }, []);
 
   const { data: addressesData, isLoading: isLoadingAddresses } = useQuery({
-    queryKey: ["addresses", user?.id],
+    queryKey: addressKeys.user(user?.id),
     queryFn: async () => (await addressApi.getAddresses()).data,
     enabled: !!user,
+    ...addressQueryPolicy,
   });
 
   const { data: cartData, isLoading: isLoadingCartApi } = useQuery({
-    queryKey: ["cartApi", user?.id],
+    queryKey: cartKeys.user(user?.id),
     queryFn: async () => (await cartApi.getCart()).data,
     enabled: !!user,
-    staleTime: 0,
+    ...cartQueryPolicy,
   });
 
   const apiItems = cartData?.items ?? [];
@@ -522,17 +411,11 @@ export default function CheckoutClient() {
   const invalidCartItems = displayItems
     .map((item: any, index: number) => {
       const productIssue = getCheckoutItemIssue(item);
-      const stockState = getCartItemStockState(item);
-      const quantity = Number(item?.quantity);
-      let stockIssue: string | null = null;
-
-      if (!productIssue && stockState.isOutOfStock) {
-        stockIssue = `${item?.product?.name || "This product"} is out of stock. Remove it from your cart.`;
-      } else if (!productIssue && quantity > stockState.maxAllowed) {
-        stockIssue = stockState.isLimited
-          ? `${item?.product?.name || "This product"} has limited availability. Only 1 item can be ordered. Reduce the quantity in your cart.`
-          : `${item?.product?.name || "This product"} has only ${stockState.available} item(s) available. Reduce the quantity or remove it.`;
-      }
+      const stockValidation = validateCartItemForCheckout(item);
+      const stockIssue =
+        !productIssue && !stockValidation.valid
+          ? stockValidation.message
+          : null;
 
       return { item, index, message: productIssue ?? stockIssue };
     })
@@ -819,7 +702,7 @@ export default function CheckoutClient() {
       quantity: number;
     }) => await cartApi.updateCartItem(itemId, { quantity }),
     onMutate: async ({ itemId, quantity }) => {
-      const queryKey = ["cartApi", user?.id];
+      const queryKey = cartKeys.user(user?.id);
       await queryClient.cancelQueries({ queryKey });
       const previousCart = queryClient.getQueryData<any>(queryKey);
       if (previousCart?.items) {
@@ -875,14 +758,14 @@ export default function CheckoutClient() {
     onSettled: () => {
       // The new cart signature selects fresh shipping/order-preview/coupon
       // query keys. Only sync the canonical cart here to avoid duplicate calls.
-      queryClient.invalidateQueries({ queryKey: ["cartApi", user?.id] });
+      queryClient.invalidateQueries({ queryKey: cartKeys.user(user?.id) });
     },
   });
 
   const removeItemMutation = useMutation({
     mutationFn: async (itemId: string) => await cartApi.removeFromCart(itemId),
     onMutate: async (itemId) => {
-      const queryKey = ["cartApi", user?.id];
+      const queryKey = cartKeys.user(user?.id);
       await queryClient.cancelQueries({ queryKey });
       const previousCart = queryClient.getQueryData<any>(queryKey);
       if (previousCart?.items) {
@@ -933,7 +816,7 @@ export default function CheckoutClient() {
       toast.error(err?.message || "Failed to remove item");
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["cartApi", user?.id] });
+      queryClient.invalidateQueries({ queryKey: cartKeys.user(user?.id) });
       queryClient.invalidateQueries({ queryKey: ["orderPreview"] });
       queryClient.invalidateQueries({ queryKey: ["applicableCoupons"] });
     },
@@ -1131,7 +1014,7 @@ export default function CheckoutClient() {
     }
   };
 
-  const handleRazorpayPayment = async (orderData: any) => {
+  const handleRazorpayPayment = async (orderData: any, method: PaymentMethodType) => {
     try {
       const options = {
         key: orderData.razorpayKeyId,
@@ -1164,7 +1047,7 @@ export default function CheckoutClient() {
                 instruments: [{ method: "paylater" }],
               },
             },
-            sequence: [getRazorpayBlock(paymentMethod)],
+            sequence: [getRazorpayBlock(method)],
             preferences: { show_default_blocks: true },
           },
         },
@@ -1213,6 +1096,8 @@ export default function CheckoutClient() {
   };
 
   const handlePlaceOrder = async () => {
+    const paymentMethod = paymentMethodRef.current;
+
     if (displayItems.length === 0) {
       toast.error("Your cart is empty.");
       router.push("/cart");
@@ -1283,11 +1168,14 @@ export default function CheckoutClient() {
         }, 1500);
         return;
       } else {
-        await handleRazorpayPayment({
-          razorpayOrderId: response.data.razorpayOrderId,
-          razorpayKeyId: response.data.razorpayKeyId,
-          amountInPaise: response.data.amountInPaise,
-        });
+        await handleRazorpayPayment(
+          {
+            razorpayOrderId: response.data.razorpayOrderId,
+            razorpayKeyId: response.data.razorpayKeyId,
+            amountInPaise: response.data.amountInPaise,
+          },
+          paymentMethod,
+        );
       }
     } catch (error: any) {
       console.error("Order creation error:", error);
@@ -1306,7 +1194,7 @@ export default function CheckoutClient() {
 
   if (displayItems.length === 0) {
     return (
-      <main className="min-h-[70vh] bg-[#faf9f6] px-4 py-12 flex items-center justify-center">
+      <div className="min-h-[70vh] bg-[#faf9f6] px-4 py-12 flex items-center justify-center">
         <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-8 text-center shadow-sm">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-stone-100 text-stone-700">
             <PackageX className="h-7 w-7" />
@@ -1324,7 +1212,7 @@ export default function CheckoutClient() {
             <ArrowLeft className="h-4 w-4" /> Return to cart
           </Link>
         </div>
-      </main>
+      </div>
     );
   }
 
@@ -1336,8 +1224,6 @@ export default function CheckoutClient() {
   const courierBadge = selectedCourier
     ? selectedCourier.courier_name
     : "Not selected";
-  const paymentBadge =
-    paymentMethods.find((m) => m.id === paymentMethod)?.title || "UPI";
 
   return (
     <>
@@ -1891,67 +1777,12 @@ export default function CheckoutClient() {
                   )}
                 </AccordionCard>
 
-                {/* 4. Payment Method */}
-                <AccordionCard
-                  id="payment"
-                  title="Payment Method"
-                  icon={<CreditCard className="w-3.5 h-3.5 text-white" />}
-                  badge={paymentBadge}
-                  isDone={true}
+                <CheckoutPaymentSection
                   isOpen={openSections.payment}
                   onToggle={() => toggleSection("payment")}
-                >
-                  <div className="space-y-2">
-                    {paymentMethods.map((method) => {
-                      const isSelected = paymentMethod === method.id;
-                      const isCOD = method.id === "COD";
-                      const isDisabled = isCOD && !isCODAvailable;
-                      return (
-                        <div
-                          key={method.id}
-                          onClick={() =>
-                            !isDisabled && setPaymentMethod(method.id)
-                          }
-                          className={`border rounded-xl p-3 cursor-pointer transition ${isSelected ? "border-black bg-gray-50 shadow-sm" : "border-gray-200 hover:border-gray-400"} ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? "border-black bg-black" : "border-gray-300"}`}
-                            >
-                              {isSelected && (
-                                <Check className="w-2.5 h-2.5 text-white" />
-                              )}
-                            </div>
-                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-                              <CreditCard className="w-4 h-4 text-gray-700" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <p className="font-semibold text-sm text-gray-900">
-                                  {method.title}
-                                </p>
-                                {method.recommended && (
-                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                                    Recommended
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-xs text-gray-500">
-                                {method.subtitle}
-                              </p>
-                              <PaymentLogos type={method.id} />
-                              {method.razorpay && (
-                                <p className="text-[10px] text-gray-400 mt-0.5">
-                                  Secured by Razorpay
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </AccordionCard>
+                  isCODAvailable={isCODAvailable}
+                  onPaymentMethodChange={handlePaymentMethodChange}
+                />
               </div>
 
               {/* ── Right: Order Summary (2/5) ───────────────────────────── */}

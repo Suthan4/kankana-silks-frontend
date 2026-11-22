@@ -1,7 +1,7 @@
 "use client";
 
 import { Product } from "@/lib/api/home-section.api";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ShoppingCart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import WishlistButton from "../ui/WishlistButton";
@@ -46,8 +46,7 @@ export default function ProductCarousel({
 }) {
   const [index, setIndex] = useState(0);
   const swiperRef = useRef<SwiperType | null>(null);
-  const paginationClass = `carousel-pagination-${useId().replace(/:/g, "")}`;
-
+  const paginationRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
   const { addItem: addToLocalCart } = useCartStore();
   const { open: openCartDrawer } = useCartDrawer();
@@ -136,97 +135,79 @@ export default function ProductCarousel({
           modules={[Autoplay, Pagination]}
           onSwiper={(s) => (swiperRef.current = s)}
           onSlideChange={(s) => setIndex(s.realIndex)}
+          onBeforeInit={(swiper) => {
+            const pagination = swiper.params.pagination;
+
+            if (pagination && typeof pagination !== "boolean") {
+              swiper.params.pagination = {
+                ...pagination,
+                el: paginationRef.current,
+              };
+            }
+          }}
           loop={products.length > 2}
           autoplay={{ delay: 6000, disableOnInteraction: false }}
-          pagination={{ clickable: true, el: `.${paginationClass}` }}
+          pagination={{ clickable: true }}
           slidesPerView={1.08}
           centeredSlides
           spaceBetween={12}
         >
           {products.map((product) => {
             const inStock = isInStock(product);
-            const hasDiscount =
-              Number(product.basePrice) > Number(product.sellingPrice);
 
             return (
               <SwiperSlide key={product.id}>
-                <div
-                  onClick={() => handleViewDetails(product)}
-                  className="group flex h-64 cursor-pointer overflow-hidden border border-gray-200 bg-white text-gray-900 shadow-sm transition active:scale-[0.99]"
-                >
-                  {/* Image */}
-                  <div className="relative w-[46%] shrink-0 overflow-hidden bg-gray-50">
+                <article className="mx-2 overflow-hidden rounded-2xl bg-white text-black shadow-sm">
+                  <button
+                    type="button"
+                    aria-label={`View ${product.name}`}
+                    onClick={() => handleViewDetails(product)}
+                    className="relative block aspect-[4/5] w-full overflow-hidden bg-[#f7f7f5]"
+                  >
                     {product.media?.[0]?.url ? (
                       <SmartImage
                         src={product.media[0].url}
                         alt={product.name}
                         fill
-                        sizes="45vw"
-                        className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                        sizes="(max-width: 768px) 92vw"
+                        className="object-cover object-top"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-xs text-gray-400">
-                        No image
-                      </div>
+                      <span className="flex h-full items-center justify-center text-sm text-gray-400">
+                        No image available
+                      </span>
                     )}
-                    <div
-                      className="absolute left-2.5 top-2.5 z-10"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <WishlistButton
-                        productId={product.id}
-                        variant="icon"
-                        size="sm"
-                        className="rounded-none bg-white/80 p-1.5 shadow-sm backdrop-blur-md transition hover:bg-white"
-                      />
-                    </div>
-                  </div>
+                  </button>
 
-                  {/* Content */}
-                  <div className="flex min-w-0 flex-1 flex-col justify-between p-4">
-                    <div>
-                      <h3 className="line-clamp-2 text-sm font-semibold leading-snug">
-                        {product.name}
-                      </h3>
-                      {product.description && (
-                        <p className="mt-1.5 line-clamp-3 text-xs leading-relaxed text-gray-500">
-                          {stripHtml(product.description)}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col gap-2.5 border-t border-gray-100 pt-2.5">
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-base font-bold">
-                          ₹{inr(product.sellingPrice)}
-                        </span>
-                        {hasDiscount && (
-                          <span className="text-xs text-gray-500 line-through">
-                            ₹{inr(product.basePrice)}
-                          </span>
-                        )}
-                      </div>
+                  <div className="p-4">
+                    <p className="text-[11px] uppercase tracking-[0.18em] opacity-60">
+                      {product.category?.name || "Collection"}
+                    </p>
+                    <h3 className="mt-1 line-clamp-2 text-base font-semibold">
+                      {product.name}
+                    </h3>
+                    <div className="mt-3 flex items-center justify-between gap-3">
+                      <span className="font-medium">₹{inr(product.sellingPrice)}</span>
                       <button
                         type="button"
                         disabled={!inStock}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddToCart(product);
-                        }}
-                        className="w-full bg-black py-2 text-xs font-medium text-white transition active:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
+                        onClick={() => handleAddToCart(product)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-2 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {inStock ? "Add to cart" : "Sold out"}
+                        <ShoppingCart size={14} />
+                        {inStock ? "Add" : "Sold out"}
                       </button>
                     </div>
                   </div>
-                </div>
+                </article>
               </SwiperSlide>
             );
           })}
         </Swiper>
 
         <div
-          className={`${paginationClass} mt-4 flex justify-center gap-1.5`}
+          ref={paginationRef}
+          className="mt-4 flex justify-center gap-1.5"
         />
       </div>
 

@@ -215,6 +215,25 @@ export const getCartItemStockState = (
 };
 
 /**
+ * Return whether the next quantity increase is allowed by the current stock
+ * snapshot. Unknown stock is not treated as unlimited for increments.
+ */
+export const canIncreaseCartItemQuantity = (
+  item: any,
+  nextQuantity = (Number(item?.quantity) || 0) + 1,
+): boolean => {
+  const stock = getCartItemStockState(item);
+
+  return (
+    stock.hasStockData &&
+    !stock.isOutOfStock &&
+    Number.isInteger(nextQuantity) &&
+    nextQuantity > (Number(item?.quantity) || 0) &&
+    nextQuantity <= stock.maxAllowed
+  );
+};
+
+/**
  * Customer-facing messages.
  */
 export const getCartItemStockMessage = (

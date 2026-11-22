@@ -116,7 +116,7 @@ export default function AddressesPage() {
   const deleteMutation = useDeleteAddress();
   const setDefaultMutation = useSetDefaultAddress();
 
-  const addresses = data?.data || [];
+  const addresses = data ?? [];
 
   const resetForm = () => {
     setFormData({

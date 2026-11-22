@@ -1,25 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Search,
   Package,
   Truck,
   CheckCircle2,
   ArrowRight,
-  Loader2,
   ShoppingBag,
-  Download,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useOrders } from "@/hooks/useOrders";
 import { orderApi } from "@/lib/api/order.api";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { extractVariantAttributes } from "@/lib/utils/variant.utils";
+import { OrderCard } from "@/features/orders/components/OrderCard";
+import { OrdersPageSkeleton } from "@/features/orders/components/OrderPageSkeletons";
 
 export default function OrdersPage() {
   const router = useRouter();
+  const openOrder = useCallback(
+    (orderId: string) => router.push(`/my-account/orders/${orderId}`),
+    [router],
+  );
+  const trackOrder = useCallback(
+    (orderId: string) => router.push(`/my-account/order-tracking/${orderId}`),
+    [router],
+  );
   const [activeTab, setActiveTab] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -37,7 +44,7 @@ export default function OrdersPage() {
   ];
 
   // Fetch orders with filters
-  const { data, isLoading, error } = useOrders({
+  const { data, isLoading, error, refetch } = useOrders({
     page,
     limit: 10,
     status: activeTab === "all" ? undefined : (activeTab as any),
@@ -49,32 +56,23 @@ export default function OrdersPage() {
   const pagination = data?.data?.pagination;
 
   // Filter by search query (client-side)
-  const filteredOrders = orders.filter(
-    (order: any) =>
-      order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.items.some((item: any) =>
-        item.product?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
+  const filteredOrders = useMemo(
+    () =>
+      orders.filter(
+        (order: any) =>
+          order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          order.items.some((item: any) =>
+            item.product?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
+          ),
       ),
+    [orders, searchQuery],
   );
 
-  // ✅ Check if order can be tracked (has shipment with AWB)
-  const canTrackOrder = (order: any): boolean => {
-    return !!(order.shipment?.awbCode || order.shipment?.trackingNumber);
-  };
-
-  // ✅ Check if invoice is available (shipped or delivered)
-  const isInvoiceAvailable = (order: any): boolean => {
-    return [
-      "PROCESSING",
-      "SHIPPED",
-      "OUT_FOR_DELIVERY",
-      "DELIVERED",
-      "COMPLETED",
-    ].includes(order.status);
-  };
+  const isInvoiceAvailable = (order: any) =>
+    ["SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED", "COMPLETED"].includes(order.status);
 
   // ✅ Invoice download handler
-  const handleDownloadInvoice = async (e: React.MouseEvent, order: any) => {
+  const handleDownloadInvoice = useCallback(async (e: React.MouseEvent, order: any) => {
     e.stopPropagation();
 
     if (!isInvoiceAvailable(order)) {
@@ -115,7 +113,7 @@ export default function OrdersPage() {
         return newSet;
       });
     }
-  };
+  }, [downloadingInvoices]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -172,10 +170,8 @@ export default function OrdersPage() {
       {/* Orders List */}
       <div className="p-4 lg:p-6 space-y-4 max-w-4xl mx-auto">
         {isLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-          </div>
-        ) : error ? (
+          <OrdersPageSkeleton />
+        ) : error && !data ? (
           <div className="text-center py-16">
             <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Package className="w-10 h-10 text-red-400" />
@@ -183,7 +179,14 @@ export default function OrdersPage() {
             <p className="text-red-500 text-lg font-medium">
               Failed to load orders
             </p>
-            <p className="text-gray-400 text-sm mt-2">Please try again later</p>
+            <p className="text-gray-400 text-sm mt-2">Your order history is still available. Please retry.</p>
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="mt-5 rounded-full bg-black px-6 py-2.5 text-sm font-semibold text-white"
+            >
+              Try again
+            </button>
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="text-center py-16">
@@ -207,178 +210,16 @@ export default function OrdersPage() {
           </div>
         ) : (
           <>
-            {filteredOrders.map((order: any) => {
-              const firstItem = order.items?.[0];
-              const productName = firstItem?.product?.name ?? "Product";
-              const productImage =
-                firstItem?.product?.media?.[0]?.thumbnailUrl ||
-                firstItem?.product?.media?.[0]?.url ||
-                "/images/placeholder.png";
-
-              const canTrack = canTrackOrder(order);
-              const hasInvoice = isInvoiceAvailable(order);
-              const isDownloading = downloadingInvoices.has(order.id);
-
-              return (
-                <motion.div
-                  key={order.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  whileHover={{ scale: 1.01 }}
-                  className="bg-white rounded-2xl border-2 border-gray-100 overflow-hidden hover:shadow-xl transition-all cursor-pointer"
-                  onClick={() => router.push(`/my-account/orders/${order.id}`)}
-                >
-                  <div className="p-4 sm:p-5 lg:p-6">
-                    {/* Header */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <div className="font-bold text-base lg:text-lg mb-1">
-                          Order #{order.orderNumber}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          Placed on{" "}
-                          {new Date(order.createdAt).toLocaleDateString(
-                            "en-IN",
-                            {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                            },
-                          )}
-                        </div>
-                      </div>
-                      <span
-                        className={`px-4 py-2 rounded-xl text-xs font-bold ${orderApi.getStatusColor(
-                          order.status,
-                        )}`}
-                      >
-                        {orderApi.formatStatus(order.status)}
-                      </span>
-                    </div>
-
-                    {/* Product Info */}
-                    <div className="flex gap-3 sm:gap-4 mb-4 p-3 sm:p-4 bg-gray-50 rounded-xl">
-                      <img
-                        src={productImage}
-                        alt={productName}
-                        className="w-20 h-20 lg:w-24 lg:h-24 rounded-lg object-cover ring-2 ring-gray-200"
-                        onError={(e) => {
-                          e.currentTarget.src = "/images/placeholder.png";
-                        }}
-                      />
-
-                      <div className="flex-1">
-                        <div className="font-semibold text-sm lg:text-base mb-1 line-clamp-2 leading-snug">
-                          {productName}
-                          {order.items.length > 1
-                            ? ` +${order.items.length - 1} more`
-                            : ""}
-                        </div>
-
-                        {/* Variant Chips */}
-                        {(() => {
-                          const variantAttrs = extractVariantAttributes(
-                            firstItem?.variant,
-                          );
-                          if (variantAttrs.length === 0) return null;
-                          return (
-                            <div className="flex flex-wrap gap-2 mt-2">
-                              {variantAttrs.map(({ key, value }) => (
-                                <span
-                                  key={key}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-white border border-gray-200 text-gray-700 shadow-sm"
-                                >
-                                  <span className="text-gray-500">{key}:</span>
-                                  <span className="text-gray-900 font-semibold">
-                                    {value}
-                                  </span>
-                                </span>
-                              ))}
-                            </div>
-                          );
-                        })()}
-
-                        <div className="text-xs text-gray-500 mt-2">
-                          {order.items.length} item(s)
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-gray-200">
-                      <div>
-                        <div className="text-xs text-gray-500 mb-1">
-                          Total Amount
-                        </div>
-                        <div className="font-bold text-xl lg:text-2xl">
-                          ₹{Number(order.total).toFixed(2)}
-                        </div>
-                      </div>
-                      <div className="flex items-stretch gap-2 flex-wrap sm:flex-nowrap justify-end">
-                        {/* ✅ Invoice Download Button - Only show if shipped/delivered */}
-                        {hasInvoice && (
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={(e) => handleDownloadInvoice(e, order)}
-                            disabled={isDownloading}
-                            className="h-11 min-w-[44px] px-3 sm:px-4 bg-main-primary text-main-secondary rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {isDownloading ? (
-                              <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                <span className="hidden lg:inline">
-                                  Downloading...
-                                </span>
-                              </>
-                            ) : (
-                              <>
-                                <Download className="w-4 h-4" />
-                                <span className="hidden lg:inline">
-                                  Invoice
-                                </span>
-                              </>
-                            )}
-                          </motion.button>
-                        )}
-
-                        {/* ✅ Track Order Button - Only show if has AWB */}
-                        {canTrack && (
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(
-                                `/my-account/order-tracking/${order.id}`,
-                              );
-                            }}
-                            className="h-11 px-4 sm:px-5 bg-black text-white rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-2 whitespace-nowrap"
-                          >
-                            Track Order
-                            <ArrowRight className="w-4 h-4" />
-                          </motion.button>
-                        )}
-
-                        {/* View Details - Always show */}
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/my-account/orders/${order.id}`);
-                          }}
-                          className="h-11 px-4 sm:px-5 border-2 border-gray-200 rounded-xl text-xs sm:text-sm font-semibold hover:bg-gray-50 transition-all flex items-center justify-center gap-2 whitespace-nowrap"
-                        >
-                          View Details
-                          <ArrowRight className="w-4 h-4" />
-                        </motion.button>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+            {filteredOrders.map((order: any) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                isDownloading={downloadingInvoices.has(order.id)}
+                onOpenOrder={openOrder}
+                onTrackOrder={trackOrder}
+                onDownloadInvoice={handleDownloadInvoice}
+              />
+            ))}
 
             {/* Pagination */}
             {pagination && pagination.totalPages > 1 && (

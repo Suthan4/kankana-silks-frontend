@@ -2,9 +2,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Trash2,
-  Plus,
-  Minus,
   ArrowLeft,
   ArrowRight,
   Lock,
@@ -19,8 +16,9 @@ import {
   Star,
 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import { useCartStore } from "@/store/useCartStore";
+import { cartKeys, cartQueryPolicy } from "@/lib/query/cartQuery";
+
 import { useRouter } from "next/navigation";
 import { toast } from "@/store/useToastStore";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -29,13 +27,17 @@ import { cartApi } from "@/lib/api/cart.api";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { shippingApi } from "@/lib/api/shipping.api";
 import { addressApi } from "@/lib/api/addresses.api";
-import { extractVariantAttributes } from "@/lib/utils/variant.utils";
 import { mergeCartLines } from "@/lib/utils/cartItems";
 import {
   getCartItemStockState,
   getCartItemStockMessage,
+  canIncreaseCartItemQuantity,
   validateCartForCheckout,
 } from "@/lib/utils/cartStock";
+import { CartPageSkeleton } from "@/features/cart/components/CartPageSkeleton";
+import { CartItemRow } from "@/features/cart/components/CartItemRow";
+import { CartPriceBreakdown } from "@/features/cart/components/CartPriceBreakdown";
+import { CartCheckoutFooter } from "@/features/cart/components/CartCheckoutFooter";
 
 const normalizeAttributes = (attrs: any) => {
   if (!attrs) return [];
@@ -66,19 +68,12 @@ export default function CartPage() {
   const { user } = useAuthModal();
   const queryClient = useQueryClient();
 
-  const {
-    items,
-    appliedCoupon,
-    removeItem,
-    updateQuantity,
-    clearCart,
-    applyCoupon,
-    removeCoupon,
-    getTotalItems,
-    getSubtotal,
-    getDiscount,
-    getTotal,
-  } = useCartStore();
+  const items = useCartStore((state) => state.items);
+  const appliedCoupon = useCartStore((state) => state.appliedCoupon);
+  const removeItem = useCartStore((state) => state.removeItem);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
+  const applyCoupon = useCartStore((state) => state.applyCoupon);
+  const removeCoupon = useCartStore((state) => state.removeCoupon);
 
   const [couponCode, setCouponCode] = useState("");
   const [showCouponDropdown, setShowCouponDropdown] = useState(false);
@@ -106,14 +101,10 @@ export default function CartPage() {
     error: cartError,
     refetch: refetchCartApi,
   } = useQuery({
-    queryKey: ["cartApi", user?.id],
+    queryKey: cartKeys.user(user?.id),
     queryFn: async () => (await cartApi.getCart()).data,
     enabled: !!user,
-    // Stock can change while the customer is away from the cart.
-    staleTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
+    ...cartQueryPolicy,
   });
 
   const apiItems = cartData?.items ?? [];
@@ -364,7 +355,7 @@ export default function CartPage() {
       quantity: number;
     }) => await cartApi.updateCartItem(itemId, { quantity }),
     onMutate: async ({ itemId, quantity }) => {
-      const queryKey = ["cartApi", user?.id];
+      const queryKey = cartKeys.user(user?.id);
       await queryClient.cancelQueries({ queryKey });
       const previousCart = queryClient.getQueryData<any>(queryKey);
       if (previousCart?.items) {
@@ -420,13 +411,13 @@ export default function CartPage() {
           "Failed to update quantity",
       );
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["cartApi"] }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: cartKeys.all }),
   });
 
   const removeItemMutation = useMutation({
     mutationFn: async (itemId: string) => await cartApi.removeFromCart(itemId),
     onMutate: async (itemId) => {
-      const queryKey = ["cartApi", user?.id];
+      const queryKey = cartKeys.user(user?.id);
       await queryClient.cancelQueries({ queryKey });
       const previousCart = queryClient.getQueryData<any>(queryKey);
       if (previousCart?.items) {
@@ -473,7 +464,7 @@ export default function CartPage() {
         queryClient.setQueryData(context.queryKey, context.previousCart);
       toast.error(err?.message || "Failed to remove item");
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["cartApi"] }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: cartKeys.all }),
   });
 
   const handleApplyCoupon = (code: string) => {
@@ -513,18 +504,7 @@ export default function CartPage() {
   };
   const formatMoney = (value: number) => `₹${Number(value || 0).toFixed(2)}`;
 
-  if (isLoadingCartApi) {
-    return (
-      <div
-        role="status"
-        aria-live="polite"
-        className="h-screen flex flex-col items-center justify-center gap-3 text-gray-500"
-      >
-        <Loader2 className="w-8 h-8 animate-spin" />
-        <p className="text-sm">Loading your cart…</p>
-      </div>
-    );
-  }
+  if (isLoadingCartApi) return <CartPageSkeleton />;
 
   // A rejected cart request must settle into a recoverable state, rather than
   // silently presenting an empty cart. Refresh-token failure is handled by the
@@ -621,194 +601,37 @@ export default function CartPage() {
               <div className="flex-1 overflow-y-auto space-y-3 pr-1">
                 <AnimatePresence mode="popLayout">
                   {displayItems.map((item: any, index: number) => {
-                    console.log("CART STOCK DEBUG", {
-                      productName: item.product?.name,
-                      variantId: item.variantId ?? item.variant?.id,
-                      cartQuantity: item.quantity,
-                      availableStock: item.availableStock,
-                      variantStock: item.variant?.stock,
-                      productStock: item.product?.stock,
-                      productStockQuantity: item.product?.stockQuantity,
-                      allowOutOfStockOrders:
-                        item.product?.allowOutOfStockOrders,
-                    });
                     const stockState = getCartItemStockState(item);
                     const stockMessage = getCartItemStockMessage(item);
 
-                    const cartQuantity = Number(item.quantity) || 0;
-
                     const canIncreaseQuantity =
-                      stockState.hasStockData &&
-                      !stockState.isOutOfStock &&
-                      cartQuantity < stockState.maxAllowed;
-
-                    const customerStockMessage = stockMessage;
+                      canIncreaseCartItemQuantity(item);
 
                     return (
-                      <motion.div
+                      <CartItemRow
                         key={item.id}
-                        layout
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, x: -80 }}
-                        transition={{ delay: index * 0.04 }}
-                        className="bg-white rounded-xl p-3.5 shadow-sm border border-white/80 hover:shadow-md transition"
-                      >
-                        <div className="flex gap-3">
-                          <Link href={`/products/${item?.product?.slug}`}>
-                            <motion.div
-                              whileHover={{ scale: 1.04 }}
-                              className="w-16 h-16 lg:w-20 lg:h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 cursor-pointer"
-                            >
-                              {item?.product?.media ? (
-                                <Image
-                                  src={item?.product?.media?.[0].url}
-                                  alt={item.product?.name}
-                                  width={80}
-                                  height={80}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                                  <ShoppingBag className="w-6 h-6 text-gray-400" />
-                                </div>
-                              )}
-                            </motion.div>
-                          </Link>
-
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                <Link href={`/products/${item?.product?.slug}`}>
-                                  <h3 className="font-bold text-gray-900 text-sm hover:text-main-primary transition cursor-pointer line-clamp-1">
-                                    {item.product?.name}
-                                  </h3>
-                                </Link>
-                                {(() => {
-                                  const variantAttrs = extractVariantAttributes(
-                                    item?.variant,
-                                  );
-                                  if (variantAttrs.length === 0) return null;
-                                  return (
-                                    <div className="flex flex-wrap gap-1.5 mt-1">
-                                      {variantAttrs.map(({ key, value }) => (
-                                        <span
-                                          key={key}
-                                          className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600 font-medium"
-                                        >
-                                          {key}:{" "}
-                                          <span className="text-gray-900 font-semibold">
-                                            {value}
-                                          </span>
-                                        </span>
-                                      ))}
-                                    </div>
-                                  );
-                                })()}
-                                {customerStockMessage && (
-                                  <div className="mt-2">
-                                    <span
-                                      className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md border ${
-                                        customerStockMessage.type === "error"
-                                          ? "text-red-700 bg-red-50 border-red-200"
-                                          : customerStockMessage.type ===
-                                              "warning"
-                                            ? "text-amber-800 bg-amber-50 border-amber-200"
-                                            : "text-gray-600 bg-gray-50 border-gray-200"
-                                      }`}
-                                      role={
-                                        customerStockMessage.type === "error"
-                                          ? "alert"
-                                          : "status"
-                                      }
-                                    >
-                                      {customerStockMessage.type ===
-                                        "warning" && (
-                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                                      )}
-                                      {customerStockMessage.message}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                              <button
-                                onClick={() =>
-                                  user?.id
-                                    ? removeItemMutation.mutate(String(item.id))
-                                    : removeItem(String(item.id))
-                                }
-                                disabled={removeItemMutation.isPending}
-                                aria-busy={removeItemMutation.isPending}
-                                className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition flex-shrink-0 disabled:cursor-wait disabled:opacity-50"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-
-                            <div className="flex items-center justify-between mt-2.5">
-                              <p className="text-lg font-bold text-gray-900">
-                                ₹
-                                {getStrictItemPrice(item).toLocaleString(
-                                  "en-IN",
-                                )}
-                              </p>
-                              <div className="flex items-center gap-1.5 bg-gray-100 rounded-full px-2 py-1">
-                                <button
-                                  onClick={() => {
-                                    const n = item.quantity - 1;
-                                    if (n < 1) return;
-                                    user
-                                      ? updateQtyMutation.mutate({
-                                          itemId: item.id,
-                                          quantity: n,
-                                        })
-                                      : updateQuantity(item.id, n);
-                                  }}
-                                  disabled={item.quantity <= 1}
-                                  className="w-7 h-7 flex items-center justify-center text-gray-600 hover:text-gray-900 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                                >
-                                  <Minus className="w-3.5 h-3.5" />
-                                </button>
-                                <span className="w-7 text-center font-bold text-gray-900 text-sm">
-                                  {item.quantity}
-                                </span>
-                                <button
-                                  onClick={() => {
-                                    const nextQuantity =
-                                      Number(item.quantity) + 1;
-
-                                    if (!canIncreaseQuantity) {
-                                      return;
-                                    }
-
-                                    user?.id
-                                      ? updateQtyMutation.mutate({
-                                          itemId: item.id,
-                                          quantity: nextQuantity,
-                                        })
-                                      : updateQuantity(item.id, nextQuantity);
-                                  }}
-                                  disabled={
-                                    updateQtyMutation.isPending ||
-                                    !canIncreaseQuantity
-                                  }
-                                  aria-label="Increase quantity"
-                                  title={
-                                    !canIncreaseQuantity
-                                      ? stockState.isLastOne
-                                        ? "Only one item is available"
-                                        : "Maximum available quantity reached"
-                                      : "Increase quantity"
-                                  }
-                                  className="w-7 h-7 flex items-center justify-center text-white bg-gray-900 rounded-full hover:bg-gray-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                                >
-                                  <Plus className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
+                        item={item}
+                        index={index}
+                        stockState={stockState}
+                        stockMessage={stockMessage}
+                        canIncreaseQuantity={canIncreaseQuantity}
+                        unitPrice={getStrictItemPrice(item)}
+                        isUpdating={updateQtyMutation.isPending}
+                        isRemoving={removeItemMutation.isPending}
+                        onRemove={() => {
+                          user?.id
+                            ? removeItemMutation.mutate(String(item.id))
+                            : removeItem(String(item.id));
+                        }}
+                        onQuantityChange={(quantity) => {
+                          user?.id
+                            ? updateQtyMutation.mutate({
+                                itemId: String(item.id),
+                                quantity,
+                              })
+                            : updateQuantity(String(item.id), quantity);
+                        }}
+                      />
                     );
                   })}
                 </AnimatePresence>
@@ -1195,115 +1018,29 @@ export default function CartPage() {
                     </div>
                   )} */}
 
-                  {/* Price Breakdown */}
-                  <div className="space-y-2 pt-3 border-t border-gray-100">
-                    <div className="flex justify-between text-xs text-gray-600">
-                      <span>
-                        Subtotal ({totalItems} item{totalItems !== 1 ? "s" : ""}
-                        )
-                      </span>
-                      <span className="font-semibold text-gray-900">
-                        {formatMoney(subtotal)}
-                      </span>
-                    </div>
-
-                    {discount > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, x: -5 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="flex justify-between text-xs text-green-600 font-semibold bg-green-50 -mx-1 px-1 py-1 rounded"
-                      >
-                        <span className="flex items-center gap-1">
-                          <Gift className="w-3 h-3" />
-                          Coupon ({appliedCoupon?.code})
-                        </span>
-                        <span>-{formatMoney(discount)}</span>
-                      </motion.div>
-                    )}
-
-                    <div className="flex justify-between text-xs text-gray-600">
-                      <div>
-                        <span>Shipping</span>
-                        {selectedCourier && (
-                          <p className="text-[10px] text-main-primary">
-                            {selectedCourier.courier_name}
-                          </p>
-                        )}
-                      </div>
-                      <span
-                        className={`font-semibold ${shippingCost === 0 && shippingData ? "text-main-primary" : "text-gray-900"}`}
-                      >
-                        {!shippingData ? (
-                          isLoadingShipping ? (
-                            <Loader2 className="w-3 h-3 animate-spin inline" />
-                          ) : (
-                            "—"
-                          )
-                        ) : shippingData.isFreeShipping ? (
-                          "Free"
-                        ) : (
-                          formatMoney(shippingCost)
-                        )}
-                      </span>
-                    </div>
-
-                    {gstAmount > 0 && (
-                      <>
-                        <div className="flex justify-between text-xs text-gray-500">
-                          <span>CGST (2.5%)</span>
-                          <span>{formatMoney(cgstAmount)}</span>
-                        </div>
-                        <div className="flex justify-between text-xs text-gray-500">
-                          <span>SGST (2.5%)</span>
-                          <span>{formatMoney(sgstAmount)}</span>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  <CartPriceBreakdown
+                    totalItems={totalItems}
+                    subtotal={subtotal}
+                    discount={discount}
+                    couponCode={appliedCoupon?.code}
+                    selectedCourierName={selectedCourier?.courier_name}
+                    shippingCost={shippingCost}
+                    shippingData={shippingData}
+                    isLoadingShipping={isLoadingShipping}
+                    cgstAmount={cgstAmount}
+                    sgstAmount={sgstAmount}
+                    gstAmount={gstAmount}
+                    formatMoney={formatMoney}
+                  />
                 </div>
 
-                {/* Total + CTA */}
-                <div className="flex-none border-t border-gray-200 px-4 py-3 bg-white">
-                  <div className="flex items-baseline justify-between mb-1">
-                    <span className="font-bold text-gray-900 text-sm">
-                      Total
-                    </span>
-                    <div className="text-right">
-                      <span className="text-2xl font-bold text-gray-900">
-                        {formatMoney(total)}
-                      </span>
-                      <p className="text-[10px] text-gray-400">
-                        incl. all taxes
-                      </p>
-                    </div>
-                  </div>
-
-                  {discount > 0 && (
-                    <p className="text-xs text-green-600 font-semibold text-right mb-2">
-                      🎉 You saved {formatMoney(discount)}
-                    </p>
-                  )}
-
-                  <motion.button
-                    whileHover={
-                      cartStockValidation.valid ? { scale: 1.01 } : undefined
-                    }
-                    whileTap={
-                      cartStockValidation.valid ? { scale: 0.99 } : undefined
-                    }
-                    onClick={handleCheckout}
-                    disabled={!cartStockValidation.valid}
-                    aria-disabled={!cartStockValidation.valid}
-                    className="w-full bg-gray-900 text-white py-3 rounded-xl font-bold shadow hover:shadow-md transition flex items-center justify-center gap-2 text-sm group disabled:bg-gray-400 disabled:shadow-none disabled:cursor-not-allowed"
-                  >
-                    {cartStockValidation.valid
-                      ? "Proceed to Checkout"
-                      : "Update cart to continue"}
-                    {cartStockValidation.valid && (
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
-                    )}
-                  </motion.button>
-                </div>
+                <CartCheckoutFooter
+                  total={total}
+                  discount={discount}
+                  isValid={cartStockValidation.valid}
+                  onCheckout={handleCheckout}
+                  formatMoney={formatMoney}
+                />
               </div>
             </motion.div>
           </div>
