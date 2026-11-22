@@ -4,13 +4,13 @@ import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartDrawer } from "@/store/useCartDrawer";
 import { useCartStore } from "@/store/useCartStore";
-import { X, ShoppingBag, ArrowRight } from "lucide-react";
+import { X, ShoppingBag } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { cartApi } from "@/lib/api/cart.api";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { toast } from "sonner";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { extractVariantAttributes } from "@/lib/utils/variant.utils";
 import { mergeCartLines } from "@/lib/utils/cartItems";
 import {
@@ -20,6 +20,7 @@ import {
 import { cartKeys, cartQueryPolicy } from "@/lib/query/cartQuery";
 import { CartDrawerSkeleton } from "@/features/cart/components/CartDrawerSkeleton";
 import { MiniCartItemRow } from "@/features/cart/components/MiniCartItemRow";
+import { MiniCartFooter } from "@/features/cart/components/MiniCartFooter";
 
 export default function MiniCartDrawer() {
   const { isOpen, close } = useCartDrawer();
@@ -29,6 +30,14 @@ export default function MiniCartDrawer() {
   const { user } = useAuthModal();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const handleCheckoutNavigation = useCallback(() => {
+    close();
+    router.push("/checkout");
+  }, [close, router]);
+  const handleCartNavigation = useCallback(() => {
+    close();
+    router.push("/cart");
+  }, [close, router]);
 
   /* -------------------- MOBILE DETECTION -------------------- */
   const [isMobile, setIsMobile] = useState(() => {
@@ -452,53 +461,14 @@ export default function MiniCartDrawer() {
                 })
               )}
             </div>
-            {/* FOOTER */}
             {displayItems.length > 0 && (
-              <div className="p-5 border-t border-gray-100 bg-white/95 backdrop-blur-xs space-y-3">
-                {/* SUBTOTAL ROW */}
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">
-                    Subtotal ({totalItems} items)
-                  </span>
-                  <span className="font-bold text-base text-gray-900">
-                    ₹{subtotal.toLocaleString("en-IN")}
-                  </span>
-                </div>
-                <p className="text-[11px] text-gray-400">
-                  Shipping and taxes calculated at checkout.
-                </p>
-
-                {/* ACTION BUTTONS */}
-                <div className="flex flex-col gap-2 pt-1">
-                  <button
-                    onClick={() => {
-                      close();
-                      router.push("/checkout");
-                    }}
-                    className="w-full bg-black text-white hover:bg-neutral-800 transition-colors py-3 rounded-xl font-semibold text-xs sm:text-sm shadow-sm flex items-center justify-center gap-2"
-                  >
-                    <span>Proceed to Checkout</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      close();
-                      router.push("/cart");
-                    }}
-                    className="w-full bg-white text-black border border-gray-300 hover:bg-gray-50 transition-colors py-2.5 rounded-xl font-medium text-xs sm:text-sm"
-                  >
-                    View Full Cart
-                  </button>
-
-                  <button
-                    onClick={close}
-                    className="text-xs text-gray-500 hover:text-gray-900 text-center py-1 transition-colors"
-                  >
-                    Continue Shopping
-                  </button>
-                </div>
-              </div>
+              <MiniCartFooter
+                totalItems={totalItems}
+                subtotal={subtotal}
+                onCheckout={handleCheckoutNavigation}
+                onViewCart={handleCartNavigation}
+                onClose={close}
+              />
             )}
           </motion.div>
         </>
