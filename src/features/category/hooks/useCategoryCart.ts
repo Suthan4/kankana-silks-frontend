@@ -10,6 +10,8 @@ import { useAuthModal } from "@/store/useAuthModalStore";
 import { useCartStore } from "@/store/useCartStore";
 import { useCartDrawer } from "@/store/useCartDrawer";
 import { getCartItemStockState } from "@/lib/utils/cartStock";
+import { cartKeys, cartQueryPolicy } from "@/lib/query/cartQuery";
+
 
 export function useCategoryCart() {
   const { user } = useAuthModal();
@@ -21,11 +23,10 @@ export function useCategoryCart() {
   const removeItemLocal = useCartStore((state) => state.removeItem);
 
   const { data: cartData } = useQuery({
-    queryKey: ["cartApi", user?.id],
+    queryKey: cartKeys.user(user?.id),
     queryFn: async () => (await cartApi.getCart()).data,
     enabled: !!user,
-    staleTime: 15_000,
-    refetchOnWindowFocus: false,
+    ...cartQueryPolicy,
   });
 
   const cartItems = useMemo(
@@ -87,7 +88,7 @@ export function useCategoryCart() {
       }
     },
     onSuccess: () => {
-      if (user) queryClient.invalidateQueries({ queryKey: ["cartApi"] });
+      if (user) queryClient.invalidateQueries({ queryKey: cartKeys.all });
       openCartDrawer();
     },
     onError: () => toast.error("Failed to add to cart"),
@@ -97,7 +98,7 @@ export function useCategoryCart() {
     mutationFn: ({ itemId, quantity }: { itemId: string; quantity: number }) =>
       cartApi.updateCartItem(itemId, { quantity }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cartApi"] });
+      queryClient.invalidateQueries({ queryKey: cartKeys.all });
       openCartDrawer();
     },
     onError: () => toast.error("Failed to update quantity"),

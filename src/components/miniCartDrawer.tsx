@@ -15,6 +15,9 @@ import { useEffect, useState, useMemo } from "react";
 import { extractVariantAttributes } from "@/lib/utils/variant.utils";
 import { mergeCartLines } from "@/lib/utils/cartItems";
 import { getCartItemStockState } from "@/lib/utils/cartStock";
+import { cartKeys, cartQueryPolicy } from "@/lib/query/cartQuery";
+import { CartDrawerSkeleton } from "@/features/cart/components/CartDrawerSkeleton";
+
 
 export default function MiniCartDrawer() {
   const { isOpen, close } = useCartDrawer();
@@ -57,11 +60,10 @@ export default function MiniCartDrawer() {
 
   /* -------------------- FETCH CART -------------------- */
   const { data: cartData, isLoading: isCartLoading } = useQuery({
-    queryKey: ["cartApi", user?.id],
+    queryKey: cartKeys.user(user?.id),
     queryFn: async () => (await cartApi.getCart()).data,
     enabled: !!user,
-    staleTime: 15_000,
-    refetchOnWindowFocus: false,
+    ...cartQueryPolicy,
   });
 
   // Never mix stale guest rows with a signed-in server cart. Normalize legacy
@@ -155,7 +157,7 @@ export default function MiniCartDrawer() {
       return await cartApi.updateCartItem(itemId, { quantity });
     },
     onMutate: async ({ itemId, quantity }) => {
-      const queryKey = ["cartApi", user?.id];
+      const queryKey = cartKeys.user(user?.id);
       await queryClient.cancelQueries({ queryKey });
       const previousCart = queryClient.getQueryData<any>(queryKey);
       if (previousCart?.items) {
@@ -211,13 +213,13 @@ export default function MiniCartDrawer() {
         "Failed to update quantity. Please try again.";
       toast.error(message);
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["cartApi"] }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: cartKeys.all }),
   });
 
   const removeItemMutation = useMutation({
     mutationFn: async (itemId: string) => await cartApi.removeFromCart(itemId),
     onMutate: async (itemId) => {
-      const queryKey = ["cartApi", user?.id];
+      const queryKey = cartKeys.user(user?.id);
       await queryClient.cancelQueries({ queryKey });
       const previousCart = queryClient.getQueryData<any>(queryKey);
       if (previousCart?.items) {
@@ -268,7 +270,7 @@ export default function MiniCartDrawer() {
       toast.error("Failed to remove item. Please try again.");
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["cartApi"] });
+      queryClient.invalidateQueries({ queryKey: cartKeys.all });
     },
   });
 
@@ -378,20 +380,8 @@ export default function MiniCartDrawer() {
             {/* BODY / ITEMS LIST */}
             <div className="ios-modal-content flex-1 overflow-y-auto px-5 py-3 divide-y divide-gray-100">
               {displayItems.length === 0 && user && isCartLoading ? (
-                <div
-                  role="status"
-                  aria-live="polite"
-                  className="flex flex-col items-center justify-center h-full py-16 text-center"
-                >
-                  <ShoppingBag className="w-7 h-7 text-gray-400 mb-3" />
-                  <p className="text-sm font-medium text-gray-800">
-                    Refreshing your bag…
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    This should only take a moment.
-                  </p>
-                </div>
-              ) : displayItems.length === 0 ? (
+                <CartDrawerSkeleton />
+              ) : displayItems.length === 0 ? (              ) : displayItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full py-16 text-center">
                   <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 mb-4">
                     <ShoppingBag className="w-8 h-8" />

@@ -7,24 +7,31 @@ import {
   CheckCircle2,
   MapPin,
   Phone,
-  Loader2,
   Clock,
 } from "lucide-react";
+import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useOrder } from "@/hooks/useOrders";
 import { shipmentApi } from "@/lib/api/shipment.api";
 import { useTracking } from "@/hooks/useTracking";
+import { OrderTrackingPageSkeleton } from "@/features/orders/components/OrderPageSkeletons";
+import SmartImage from "@/components/common/smartImage";
+import { ShipmentTimeline } from "@/features/orders/components/ShipmentTimeline";
 
 export default function OrderTrackingPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id;
   const router = useRouter();
 
-  const { data: orderData, isLoading: orderLoading } = useOrder(id);
+  const { data: orderData, isLoading: orderLoading, error: orderError, refetch: refetchOrder } = useOrder(id);
   const trackingNumber = orderData?.data?.shipment?.trackingNumber;
 
-  const { data: trackingData, isLoading: trackingLoading } =
-    useTracking(trackingNumber);
+  const {
+    data: trackingData,
+    isLoading: trackingLoading,
+    error: trackingError,
+    refetch: refetchTracking,
+  } = useTracking(trackingNumber);
 
   const order = orderData?.data;
   const tracking = trackingData?.data;
@@ -66,11 +73,6 @@ export default function OrderTrackingPage() {
             })
           : "",
         completed: true,
-      },
-      {
-        status: "Payment Confirmed",
-        date: order?.payment?.status === "SUCCESS" ? "Confirmed" : "Pending",
-        completed: order?.payment?.status === "SUCCESS",
       },
       {
         status: "Payment Confirmed",
@@ -133,33 +135,39 @@ export default function OrderTrackingPage() {
     return defaultTimeline;
   };
 
-  const timeline = buildTimeline();
+  const timeline = useMemo(() => buildTimeline(), [tracking, order]);
   const statusInfo = shipmentApi.formatTrackingStatus(
     order?.status || "processing",
   );
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-      </div>
-    );
-  }
+  if (isLoading) return <OrderTrackingPageSkeleton />;
 
-  if (!order) {
+  if (orderError || !order) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Package className="w-10 h-10 text-red-400" />
           </div>
-          <p className="text-red-500 text-lg font-medium">Order not found</p>
-          <button
-            onClick={() => router.back()}
-            className="mt-4 px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800"
-          >
-            Go Back
-          </button>
+          <p className="text-red-500 text-lg font-medium">{orderError ? "Unable to load this order" : "Order not found"}</p>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            {orderError && (
+              <button
+                type="button"
+                onClick={() => void refetchOrder()}
+                className="rounded-lg bg-black px-5 py-2 text-sm font-semibold text-white"
+              >
+                Try again
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="rounded-lg border border-gray-200 px-5 py-2 text-sm font-semibold hover:bg-gray-50"
+            >
+              Go Back
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -289,69 +297,16 @@ export default function OrderTrackingPage() {
           </div>
         )}
 
-        {/* Timeline */}
-        <div className="bg-white rounded-2xl p-6">
-          <h3 className="font-semibold mb-6 flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            Shipment Timeline
-          </h3>
-          <div className="space-y-6">
-            {timeline?.map((item: any, idx: number) => (
-              <div key={idx} className="flex gap-4">
-                <div className="relative">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      item.completed
-                        ? "bg-green-100"
-                        : item.active
-                          ? "bg-blue-100"
-                          : "bg-gray-100"
-                    }`}
-                  >
-                    {item.completed ? (
-                      <CheckCircle2
-                        className={`w-5 h-5 ${
-                          item.completed ? "text-green-600" : "text-gray-400"
-                        }`}
-                      />
-                    ) : item.active ? (
-                      <Truck className="w-5 h-5 text-blue-600" />
-                    ) : (
-                      <Package className="w-5 h-5 text-gray-400" />
-                    )}
-                  </div>
-                  {idx < timeline.length - 1 && (
-                    <div
-                      className={`absolute left-5 top-10 w-0.5 h-6 ${
-                        item.completed ? "bg-green-300" : "bg-gray-200"
-                      }`}
-                    />
-                  )}
-                </div>
-                <div className="flex-1 pb-2">
-                  <p
-                    className={`font-medium ${
-                      item.active ? "text-black" : "text-gray-700"
-                    }`}
-                  >
-                    {item.status}
-                  </p>
-                  <p className="text-sm text-gray-500">{item.date}</p>
-                  {item.location && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      {item.location}
-                    </p>
-                  )}
-                  {item.activity && (
-                    <p className="text-xs text-gray-600 mt-1">
-                      {item.activity}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
+        {trackingError && trackingNumber && (
+          <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <p className="text-sm text-amber-900">Live tracking could not be refreshed. The order status below is still available.</p>
+            <button type="button" onClick={() => void refetchTracking()} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white">
+              Retry tracking
+            </button>
           </div>
-        </div>
+        )}
+
+        <ShipmentTimeline items={timeline} isLoading={trackingLoading} />
 
         {/* Delivery Address */}
         <div className="bg-white rounded-2xl p-6">
@@ -385,7 +340,7 @@ export default function OrderTrackingPage() {
           <h3 className="font-semibold mb-4">Items in this Order</h3>
           <div className="space-y-3">
             {order.items.map((item) => {
-              console.log("item", item);
+              
 
               return (
                 <div
@@ -393,11 +348,15 @@ export default function OrderTrackingPage() {
                   className="flex gap-3 p-3 bg-gray-50 rounded-lg"
                 >
                   {item.image && (
-                    <img
-                      src={item.image}
-                      alt={item.productName}
-                      className="w-16 h-16 rounded-lg object-cover"
-                    />
+                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg">
+                      <SmartImage
+                        src={item.image}
+                        alt={item.productName}
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                      />
+                    </div>
                   )}
                   <div className="flex-1">
                     <p className="font-medium text-sm">{item.productName}</p>
