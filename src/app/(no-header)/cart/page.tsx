@@ -607,8 +607,6 @@ export default function CartPage() {
                     const canIncreaseQuantity =
                       canIncreaseCartItemQuantity(item);
 
-                    const customerStockMessage = stockMessage;
-
                     return (
                       <CartItemRow
                         key={item.id}
@@ -634,6 +632,7 @@ export default function CartPage() {
                             : updateQuantity(String(item.id), quantity);
                         }}
                       />
+                    );
                   })}
                 </AnimatePresence>
               </div>

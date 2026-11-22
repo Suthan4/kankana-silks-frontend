@@ -8,10 +8,7 @@ import { AlertCircle, Heart } from "lucide-react";
 import type { Product, ProductVariant } from "@/lib/api/product.api";
 import type { CartLineLike } from "@/lib/utils/cartItems";
 import { formatMaskedPrice } from "@/lib/utils/priceMasked";
-import {
-  getCartItemStockState,
-  canIncreaseCartItemQuantity,
-} from "@/lib/utils/cartStock";
+import { canIncreaseCartItemQuantity } from "@/lib/utils/cartStock";
 
 interface CategoryProductCardProps {
   product: Product;
@@ -61,7 +58,6 @@ export const CategoryProductCard = memo(function CategoryProductCard({
     quantity: cartItem?.quantity ?? 0,
     allowOutOfStockOrders: product.allowOutOfStockOrders,
   };
-  const cartStockState = getCartItemStockState(cartStockItem);
   const canIncreaseQuantity = canIncreaseCartItemQuantity(cartStockItem);
 
   return (

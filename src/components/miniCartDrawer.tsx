@@ -448,6 +448,7 @@ export default function MiniCartDrawer() {
                       onQuantityChange={(quantity) => handleUpdateQuantity(item, quantity)}
                       onRemove={() => handleRemove(item)}
                     />
+                  );
                 })
               )}
             </div>
