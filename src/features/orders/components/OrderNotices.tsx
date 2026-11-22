@@ -37,7 +37,8 @@ export function OrderNotices({
   const paymentDisplay = paymentLabel ? { label: paymentLabel } : null;
 
   return (
-    {/* ✅ Return Window Closed Alert - Only show if delivered but window closed */}
+    <>
+      {/* ✅ Return Window Closed Alert - Only show if delivered but window closed */}
         {order.status === "DELIVERED" && returnWindowClosed && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -74,7 +75,7 @@ export function OrderNotices({
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={handleDownloadInvoice}
+              onClick={onDownloadInvoice}
               disabled={isDownloadingInvoice}
               className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-all disabled:opacity-50 flex items-center gap-2"
             >
@@ -174,5 +175,6 @@ export function OrderNotices({
             </div>
           </motion.div>
         )}
+    </>
   );
 }

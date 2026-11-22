@@ -76,7 +76,7 @@ export function OrderStatusSection({
           {/* ✅ Action Buttons - Conditionally shown */}
           <div className="flex flex-col sm:flex-row gap-2">
             {/* ✅ Track Order Button - Only if has AWB */}
-            {isTrackingAvailable && (
+            {canTrack && (
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -91,7 +91,7 @@ export function OrderStatusSection({
             )}
 
             {/* ✅ Return Button - ONLY show if status is DELIVERED and within window */}
-            {showReturnButton && (
+            {canReturn && (
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -111,10 +111,10 @@ export function OrderStatusSection({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={onCancelOrder}
-                disabled={cancelMutation.isPending}
+                disabled={cancelPending}
                 className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition disabled:opacity-50"
               >
-                {cancelMutation.isPending ? "Cancelling..." : "Cancel Order"}
+                {cancelPending ? "Cancelling..." : "Cancel Order"}
               </motion.button>
             )}
           </div>

@@ -16,7 +16,8 @@ export function OrderAddressPaymentSection({
   paymentDisplay,
 }: OrderAddressPaymentSectionProps) {
   return (
-    {/* Shipping & Payment */}
+    <>
+      {/* Shipping & Payment */}
         <div className="grid lg:grid-cols-2 gap-4">
           {/* Shipping Address */}
           <motion.div
@@ -164,5 +165,6 @@ export function OrderAddressPaymentSection({
             </div>
           </motion.div>
         </div>
+    </>
   );
 }
