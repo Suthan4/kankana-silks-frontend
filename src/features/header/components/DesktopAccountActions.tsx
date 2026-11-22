@@ -54,12 +54,23 @@ export function DesktopAccountActions({
           <motion.button type="button" whileHover={{ scale: 0.92 }} whileTap={{ scale: 0.86 }} onClick={() => window.open("https://api.whatsapp.com/send?phone=916364945568&text=Hello%20Kankana%20Silks,%20I%E2%80%99m%20interested%20in%20exploring%20your%20saree%20collection.", "_blank")} aria-label="Chat with us on WhatsApp" className={`flex h-10 w-10 items-center justify-center transition-colors duration-300 ${isHeaderWhite ? "text-gray-700 hover:text-black" : "text-white"}`}>
             <MessageCircle style={{ width: "20px", height: "20px" }} />
           </motion.button>
-          <span className="pointer-events-none absolute left-1/2 top-full z-[50] mt-0.5 -translate-x-1/2 -translate-y-1 whitespace-nowrap rounded-full bg-black/95 px-3 py-1.5 text-[10px] font-medium tracking-[0.08em] text-white opacity-0 shadow-lg transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100">Connect on WhatsApp</span>
+          <span className="pointer-events-none absolute left-1/2 top-full z-[50] mt-0.5 -translate-x-1/2 -translate-y-1 whitespace-nowrap rounded-full bg-black/95 px-3 py-1.5 text-[10px] font-medium tracking-[0.08em] text-white opacity-0 shadow-lg transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100">
+            Connect on WhatsApp
+            <span className="absolute bottom-full left-1/2 h-0 w-0 -translate-x-1/2 border-x-4 border-x-transparent border-b-4 border-b-black/95" />
+          </span>
         </div>
 
         <div ref={userMenuRef} className="group relative" onMouseEnter={() => user && setUserMenuOpen(true)} onMouseLeave={() => setUserMenuOpen(false)}>
           <button type="button" onClick={() => { if (!user) openLogin(); else setUserMenuOpen((previous) => !previous); }} aria-label={user ? "Open account menu" : "Sign in"} className={`flex h-10 items-center justify-center gap-1 px-1 transition-colors duration-300 ${isHeaderWhite ? "text-gray-700 hover:text-black" : "text-white"}`}>
-            {!user && <User style={{ width: "20px", height: "20px" }} />}
+            {!user && (
+              <>
+                <User style={{ width: "20px", height: "20px" }} />
+                <span className="pointer-events-none absolute left-1/2 top-full z-[50] mt-0.5 -translate-x-1/2 -translate-y-1 whitespace-nowrap rounded-full bg-black/95 px-3 py-1.5 text-[10px] font-medium tracking-[0.08em] text-white opacity-0 shadow-lg transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100">
+                  Sign In
+                  <span className="absolute bottom-full left-1/2 h-0 w-0 -translate-x-1/2 border-x-4 border-x-transparent border-b-4 border-b-black/95" />
+                </span>
+              </>
+            )}
             {user && <><span className={`hidden text-sm font-semibold lg:block ${isHeaderWhite ? "text-gray-900" : "text-white"}`}>{user.firstName}</span><ChevronDown className="h-3.5 w-3.5 text-gray-400" /></>}
           </button>
           <AnimatePresence>

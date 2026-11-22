@@ -47,6 +47,10 @@ function Header() {
     isModalOpen,
     setIsModalOpen,
   });
+  const handleLogout = async () => {
+    await handleSessionLogout();
+    locationState.setLocation(null);
+  };
   const megaMenu = useHeaderMegaMenuModel(categories, hoveredCategory);
   const isHeaderWhite = !hasHeroBehindHeader || isScrolled || isHeaderHovered || Boolean(hoveredCategory) || locationModalOpen || userMenuOpen;
   const portalRoot = typeof document !== "undefined" ? document.getElementById("portal-root") : null;

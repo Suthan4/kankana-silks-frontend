@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import { Heart, Home, MessageCircle, ShoppingCart, Video } from "lucide-react";
-import { buildCategoryQuery } from "@/lib/shared/builders/productCategoryQuery.builder";
+import { buildCategoryQuery } from "@/lib/shared/builders/productCategoryQuery.builder.ts";
 import type { User } from "@/store/useAuthModalStore";
 import type { HeaderQuickLink } from "@/features/header/components/MobileBottomNavigation";
 

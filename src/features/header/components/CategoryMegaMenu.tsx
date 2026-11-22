@@ -30,13 +30,14 @@ export function CategoryMegaMenu({
   getCategoryUrl,
   onClose,
 }: Props) {
-  if (!open || !category) return null;
   const maxHeight = navBottom > 0
     ? `calc(100dvh - ${navBottom}px)`
     : "calc(100dvh - 150px)";
 
   return (
     <AnimatePresence>
+      {open && category && (
+        <>
       <motion.div
         aria-hidden="true"
         initial={{ opacity: 0 }}
@@ -76,6 +77,8 @@ export function CategoryMegaMenu({
           )}
         </div>
       </motion.div>
+        </>
+      )}
     </AnimatePresence>
   );
 }
