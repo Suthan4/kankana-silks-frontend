@@ -21,6 +21,8 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { useCartStore } from "@/store/useCartStore";
+import { cartKeys, cartQueryPolicy } from "@/lib/query/cartQuery";
+
 import { useRouter } from "next/navigation";
 import { toast } from "@/store/useToastStore";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -36,6 +38,8 @@ import {
   getCartItemStockMessage,
   validateCartForCheckout,
 } from "@/lib/utils/cartStock";
+import { cartKeys, cartQueryPolicy } from "@/lib/query/cartQuery";
+import { CartPageSkeleton } from "@/features/cart/components/CartPageSkeleton";
 
 const normalizeAttributes = (attrs: any) => {
   if (!attrs) return [];
@@ -106,14 +110,10 @@ export default function CartPage() {
     error: cartError,
     refetch: refetchCartApi,
   } = useQuery({
-    queryKey: ["cartApi", user?.id],
+    queryKey: cartKeys.user(user?.id),
     queryFn: async () => (await cartApi.getCart()).data,
     enabled: !!user,
-    // Stock can change while the customer is away from the cart.
-    staleTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
+    ...cartQueryPolicy,
   });
 
   const apiItems = cartData?.items ?? [];
@@ -364,7 +364,7 @@ export default function CartPage() {
       quantity: number;
     }) => await cartApi.updateCartItem(itemId, { quantity }),
     onMutate: async ({ itemId, quantity }) => {
-      const queryKey = ["cartApi", user?.id];
+      const queryKey = cartKeys.user(user?.id);
       await queryClient.cancelQueries({ queryKey });
       const previousCart = queryClient.getQueryData<any>(queryKey);
       if (previousCart?.items) {
@@ -420,13 +420,13 @@ export default function CartPage() {
           "Failed to update quantity",
       );
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["cartApi"] }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: cartKeys.all }),
   });
 
   const removeItemMutation = useMutation({
     mutationFn: async (itemId: string) => await cartApi.removeFromCart(itemId),
     onMutate: async (itemId) => {
-      const queryKey = ["cartApi", user?.id];
+      const queryKey = cartKeys.user(user?.id);
       await queryClient.cancelQueries({ queryKey });
       const previousCart = queryClient.getQueryData<any>(queryKey);
       if (previousCart?.items) {
@@ -473,7 +473,7 @@ export default function CartPage() {
         queryClient.setQueryData(context.queryKey, context.previousCart);
       toast.error(err?.message || "Failed to remove item");
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["cartApi"] }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: cartKeys.all }),
   });
 
   const handleApplyCoupon = (code: string) => {
@@ -513,18 +513,7 @@ export default function CartPage() {
   };
   const formatMoney = (value: number) => `₹${Number(value || 0).toFixed(2)}`;
 
-  if (isLoadingCartApi) {
-    return (
-      <div
-        role="status"
-        aria-live="polite"
-        className="h-screen flex flex-col items-center justify-center gap-3 text-gray-500"
-      >
-        <Loader2 className="w-8 h-8 animate-spin" />
-        <p className="text-sm">Loading your cart…</p>
-      </div>
-    );
-  }
+  if (isLoadingCartApi) return <CartPageSkeleton />;
 
   // A rejected cart request must settle into a recoverable state, rather than
   // silently presenting an empty cart. Refresh-token failure is handled by the
