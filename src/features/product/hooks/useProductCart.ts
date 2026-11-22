@@ -12,7 +12,7 @@ import { cartKeys } from "@/lib/query/cartQuery";
 
 export function useProductCart() {
   const { user } = useAuthModal();
-  const { addItem: addToLocalCart } = useCartStore();
+  const addToLocalCart = useCartStore((state) => state.addItem);
   const { open: openCartDrawer } = useCartDrawer();
   const queryClient = useQueryClient();
 

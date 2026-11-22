@@ -1,24 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { Video } from "lucide-react";
 import Link from "next/link";
-import {
-  productApi,
-  ProductVariant,
-  type Product,
-} from "@/lib/api/product.api";
+import type { Product, ProductVariant } from "@/lib/api/product.api";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import ProductRequestModal from "@/components/productRequestModal";
-import { useQuery } from "@tanstack/react-query";
+const ProductRequestModal = dynamic(() => import("@/components/productRequestModal"));
+const VideoConsultationModal = dynamic(() => import("@/components/video-consultationModal"));
 import { trackViewItem } from "@/lib/analytics";
 import { ProductDeliveryChecker } from "@/features/product/components/ProductDeliveryChecker";
 import { ProductQuantitySelector } from "@/features/product/components/ProductQuantitySelector";
 import { ProductDetailsTabs } from "@/features/product/components/ProductDetailsTabs";
-import { RelatedProducts } from "@/features/product/components/RelatedProducts";
+import { RelatedProductsSection } from "@/features/product/components/RelatedProductsSection";
 import { ProductInformation } from "@/features/product/components/ProductInformation";
 import {
   ProductDesktopPurchaseActions,
@@ -33,7 +30,6 @@ import { useProductCart } from "@/features/product/hooks/useProductCart";
 import { getProductStock } from "@/features/product/utils/productStockAdapter";
 import { canIncreaseCartItemQuantity } from "@/lib/utils/cartStock";
 
-import VideoConsultationModal from "@/components/video-consultationModal";
 interface ProductDetailsClientProps {
   initialProduct: Product;
 }
@@ -44,7 +40,7 @@ export default function ProductDetailsClient({
   const { user, openModal } = useAuthModal();
   const router = useRouter();
 
-  const [product] = useState<Product>(initialProduct);
+  const product = initialProduct;
   const {
     hasVariants,
     selectedVariant,
@@ -136,22 +132,7 @@ export default function ProductDetailsClient({
     displayPrice,
   ]);
 
-  const { data: relatedProducts = [] } = useQuery({
-    queryKey: ["relatedProducts", product.categoryId, product.id],
-    queryFn: async () => {
-      const response = await productApi.getProducts({
-        categoryId: product.categoryId,
-        limit: 8,
-        isActive: true,
-      });
-      return response.data.products
-        .filter((relatedProduct) => relatedProduct.id !== product.id)
-        .slice(0, 4);
-    },
-    enabled: Boolean(product.categoryId),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-  });
+
 
   const handleVideoConsultation = () => {
     if (!user) {
@@ -436,26 +417,30 @@ export default function ProductDetailsClient({
       <div className="bg-gradient-to-br from-amber-50 via-white to-orange-50">
         <div className="max-w-7xl mx-auto px-4 pb-12">
           <ProductDetailsTabs product={product} />
-          <RelatedProducts products={relatedProducts} />
+          <RelatedProductsSection categoryId={product.categoryId} productId={product.id} />
         </div>
       </div>
 
-      <ProductRequestModal
-        isOpen={isRequestModalOpen}
-        onClose={() => setIsRequestModalOpen(false)}
-        product={product}
-        selectedVariant={selectedVariant}
-      />
-      <VideoConsultationModal
-        isOpen={isVideoModalOpen}
-        onClose={() => setIsVideoModalOpen(false)}
-        productId={product.id}
-        productName={product.name}
-        categoryId={product.categoryId}
-        onSuccess={() =>
-          toast.success("We'll contact you soon to confirm your consultation!")
-        }
-      />
+      {isRequestModalOpen && (
+        <ProductRequestModal
+          isOpen={isRequestModalOpen}
+          onClose={() => setIsRequestModalOpen(false)}
+          product={product}
+          selectedVariant={selectedVariant}
+        />
+      )}
+      {isVideoModalOpen && (
+        <VideoConsultationModal
+          isOpen={isVideoModalOpen}
+          onClose={() => setIsVideoModalOpen(false)}
+          productId={product.id}
+          productName={product.name}
+          categoryId={product.categoryId}
+          onSuccess={() =>
+            toast.success("We'll contact you soon to confirm your consultation!")
+          }
+        />
+      )}
     </>
   );
 }
