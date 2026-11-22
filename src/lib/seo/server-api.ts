@@ -7,21 +7,22 @@ import type { Banner } from "@/lib/api/banner.api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
-/** Default first page of a category; must match the client's default query. */
 export const CATEGORY_PAGE_LIMIT = 12;
+const CATALOG_REVALIDATE_SECONDS = 60;
 
-/**
- * No Next.js data cache: every request fetches fresh data from the backend,
- * so admin changes (create / update / delete) show up on the next page load.
- * React `cache` below only dedupes calls inside ONE request
- * (generateMetadata + page share one fetch); it never persists across requests.
- */
-async function apiGet<T>(path: string): Promise<T | null> {
+async function apiGet<T>(
+  path: string,
+  tags: string[],
+): Promise<T | null> {
   try {
     const response = await fetch(`${API_BASE_URL}${path}`, {
-      cache: "no-store",
       headers: { "Content-Type": "application/json" },
+      next: {
+        revalidate: CATALOG_REVALIDATE_SECONDS,
+        tags,
+      },
     });
+
     if (!response.ok) return null;
     return (await response.json()) as T;
   } catch (error) {
@@ -30,16 +31,13 @@ async function apiGet<T>(path: string): Promise<T | null> {
   }
 }
 
-/* ------------------------------------------------------------------ */
-/* NOT cached across visitors: product and category data stays fresh.  */
-/* (prices and stock must never be stale)                              */
-/* ------------------------------------------------------------------ */
-
 export const getProductBySlug = cache(
   async (slug: string): Promise<Product | null> => {
     const result = await apiGet<{ data?: Product }>(
       `/products/slug/${encodeURIComponent(slug)}`,
+      ["products", `product:${slug}`],
     );
+
     return result?.data ?? null;
   },
 );
@@ -67,7 +65,11 @@ export const getCategoryProducts = cache(
       sortBy: "price",
       sortOrder: "desc",
     });
-    return apiGet<CategoryProductsPayload>(`/products?${query}`);
+
+    return apiGet<CategoryProductsPayload>(
+      `/products?${query}`,
+      ["products", `category-products:${categorySlug}`],
+    );
   },
 );
 
@@ -75,7 +77,9 @@ export const getCategoryBySlug = cache(
   async (slug: string): Promise<Category | null> => {
     const result = await apiGet<{ data?: Category }>(
       `/categories/slug/${encodeURIComponent(slug)}`,
+      ["categories", `category:${slug}`],
     );
+
     return result?.data ?? null;
   },
 );
@@ -85,7 +89,7 @@ export const getCategoryBySlug = cache(
 /* ------------------------------------------------------------------ */
 
 /**
- * Home page data is cached for 60 s (shared across all visitors) so the HTML
+ * Home page data is cached for 5mins (shared across all visitors) so the HTML
  * doesn't wait on the backend for every request. Admin edits show up within a
  * minute; to show them instantly, call revalidateTag("home") after saving.
  */
