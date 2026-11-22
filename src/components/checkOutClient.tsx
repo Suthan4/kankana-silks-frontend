@@ -27,6 +27,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCartStore } from "@/store/useCartStore";
+import { cartKeys, cartQueryPolicy } from "@/lib/query/cartQuery";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { toast } from "@/store/useToastStore";
 import AddressModal from "@/components/addressModal";
@@ -316,12 +317,12 @@ export default function CheckoutClient() {
         } catch (err) {
           console.warn("Failed to clear cart on server:", err);
         }
-        queryClient.setQueryData(["cartApi", user.id], {
+        queryClient.setQueryData(cartKeys.user(user.id), {
           items: [],
           totalItems: 0,
           subtotal: 0,
         });
-        await queryClient.invalidateQueries({ queryKey: ["cartApi"] });
+        await queryClient.invalidateQueries({ queryKey: cartKeys.all });
       }
     } else {
       sessionStorage.removeItem("buyNowItem");
@@ -391,10 +392,10 @@ export default function CheckoutClient() {
   });
 
   const { data: cartData, isLoading: isLoadingCartApi } = useQuery({
-    queryKey: ["cartApi", user?.id],
+    queryKey: cartKeys.user(user?.id),
     queryFn: async () => (await cartApi.getCart()).data,
     enabled: !!user,
-    staleTime: 0,
+    ...cartQueryPolicy,
   });
 
   const apiItems = cartData?.items ?? [];
@@ -699,7 +700,7 @@ export default function CheckoutClient() {
       quantity: number;
     }) => await cartApi.updateCartItem(itemId, { quantity }),
     onMutate: async ({ itemId, quantity }) => {
-      const queryKey = ["cartApi", user?.id];
+      const queryKey = cartKeys.user(user?.id);
       await queryClient.cancelQueries({ queryKey });
       const previousCart = queryClient.getQueryData<any>(queryKey);
       if (previousCart?.items) {
@@ -755,14 +756,14 @@ export default function CheckoutClient() {
     onSettled: () => {
       // The new cart signature selects fresh shipping/order-preview/coupon
       // query keys. Only sync the canonical cart here to avoid duplicate calls.
-      queryClient.invalidateQueries({ queryKey: ["cartApi", user?.id] });
+      queryClient.invalidateQueries({ queryKey: cartKeys.user(user?.id) });
     },
   });
 
   const removeItemMutation = useMutation({
     mutationFn: async (itemId: string) => await cartApi.removeFromCart(itemId),
     onMutate: async (itemId) => {
-      const queryKey = ["cartApi", user?.id];
+      const queryKey = cartKeys.user(user?.id);
       await queryClient.cancelQueries({ queryKey });
       const previousCart = queryClient.getQueryData<any>(queryKey);
       if (previousCart?.items) {
@@ -813,7 +814,7 @@ export default function CheckoutClient() {
       toast.error(err?.message || "Failed to remove item");
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["cartApi", user?.id] });
+      queryClient.invalidateQueries({ queryKey: cartKeys.user(user?.id) });
       queryClient.invalidateQueries({ queryKey: ["orderPreview"] });
       queryClient.invalidateQueries({ queryKey: ["applicableCoupons"] });
     },
