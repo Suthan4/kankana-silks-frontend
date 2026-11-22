@@ -19,9 +19,10 @@ export function useAddresses() {
 
   return useQuery({
     queryKey: addressKeys.user(user?.id),
-    queryFn: () => addressApi.getAddresses(),
+    queryFn: async () => (await addressApi.getAddresses()).data,
     enabled: !!user,
     ...addressQueryPolicy,
+    placeholderData: [],
   });
 }
 
