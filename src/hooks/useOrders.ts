@@ -19,7 +19,17 @@ export const orderKeys = {
   detail: (id: string) => [...orderKeys.details(), id] as const,
   byNumber: (orderNumber: string) => [...orderKeys.all, "number", orderNumber] as const,
   canCancel: (id: string) => [...orderKeys.all, "can-cancel", id] as const,
+  returnEligibility: (id: string) => [...orderKeys.all, "return-eligibility", id] as const,
 };
+
+// Customer order data changes after payment, cancellation and shipment updates.
+export const orderQueryPolicy = {
+  staleTime: 15_000,
+  gcTime: 5 * 60_000,
+  refetchOnMount: true,
+  refetchOnWindowFocus: true,
+  refetchOnReconnect: true,
+} as const;
 
 // ==================== USER QUERIES ====================
 
@@ -40,9 +50,7 @@ export const useVerifyPayment = () => {
   return useMutation({
     mutationFn: (data: VerifyPaymentDTO) => orderApi.verifyPayment(data),
     onSuccess: () => {
-      // Invalidate orders cache so orders list refreshes
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-      queryClient.invalidateQueries({ queryKey: ["ordersList"] });
+      queryClient.invalidateQueries({ queryKey: orderKeys.all });
     },
     onError: (error: any) => {
       toast.error(error.message || "Payment verification failed");
@@ -57,7 +65,7 @@ export function useOrders(params?: QueryOrderParams) {
   return useQuery({
     queryKey: orderKeys.list(params || {}),
     queryFn: () => orderApi.getUserOrders(params),
-    staleTime: 30000, // 30 seconds
+    ...orderQueryPolicy,
   });
 }
 
@@ -69,7 +77,7 @@ export function useOrder(orderId: string) {
     queryKey: orderKeys.detail(orderId),
     queryFn: () => orderApi.getOrder(orderId),
     enabled: !!orderId,
-    staleTime: 30000,
+    ...orderQueryPolicy,
   });
 }
 
@@ -92,9 +100,10 @@ export const useCancelOrder = () => {
   return useMutation({
     mutationFn: ({ orderId, reason }: { orderId: string; reason?: string }) =>
       orderApi.cancelOrder(orderId, { reason }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-      queryClient.invalidateQueries({ queryKey: ["ordersList"] });
+    onSuccess: (_response, variables) => {
+      queryClient.invalidateQueries({ queryKey: orderKeys.all });
+      queryClient.invalidateQueries({ queryKey: orderKeys.detail(variables.orderId) });
+      queryClient.invalidateQueries({ queryKey: orderKeys.canCancel(variables.orderId) });
       toast.success("Order cancelled successfully");
     },
     onError: (error: any) => {
@@ -106,13 +115,14 @@ export const useCancelOrder = () => {
 // Check if can cancel
 export const useCanCancelOrder = (orderId?: string) => {
   return useQuery({
-    queryKey: ["orders", "can-cancel", orderId],
+    queryKey: orderKeys.canCancel(orderId ?? ""),
     queryFn: async () => {
       if (!orderId) throw new Error("Order ID required");
       const response = await orderApi.canCancelOrder(orderId);
       return response.data;
     },
     enabled: !!orderId,
+    ...orderQueryPolicy,
   });
 };
 
@@ -194,6 +204,7 @@ export function usePrefetchOrder() {
     queryClient.prefetchQuery({
       queryKey: orderKeys.detail(orderId),
       queryFn: () => orderApi.getOrder(orderId),
+      ...orderQueryPolicy,
     });
   };
 }
