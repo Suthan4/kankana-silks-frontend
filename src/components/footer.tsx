@@ -89,7 +89,9 @@ function StoreLocatorModal({ onClose }: { onClose: () => void }) {
                 <div className="flex items-start gap-3">
                   <div
                     className={`mt-0.5 w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
-                      selected.id === store.id ? "bg-brand-primary" : "bg-gray-100"
+                      selected.id === store.id
+                        ? "bg-brand-primary"
+                        : "bg-gray-100"
                     }`}
                   >
                     <MapPin
@@ -231,27 +233,49 @@ export default function Footer() {
         {/* Main grid */}
         <div className="max-w-screen-xl mx-auto px-6 md:px-10 py-12 md:py-16">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 md:gap-8">
-            {/* ── Heritage ── */}
+            {/* Heritage */}
             <div>
-              <Image
-                src="/image-removebg-preview.png"
-                width={316}
-                height={152}
-                sizes="120px"
-                alt="Kankana Silks"
-                className="h-14 w-auto object-contain mb-4 brightness-0 invert"
-              />
-              <p className="text-base text-brand-on-section/75 leading-relaxed max-w-[200px]">
+              <Link
+                href="/"
+                aria-label="Kankana Silks home"
+                className="mb-4 inline-flex h-14 w-[160px] items-center"
+              >
+                <Image
+                  src="/removed-bg-logo.png"
+                  alt="Kankana Silks"
+                  width={316}
+                  height={152}
+                  sizes="160px"
+                  className="
+        h-14
+        w-auto
+        max-w-[160px]
+        object-contain
+        object-left
+        brightness-0
+        invert
+      "
+                />
+              </Link>
+
+              <p className="max-w-[200px] text-base leading-relaxed text-brand-on-section/75">
                 Celebrating centuries of saree-making tradition with modern
                 elegance.
               </p>
 
-              {/* Store Locator CTA */}
               <button
+                type="button"
                 onClick={() => setStoreLocatorOpen(true)}
-                className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full border border-brand-accent/70 bg-transparent px-4 py-2 text-base font-medium text-brand-accent transition-colors hover:bg-brand-accent hover:text-brand-on-accent group"
+                className="
+      mt-5 inline-flex min-h-11 items-center gap-2
+      rounded-full border border-brand-accent/70
+      bg-transparent px-4 py-2
+      text-base font-medium text-brand-accent
+      transition-colors
+      hover:bg-brand-accent hover:text-brand-on-accent
+    "
               >
-                <MapPin className="w-3.5 h-3.5 group-hover:text-brand-accent transition-colors" />
+                <MapPin className="h-3.5 w-3.5" />
                 Find Our Stores
               </button>
             </div>
