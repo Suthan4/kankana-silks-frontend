@@ -64,6 +64,8 @@
   --color-brand-on-primary: #FFFFFF;
   --color-brand-on-accent: #442326;
   --color-brand-on-section: #FFF9F2;
+  --color-brand-section-start: #442326;
+  --color-brand-section-end: #32191C;
 
   /* Semantic and commerce states */
   --color-success: #245A43;
@@ -222,7 +224,7 @@
     border-color: color-mix(in srgb, var(--color-brand-accent) 28%, transparent);
     background:
       radial-gradient(circle at 90% 0%, color-mix(in srgb, var(--color-brand-accent) 12%, transparent), transparent 35%),
-      linear-gradient(135deg, var(--color-brand-primary-deep), var(--color-maroon-900));
+      linear-gradient(135deg, var(--color-brand-section-start), var(--color-brand-section-end));
     color: var(--color-brand-on-section);
   }
 
@@ -247,7 +249,7 @@
   }
 
   .brand-luxe-gradient {
-    background: linear-gradient(112deg, var(--color-brand-primary-deep), var(--color-brand-primary) 58%, var(--color-gold-700));
+    background: linear-gradient(112deg, var(--color-brand-section-start), var(--color-brand-primary) 58%, var(--color-gold-700));
   }
 
   .brand-page-gradient {
@@ -399,6 +401,8 @@
   --color-brand-on-primary: #251719;
   --color-brand-on-accent: #2A1D20;
   --color-brand-on-section: #FFF8F1;
+  --color-brand-section-start: #2A1D20;
+  --color-brand-section-end: #211719;
 
   --color-success: #9BC9A9;
   --color-success-soft: #243A30;
@@ -466,6 +470,13 @@
 .dark .bg-gray-100 { background-color: var(--color-ivory-200); }
 .dark .text-black,
 .dark .text-white { color: var(--color-text-main); }
+.dark .bg-brand-primary .text-white,
+.dark .bg-main-primary .text-white,
+.dark .bg-brand-primary.text-white,
+.dark .bg-main-primary.text-white { color: var(--color-brand-on-primary); }
+.dark .brand-luxe-gradient {
+  background: linear-gradient(112deg, var(--color-brand-section-start), var(--color-brand-section-end));
+}
 .dark .border-gray-100 { border-color: var(--color-border); }
 .dark .border-gray-200 { border-color: var(--color-border-strong); }
 .dark .ios-modal-panel { background: var(--color-surface-elevated); color: var(--color-text-main); }
