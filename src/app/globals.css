@@ -931,3 +931,91 @@ html {
     }
   }
 }
+
+/* BUTTON RENDERING SAFETY: keep branded CTAs visible above Tailwind's layered utilities. */
+/*
+ * These CTA rules intentionally live outside Tailwind's layers. Unlayered
+ * normal author rules outrank layered component/base styles, which prevents
+ * global resets or component layers from stripping the CTA background,
+ * foreground, border or layout on product and category pages.
+ */
+.brand-button {
+  display: inline-flex !important;
+  min-height: 44px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  border: 1px solid var(--color-brand-primary) !important;
+  border-radius: 0.75rem !important;
+  background-color: var(--color-brand-primary) !important;
+  padding: 0.75rem 1.25rem !important;
+  color: #fff !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em !important;
+  line-height: 1.25 !important;
+  text-align: center !important;
+  text-decoration: none !important;
+  text-transform: uppercase !important;
+  box-shadow: 0 5px 16px rgb(101 53 54 / 0.18) !important;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease !important;
+}
+
+.brand-button:hover:not(:disabled) {
+  border-color: var(--color-brand-primary-hover) !important;
+  background-color: var(--color-brand-primary-hover) !important;
+  color: #fff !important;
+  box-shadow: 0 8px 22px rgb(101 53 54 / 0.24) !important;
+  transform: translateY(-1px);
+}
+
+.brand-button:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
+}
+
+.brand-button:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.55 !important;
+  box-shadow: none !important;
+}
+
+.brand-outline-button {
+  display: inline-flex !important;
+  min-height: 44px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  border: 1px solid var(--color-brand-primary) !important;
+  border-radius: 0.75rem !important;
+  background-color: #fff !important;
+  padding: 0.65rem 1rem !important;
+  color: var(--color-brand-primary) !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em !important;
+  line-height: 1.25 !important;
+  text-align: center !important;
+  text-decoration: none !important;
+  text-transform: uppercase !important;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease !important;
+}
+
+.brand-outline-button:hover:not(:disabled) {
+  border-color: var(--color-brand-primary-hover) !important;
+  background-color: var(--color-brand-primary-soft) !important;
+  color: var(--color-brand-primary-deep) !important;
+  transform: translateY(-1px);
+}
+
+.brand-outline-button:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.5 !important;
+}
