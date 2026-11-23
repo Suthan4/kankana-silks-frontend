@@ -52,9 +52,9 @@ export function MobileCategoryTree({
                   aria-expanded={isOpen}
                 >
                   <span className="relative h-4 w-4">
-                    <span className="absolute left-0 top-1/2 h-[1.5px] w-4 -translate-y-1/2 bg-black" />
+                    <span className="absolute left-0 top-1/2 h-[1.5px] w-4 -translate-y-1/2 bg-brand-primary" />
                     {!isOpen && (
-                      <span className="absolute left-1/2 top-0 h-4 w-[1.5px] -translate-x-1/2 bg-black" />
+                      <span className="absolute left-1/2 top-0 h-4 w-[1.5px] -translate-x-1/2 bg-brand-primary" />
                     )}
                   </span>
                 </button>
@@ -62,7 +62,7 @@ export function MobileCategoryTree({
               <Link
                 href={getCategoryUrl(category.slug)}
                 onClick={onNavigate}
-                className="flex-1 py-2 text-[15px] font-medium uppercase tracking-[0.08em] text-black"
+                className="flex-1 py-2 text-[15px] font-medium uppercase tracking-[0.08em] text-brand-primary"
               >
                 {category.name}
               </Link>
@@ -93,9 +93,9 @@ export function MobileCategoryTree({
                                   aria-expanded={isSubOpen}
                                 >
                                   <span className="relative h-3 w-3">
-                                    <span className="absolute left-0 top-1/2 h-[1.5px] w-3 -translate-y-1/2 bg-black" />
+                                    <span className="absolute left-0 top-1/2 h-[1.5px] w-3 -translate-y-1/2 bg-brand-primary" />
                                     {!isSubOpen && (
-                                      <span className="absolute left-1/2 top-0 h-3 w-[1.5px] -translate-x-1/2 bg-black" />
+                                      <span className="absolute left-1/2 top-0 h-3 w-[1.5px] -translate-x-1/2 bg-brand-primary" />
                                     )}
                                   </span>
                                 </button>
@@ -103,7 +103,7 @@ export function MobileCategoryTree({
                               <Link
                                 href={getCategoryUrl(sub.slug)}
                                 onClick={onNavigate}
-                                className="text-[14px] font-medium uppercase tracking-[0.06em] text-black"
+                                className="text-[14px] font-medium uppercase tracking-[0.06em] text-brand-primary"
                               >
                                 {sub.name}
                               </Link>
@@ -141,7 +141,7 @@ export function MobileCategoryTree({
                     <Link
                       href={getCategoryUrl(category.slug)}
                       onClick={onNavigate}
-                      className="mt-5 inline-flex items-center text-xs font-semibold uppercase tracking-wider text-black"
+                      className="brand-link mt-5 inline-flex items-center text-xs font-semibold uppercase tracking-wider"
                     >
                       View All →
                     </Link>

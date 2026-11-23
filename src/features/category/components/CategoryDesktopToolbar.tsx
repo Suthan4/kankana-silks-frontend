@@ -116,7 +116,7 @@ export function CategoryDesktopToolbar({
               aria-label={`Show ${columns} grid columns`}
               className={`border p-2 transition-colors ${
                 gridCols === columns
-                  ? "border-[#75495a] bg-[#75495a] text-white"
+                  ? "border-brand-primary bg-brand-primary text-white"
                   : "border-gray-300 text-gray-500 hover:border-black hover:text-black"
               }`}
             >
@@ -133,7 +133,7 @@ export function CategoryDesktopToolbar({
           onClick={onFilterToggle}
           className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs uppercase tracking-widest transition-colors ${
             filterOpen
-              ? "border-[#75495a] bg-[#75495a] text-white"
+              ? "border-brand-primary bg-brand-primary text-white"
               : "border-gray-300 text-gray-600 hover:border-black hover:text-black"
           }`}
         >

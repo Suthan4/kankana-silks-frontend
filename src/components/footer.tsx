@@ -82,14 +82,14 @@ function StoreLocatorModal({ onClose }: { onClose: () => void }) {
                 onClick={() => setSelected(store)}
                 className={`w-full text-left px-6 py-5 border-b border-gray-50 transition-colors ${
                   selected.id === store.id
-                    ? "bg-gray-50 border-l-2 border-l-black"
+                    ? "border-l-2 border-l-brand-primary bg-brand-primary-soft"
                     : "hover:bg-gray-50"
                 }`}
               >
                 <div className="flex items-start gap-3">
                   <div
                     className={`mt-0.5 w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
-                      selected.id === store.id ? "bg-black" : "bg-gray-100"
+                      selected.id === store.id ? "bg-brand-primary" : "bg-gray-100"
                     }`}
                   >
                     <MapPin
@@ -161,7 +161,7 @@ function StoreLocatorModal({ onClose }: { onClose: () => void }) {
                   href={selected.mapUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-black text-white text-xs font-semibold rounded-xl hover:bg-gray-800 transition-colors"
+                  className="brand-button flex-1 gap-2 rounded-xl py-2.5"
                 >
                   <Navigation className="w-3.5 h-3.5" />
                   Get Directions
@@ -170,7 +170,7 @@ function StoreLocatorModal({ onClose }: { onClose: () => void }) {
                   href={selected.mapUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 text-xs font-medium rounded-xl hover:border-black transition-colors text-gray-700"
+                  className="brand-outline-button gap-2 rounded-xl px-4 py-2.5"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   Open Maps
@@ -249,7 +249,7 @@ export default function Footer() {
               {/* Store Locator CTA */}
               <button
                 onClick={() => setStoreLocatorOpen(true)}
-                className="mt-5 inline-flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-full text-base font-medium text-gray-700 hover:border-black hover:text-black transition-all group"
+                className="brand-outline-button mt-5 inline-flex gap-2 rounded-full px-4 py-2 text-base font-medium group"
               >
                 <MapPin className="w-3.5 h-3.5 group-hover:text-black transition-colors" />
                 Find Our Stores
@@ -267,7 +267,7 @@ export default function Footer() {
                   <li key={label}>
                     <Link
                       href={href}
-                      className="text-base text-gray-500 transition-colors hover:text-black"
+                      className="text-base text-gray-500 transition-colors hover:text-brand-primary"
                     >
                       {label}
                     </Link>
@@ -289,7 +289,7 @@ export default function Footer() {
                       href={href}
                       target={external ? "_blank" : undefined}
                       rel={external ? "noopener noreferrer" : undefined}
-                      className="text-base text-gray-500 transition-colors hover:text-black"
+                      className="text-base text-gray-500 transition-colors hover:text-brand-primary"
                     >
                       {label}
                     </a>
@@ -300,7 +300,7 @@ export default function Footer() {
                 <li>
                   <button
                     onClick={() => setStoreLocatorOpen(true)}
-                    className="text-xs text-gray-500 hover:text-black transition-colors flex items-center gap-1.5 group"
+                    className="brand-link flex items-center gap-1.5 text-xs text-gray-500 group"
                   >
                     <MapPin className="w-3 h-3 group-hover:text-black transition-colors" />
                     Store Locator
@@ -329,7 +329,7 @@ export default function Footer() {
                 />
                 <button
                   type="submit"
-                  className="flex-shrink-0 rounded-r-lg bg-black px-4 py-2 text-base font-semibold text-white transition-colors hover:bg-gray-800"
+                  className="brand-button min-h-10 flex-shrink-0 rounded-r-lg rounded-l-none px-4 py-2 text-base"
                 >
                   Join
                 </button>

@@ -171,29 +171,29 @@ export default async function CategoryPage({ params }: Props) {
       />
       <section
         aria-labelledby="category-page-heading"
-        className="relative isolate overflow-hidden border-b border-[#eadde0] bg-gradient-to-r from-[#fbf6f0] via-white to-[#f8eff2] px-4 py-4 sm:py-5 md:px-8 xl:px-10"
+        className="relative isolate overflow-hidden border-b border-brand-border bg-gradient-to-r from-brand-primary-soft via-brand-surface to-brand-primary-muted px-4 py-4 sm:py-5 md:px-8 xl:px-10"
       >
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-[#d9b8c2]/20 blur-3xl"
+          className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-brand-primary-muted/60 blur-3xl"
         />
         <div className="relative mx-auto max-w-[1450px]">
           <nav aria-label="Breadcrumb" className="mb-3 flex flex-wrap items-center gap-2 text-[11px] text-neutral-500">
-            <a href="/" className="transition-colors hover:text-[#75495a]">Home</a>
+            <a href="/" className="brand-link">Home</a>
             <span aria-hidden="true">/</span>
-            <a href="/shop" className="transition-colors hover:text-[#75495a]">Shop</a>
+            <a href="/shop" className="brand-link">Shop</a>
             <span aria-hidden="true">/</span>
-            <span aria-current="page" className="font-medium text-[#75495a]">{categoryDisplayName}</span>
+            <span aria-current="page" className="font-medium text-brand-primary">{categoryDisplayName}</span>
           </nav>
           <div className="flex items-center gap-2">
             <span className="h-px w-6 bg-[#b58b69]" />
-            <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-[#966e58] sm:text-[10px]">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-brand-primary sm:text-[10px]">
               Kankana Silks · Curated collection
             </p>
           </div>
           <h1
             id="category-page-heading"
-            className="mt-1.5 text-xl font-semibold tracking-tight text-[#593847] sm:text-2xl md:text-3xl"
+            className="mt-1.5 text-xl font-semibold tracking-tight text-brand-primary-deep sm:text-2xl md:text-3xl"
           >
             {categoryDisplayName} Collection
           </h1>
@@ -201,7 +201,7 @@ export default async function CategoryPage({ params }: Props) {
             {category.description?.trim() ||
               `Browse the current ${categoryDisplayName.toLowerCase()} collection at Kankana Silks. Review individual product details and availability before ordering.`}
           </p>
-          <div className="mt-3 h-[2px] w-14 rounded-full bg-gradient-to-r from-[#875467] to-[#c6a07c]" />
+          <div className="brand-accent-rule mt-3 w-14" />
         </div>
       </section>
       <CategoryProductsClient
@@ -210,7 +210,7 @@ export default async function CategoryPage({ params }: Props) {
       />
       <section
         aria-labelledby="category-seo-heading"
-        className="border-t border-neutral-100 bg-[#faf7f2] px-4 py-9 md:px-8 md:py-12 xl:px-10"
+        className="border-t border-brand-border bg-brand-surface px-4 py-9 md:px-8 md:py-12 xl:px-10"
       >
         <div className="mx-auto max-w-[1200px]">
           <h2

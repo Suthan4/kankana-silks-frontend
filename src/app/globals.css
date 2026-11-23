@@ -10,12 +10,28 @@
   --font-sans: "futura-pt", sans-serif;
   --font-futura-bold: "futura-pt-bold", sans-serif;
 
-  /* Existing colors */
-  --color-main-primary: #58292C;
-  --color-main-primary-two: #643436;
+  /*
+   * Kankana Silks brand palette.
+   * Change these values to re-theme brand surfaces, CTAs, active states,
+   * focus rings and highlights across the storefront.
+   */
+  --color-brand-primary: #653536;
+  --color-brand-primary-hover: #54292D;
+  --color-brand-primary-deep: #442326;
+  --color-brand-primary-soft: #F7F0EF;
+  --color-brand-primary-muted: #EBDDDD;
+  --color-brand-accent: #C7A76E;
+  --color-brand-surface: #FFFCFA;
+  --color-brand-border: #E9DEDA;
+
+  /* Backward-compatible names used by existing Tailwind components. */
+  --color-main-primary: var(--color-brand-primary);
+  --color-main-primary-two: var(--color-brand-primary-hover);
+  --color-main-secondary: var(--color-brand-accent);
+
+  /* Legacy neutral tokens remain neutral; only brand-specific utilities change. */
   --color-primary: #000;
   --color-primary-dark: #000;
-  --color-main-secondary: #C7A76E;
   --color-background: #fff;
   --color-surface: #fff;
   --color-text-main: #000;
@@ -38,6 +54,131 @@
   }
 }
 
+@layer components {
+  .brand-product-card {
+    border: 1px solid transparent;
+    border-radius: 0.85rem;
+    padding: 0.35rem;
+    transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
+  }
+
+  .brand-product-card:hover {
+    border-color: var(--color-brand-border);
+    box-shadow: 0 10px 26px rgb(70 35 38 / 0.07);
+    transform: translateY(-2px);
+  }
+
+  .brand-button {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 0.75rem;
+    background: var(--color-brand-primary);
+    padding: 0.75rem 1.25rem;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    box-shadow: 0 5px 16px rgb(101 53 54 / 0.16);
+    transition:
+      background-color 180ms ease,
+      border-color 180ms ease,
+      box-shadow 180ms ease,
+      transform 180ms ease;
+  }
+
+  .brand-button:hover:not(:disabled) {
+    background: var(--color-brand-primary-hover);
+    box-shadow: 0 8px 22px rgb(101 53 54 / 0.22);
+    transform: translateY(-1px);
+  }
+
+  .brand-button:active:not(:disabled) {
+    transform: translateY(0) scale(0.99);
+  }
+
+  .brand-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    box-shadow: none;
+  }
+
+  .brand-outline-button {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid var(--color-brand-primary);
+    border-radius: 0.75rem;
+    background: #fff;
+    padding: 0.65rem 1rem;
+    color: var(--color-brand-primary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition:
+      background-color 180ms ease,
+      color 180ms ease,
+      border-color 180ms ease,
+      transform 180ms ease;
+  }
+
+  .brand-outline-button:hover:not(:disabled) {
+    background: var(--color-brand-primary-soft);
+    border-color: var(--color-brand-primary-hover);
+    color: var(--color-brand-primary-deep);
+    transform: translateY(-1px);
+  }
+
+  .brand-soft-surface {
+    border: 1px solid var(--color-brand-border);
+    background:
+      radial-gradient(circle at 95% 8%, rgb(199 167 110 / 0.13), transparent 30%),
+      linear-gradient(115deg, var(--color-brand-primary-soft), #fff 58%, #fbf5f2);
+  }
+
+  .brand-card {
+    border: 1px solid var(--color-brand-border);
+    background: #fff;
+    transition:
+      border-color 220ms ease,
+      box-shadow 220ms ease,
+      transform 220ms ease;
+  }
+
+  .brand-card:hover {
+    border-color: rgb(101 53 54 / 0.28);
+    box-shadow: 0 12px 28px rgb(70 35 38 / 0.08);
+    transform: translateY(-2px);
+  }
+
+  .brand-link {
+    color: var(--color-brand-primary);
+    text-underline-offset: 3px;
+    transition: color 160ms ease;
+  }
+
+  .brand-link:hover {
+    color: var(--color-brand-primary-hover);
+  }
+
+  .brand-accent-rule {
+    height: 2px;
+    border-radius: 9999px;
+    background: linear-gradient(
+      90deg,
+      var(--color-brand-primary),
+      var(--color-brand-accent)
+    );
+  }
+}
+
 /* Explicit Adobe Bold family */
 @layer utilities {
   .font-futura-bold {
@@ -57,22 +198,6 @@
   height: 0;
   display: none;
   background: transparent;
-}
-
-@theme {
-  /* LIGHT (default) */
-  --color-main-primary: #58292C;
-  --color-main-primary-two: #643436;
-  --color-primary: #000;
-  --color-primary-dark: #000;
-
-  --color-main-secondary: #C7A76E;
-
-  --color-background: #fff;
-  --color-surface: #fff;
-
-  --color-text-main: #000;
-  --color-text-muted: #000;
 }
 
 /* DARK overrides */
@@ -345,7 +470,7 @@ html {
 
 /* Focus styles for accessibility */
 *:focus-visible {
-  outline: 2px solid currentColor;
+  outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
 }
 
@@ -358,12 +483,12 @@ html {
 
 /* Custom selection colors */
 ::selection {
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: rgb(101 53 54 / 0.18);
   color: inherit;
 }
 
 ::-moz-selection {
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: rgb(101 53 54 / 0.18);
   color: inherit;
 }
 
@@ -413,7 +538,7 @@ html {
   height: 26px;
   margin-top: -10px;
   border-radius: 50%;
-  background: #653536;
+  background: var(--color-brand-primary);
   border: 3px solid white;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
   cursor: grab;
@@ -424,7 +549,7 @@ html {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #653536;
+  background: var(--color-brand-primary);
   border: 3px solid white;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
   cursor: grab;

@@ -42,7 +42,7 @@ export function CartCheckoutFooter({
         onClick={onCheckout}
         disabled={!isValid}
         aria-disabled={!isValid}
-        className="w-full bg-gray-900 text-white py-3 rounded-xl font-futura-bold shadow hover:shadow-md transition flex items-center justify-center gap-2 text-sm group disabled:bg-gray-400 disabled:shadow-none disabled:cursor-not-allowed"
+        className="brand-button w-full rounded-xl py-3 font-futura-bold text-sm group disabled:bg-gray-400 disabled:cursor-not-allowed"
       >
         {isValid ? "Proceed to Checkout" : "Update cart to continue"}
         {isValid && (

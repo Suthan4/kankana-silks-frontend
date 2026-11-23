@@ -65,7 +65,7 @@ export const CategoryProductCard = memo(function CategoryProductCard({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: index * 0.04 }}
-      className="group"
+      className="group brand-product-card"
     >
       <Link href={`/${product.category?.slug}/${product.slug}`}>
         <div className="relative overflow-hidden bg-[#f5f2ee]">
@@ -95,7 +95,7 @@ export const CategoryProductCard = memo(function CategoryProductCard({
               aria-pressed={isWishlisted}
               className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur-sm opacity-100 transition-all duration-300 hover:bg-white md:opacity-0 md:group-hover:opacity-100"
             >
-              <Heart className={`h-4 w-4 ${isWishlisted ? "fill-black text-black" : "text-black"}`} />
+              <Heart className={`h-4 w-4 ${isWishlisted ? "fill-brand-primary text-brand-primary" : "text-black"}`} />
             </button>
           </div>
         </div>
@@ -129,7 +129,7 @@ export const CategoryProductCard = memo(function CategoryProductCard({
               <button
                 type="button"
                 onClick={() => onViewOptions(product)}
-                className="w-full border border-black py-2.5 text-xs uppercase tracking-widest transition-colors hover:bg-black hover:text-white"
+                className="brand-outline-button w-full py-2.5"
               >
                 View Options
               </button>
@@ -139,7 +139,7 @@ export const CategoryProductCard = memo(function CategoryProductCard({
                   type="button"
                   onClick={() => onDecrease(cartItem)}
                   aria-label={`Decrease ${product.name} quantity`}
-                  className="flex-1 py-2.5 text-sm transition-colors hover:bg-gray-50"
+                  className="flex-1 py-2.5 text-sm transition-colors hover:bg-brand-primary-soft hover:text-brand-primary"
                 >
                   −
                 </button>
@@ -162,7 +162,7 @@ export const CategoryProductCard = memo(function CategoryProductCard({
                 onClick={() => onAddToCart(product, selectedVariant)}
                 disabled={isAddingToCart}
                 aria-busy={isAddingToCart}
-                className="w-full bg-black py-2.5 text-xs uppercase tracking-widest text-white transition-colors hover:bg-gray-900 disabled:cursor-wait disabled:opacity-70"
+                className="brand-button w-full py-2.5 disabled:cursor-wait"
               >
                 {isAddingToCart ? "Adding..." : "Add to Cart"}
               </button>
@@ -172,7 +172,7 @@ export const CategoryProductCard = memo(function CategoryProductCard({
               type="button"
               whileTap={{ scale: 0.97 }}
               onClick={() => onRequestProduct(product, selectedVariant)}
-              className="flex w-full items-center justify-center gap-2 bg-black py-2.5 text-xs uppercase tracking-widest text-white transition-colors hover:bg-gray-900 disabled:cursor-wait disabled:opacity-70"
+              className="brand-button w-full py-2.5 disabled:cursor-wait"
             >
               <AlertCircle className="h-4 w-4" />
               Request Product

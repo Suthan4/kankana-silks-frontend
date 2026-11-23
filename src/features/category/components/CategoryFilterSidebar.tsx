@@ -38,7 +38,7 @@ export function CategoryFilterSidebar({
         <button
           type="button"
           onClick={onClearFilters}
-          className="text-sm text-red-600 hover:text-red-700 font-medium"
+          className="brand-link text-sm font-medium"
         >
           Clear All Filters
         </button>
@@ -53,7 +53,7 @@ export function CategoryFilterSidebar({
               onClick={() => onSubCategoryChange(null)}
               className={`cursor-pointer rounded-lg px-3 py-2 transition-colors ${
                 selectedSubCategory === null
-                  ? "bg-yellow-50 font-medium text-yellow-700"
+                  ? "bg-brand-primary-soft font-medium text-brand-primary"
                   : "text-gray-700 hover:bg-gray-50"
               }`}
             >
@@ -66,7 +66,7 @@ export function CategoryFilterSidebar({
                 onClick={() => onSubCategoryChange(subCategory.id)}
                 className={`cursor-pointer rounded-lg px-3 py-2 transition-colors ${
                   selectedSubCategory === subCategory.id
-                    ? "bg-yellow-50 font-medium text-yellow-700"
+                    ? "bg-brand-primary-soft font-medium text-brand-primary"
                     : "text-gray-700 hover:bg-gray-50"
                 }`}
               >

@@ -72,16 +72,16 @@ export function MobileBottomNavigation({
                   {isActive && (
                     <motion.div
                       layoutId="activeTab"
-                      className="absolute -top-3 left-1/2 h-1 w-12 -translate-x-1/2 rounded-full bg-black"
+                      className="absolute -top-3 left-1/2 h-1 w-12 -translate-x-1/2 rounded-full bg-brand-primary"
                       transition={{ type: "spring", stiffness: 380, damping: 30 }}
                     />
                   )}
-                  <Icon className={`h-5 w-5 transition-colors ${isActive ? "text-black" : "text-gray-500"}`} />
-                  <span className={`text-[10px] font-medium transition-colors ${isActive ? "text-black" : "text-gray-500"}`}>
+                  <Icon className={`h-5 w-5 transition-colors ${isActive ? "text-brand-primary" : "text-gray-500"}`} />
+                  <span className={`text-[10px] font-medium transition-colors ${isActive ? "text-brand-primary" : "text-gray-500"}`}>
                     {item.name}
                   </span>
                   {!!item.badgeCount && item.badgeCount > 0 && (
-                    <span className="absolute right-1/4 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-black text-[8px] font-medium text-white">
+                    <span className="absolute right-1/4 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand-primary text-[8px] font-medium text-white">
                       {item.badgeCount}
                     </span>
                   )}
@@ -109,12 +109,12 @@ export function MobileBottomNavigation({
             {pathname?.startsWith("/my-account") && (
               <motion.div
                 layoutId="activeTab"
-                className="absolute -top-3 left-1/2 h-1 w-12 -translate-x-1/2 rounded-full bg-black"
+                className="absolute -top-3 left-1/2 h-1 w-12 -translate-x-1/2 rounded-full bg-brand-primary"
                 transition={{ type: "spring", stiffness: 380, damping: 30 }}
               />
             )}
-            <User className={`h-5 w-5 transition-colors ${pathname?.startsWith("/my-account") ? "text-black" : "text-gray-500"}`} />
-            <span className={`text-[10px] font-medium transition-colors ${pathname?.startsWith("/my-account") ? "text-black" : "text-gray-500"}`}>
+            <User className={`h-5 w-5 transition-colors ${pathname?.startsWith("/my-account") ? "text-brand-primary" : "text-gray-500"}`} />
+            <span className={`text-[10px] font-medium transition-colors ${pathname?.startsWith("/my-account") ? "text-brand-primary" : "text-gray-500"}`}>
               {user ? "Account" : "Login"}
             </span>
           </button>

@@ -42,8 +42,8 @@ export function CategoryMegaMenuSubcategoryGrid({
             onClick={onNavigate}
             className="group flex w-fit items-center gap-2 text-base font-semibold tracking-wide text-gray-900"
           >
-            <span className="h-[1.5px] w-0 shrink-0 bg-black transition-all duration-200 group-hover:w-4" />
-            <span className="transition-colors duration-200 group-hover:text-black">
+            <span className="h-[1.5px] w-0 shrink-0 bg-brand-primary transition-all duration-200 group-hover:w-4" />
+            <span className="transition-colors duration-200 group-hover:text-brand-primary">
               {sub.name}
             </span>
           </Link>
@@ -54,7 +54,7 @@ export function CategoryMegaMenuSubcategoryGrid({
                   <Link
                     href={getCategoryUrl(grandchild.slug)}
                     onClick={onNavigate}
-                    className="block text-[15px] leading-6 text-gray-500 transition-colors duration-200 hover:text-black"
+                    className="block text-[15px] leading-6 text-gray-500 transition-colors duration-200 hover:text-brand-primary"
                   >
                     {grandchild.name}
                   </Link>
