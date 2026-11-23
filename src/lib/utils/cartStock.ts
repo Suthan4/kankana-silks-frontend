@@ -65,7 +65,8 @@ const getStockRows = (item: any): any[] | null => {
       return variantStock;
     }
 
-    // Fall back to matching product-level warehouse rows.
+    // Some product APIs include variant inventory on product.stock
+    // instead of nesting it under product.variants[].stock.
     if (productStock && productStock.length > 0) {
       const matchingRows = productStock.filter(
         (row: any) =>
@@ -77,18 +78,28 @@ const getStockRows = (item: any): any[] | null => {
       }
     }
 
-    // No matching rows: allow direct stock fields to resolve inventory.
     return null;
   }
 
-  // Simple product inventory.
   if (productStock && productStock.length > 0) {
-    const matchingRows = productStock.filter(
+    // Simple-product inventory is stored with a null variantId.
+    const simpleProductRows = productStock.filter(
       (row: any) => row?.variantId == null
     );
 
-    if (matchingRows.length > 0) {
-      return matchingRows;
+    if (simpleProductRows.length > 0) {
+      return simpleProductRows;
+    }
+
+    // Category and product-list APIs may return variant-linked stock rows
+    // at product.stock level even when variant details are not embedded.
+    // Aggregate these rows until the customer selects a specific variant.
+    const variantRows = productStock.filter(
+      (row: any) => row?.variantId != null
+    );
+
+    if (item?.product?.hasVariants && variantRows.length > 0) {
+      return variantRows;
     }
   }
 
@@ -159,10 +170,11 @@ export const getCartItemStockState = (
   const allowOutOfStockOrders =
     getAllowOutOfStockOrders(item);
 
+  // Threshold equality is blocked when out-of-stock ordering is disabled.
   const isBelowThreshold =
     hasStockData &&
     threshold > 0 &&
-    available < threshold;
+    available <= threshold;
 
   // Physical stock zero ALWAYS blocks purchasing.
   const isZeroStock =
@@ -178,11 +190,11 @@ export const getCartItemStockState = (
   const isOutOfStock =
     isZeroStock || isThresholdBlocked;
 
-  // Backorders bypass threshold only with positive physical stock.
+  // When enabled, allow at most one unit whenever physical stock is positive,
+  // regardless of whether the stock is below the configured threshold.
   const isLimited =
     hasStockData &&
     allowOutOfStockOrders &&
-    isBelowThreshold &&
     available > 0;
 
   // Exactly one physical unit and purchasing is permitted.

@@ -124,7 +124,15 @@ export const CategoryProductCard = memo(function CategoryProductCard({
         </div>
 
         <div className="mt-3">
-          {showAddToCart ? (
+          {isOutOfStock ? (
+            <div
+              role="status"
+              aria-label={`${product.name} is out of stock`}
+              className="w-full border border-gray-200 bg-gray-100 py-2.5 text-center text-xs font-semibold uppercase tracking-widest text-gray-500"
+            >
+              Out of Stock
+            </div>
+          ) : showAddToCart ? (
             hasVariants && variants.length > 1 ? (
               <button
                 type="button"
