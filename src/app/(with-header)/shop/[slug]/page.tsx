@@ -129,6 +129,13 @@ export default async function CategoryPage({ params }: Props) {
   // The first page remains server-rendered so crawlers see product links in
   // the initial HTML. The client component handles filters and interactions.
   const listed = initialProducts?.data?.products ?? [];
+  const categoryDisplayName =
+    category.name.trim() === category.name.trim().toUpperCase()
+      ? category.name
+          .trim()
+          .toLowerCase()
+          .replace(/(^|[\\s-])([a-z])/g, (_match, separator: string, letter: string) => separator + letter.toUpperCase())
+      : category.name.trim();
 
   return (
     <>
@@ -164,25 +171,38 @@ export default async function CategoryPage({ params }: Props) {
       />
       <section
         aria-labelledby="category-page-heading"
-        className="mx-auto max-w-[1450px] bg-white px-4 pb-3 pt-4 md:px-8 md:pb-4 md:pt-5 xl:px-10"
+        className="relative isolate overflow-hidden border-b border-[#eadde0] bg-gradient-to-r from-[#fbf6f0] via-white to-[#f8eff2] px-4 py-4 sm:py-5 md:px-8 xl:px-10"
       >
-        <nav aria-label="Breadcrumb" className="mb-2 text-[11px] text-neutral-500">
-          <a href="/" className="hover:text-neutral-900">Home</a>
-          <span className="mx-2" aria-hidden="true">/</span>
-          <a href="/shop" className="hover:text-neutral-900">Shop</a>
-          <span className="mx-2" aria-hidden="true">/</span>
-          <span aria-current="page">{category.name}</span>
-        </nav>
-        <h1
-          id="category-page-heading"
-          className="text-xl font-semibold tracking-tight text-neutral-950 sm:text-2xl"
-        >
-          {category.name.trim().replace(/\b[a-z]/g, (letter) => letter.toUpperCase())} Collection
-        </h1>
-        <p className="mt-1 max-w-4xl line-clamp-2 text-xs leading-5 text-neutral-600 sm:text-sm sm:leading-6">
-          {category.description?.trim() ||
-            `Browse the current ${category.name.toLowerCase()} collection at Kankana Silks. Review individual product details and availability before ordering.`}
-        </p>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-[#d9b8c2]/20 blur-3xl"
+        />
+        <div className="relative mx-auto max-w-[1450px]">
+          <nav aria-label="Breadcrumb" className="mb-3 flex flex-wrap items-center gap-2 text-[11px] text-neutral-500">
+            <a href="/" className="transition-colors hover:text-[#75495a]">Home</a>
+            <span aria-hidden="true">/</span>
+            <a href="/shop" className="transition-colors hover:text-[#75495a]">Shop</a>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page" className="font-medium text-[#75495a]">{categoryDisplayName}</span>
+          </nav>
+          <div className="flex items-center gap-2">
+            <span className="h-px w-6 bg-[#b58b69]" />
+            <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-[#966e58] sm:text-[10px]">
+              Kankana Silks · Curated collection
+            </p>
+          </div>
+          <h1
+            id="category-page-heading"
+            className="mt-1.5 text-xl font-semibold tracking-tight text-[#593847] sm:text-2xl md:text-3xl"
+          >
+            {categoryDisplayName} Collection
+          </h1>
+          <p className="mt-1.5 max-w-4xl line-clamp-2 text-xs leading-5 text-[#75656a] sm:text-sm sm:leading-6">
+            {category.description?.trim() ||
+              `Browse the current ${categoryDisplayName.toLowerCase()} collection at Kankana Silks. Review individual product details and availability before ordering.`}
+          </p>
+          <div className="mt-3 h-[2px] w-14 rounded-full bg-gradient-to-r from-[#875467] to-[#c6a07c]" />
+        </div>
       </section>
       <CategoryProductsClient
         category={category}
@@ -197,7 +217,7 @@ export default async function CategoryPage({ params }: Props) {
             id="category-seo-heading"
             className="text-xl font-semibold tracking-tight text-neutral-950 sm:text-2xl"
           >
-            About the {category.name.toLowerCase()} collection
+            About the {categoryDisplayName.toLowerCase()} collection
           </h2>
           <p className="mt-3 max-w-4xl text-sm leading-7 text-neutral-700">
             Browse the products currently listed in this collection. Each

@@ -131,6 +131,7 @@ export function CategoryProductsView({
               canAddToCart={canAddProductToCart}
               isWishlisted={wishlist.isProductWishlisted}
               isAddingToCart={cart.isAddingToCart}
+              hasActiveFilters={filters.hasActiveFilters}
               onClearFilters={filters.clearAllFilters}
               onAddToCart={cart.addProduct}
               onIncrease={cart.increaseQuantity}
