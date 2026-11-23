@@ -47,7 +47,7 @@ export function CategoryDesktopToolbar({
           Shop
         </Link>
         <span className="text-gray-200">›</span>
-        <h1 className="text-sm font-medium uppercase tracking-widest text-black">{category.name}</h1>
+        <span className="text-sm font-medium uppercase tracking-widest text-black">{category.name}</span>
         <span className="text-xs tracking-wide text-gray-400">
           {total > 0 ? `${total} sarees` : ""}
         </span>

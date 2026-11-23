@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ProductDetailsClient from "@/components/sections/productDetialClient";
 import { getProductBySlug } from "@/lib/seo/server-api";
+import { seoPageTitle, brandedSeoTitle, seoPageDescription } from "@/lib/seo/metadata";
 import { JsonLd, breadcrumbJsonLd, productJsonLd } from "@/lib/seo/json-ld";
 
 type Props = {
@@ -14,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!product || product.category?.slug !== category) {
     return {
-      title: "Product Not Found | Kankana Silks",
+      title: "Product Not Found",
       description: "The product you're looking for could not be found.",
       robots: { index: false, follow: false },
     };
@@ -35,11 +36,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         alt: media.altText || product.name,
       })) ?? [];
 
-  const title = product.metaTitle || `${product.name} | Kankana Silks`;
-  const description =
-    product.metaDesc ||
-    product.description?.replace(/\s+/g, " ").trim().slice(0, 160) ||
-    `Explore ${product.name} at Kankana Silks. View product details and availability online.`;
+  const title = seoPageTitle(product.metaTitle, `${product.name} Saree`);
+  const description = seoPageDescription(
+    product.metaDesc || product.description,
+    `Explore ${product.name} at Kankana Silks. View product details and availability online.`,
+  );
 
   return {
     title,
@@ -54,7 +55,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       product.artisanName,
     ].filter((keyword): keyword is string => Boolean(keyword)),
     openGraph: {
-      title,
+      title: brandedSeoTitle(title),
       description,
       images,
       type: "website",
@@ -63,7 +64,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title,
+      title: brandedSeoTitle(title),
       description,
       ...(images[0]?.url ? { images: [images[0].url] } : {}),
     },

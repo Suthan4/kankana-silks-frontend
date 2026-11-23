@@ -32,11 +32,11 @@ const isValidGAId = /^G-[A-Z0-9]+$/i.test(GA_MEASUREMENT_ID ?? "");
 
 export const metadata: Metadata = {
   title: {
-    default: "Kankana Silks | Premium Silk Sarees Online in Mysore & Bengaluru",
+    default: "Kankana Silks | Silk Sarees in Mysore & Bengaluru",
     template: "%s | Kankana Silks",
   },
   description:
-    "Shop authentic Kanchipuram, Banarasi, Paithani and handloom sarees at Kankana Silks, Mysore. Explore the collection online with delivery to Bengaluru, Chennai, Hyderabad and across India.",
+    "Shop Kanchipuram, Banarasi, Paithani and handloom sarees online at Kankana Silks, Mysore, with delivery across India.",
   keywords: [
     "Kankana Silks",
     "silk sarees",
@@ -77,7 +77,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Kankana Silks | Premium Silk Sarees Online in Mysore & Bengaluru",
     description:
-      "Shop authentic Kanchipuram, Banarasi, Paithani and handloom silk sarees from Mysore. Explore online collections with delivery across Bengaluru, Chennai, Hyderabad and India.",
+      "Explore Kanchipuram, Banarasi, Paithani and handloom sarees from Kankana Silks, Mysore, with delivery across India.",
     url: SITE_URL,
     siteName: "Kankana Silks",
     locale: "en_IN",
@@ -95,7 +95,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Premium Silk Sarees in Mysore & Bengaluru | Kankana Silks",
     description:
-      "Shop authentic Kanchipuram, Banarasi, Paithani and handloom sarees at Kankana Silks, Mysore. Order online from Bengaluru, Chennai, Hyderabad and across India.",
+      "Shop Kanchipuram, Banarasi, Paithani and handloom sarees online from Kankana Silks, Mysore.",
     images: ["/kankana-silks-logo.png"],
   },
   robots: {

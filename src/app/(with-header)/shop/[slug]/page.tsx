@@ -4,6 +4,7 @@ import CategoryProductsClient from "@/components/categoryProductsClient";
 import { getCategoryBySlug, getCategoryProducts } from "@/lib/seo/server-api";
 import type { Category } from "@/lib/api/category.api";
 import { JsonLd, SITE_URL, breadcrumbJsonLd } from "@/lib/seo/json-ld";
+import { seoPageTitle, brandedSeoTitle, seoPageDescription } from "@/lib/seo/metadata";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -18,18 +19,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!category) {
     return {
-      title: "Category Not Found | Kankana Silks",
+      title: "Category Not Found",
       description: "The category you're looking for could not be found.",
     };
   }
 
-  const title =
-    category.metaTitle ||
-    `${category.name} - Premium Silk Sarees | Kankana Silks`;
-  const description =
-    category.metaDesc ||
-    category.description ||
-    `Explore ${category.name.toLowerCase()} at Kankana Silks, Mysore. Shop online with delivery to Bengaluru, Chennai, Hyderabad and across India.`;
+  const title = seoPageTitle(category.metaTitle, `${category.name} Sarees`);
+  const description = seoPageDescription(
+    category.metaDesc || category.description,
+    `Explore ${category.name.toLowerCase()} at Kankana Silks, Mysore. Shop online with delivery to Bengaluru, Chennai, Hyderabad and across India.`,
+  );
 
   return {
     title,
@@ -44,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       "handcrafted saree",
     ].filter(Boolean),
     openGraph: {
-      title,
+      title: brandedSeoTitle(title),
       description,
       images: category.image
         ? [
@@ -62,7 +61,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title,
+      title: brandedSeoTitle(title),
       description,
       images: category.image ? [category.image] : [],
     },
@@ -163,6 +162,49 @@ export default async function CategoryPage({ params }: Props) {
           },
         ]}
       />
+      <section
+        aria-labelledby="category-page-heading"
+        className="mx-auto max-w-[1450px] bg-white px-4 pb-7 pt-7 md:px-8 xl:px-10"
+      >
+        <nav aria-label="Breadcrumb" className="mb-3 text-xs text-neutral-500">
+          <a href="/" className="hover:text-neutral-900">Home</a>
+          <span className="mx-2" aria-hidden="true">/</span>
+          <a href="/shop" className="hover:text-neutral-900">Shop</a>
+          <span className="mx-2" aria-hidden="true">/</span>
+          <span aria-current="page">{category.name}</span>
+        </nav>
+        <h1 id="category-page-heading" className="text-2xl font-semibold tracking-tight text-neutral-950 sm:text-3xl">
+          {category.name} Collection
+        </h1>
+        <h2 className="mt-3 text-base font-semibold text-neutral-900">
+          Explore {category.name} sarees online
+        </h2>
+        {category.description?.trim() ? (
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-neutral-600">{category.description}</p>
+        ) : null}
+        <p className="mt-2 max-w-4xl text-sm leading-6 text-neutral-600">
+          Browse the products currently listed in this collection. Each product page provides its own photographs, description, displayed price and current availability, so review those details before adding an item to your cart.
+        </p>
+        <p className="mt-2 max-w-4xl text-sm leading-6 text-neutral-600">
+          Use the filters and sorting controls to narrow the collection. Delivery availability, courier options and charges are confirmed after you enter your delivery pincode during checkout.
+        </p>
+        <h2 className="mt-5 text-base font-semibold text-neutral-900">
+          Product information and availability
+        </h2>
+        <p className="mt-2 max-w-4xl text-sm leading-6 text-neutral-600">
+          When comparing styles, review each product's photographs, description
+          and displayed price. Material, colour, design, care and any weave
+          information are specific to the individual listing. Product
+          availability can change, so use the live product page as the source
+          for current details before ordering.
+        </p>
+        <p className="mt-2 max-w-4xl text-sm leading-6 text-neutral-600">
+          For help choosing a product or understanding its listed details,
+          contact Kankana Silks before checkout. Once you have selected your
+          items, enter your delivery pincode to check available service options
+          and charges for your address.
+        </p>
+      </section>
       <CategoryProductsClient
         category={category}
         initialProducts={initialProducts ?? undefined}

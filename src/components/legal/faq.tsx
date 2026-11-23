@@ -6,16 +6,18 @@ import { ChevronDown } from "lucide-react";
 const faqs = [
   {
     question: "How long does delivery take?",
-    answer: "Orders are delivered within 3–8 business days after dispatch.",
+    answer:
+      "Estimated delivery is 3–8 business days after dispatch. Actual delivery depends on the destination, courier serviceability and local conditions. Check the available delivery options at checkout.",
   },
   {
     question: "Can I cancel my order?",
     answer:
-      "Orders can be cancelled before shipment. Once shipped, cancellation is not allowed.",
+      "Cancellation requests may be made before shipment. Once an order has shipped, cancellation may no longer be available. Review the cancellation policy or contact support for help with a specific order.",
   },
   {
     question: "What is your return policy?",
-    answer: "Return requests must be raised within 24 hours of delivery.",
+    answer:
+      "Return requests must be raised within 24 hours of delivery, subject to the conditions in the return and refund policy. Please review the policy before placing your order.",
   },
   {
     question: "How is GST calculated?",

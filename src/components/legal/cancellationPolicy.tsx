@@ -16,7 +16,15 @@ const CancellationPolicy: React.FC = () => {
             </h2>
 
             <p className="mb-3">
-              Orders can be cancelled before dispatch confirmation.
+              Orders can be cancelled before dispatch confirmation. If you
+              need to request a cancellation, contact our support team as soon
+              as possible and share your order number so the order status can
+              be checked.
+            </p>
+            <p className="mb-3">
+              A cancellation request is subject to the order not having been
+              shipped. Please wait for confirmation from Kankana Silks before
+              treating an order as cancelled.
             </p>
 
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">

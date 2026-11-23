@@ -46,7 +46,7 @@ export function CategoryMobileHeader({
           </motion.div>
         </Link>
         <div>
-          <h2 className="font-semibold text-gray-900">{categoryName}</h2>
+          <p className="font-semibold text-gray-900">{categoryName}</p>
           <p className="text-xs text-gray-500">{total} items</p>
         </div>
         <div className="ml-auto flex items-center gap-3">

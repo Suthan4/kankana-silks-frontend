@@ -23,8 +23,24 @@ const AboutUs: React.FC = () => {
 
           <p>
             At Kankana Silks, we believe in quality, transparency, and customer
-            satisfaction. From secure payments to trusted delivery partners, we
-            ensure a seamless shopping experience.
+            satisfaction. Product pages provide the available descriptions,
+            photographs, prices and other item-specific details so customers
+            can review a saree before ordering.
+          </p>
+
+          <p>
+            Our online collection brings together saree traditions from
+            different parts of India, including Kanchipuram, Banarasi,
+            Paithani, Mysore silk and handloom styles where currently listed.
+            The range changes as products are added or become unavailable, so
+            the live product listing is the best place to check current stock.
+          </p>
+
+          <p>
+            Kankana Silks is based in Mysore, Karnataka. Customers can browse
+            the collection online from across India and confirm delivery
+            serviceability, options and applicable charges for their address
+            during checkout.
           </p>
 
           <div className="bg-gray-50 border rounded-lg p-6 mt-8">
