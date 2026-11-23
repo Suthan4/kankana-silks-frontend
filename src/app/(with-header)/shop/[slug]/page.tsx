@@ -164,51 +164,69 @@ export default async function CategoryPage({ params }: Props) {
       />
       <section
         aria-labelledby="category-page-heading"
-        className="mx-auto max-w-[1450px] bg-white px-4 pb-7 pt-7 md:px-8 xl:px-10"
+        className="mx-auto max-w-[1450px] bg-white px-4 pb-3 pt-4 md:px-8 md:pb-4 md:pt-5 xl:px-10"
       >
-        <nav aria-label="Breadcrumb" className="mb-3 text-xs text-neutral-500">
+        <nav aria-label="Breadcrumb" className="mb-2 text-[11px] text-neutral-500">
           <a href="/" className="hover:text-neutral-900">Home</a>
           <span className="mx-2" aria-hidden="true">/</span>
           <a href="/shop" className="hover:text-neutral-900">Shop</a>
           <span className="mx-2" aria-hidden="true">/</span>
           <span aria-current="page">{category.name}</span>
         </nav>
-        <h1 id="category-page-heading" className="text-2xl font-semibold tracking-tight text-neutral-950 sm:text-3xl">
-          {category.name} Collection
+        <h1
+          id="category-page-heading"
+          className="text-xl font-semibold tracking-tight text-neutral-950 sm:text-2xl"
+        >
+          {category.name.trim().replace(/\b[a-z]/g, (letter) => letter.toUpperCase())} Collection
         </h1>
-        <h2 className="mt-3 text-base font-semibold text-neutral-900">
-          Explore {category.name} sarees online
-        </h2>
-        {category.description?.trim() ? (
-          <p className="mt-2 max-w-4xl text-sm leading-6 text-neutral-600">{category.description}</p>
-        ) : null}
-        <p className="mt-2 max-w-4xl text-sm leading-6 text-neutral-600">
-          Browse the products currently listed in this collection. Each product page provides its own photographs, description, displayed price and current availability, so review those details before adding an item to your cart.
-        </p>
-        <p className="mt-2 max-w-4xl text-sm leading-6 text-neutral-600">
-          Use the filters and sorting controls to narrow the collection. Delivery availability, courier options and charges are confirmed after you enter your delivery pincode during checkout.
-        </p>
-        <h2 className="mt-5 text-base font-semibold text-neutral-900">
-          Product information and availability
-        </h2>
-        <p className="mt-2 max-w-4xl text-sm leading-6 text-neutral-600">
-          When comparing styles, review each product's photographs, description
-          and displayed price. Material, colour, design, care and any weave
-          information are specific to the individual listing. Product
-          availability can change, so use the live product page as the source
-          for current details before ordering.
-        </p>
-        <p className="mt-2 max-w-4xl text-sm leading-6 text-neutral-600">
-          For help choosing a product or understanding its listed details,
-          contact Kankana Silks before checkout. Once you have selected your
-          items, enter your delivery pincode to check available service options
-          and charges for your address.
+        <p className="mt-1 max-w-4xl line-clamp-2 text-xs leading-5 text-neutral-600 sm:text-sm sm:leading-6">
+          {category.description?.trim() ||
+            `Browse the current ${category.name.toLowerCase()} collection at Kankana Silks. Review individual product details and availability before ordering.`}
         </p>
       </section>
       <CategoryProductsClient
         category={category}
         initialProducts={initialProducts ?? undefined}
       />
+      <section
+        aria-labelledby="category-seo-heading"
+        className="border-t border-neutral-100 bg-[#faf7f2] px-4 py-9 md:px-8 md:py-12 xl:px-10"
+      >
+        <div className="mx-auto max-w-[1200px]">
+          <h2
+            id="category-seo-heading"
+            className="text-xl font-semibold tracking-tight text-neutral-950 sm:text-2xl"
+          >
+            About the {category.name.toLowerCase()} collection
+          </h2>
+          <p className="mt-3 max-w-4xl text-sm leading-7 text-neutral-700">
+            Browse the products currently listed in this collection. Each
+            product page provides its own photographs, description, displayed
+            price and current availability, so review those details before
+            adding an item to your cart.
+          </p>
+          <h3 className="mt-6 text-base font-semibold text-neutral-900">
+            Product information and availability
+          </h3>
+          <p className="mt-2 max-w-4xl text-sm leading-7 text-neutral-700">
+            When comparing styles, review each product's photographs,
+            description and displayed price. Material, colour, design, care and
+            weave information are specific to the individual listing. Product
+            availability can change, so use the live product page as the source
+            for current details before ordering.
+          </p>
+          <h3 className="mt-6 text-base font-semibold text-neutral-900">
+            Delivery and assistance
+          </h3>
+          <p className="mt-2 max-w-4xl text-sm leading-7 text-neutral-700">
+            Delivery serviceability, courier options and applicable charges are
+            confirmed after you enter your delivery pincode during checkout.
+            For help choosing a product or understanding its listed details,
+            contact Kankana Silks before placing your order.
+          </p>
+        </div>
+      </section>
+
     </>
   );
 }
