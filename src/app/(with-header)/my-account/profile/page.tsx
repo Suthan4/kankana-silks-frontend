@@ -267,7 +267,7 @@ export default function ProfilePage() {
               </div>
             ) : (
               <>
-                <h2 className="font-bold text-xl">
+                <h2 className="font-futura-bold text-xl">
                   {currentUserData?.firstName} {currentUserData?.lastName}
                 </h2>
                 <p className="text-sm opacity-90">{currentUserData?.email}</p>
@@ -284,7 +284,7 @@ export default function ProfilePage() {
       <div className="hidden lg:block">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold mb-2">My Account</h1>
+            <h1 className="text-3xl font-futura-bold mb-2">My Account</h1>
             <p className="text-gray-600">Manage your profile and preferences</p>
           </div>
         </div>
@@ -310,14 +310,14 @@ export default function ProfilePage() {
                 <Icon className="w-6 h-6 lg:w-7 lg:h-7 text-white" />
               </div>
 
-              <div className="font-bold text-sm lg:text-base mb-1">
+              <div className="font-futura-bold text-sm lg:text-base mb-1">
                 {action.label}
               </div>
               <div className="text-xs text-gray-600">{action.count} items</div>
 
               {action.count && (
                 <div
-                  className={`absolute top-3 right-3 w-6 h-6 bg-gradient-to-br ${action.gradient} text-white rounded-full text-xs flex items-center justify-center font-bold shadow-lg`}
+                  className={`absolute top-3 right-3 w-6 h-6 bg-gradient-to-br ${action.gradient} text-white rounded-full text-xs flex items-center justify-center font-futura-bold shadow-lg`}
                 >
                   {action.count}
                 </div>
@@ -330,7 +330,7 @@ export default function ProfilePage() {
       {/* Account Settings */}
       <div className="bg-white rounded-2xl border-2 border-gray-100 overflow-hidden shadow-sm">
         <div className="p-5 lg:p-6 border-b bg-gradient-to-r from-gray-50 to-white">
-          <h3 className="font-bold text-lg">Account Settings</h3>
+          <h3 className="font-futura-bold text-lg">Account Settings</h3>
           <p className="text-sm text-gray-500">Manage your account details</p>
         </div>
 
@@ -379,7 +379,7 @@ export default function ProfilePage() {
           <div className="bg-white w-full lg:max-w-lg rounded-t-3xl lg:rounded-2xl shadow-2xl animate-in slide-in-from-bottom lg:slide-in-from-bottom-0 fade-in duration-200 max-h-[90vh] flex flex-col">
             {/* HEADER */}
             <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
-              <h2 className="text-xl font-bold">Personal Details</h2>
+              <h2 className="text-xl font-futura-bold">Personal Details</h2>
               <button
                 onClick={handleCloseProfileModal}
                 className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-500"
@@ -520,7 +520,7 @@ export default function ProfilePage() {
             <div className="bg-white w-full lg:max-w-lg rounded-t-3xl lg:rounded-2xl shadow-2xl animate-in slide-in-from-bottom lg:slide-in-from-bottom-0 fade-in duration-200 max-h-[90vh] flex flex-col">
               {/* HEADER */}
               <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
-                <h2 className="text-xl font-bold">Personal Details</h2>
+                <h2 className="text-xl font-futura-bold">Personal Details</h2>
                 <button
                   onClick={handleCloseProfileModal}
                   className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-500"
@@ -649,7 +649,7 @@ export default function ProfilePage() {
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
               <div>
-                <h2 className="text-xl font-bold">Change Password</h2>
+                <h2 className="text-xl font-futura-bold">Change Password</h2>
                 <p className="text-sm text-gray-500 mt-1">
                   Update your account password
                 </p>

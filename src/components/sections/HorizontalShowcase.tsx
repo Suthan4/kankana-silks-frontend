@@ -100,7 +100,7 @@ export default function HorizontalShowcase({
           transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
           className="text-center"
         >
-          <h2 className="text-6xl lg:text-8xl font-bold tracking-tighter mb-4 bg-gradient-to-b from-white to-gray-500 bg-clip-text text-transparent">
+          <h2 className="text-6xl lg:text-8xl font-futura-bold tracking-tighter mb-4 bg-gradient-to-b from-white to-gray-500 bg-clip-text text-transparent">
             {title}
           </h2>
           {subtitle && (
@@ -169,11 +169,11 @@ function ProductSlide({
     if (!slideRef.current || typeof window === "undefined") return;
 
     const imageEl = slideRef.current.querySelector(
-      ".product-image"
+      ".product-image",
     ) as HTMLElement | null;
 
     const contentEl = slideRef.current.querySelector(
-      ".product-content"
+      ".product-content",
     ) as HTMLElement | null;
 
     if (!imageEl || !contentEl) return;
@@ -203,7 +203,7 @@ function ProductSlide({
             scrub: true,
             horizontal: true,
           },
-        }
+        },
       );
     }, slideRef);
 
@@ -242,7 +242,7 @@ function ProductSlide({
             {product.category.name}
           </span>
 
-          <h3 className="text-5xl lg:text-7xl font-bold tracking-tighter mb-6 leading-none">
+          <h3 className="text-5xl lg:text-7xl font-futura-bold tracking-tighter mb-6 leading-none">
             {product.name}
           </h3>
 

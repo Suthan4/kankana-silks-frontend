@@ -1,9 +1,49 @@
 @import "tailwindcss";
 
-body {
-  font-family: "futura-pt", sans-serif !important;
-  font-weight: 400;
-  font-size: 1rem;
+/* =========================================
+   KANKANA SILKS - TYPOGRAPHY
+   Adobe Fonts: Futura PT
+   Project: gmp5qfk
+========================================= */
+
+@theme {
+  --font-sans: "futura-pt", sans-serif;
+  --font-futura-bold: "futura-pt-bold", sans-serif;
+
+  /* Existing colors */
+  --color-main-primary: #58292C;
+  --color-main-primary-two: #643436;
+  --color-primary: #000;
+  --color-primary-dark: #000;
+  --color-main-secondary: #C7A76E;
+  --color-background: #fff;
+  --color-surface: #fff;
+  --color-text-main: #000;
+  --color-text-muted: #000;
+}
+
+/* Global typography */
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    font-size: 1rem;
+    background: var(--color-background);
+    color: var(--color-text-main);
+  }
+}
+
+/* Explicit Adobe Bold family */
+@layer utilities {
+  .font-futura-bold {
+    font-family: var(--font-futura-bold);
+    font-weight: 700;
+  }
 }
 
 .scrollbar-none {
@@ -44,11 +84,6 @@ body {
   --color-text-muted: #fff;
 }
 
-body {
-  background: var(--color-background);
-  color: var(--color-text-main);
-  font-family: Arial, Helvetica, sans-serif;
-}
 
 
 @keyframes fadeIn {

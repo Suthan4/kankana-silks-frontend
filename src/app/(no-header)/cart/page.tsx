@@ -517,7 +517,7 @@ export default function CartPage() {
           className="max-w-md rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm"
         >
           <ShoppingBag className="mx-auto mb-4 h-10 w-10 text-gray-400" />
-          <h2 className="mb-2 text-xl font-bold text-gray-900">
+          <h2 className="mb-2 text-xl font-futura-bold text-gray-900">
             We couldn’t load your cart
           </h2>
           <p className="mb-6 text-sm text-gray-500">
@@ -546,7 +546,7 @@ export default function CartPage() {
           <div className="w-24 h-24 bg-gray-100 rounded-full mx-auto mb-5 flex items-center justify-center">
             <ShoppingBag className="w-12 h-12 text-gray-400" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">
+          <h2 className="text-2xl font-futura-bold text-gray-900 mb-3">
             Your cart is empty
           </h2>
           <p className="text-gray-500 mb-6">
@@ -578,7 +578,7 @@ export default function CartPage() {
               </motion.button>
             </Link>
             <div className="h-4 w-px bg-gray-300" />
-            <h1 className="text-xl font-bold text-gray-900">
+            <h1 className="text-xl font-futura-bold text-gray-900">
               Shopping Cart
               <span className="text-sm text-gray-400 font-normal ml-2">
                 ({totalItems} {totalItems === 1 ? "item" : "items"})
@@ -647,7 +647,7 @@ export default function CartPage() {
             >
               <div className="bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col h-full overflow-hidden">
                 <div className="flex-none px-4 py-3 border-b border-gray-100">
-                  <h2 className="font-bold text-gray-900 text-sm">
+                  <h2 className="font-futura-bold text-gray-900 text-sm">
                     Order Summary
                   </h2>
                 </div>
@@ -670,7 +670,7 @@ export default function CartPage() {
                         <div className="flex items-center gap-2">
                           <Check className="w-4 h-4 text-green-600" />
                           <div>
-                            <p className="font-bold text-green-900 text-xs">
+                            <p className="font-futura-bold text-green-900 text-xs">
                               {appliedCoupon.code}
                             </p>
                             <p className="text-[10px] text-green-700">
@@ -727,7 +727,7 @@ export default function CartPage() {
                             disabled={
                               !couponCode || validateCouponMutation.isPending
                             }
-                            className="px-3 py-2 bg-gray-900 text-white rounded-lg text-xs font-bold hover:bg-gray-800 transition disabled:opacity-50 flex items-center gap-1"
+                            className="px-3 py-2 bg-gray-900 text-white rounded-lg text-xs font-futura-bold hover:bg-gray-800 transition disabled:opacity-50 flex items-center gap-1"
                           >
                             {validateCouponMutation.isPending ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
@@ -768,10 +768,10 @@ export default function CartPage() {
                                       className={`w-full text-left px-3 py-2.5 border-b last:border-b-0 transition text-xs ${canApply ? "hover:bg-amber-50 cursor-pointer" : "opacity-50 cursor-not-allowed bg-gray-50"}`}
                                     >
                                       <div className="flex items-center gap-2 mb-0.5">
-                                        <span className="font-bold text-gray-900">
+                                        <span className="font-futura-bold text-gray-900">
                                           {coupon.code}
                                         </span>
-                                        <span className="text-[10px] bg-amber-400 text-gray-900 px-1.5 py-0.5 rounded-full font-bold">
+                                        <span className="text-[10px] bg-amber-400 text-gray-900 px-1.5 py-0.5 rounded-full font-futura-bold">
                                           {coupon.discountType === "PERCENTAGE"
                                             ? `${coupon.discountValue}% OFF`
                                             : `₹${coupon.discountValue} OFF`}
@@ -894,7 +894,7 @@ export default function CartPage() {
                                   className={`w-full p-3 text-left border-b hover:bg-green-50 transition ${selectedCourier?.courier_company_id === shippingData.cheapestCourier.courier_company_id ? "bg-main-primary/10" : ""}`}
                                 >
                                   <div className="flex items-center gap-2 mb-0.5">
-                                    <span className="text-[10px] bg-main-primary/10 text-main-primary px-1.5 py-0 rounded-full font-bold">
+                                    <span className="text-[10px] bg-main-primary/10 text-main-primary px-1.5 py-0 rounded-full font-futura-bold">
                                       Affordable
                                     </span>
                                     {selectedCourier?.courier_company_id ===
@@ -935,7 +935,7 @@ export default function CartPage() {
                                     className={`w-full p-3 text-left border-b hover:bg-blue-50 transition ${selectedCourier?.courier_company_id === shippingData.fastestCourier.courier_company_id ? "bg-main-primary-two/10" : ""}`}
                                   >
                                     <div className="flex items-center gap-2 mb-0.5">
-                                      <span className="text-[10px] bg-main-primary/10 text-main-primary px-1.5 py-0 rounded-full font-bold">
+                                      <span className="text-[10px] bg-main-primary/10 text-main-primary px-1.5 py-0 rounded-full font-futura-bold">
                                         FASTEST
                                       </span>
                                       {selectedCourier?.courier_company_id ===
@@ -1000,7 +1000,7 @@ export default function CartPage() {
                                         </p>
                                       </div>
                                       <div className="flex items-center gap-1.5 ml-2">
-                                        <p className="font-bold text-gray-900 text-xs">
+                                        <p className="font-futura-bold text-gray-900 text-xs">
                                           {formatMoney(courier.freight_charge)}
                                         </p>
                                         {selectedCourier?.courier_company_id ===

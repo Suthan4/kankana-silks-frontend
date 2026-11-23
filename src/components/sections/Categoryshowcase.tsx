@@ -86,7 +86,7 @@ function CategoryShowcase({
           <div className="text-center mb-10 md:mb-16 animate-fadeIn">
             {showTitle && (
               <h2
-                className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tight"
+                className="text-3xl md:text-5xl lg:text-6xl font-futura-bold mb-4 tracking-tight"
                 style={{ color: textColor }}
               >
                 {title}
@@ -195,7 +195,7 @@ function CategoryShowcase({
 
                 {/* Content */}
                 <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
-                  <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2 tracking-tight transform transition-transform duration-300 group-hover:translate-y-[-4px] drop-shadow-lg">
+                  <h3 className="text-2xl md:text-3xl lg:text-4xl font-futura-bold text-white mb-2 tracking-tight transform transition-transform duration-300 group-hover:translate-y-[-4px] drop-shadow-lg">
                     {category.name}
                   </h3>
 

@@ -38,7 +38,9 @@ export function CheckoutAccordionCard({
         <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center flex-shrink-0">
           {icon}
         </div>
-        <span className="font-bold text-gray-900 text-sm flex-1">{title}</span>
+        <span className="font-futura-bold text-gray-900 text-sm flex-1">
+          {title}
+        </span>
         {badge && (
           <span
             className={`text-xs px-2 py-0.5 rounded-full border flex items-center gap-1 ${

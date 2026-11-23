@@ -71,7 +71,9 @@ export function MobileLocationSheet({
             <div className="p-6 pb-8">
               <div className="mx-auto mb-6 h-1.5 w-12 rounded-full bg-gray-300" />
               <div className="mb-4 flex justify-between">
-                <h3 className="text-xl font-bold">Choose your location</h3>
+                <h3 className="text-xl font-futura-bold">
+                  Choose your location
+                </h3>
                 <button
                   type="button"
                   onClick={onClose}

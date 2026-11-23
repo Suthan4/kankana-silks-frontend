@@ -58,7 +58,7 @@ function StoreLocatorModal({ onClose }: { onClose: () => void }) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 flex-shrink-0">
           <div>
-            <h2 className="text-base font-bold tracking-wide text-gray-900 uppercase">
+            <h2 className="text-base font-futura-bold tracking-wide text-gray-900 uppercase">
               Our Stores
             </h2>
             <p className="text-xs text-gray-600 mt-0.5">Find us near you</p>
@@ -125,7 +125,7 @@ function StoreLocatorModal({ onClose }: { onClose: () => void }) {
 
             {/* Store info */}
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
-              <h3 className="text-sm font-bold text-gray-900">
+              <h3 className="text-sm font-futura-bold text-gray-900">
                 {selected.name}
               </h3>
 
@@ -258,7 +258,7 @@ export default function Footer() {
 
             {/* ── Shop ── */}
             <div>
-              <h4 className="mb-4 text-base font-bold uppercase tracking-[0.15em] text-gray-900">
+              <h4 className="mb-4 text-base font-futura-bold uppercase tracking-[0.15em] text-gray-900">
                 {" "}
                 Shop
               </h4>
@@ -278,7 +278,7 @@ export default function Footer() {
 
             {/* ── Connect ── */}
             <div>
-              <h4 className="mb-4 text-base font-bold uppercase tracking-[0.15em] text-gray-900">
+              <h4 className="mb-4 text-base font-futura-bold uppercase tracking-[0.15em] text-gray-900">
                 {" "}
                 Connect
               </h4>
@@ -311,7 +311,7 @@ export default function Footer() {
 
             {/* ── Newsletter ── */}
             <div>
-              <h4 className="mb-4 text-base font-bold uppercase tracking-[0.15em] text-gray-900">
+              <h4 className="mb-4 text-base font-futura-bold uppercase tracking-[0.15em] text-gray-900">
                 {" "}
                 Newsletter
               </h4>

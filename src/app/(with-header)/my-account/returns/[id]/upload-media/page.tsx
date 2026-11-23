@@ -133,7 +133,9 @@ export default function UploadAdditionalMediaPage() {
   const uploadMediaFile = async (mediaFile: MediaFile): Promise<boolean> => {
     try {
       setMediaFiles((prev) =>
-        prev.map((f) => (f.id === mediaFile.id ? { ...f, uploading: true } : f)),
+        prev.map((f) =>
+          f.id === mediaFile.id ? { ...f, uploading: true } : f,
+        ),
       );
 
       const urlResponse = await fetch("/api/media/get-upload-url", {
@@ -247,7 +249,9 @@ export default function UploadAdditionalMediaPage() {
 
       setMediaFiles((prev) =>
         prev.map((f) =>
-          f.id === mediaFile.id ? { ...f, uploading: false, uploaded: false } : f,
+          f.id === mediaFile.id
+            ? { ...f, uploading: false, uploaded: false }
+            : f,
         ),
       );
 
@@ -349,7 +353,7 @@ export default function UploadAdditionalMediaPage() {
           className="text-center"
         >
           <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="text-2xl font-futura-bold text-gray-900 mb-2">
             Media Uploaded Successfully!
           </h2>
           <p className="text-gray-600">
@@ -535,7 +539,11 @@ export default function UploadAdditionalMediaPage() {
                             media.height &&
                             ` • ${media.width}x${media.height}`}
                           {media.duration &&
-                            ` • ${Math.floor(media.duration / 60)}:${Math.floor(media.duration % 60).toString().padStart(2, "0")}`}
+                            ` • ${Math.floor(media.duration / 60)}:${Math.floor(
+                              media.duration % 60,
+                            )
+                              .toString()
+                              .padStart(2, "0")}`}
                         </p>
                       </div>
                       <button

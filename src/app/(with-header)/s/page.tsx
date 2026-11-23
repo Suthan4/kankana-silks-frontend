@@ -115,7 +115,7 @@ function SearchContent() {
   if (!query) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Search</h1>
+        <h1 className="text-3xl font-futura-bold text-gray-900 mb-4">Search</h1>
         <p className="text-gray-600">
           Enter a search query to find products and categories.
         </p>
@@ -127,7 +127,7 @@ function SearchContent() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+        <h1 className="text-2xl font-futura-bold text-gray-900 mb-2">
           Search results for &quot;{query}&quot;
         </h1>
         {results && (
@@ -246,7 +246,7 @@ function SearchContent() {
                           </p>
                         )}
                         <div className="flex items-baseline gap-2">
-                          <span className="text-lg font-bold text-gray-900">
+                          <span className="text-lg font-futura-bold text-gray-900">
                             ₹{result.sellingPrice?.toLocaleString("en-IN")}
                           </span>
                           {result.basePrice &&

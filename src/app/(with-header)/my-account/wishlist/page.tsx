@@ -1,6 +1,13 @@
 "use client";
 
-import { Heart, Trash2, ShoppingCart, ArrowRight, Loader2, AlertCircle } from "lucide-react";
+import {
+  Heart,
+  Trash2,
+  ShoppingCart,
+  ArrowRight,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
@@ -11,7 +18,9 @@ import { useAuthModal } from "@/store/useAuthModalStore";
 import { useQueryClient } from "@tanstack/react-query";
 import { getCartItemStockState } from "@/lib/utils/cartStock";
 
-const ProductRequestModal = dynamic(() => import("@/components/productRequestModal"));
+const ProductRequestModal = dynamic(
+  () => import("@/components/productRequestModal"),
+);
 
 export default function WishlistPage() {
   const router = useRouter();
@@ -42,7 +51,7 @@ export default function WishlistPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Heart className="w-12 h-12 mx-auto text-red-500 mb-4" />
-          <h1 className="text-xl font-bold mb-2">Login Required</h1>
+          <h1 className="text-xl font-futura-bold mb-2">Login Required</h1>
           <button
             onClick={() => openModal("login")}
             className="bg-black text-white px-6 py-2 rounded-lg"
@@ -115,7 +124,9 @@ export default function WishlistPage() {
     return (
       <div className="text-center py-16">
         <Heart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-        <h2 className="text-xl font-bold mb-2">Your Wishlist is Empty</h2>
+        <h2 className="text-xl font-futura-bold mb-2">
+          Your Wishlist is Empty
+        </h2>
         <button
           onClick={() => router.push("/shop")}
           className="mt-4 bg-black text-white px-6 py-2 rounded-lg flex items-center gap-2 mx-auto"
@@ -134,7 +145,7 @@ export default function WishlistPage() {
       <div className="bg-white border-b p-4 lg:p-6 sticky top-0 z-10 shadow-sm">
         <div className="max-w-4xl mx-auto flex justify-between">
           <div>
-            <h1 className="text-2xl font-bold">My Wishlist</h1>
+            <h1 className="text-2xl font-futura-bold">My Wishlist</h1>
             <p className="text-sm text-gray-500">{wishlistCount} items saved</p>
           </div>
 
@@ -196,7 +207,7 @@ export default function WishlistPage() {
                     {product.name}
                   </h3>
 
-                  <p className="font-bold text-lg">
+                  <p className="font-futura-bold text-lg">
                     ₹{Number(product.sellingPrice).toLocaleString("en-IN")}
                   </p>
 

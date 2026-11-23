@@ -35,7 +35,7 @@ export function AccountNavigation() {
         <div className="bg-white rounded-2xl border border-gray-200 sticky top-8 overflow-hidden shadow-sm">
           <div className="p-6 border-b border-gray-200 bg-gradient-to-br from-gray-50 to-white">
             <div className="flex flex-col items-center text-center">
-              <h3 className="font-bold text-gray-900 text-lg">
+              <h3 className="font-futura-bold text-gray-900 text-lg">
                 {user?.firstName} {user?.lastName}
               </h3>
               <h3 className="text-sm opacity-80">{user?.email}</h3>

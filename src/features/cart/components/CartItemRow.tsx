@@ -69,7 +69,7 @@ export function CartItemRow({
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
               <Link href={`/products/${item?.product?.slug}`}>
-                <h3 className="font-bold text-gray-900 text-sm hover:text-main-primary transition cursor-pointer line-clamp-1">
+                <h3 className="font-futura-bold text-gray-900 text-sm hover:text-main-primary transition cursor-pointer line-clamp-1">
                   {item.product?.name}
                 </h3>
               </Link>
@@ -80,7 +80,10 @@ export function CartItemRow({
                       key={key}
                       className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600 font-medium"
                     >
-                      {key}: <span className="text-gray-900 font-semibold">{value}</span>
+                      {key}:{" "}
+                      <span className="text-gray-900 font-semibold">
+                        {value}
+                      </span>
                     </span>
                   ))}
                 </div>
@@ -118,7 +121,7 @@ export function CartItemRow({
           </div>
 
           <div className="flex items-center justify-between mt-2.5">
-            <p className="text-lg font-bold text-gray-900">
+            <p className="text-lg font-futura-bold text-gray-900">
               ₹{unitPrice.toLocaleString("en-IN")}
             </p>
             <div className="flex items-center gap-1.5 bg-gray-100 rounded-full px-2 py-1">
@@ -131,7 +134,7 @@ export function CartItemRow({
               >
                 <Minus className="w-3.5 h-3.5" />
               </button>
-              <span className="w-7 text-center font-bold text-gray-900 text-sm">
+              <span className="w-7 text-center font-futura-bold text-gray-900 text-sm">
                 {item.quantity}
               </span>
               <button

@@ -88,7 +88,7 @@ export function MobileLocationPincodeForm({
             )}
             <div>
               <p
-                className={`font-bold ${
+                className={`font-futura-bold ${
                   location.isServiceable ? "text-green-900" : "text-red-900"
                 }`}
               >

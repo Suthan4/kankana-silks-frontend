@@ -15,7 +15,6 @@ import {
 import { getReturnStatusLabel, ReturnStatus } from "@/lib/api/return.api";
 import { useUserReturns } from "@/hooks/useUserReturns";
 
-
 export default function ReturnsListPage() {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<ReturnStatus | "ALL">("ALL");
@@ -251,7 +250,7 @@ export default function ReturnsListPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Refund Amount</p>
-                    <p className="font-bold text-lg">
+                    <p className="font-futura-bold text-lg">
                       ₹{Number(returnItem.refundAmount).toFixed(2)}
                     </p>
                   </div>

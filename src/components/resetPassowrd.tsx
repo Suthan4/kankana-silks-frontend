@@ -121,7 +121,7 @@ export default function ResetPasswordClient() {
           <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black mb-4 sm:mb-6">
             <Lock className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-black mb-2">
+          <h1 className="text-2xl sm:text-3xl font-futura-bold text-black mb-2">
             Reset Password
           </h1>
           <p className="text-sm sm:text-base text-neutral-600">

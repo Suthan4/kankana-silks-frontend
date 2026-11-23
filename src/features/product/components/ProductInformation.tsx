@@ -1,5 +1,55 @@
 import { formatMaskedPrice } from "@/lib/utils/priceMasked";
-interface Props { name:string; categoryName?:string; displayPrice:number; basePrice:number; discount:number; isOutOfStock:boolean; }
-export function ProductInformation({name,categoryName,displayPrice,basePrice,discount,isOutOfStock}:Props){
- return <div><h1 className="text-2xl md:text-3xl font-serif text-gray-900 leading-tight">{name}</h1>{categoryName&&<p className="text-xs text-gray-500 mt-0.5">{categoryName}</p>}<div className="flex items-baseline gap-2.5 mt-2"><span className="text-3xl font-bold text-gray-900">{isOutOfStock?formatMaskedPrice(displayPrice):"₹"+displayPrice.toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2})}</span>{discount>0&&<><span className="text-lg text-gray-400 line-through">{isOutOfStock?formatMaskedPrice(basePrice):"₹"+basePrice.toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2})}</span><span className="bg-main-primary text-main-secondary px-2 py-0.5 rounded-full text-xs font-semibold">{discount}% OFF</span></>}</div></div>;
+interface Props {
+  name: string;
+  categoryName?: string;
+  displayPrice: number;
+  basePrice: number;
+  discount: number;
+  isOutOfStock: boolean;
+}
+export function ProductInformation({
+  name,
+  categoryName,
+  displayPrice,
+  basePrice,
+  discount,
+  isOutOfStock,
+}: Props) {
+  return (
+    <div>
+      <h1 className="text-2xl md:text-3xl font-serif text-gray-900 leading-tight">
+        {name}
+      </h1>
+      {categoryName && (
+        <p className="text-xs text-gray-500 mt-0.5">{categoryName}</p>
+      )}
+      <div className="flex items-baseline gap-2.5 mt-2">
+        <span className="text-3xl font-futura-bold text-gray-900">
+          {isOutOfStock
+            ? formatMaskedPrice(displayPrice)
+            : "₹" +
+              displayPrice.toLocaleString("en-IN", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+        </span>
+        {discount > 0 && (
+          <>
+            <span className="text-lg text-gray-400 line-through">
+              {isOutOfStock
+                ? formatMaskedPrice(basePrice)
+                : "₹" +
+                  basePrice.toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+            </span>
+            <span className="bg-main-primary text-main-secondary px-2 py-0.5 rounded-full text-xs font-semibold">
+              {discount}% OFF
+            </span>
+          </>
+        )}
+      </div>
+    </div>
+  );
 }
