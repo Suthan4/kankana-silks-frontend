@@ -27,8 +27,7 @@ type GridType = "3col" | "4col" | "list";
 export default function ShopClient({ categories }: ShopClientProps) {
   const [grid, setGrid] = useState<GridType>("4col");
 
-  const getCategoryUrl = (slug: string) =>
-    `/shop/${encodeURIComponent(slug)}`;
+  const getCategoryUrl = (slug: string) => `/shop/${encodeURIComponent(slug)}`;
 
   const parentCategories = categories.filter((cat) => !cat.parentId);
   const totalProducts = categories.reduce(
@@ -56,7 +55,7 @@ export default function ShopClient({ categories }: ShopClientProps) {
   }[grid];
 
   return (
-    <div className="min-h-screen bg-white pt-30 md:pt-30">
+    <div className="min-h-screen bg-white pt-30 md:pt-5">
       {/* ── TOOLBAR ── */}
       <div className="border-b border-gray-100 sticky top-0 z-30 bg-white">
         <div className="max-w-screen mx-auto px-6 md:px-12 flex items-center justify-between h-11">
@@ -101,9 +100,9 @@ export default function ShopClient({ categories }: ShopClientProps) {
           </h2>
           <p className="mt-2 text-sm leading-7 text-gray-600 sm:text-base">
             Browse Kanchipuram, Banarasi, Paithani, Mysore silk, handloom and
-            other currently listed collections at Kankana Silks. Open a
-            category to view its products, compare product details and check
-            current availability before ordering.
+            other currently listed collections at Kankana Silks. Open a category
+            to view its products, compare product details and check current
+            availability before ordering.
           </p>
         </header>
         {parentCategories.length === 0 ? (

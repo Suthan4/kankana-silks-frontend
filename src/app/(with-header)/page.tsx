@@ -33,8 +33,8 @@ function CityDiscoverySection() {
           <p className="mt-4 text-sm leading-7 text-[#6e6258] sm:text-base">
             Discover Kanchipuram, Banarasi, Paithani, Mysore silk and handloom
             sarees at Kankana Silks. Explore the current collection, compare
-            product details and confirm delivery serviceability for your
-            address during checkout.
+            product details and confirm delivery serviceability for your address
+            during checkout.
           </p>
         </div>
 
@@ -135,29 +135,8 @@ export default async function Home() {
     getActiveBanners(),
   ]);
 
-  const hasHeroHeading =
-    initialBanners.length > 0 ||
-    initialSections.some(
-      (section) =>
-        (section.layout === "slider" || section.type === "HERO_SLIDER") &&
-        section.media?.some((media) => Boolean(media.overlayTitle?.trim())),
-    );
-
   return (
     <>
-      {!hasHeroHeading && (
-        <header className="border-b border-[#e8e0d7] bg-[#f7f4ef] px-4 py-7 sm:px-6">
-          <div className="mx-auto max-w-6xl">
-            <h1 className="text-2xl font-semibold tracking-tight text-[#29231f] sm:text-3xl">
-              Premium Silk Sarees from Mysore
-            </h1>
-            <p className="mt-2 max-w-3xl text-sm leading-7 text-[#6e6258] sm:text-base">
-              Explore Kanchipuram, Banarasi, Paithani, Mysore silk and handloom
-              sarees online from Kankana Silks, with delivery options across India.
-            </p>
-          </div>
-        </header>
-      )}
       <LandingPage
         initialSections={initialSections}
         initialBanners={initialBanners}
