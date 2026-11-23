@@ -3,28 +3,16 @@ import type { MetadataRoute } from "next";
 const SITE_URL = "https://www.kankanasilks.com";
 
 /**
- * Keep public shopping and editorial pages crawlable while preventing
- * private, transactional, API and internal-search URLs from being indexed.
+ * Keep all application routes crawlable so search engines can read page-level
+ * robots metadata. Private and utility pages are marked noindex,follow in
+ * their route layouts. Only API endpoints and the coming-soon page are blocked.
  */
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
       allow: ["/", "/shop/", "/products/", "/about-us", "/contact-us", "/faq"],
-      disallow: [
-        "/api/",
-        "/cart",
-        "/checkout",
-        "/order-success",
-        "/my-account",
-        "/wishlist",
-        "/reset-password",
-        // Match the search route only when it has a query string.
-        // Do not use "/s": that prefix would also block /shop and /shipping-policy.
-        "/s?",
-        "/s$",
-        "/coming-soon",
-      ],
+      disallow: ["/api/", "/coming-soon"],
     },
     sitemap: SITE_URL + "/sitemap.xml",
     host: SITE_URL,
