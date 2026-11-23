@@ -30,10 +30,10 @@ export function ProductDeliveryChecker({
   return (
     <>
       {!isOutOfStock && (
-                  <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
+                  <div className="bg-brand-primary-soft rounded-xl p-3 border border-brand-border">
                     <div className="flex items-center gap-1.5 mb-2">
-                      <MapPin className="w-4 h-4 text-gray-700" />
-                      <h3 className="font-semibold text-gray-900 text-xs">
+                      <MapPin className="w-4 h-4 text-brand-primary" />
+                      <h3 className="font-semibold text-text-heading text-xs">
                         Check Delivery
                       </h3>
                     </div>
@@ -44,7 +44,7 @@ export function ProductDeliveryChecker({
                         value={pincode}
                         onChange={(e) => onPincodeChange(e.target.value)}
                         maxLength={6}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
+                        className="brand-input min-w-0 flex-1 text-sm"
                         onKeyDown={(e) => {
                           if (e.key === "Enter")
                             onCheckDeliveryAvailability(pincode);
@@ -53,7 +53,7 @@ export function ProductDeliveryChecker({
                       <button
                         onClick={onCheckDelivery}
                         disabled={isCheckingDelivery}
-                        className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition text-xs font-medium disabled:opacity-50"
+                        className="brand-button min-h-10 rounded-lg px-4 py-2 text-xs disabled:opacity-50"
                       >
                         {isCheckingDelivery ? "..." : "Check"}
                       </button>
@@ -65,21 +65,21 @@ export function ProductDeliveryChecker({
                         animate={{ opacity: 1, y: 0 }}
                         className={`mt-2 p-3 rounded-xl flex items-center gap-2 ${
                           deliveryInfo.isServiceable
-                            ? "bg-[#58292C]/10 border border-[#58292C]/20"
-                            : "bg-red-50 border border-red-200"
+                            ? "brand-status-success"
+                            : "brand-status-error"
                         }`}
                       >
                         {deliveryInfo.isServiceable ? (
-                          <Check className="w-4 h-4 text-main-secondary flex-shrink-0" />
+                          <Check className="w-4 h-4 text-success flex-shrink-0" />
                         ) : (
-                          <X className="w-4 h-4 text-red-600 flex-shrink-0" />
+                          <X className="w-4 h-4 text-error flex-shrink-0" />
                         )}
                         <div>
                           <p
                             className={`font-medium text-sm ${
                               deliveryInfo.isServiceable
-                                ? "text-main-primary"
-                                : "text-red-900"
+                                ? "text-success"
+                                : "text-error"
                             }`}
                           >
                             {deliveryInfo.isServiceable
@@ -87,7 +87,7 @@ export function ProductDeliveryChecker({
                               : "Not Serviceable"}
                           </p>
                           {deliveryInfo.isServiceable && (
-                            <p className="text-xs text-main-secondary">
+                            <p className="text-xs text-success">
                               Expected in {deliveryInfo.estimatedDays}
                             </p>
                           )}

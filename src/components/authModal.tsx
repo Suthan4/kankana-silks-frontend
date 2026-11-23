@@ -472,7 +472,7 @@ export default function AuthModal() {
                         whileHover={{ scale: isLoading ? 1 : 1.02 }}
                         whileTap={{ scale: isLoading ? 1 : 0.98 }}
                         disabled={isLoading}
-                        className="w-full bg-black text-white py-2 sm:py-2.5 rounded-lg font-semibold shadow-md text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed hover:bg-black/90 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition"
+                        className="brand-button w-full rounded-lg py-2 sm:py-2.5 text-sm sm:text-base disabled:cursor-not-allowed"
                       >
                         {isLoading ? "Signing in..." : "Sign In"}
                       </motion.button>
@@ -809,7 +809,7 @@ export default function AuthModal() {
                         whileHover={{ scale: isLoading ? 1 : 1.02 }}
                         whileTap={{ scale: isLoading ? 1 : 0.98 }}
                         disabled={isLoading}
-                        className="w-full bg-black text-white py-2 sm:py-2.5 rounded-lg font-semibold shadow-md text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed hover:bg-black/90 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition"
+                        className="brand-button w-full rounded-lg py-2 sm:py-2.5 text-sm sm:text-base disabled:cursor-not-allowed"
                       >
                         {isLoading ? "Creating Account..." : "Create Account"}
                       </motion.button>
@@ -891,7 +891,7 @@ export default function AuthModal() {
                         whileHover={{ scale: isLoading ? 1 : 1.02 }}
                         whileTap={{ scale: isLoading ? 1 : 0.98 }}
                         disabled={isLoading}
-                        className="w-full bg-black text-white py-2 sm:py-2.5 rounded-lg font-semibold shadow-md text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed hover:bg-black/90 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition"
+                        className="brand-button w-full rounded-lg py-2 sm:py-2.5 text-sm sm:text-base disabled:cursor-not-allowed"
                       >
                         {isLoading ? "Sending..." : "Send Reset Link"}
                       </motion.button>

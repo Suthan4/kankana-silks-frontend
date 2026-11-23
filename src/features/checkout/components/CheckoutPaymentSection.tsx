@@ -115,14 +115,14 @@ export function CheckoutPaymentSection({
               aria-pressed={isSelected}
               className={`w-full text-left border rounded-xl p-3 transition ${
                 isSelected
-                  ? "border-black bg-gray-50 shadow-sm"
+                  ? "border-brand-primary bg-brand-primary-soft shadow-brand-soft"
                   : "border-gray-200 hover:border-gray-400"
               } ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
             >
               <span className="flex items-center gap-3">
                 <span
                   className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                    isSelected ? "border-black bg-black" : "border-gray-300"
+                    isSelected ? "border-brand-primary bg-brand-primary" : "border-gray-300"
                   }`}
                 >
                   {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
@@ -136,7 +136,7 @@ export function CheckoutPaymentSection({
                       {method.title}
                     </span>
                     {method.recommended && (
-                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                      <span className="brand-badge brand-badge--success">
                         Recommended
                       </span>
                     )}

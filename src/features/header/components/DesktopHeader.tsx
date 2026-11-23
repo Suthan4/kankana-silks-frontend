@@ -69,7 +69,7 @@ export function DesktopHeader(props: Props) {
       initial={false}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      className={`fixed inset-x-0 top-0 z-40 hidden transition-[background-color,color,box-shadow] duration-200 md:block ${isHeaderWhite ? "bg-white text-black shadow-sm" : "bg-transparent text-white shadow-none"}`}
+      className={`fixed inset-x-0 top-0 z-40 hidden transition-[background-color,color,box-shadow] duration-200 md:block ${isHeaderWhite ? "bg-background text-text-main shadow-sm" : "bg-transparent text-white shadow-none"}`}
     >
       <div className="flex items-center justify-between px-8" style={{ height: "65px" }}>
         <DesktopLocationSelector

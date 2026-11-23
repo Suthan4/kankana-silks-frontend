@@ -358,7 +358,7 @@ export default function MiniCartDrawer() {
               }
             }}
             className={`
-            ios-modal-panel ios-cart-drawer ios-modal-motion fixed z-[151] bg-white shadow-2xl flex flex-col overflow-hidden
+            ios-modal-panel ios-cart-drawer ios-modal-motion fixed z-[151] bg-surface-elevated shadow-brand-float flex flex-col overflow-hidden
               ${
                 isMobile
                   ? "bottom-0 left-0 right-0 max-h-[85dvh] rounded-t-3xl"
@@ -373,7 +373,7 @@ export default function MiniCartDrawer() {
               </div>
             )}
             {/* HEADER */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-surface">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center">
                   <ShoppingBag className="w-4 h-4" />
@@ -412,7 +412,7 @@ export default function MiniCartDrawer() {
                   </p>
                   <button
                     onClick={close}
-                    className="px-5 py-2.5 bg-black text-white text-xs font-semibold rounded-lg hover:bg-gray-800 transition"
+                    className="brand-button rounded-lg px-5 py-2.5 text-xs"
                   >
                     Continue Shopping
                   </button>
