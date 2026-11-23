@@ -31,13 +31,13 @@ export function ProductDetailsTabs({ product }: ProductDetailsTabsProps) {
                     setActiveTab(tab);
                     detailsSwiperRef.current?.slideTo(index);
                   }}
-                  className={`pb-2.5 font-semibold transition relative capitalize text-sm ${activeTab === tab ? "text-black" : "text-gray-400"}`}
+                  className={`pb-2.5 font-semibold transition relative capitalize text-sm ${activeTab === tab ? "text-brand-primary" : "text-gray-400"}`}
                 >
                   {tab}
                   {activeTab === tab && (
                     <motion.div
                       layoutId="activeTab"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-primary"
                     />
                   )}
                 </button>

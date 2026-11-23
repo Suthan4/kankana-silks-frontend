@@ -33,7 +33,7 @@ export function ProductDesktopPurchaseActions({
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={onRequestProduct}
-            className="flex-1 bg-black text-white py-3 rounded-xl font-semibold shadow flex items-center justify-center gap-2 text-sm"
+            className="brand-button flex-1 rounded-xl py-3 text-sm"
           >
             <AlertCircle className="w-4 h-4" /> Request Product
           </motion.button>
@@ -44,7 +44,7 @@ export function ProductDesktopPurchaseActions({
               whileTap={{ scale: 0.98 }}
               onClick={() => onAddToCart()}
               disabled={isOutOfStock || isAddingToCart}
-              className="flex-1 bg-gray-900 text-white py-3 rounded-xl font-semibold shadow hover:shadow-md transition flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="brand-button flex-1 rounded-xl py-3 text-sm disabled:cursor-not-allowed"
             >
               {isAddingToCart ? (
                 <>
@@ -63,7 +63,7 @@ export function ProductDesktopPurchaseActions({
               whileTap={{ scale: 0.98 }}
               onClick={onBuyNow}
               disabled={isOutOfStock}
-              className="flex-1 bg-main-primary text-main-secondary py-3 rounded-xl font-semibold shadow hover:shadow-md transition flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="brand-outline-button flex-1 rounded-xl py-3 text-sm disabled:cursor-not-allowed"
             >
               <Zap className="w-4 h-4" /> Buy Now
             </motion.button>
@@ -143,7 +143,7 @@ export function ProductMobilePurchaseActions({
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={onRequestProduct}
-            className="flex-1 bg-black text-white py-3.5 rounded-xl font-futura-bold text-sm flex items-center justify-center gap-2 shadow-lg"
+            className="brand-button flex-1 rounded-xl py-3.5 font-futura-bold text-sm"
           >
             <AlertCircle className="w-4 h-4" />
             Request Product
@@ -155,7 +155,7 @@ export function ProductMobilePurchaseActions({
               whileTap={{ scale: 0.97 }}
               onClick={() => onAddToCart()}
               disabled={isOutOfStock || isAddingToCart}
-              className="flex-1 bg-gray-900 text-white py-3.5 rounded-xl font-futura-bold text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="brand-button flex-1 rounded-xl py-3.5 font-futura-bold text-sm disabled:cursor-not-allowed"
             >
               {isAddingToCart ? (
                 <>
@@ -175,7 +175,7 @@ export function ProductMobilePurchaseActions({
               whileTap={{ scale: 0.97 }}
               onClick={onBuyNow}
               disabled={isOutOfStock}
-              className="flex-1 bg-main-primary text-main-secondary py-3.5 rounded-xl font-futura-bold text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="brand-outline-button flex-1 rounded-xl py-3.5 font-futura-bold text-sm disabled:cursor-not-allowed"
             >
               <Zap className="w-4 h-4" />
               Buy Now
@@ -186,7 +186,7 @@ export function ProductMobilePurchaseActions({
               productId={productId}
               variant="icon"
               size="md"
-              className="w-12 h-12 flex-shrink-0 bg-gray-100 hover:bg-gray-200 rounded-xl border border-gray-200 flex items-center justify-center"
+              className="w-12 h-12 flex-shrink-0 rounded-xl border border-brand-border bg-brand-primary-soft hover:bg-brand-primary-muted flex items-center justify-center"
             />
           </>
         )}

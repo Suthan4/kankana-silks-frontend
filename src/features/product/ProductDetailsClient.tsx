@@ -338,7 +338,7 @@ export default function ProductDetailsClient({
                         </div>
                         <button
                           onClick={handleVideoConsultation}
-                          className="bg-main-primary text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 hover:shadow-md transition flex-shrink-0"
+                          className="brand-button min-h-9 flex-shrink-0 rounded-lg px-3 py-1.5 text-xs normal-case tracking-normal"
                         >
                           <Video className="w-3 h-3" /> Book
                         </button>
