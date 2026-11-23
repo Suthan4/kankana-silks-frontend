@@ -98,7 +98,7 @@ const getStockRows = (item: any): any[] | null => {
       (row: any) => row?.variantId != null
     );
 
-    if (item?.product?.hasVariants && variantRows.length > 0) {
+    if (variantRows.length > 0) {
       return variantRows;
     }
   }
