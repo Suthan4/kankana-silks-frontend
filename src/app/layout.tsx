@@ -2,19 +2,33 @@ import { Suspense } from "react";
 import type React from "react";
 import type { Metadata } from "next";
 import { GoogleAnalytics } from "@next/third-parties/google";
+
 // @ts-ignore Next.js processes this stylesheet import during the build.
 import "./globals.css";
+
 import AuthModalProvider from "@/components/authModalProvider";
 import ClientLayout from "@/components/clientLayout";
 import Providers from "@/components/provider/tanstackProvider";
 import { Toaster } from "sonner";
 import MiniCartDrawer from "@/components/miniCartDrawerProvider";
-import AnalyticsConsent from "@/components/analytics/analytics-consent";
 import { SkipLink } from "@/components/ui/SkipLink";
 import { NavigationProgress } from "@/components/ui/NavigationProgress";
 
+// --------------------------------------------------
+// Site Configuration
+// --------------------------------------------------
+
 const SITE_URL = "https://www.kankanasilks.com";
 const SITE_LOGO = SITE_URL + "/kankana-silks-logo.png";
+
+// Google Analytics Configuration
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
+
+const isValidGAId = /^G-[A-Z0-9]+$/i.test(GA_MEASUREMENT_ID ?? "");
+
+// --------------------------------------------------
+// SEO Metadata
+// --------------------------------------------------
 
 export const metadata: Metadata = {
   title: {
@@ -121,6 +135,10 @@ export const metadata: Metadata = {
   },
 };
 
+// --------------------------------------------------
+// Structured Data
+// --------------------------------------------------
+
 const storeStructuredData = {
   "@context": "https://schema.org",
   "@graph": [
@@ -143,7 +161,6 @@ const storeStructuredData = {
       description:
         "A Mysuru (Mysore)-based silk saree store offering Kanchipuram, Banarasi, Paithani and handloom sarees with online delivery across India.",
       email: "support@kankanasilks.com",
-      // Only emitted once the real number is set in the environment.
       ...(process.env.NEXT_PUBLIC_STORE_PHONE
         ? { telephone: process.env.NEXT_PUBLIC_STORE_PHONE }
         : {}),
@@ -189,6 +206,10 @@ const storeStructuredData = {
   ],
 };
 
+// --------------------------------------------------
+// Root Layout
+// --------------------------------------------------
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -200,6 +221,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://use.typekit.net" crossOrigin="" />
         <link rel="preconnect" href="https://p.typekit.net" crossOrigin="" />
         <link rel="stylesheet" href="https://use.typekit.net/gmp5qfk.css" />
+
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -213,21 +235,26 @@ export default function RootLayout({
 
       <body className="bg-[#faf7f2] text-neutral-900 antialiased overflow-x-hidden">
         <SkipLink />
-        {/* useSearchParams inside needs a Suspense boundary. */}
+
+        {/* Navigation Progress */}
         <Suspense fallback={null}>
           <NavigationProgress />
         </Suspense>
-        {/* <AnalyticsConsent /> */}
+
         <Providers>
           <ClientLayout>{children}</ClientLayout>
+
           <MiniCartDrawer />
           <AuthModalProvider />
         </Providers>
+
         <div id="portal-root" />
+
         <Toaster position="bottom-center" richColors />
+
         {/* Google Analytics 4 */}
-        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
-          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
+        {isValidGAId && GA_MEASUREMENT_ID && (
+          <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />
         )}
       </body>
     </html>
