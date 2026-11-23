@@ -96,7 +96,7 @@
   /* Surface and typography roles */
   --color-background: var(--color-ivory-50);
   --color-surface: #FFFCFA;
-  --color-surface-elevated: #FFFFFF;
+  --color-surface-elevated: var(--color-brand-surface);
   --color-surface-muted: var(--color-ivory-100);
   --color-text-heading: var(--color-warm-gray-900);
   --color-text-body: var(--color-warm-gray-700);
