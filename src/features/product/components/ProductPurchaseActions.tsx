@@ -152,20 +152,27 @@ export function ProductMobilePurchaseActions({
           <>
             {/* Add to Cart */}
             <motion.button
+              type="button"
               whileTap={{ scale: 0.97 }}
               onClick={() => onAddToCart()}
               disabled={isOutOfStock || isAddingToCart}
-              className="brand-button flex-1 rounded-xl py-3.5 font-futura-bold text-sm disabled:cursor-not-allowed"
+              aria-label={isAddingToCart ? "Adding to cart" : "Add to cart"}
+              className="
+    brand-button brand-button--compact
+    flex-1 min-w-0
+    rounded-xl
+    disabled:cursor-not-allowed
+  "
             >
               {isAddingToCart ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Adding to Cart...</span>
+                  <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                  <span className="whitespace-nowrap">Adding...</span>
                 </>
               ) : (
                 <>
-                  <ShoppingCart className="w-4 h-4" />
-                  <span>Add to Cart</span>
+                  <ShoppingCart className="h-4 w-4 shrink-0" />
+                  <span className="whitespace-nowrap">Add to Cart</span>
                 </>
               )}
             </motion.button>
