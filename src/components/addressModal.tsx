@@ -160,7 +160,7 @@ export default function AddressModal({
               <MapPin className="w-4 h-4 text-black" />
             </div>
             <div>
-              <h2 className="text-base font-bold leading-tight">
+              <h2 className="text-base font-futura-bold leading-tight">
                 {mode === "create" ? "Add Address" : "Edit Address"}
               </h2>
               <p className="text-xs opacity-80">Delivery address details</p>

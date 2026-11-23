@@ -170,7 +170,7 @@ function ProductGrid({
 
                       <div className="absolute left-0 top-0 flex flex-col gap-2">
                         {!inStock && (
-                          <span className="rounded-full bg-red-600 px-3 py-1.5 text-xs font-bold text-white shadow-lg">
+                          <span className="rounded-full bg-red-600 px-3 py-1.5 text-xs font-futura-bold text-white shadow-lg">
                             Sold Out
                           </span>
                         )}

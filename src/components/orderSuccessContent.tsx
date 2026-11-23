@@ -188,7 +188,7 @@ export default function OrderSuccessPage() {
               transition={{ delay: 0.35 }}
               className="text-center mb-6"
             >
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              <h1 className="text-3xl font-futura-bold text-gray-900 mb-2">
                 Order Placed! 🎉
               </h1>
               <p className="text-gray-500 text-sm">
@@ -212,12 +212,12 @@ export default function OrderSuccessPage() {
                     <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
                       Order Number
                     </p>
-                    <p className="font-bold text-gray-900 text-lg">
+                    <p className="font-futura-bold text-gray-900 text-lg">
                       #{displayOrderNumber}
                     </p>
                   </div>
                 </div>
-                <span className="px-3 py-1.5 bg-orange-100 text-orange-700 text-xs font-bold rounded-xl">
+                <span className="px-3 py-1.5 bg-orange-100 text-orange-700 text-xs font-futura-bold rounded-xl">
                   Processing
                 </span>
               </div>
@@ -233,7 +233,7 @@ export default function OrderSuccessPage() {
                   <p className="text-sm text-gray-600">
                     {order.items?.length || 0} item(s)
                   </p>
-                  <p className="font-bold text-gray-900 text-lg">
+                  <p className="font-futura-bold text-gray-900 text-lg">
                     ₹{Number(order.total).toFixed(2)}
                   </p>
                 </motion.div>

@@ -215,7 +215,7 @@ export default function ReturnDetailsPage() {
           <div className="flex items-start justify-between mb-4">
             <div>
               <p className="text-sm opacity-80 mb-1">Return Status</p>
-              <h2 className="text-2xl font-bold">
+              <h2 className="text-2xl font-futura-bold">
                 {getReturnStatusLabel(returnData.status)}
               </h2>
             </div>
@@ -227,7 +227,7 @@ export default function ReturnDetailsPage() {
           {/* Refund Amount */}
           <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
             <p className="text-sm opacity-80 mb-1">Expected Refund</p>
-            <p className="text-3xl font-bold">
+            <p className="text-3xl font-futura-bold">
               ₹{Number(returnData.refundAmount).toFixed(2)}
             </p>
             <p className="text-xs opacity-70 mt-1">

@@ -62,58 +62,65 @@ export default function OrdersPage() {
         (order: any) =>
           order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
           order.items.some((item: any) =>
-            item.product?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
+            item.product?.name
+              ?.toLowerCase()
+              .includes(searchQuery.toLowerCase()),
           ),
       ),
     [orders, searchQuery],
   );
 
   const isInvoiceAvailable = (order: any) =>
-    ["SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED", "COMPLETED"].includes(order.status);
+    ["SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED", "COMPLETED"].includes(
+      order.status,
+    );
 
   // ✅ Invoice download handler
-  const handleDownloadInvoice = useCallback(async (e: React.MouseEvent, order: any) => {
-    e.stopPropagation();
+  const handleDownloadInvoice = useCallback(
+    async (e: React.MouseEvent, order: any) => {
+      e.stopPropagation();
 
-    if (!isInvoiceAvailable(order)) {
-      toast.error("Invoice not available yet. Please wait for shipment.");
-      return;
-    }
+      if (!isInvoiceAvailable(order)) {
+        toast.error("Invoice not available yet. Please wait for shipment.");
+        return;
+      }
 
-    if (downloadingInvoices.has(order.id)) return;
+      if (downloadingInvoices.has(order.id)) return;
 
-    try {
-      setDownloadingInvoices((prev) => new Set(prev).add(order.id));
+      try {
+        setDownloadingInvoices((prev) => new Set(prev).add(order.id));
 
-      const response = await orderApi.downloadInvoice(order.id);
+        const response = await orderApi.downloadInvoice(order.id);
 
-      // Create blob from response
-      const blob = new Blob([response], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
+        // Create blob from response
+        const blob = new Blob([response], { type: "application/pdf" });
+        const url = window.URL.createObjectURL(blob);
 
-      // Create download link and trigger download
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `invoice-${order.orderNumber}.pdf`;
-      document.body.appendChild(link);
-      link.click();
+        // Create download link and trigger download
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `invoice-${order.orderNumber}.pdf`;
+        document.body.appendChild(link);
+        link.click();
 
-      // Cleanup
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+        // Cleanup
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
 
-      toast.success("Invoice downloaded successfully");
-    } catch (error: any) {
-      console.error("Failed to download invoice:", error);
-      toast.error(error.message || "Failed to download invoice");
-    } finally {
-      setDownloadingInvoices((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(order.id);
-        return newSet;
-      });
-    }
-  }, [downloadingInvoices]);
+        toast.success("Invoice downloaded successfully");
+      } catch (error: any) {
+        console.error("Failed to download invoice:", error);
+        toast.error(error.message || "Failed to download invoice");
+      } finally {
+        setDownloadingInvoices((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(order.id);
+          return newSet;
+        });
+      }
+    },
+    [downloadingInvoices],
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -122,7 +129,9 @@ export default function OrdersPage() {
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-4 lg:mb-6">
             <div>
-              <h1 className="text-2xl lg:text-3xl font-bold">My Orders</h1>
+              <h1 className="text-2xl lg:text-3xl font-futura-bold">
+                My Orders
+              </h1>
               <p className="text-sm text-gray-500 mt-1">
                 Track and manage your orders
               </p>
@@ -179,7 +188,9 @@ export default function OrdersPage() {
             <p className="text-red-500 text-lg font-medium">
               Failed to load orders
             </p>
-            <p className="text-gray-400 text-sm mt-2">Your order history is still available. Please retry.</p>
+            <p className="text-gray-400 text-sm mt-2">
+              Your order history is still available. Please retry.
+            </p>
             <button
               type="button"
               onClick={() => void refetch()}

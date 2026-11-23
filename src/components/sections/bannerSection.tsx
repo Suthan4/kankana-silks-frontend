@@ -167,7 +167,7 @@ export default function BannerSection({ section }: { section: HomeSection }) {
           <div className="max-w-7xl mx-auto text-center mb-4 md:mb-6 animate-fadeIn px-4 md:px-8">
             {section.showTitle && section.title && (
               <h2
-                className="text-2xl md:text-4xl font-bold tracking-tight"
+                className="text-2xl md:text-4xl font-futura-bold tracking-tight"
                 style={{ color: section.textColor || "#000000" }}
               >
                 {section.title}
@@ -249,7 +249,7 @@ export default function BannerSection({ section }: { section: HomeSection }) {
                   {/* Discount / Promo Badge */}
                   {slide.badge && (
                     <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-10">
-                      <span className="inline-block px-3 py-1 rounded-full bg-amber-600 text-white text-xs font-bold uppercase tracking-wider shadow-md">
+                      <span className="inline-block px-3 py-1 rounded-full bg-amber-600 text-white text-xs font-futura-bold uppercase tracking-wider shadow-md">
                         {slide.badge}
                       </span>
                     </div>

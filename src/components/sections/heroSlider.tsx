@@ -145,7 +145,7 @@ function HeroSlider({ section }: { section: HomeSection }) {
               >
                 <div className="hero-text max-w-5xl mx-auto space-y-4 md:space-y-6">
                   {slide.overlayTitle && (
-                    <h1 className="text-4xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-white tracking-tight leading-tight text-shadow-hero">
+                    <h1 className="text-4xl md:text-6xl lg:text-7xl xl:text-8xl font-futura-bold text-white tracking-tight leading-tight text-shadow-hero">
                       {slide.overlayTitle}
                     </h1>
                   )}

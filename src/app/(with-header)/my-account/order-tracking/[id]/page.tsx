@@ -23,7 +23,12 @@ export default function OrderTrackingPage() {
   const id = params?.id;
   const router = useRouter();
 
-  const { data: orderData, isLoading: orderLoading, error: orderError, refetch: refetchOrder } = useOrder(id);
+  const {
+    data: orderData,
+    isLoading: orderLoading,
+    error: orderError,
+    refetch: refetchOrder,
+  } = useOrder(id);
   const trackingNumber = orderData?.data?.shipment?.trackingNumber;
 
   const {
@@ -149,7 +154,9 @@ export default function OrderTrackingPage() {
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Package className="w-10 h-10 text-red-400" />
           </div>
-          <p className="text-red-500 text-lg font-medium">{orderError ? "Unable to load this order" : "Order not found"}</p>
+          <p className="text-red-500 text-lg font-medium">
+            {orderError ? "Unable to load this order" : "Order not found"}
+          </p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             {orderError && (
               <button
@@ -213,7 +220,7 @@ export default function OrderTrackingPage() {
                   ? "DELIVERED"
                   : "ESTIMATED DELIVERY"}
               </p>
-              <h2 className="text-2xl font-bold">
+              <h2 className="text-2xl font-futura-bold">
                 {order.shipment?.deliveredAt
                   ? new Date(order.shipment.deliveredAt).toLocaleDateString(
                       "en-IN",
@@ -256,7 +263,7 @@ export default function OrderTrackingPage() {
                 <label className="text-xs text-gray-500 block mb-1">
                   Tracking Number
                 </label>
-                <p className="font-bold text-lg">
+                <p className="font-futura-bold text-lg">
                   {order.shipment.trackingNumber}
                 </p>
               </div>
@@ -265,7 +272,7 @@ export default function OrderTrackingPage() {
                   <label className="text-xs text-gray-500 block mb-1">
                     Courier Service
                   </label>
-                  <p className="font-bold text-lg">
+                  <p className="font-futura-bold text-lg">
                     {order.shipment.courierName}
                   </p>
                 </div>
@@ -283,7 +290,7 @@ export default function OrderTrackingPage() {
               </div>
               <div>
                 <p className="text-xs text-gray-500">CURRENT STATUS</p>
-                <p className="font-bold text-lg">
+                <p className="font-futura-bold text-lg">
                   {currentShipmentTrack.current_status}
                 </p>
               </div>
@@ -298,9 +305,19 @@ export default function OrderTrackingPage() {
         )}
 
         {trackingError && trackingNumber && (
-          <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
-            <p className="text-sm text-amber-900">Live tracking could not be refreshed. The order status below is still available.</p>
-            <button type="button" onClick={() => void refetchTracking()} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white">
+          <div
+            role="alert"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4"
+          >
+            <p className="text-sm text-amber-900">
+              Live tracking could not be refreshed. The order status below is
+              still available.
+            </p>
+            <button
+              type="button"
+              onClick={() => void refetchTracking()}
+              className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white"
+            >
               Retry tracking
             </button>
           </div>
@@ -340,8 +357,6 @@ export default function OrderTrackingPage() {
           <h3 className="font-semibold mb-4">Items in this Order</h3>
           <div className="space-y-3">
             {order.items.map((item) => {
-              
-
               return (
                 <div
                   key={item.id}

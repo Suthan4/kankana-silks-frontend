@@ -296,7 +296,7 @@ export default function AuthModal() {
                 </div>
                 <h2
                   id="modal-title"
-                  className="text-lg sm:text-xl font-bold text-center"
+                  className="text-lg sm:text-xl font-futura-bold text-center"
                 >
                   {mode === "login"
                     ? "Welcome Back"

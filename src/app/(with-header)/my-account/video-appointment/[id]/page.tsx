@@ -82,8 +82,8 @@ const statusConfig = {
 export default function VideoAppointmentDetailsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-   const params = useParams<{ id: string }>();
-   const id = params?.id;
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
 
   // Fetch consultation details
   const { data, isLoading, error } = useQuery({
@@ -131,7 +131,7 @@ export default function VideoAppointmentDetailsPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl p-8 max-w-md text-center">
           <XCircle className="w-16 h-16 text-red-600 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 mb-2">
+          <h2 className="text-xl font-futura-bold text-gray-900 mb-2">
             Failed to Load
           </h2>
           <p className="text-gray-600 mb-6">
@@ -216,7 +216,9 @@ export default function VideoAppointmentDetailsPage() {
                   ? "CONFIRMED SESSION"
                   : "VIDEO CONSULTATION"}
               </p>
-              <h2 className="text-2xl font-bold mb-2">{formattedDate}</h2>
+              <h2 className="text-2xl font-futura-bold mb-2">
+                {formattedDate}
+              </h2>
               <p className="text-lg opacity-95">{consultation.preferredTime}</p>
             </div>
             <div className="bg-white/20 p-3 rounded-full">
@@ -261,7 +263,7 @@ export default function VideoAppointmentDetailsPage() {
                 <User className="w-8 h-8 text-white" />
               </div>
               <div className="flex-1">
-                <h4 className="font-bold text-lg">
+                <h4 className="font-futura-bold text-lg">
                   {consultation.user.firstName} {consultation.user.lastName}
                 </h4>
                 <div className="flex flex-wrap gap-3 text-sm mt-2">
@@ -444,7 +446,7 @@ export default function VideoAppointmentDetailsPage() {
           transition={{ delay: 0.5 }}
           className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-100"
         >
-          <h3 className="font-bold text-lg mb-2">Need Help?</h3>
+          <h3 className="font-futura-bold text-lg mb-2">Need Help?</h3>
           <p className="text-sm text-gray-700 mb-3">
             If you have any questions or need to reschedule, please contact our
             support team.

@@ -24,7 +24,9 @@ import { ProtectedRoute } from "@/components/auth/protectedRoutes";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCartItemStockState } from "@/lib/utils/cartStock";
 
-const ProductRequestModal = dynamic(() => import("@/components/productRequestModal"));
+const ProductRequestModal = dynamic(
+  () => import("@/components/productRequestModal"),
+);
 
 export default function WishlistPage() {
   const router = useRouter();
@@ -89,7 +91,7 @@ export default function WishlistPage() {
                 </motion.button>
               </Link>
               <div className="h-4 w-px bg-gray-300" />
-              <h1 className="text-xl font-bold text-gray-900">
+              <h1 className="text-xl font-futura-bold text-gray-900">
                 Wishlist Items
                 <span className="text-sm text-gray-400 font-normal ml-2">
                   {wishlistCount} items
@@ -101,7 +103,7 @@ export default function WishlistPage() {
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <Heart className="w-12 h-12 mx-auto text-red-500 mb-4" />
-            <h1 className="text-2xl font-bold mb-2">Login Required</h1>
+            <h1 className="text-2xl font-futura-bold mb-2">Login Required</h1>
             <button
               onClick={() => openModal("login")}
               className="bg-black text-white px-6 py-2 rounded-lg"
@@ -173,7 +175,7 @@ export default function WishlistPage() {
                 </motion.button>
               </Link>
               <div className="h-4 w-px bg-gray-300" />
-              <h1 className="text-xl font-bold text-gray-900">
+              <h1 className="text-xl font-futura-bold text-gray-900">
                 Whishlist Items
                 <span className="text-sm text-gray-400 font-normal ml-2">
                   {wishlistCount} items
@@ -202,7 +204,7 @@ export default function WishlistPage() {
         {/* HEADER */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold">My Wishlist</h1>
+            <h1 className="text-3xl font-futura-bold">My Wishlist</h1>
             <p className="text-gray-500">{wishlistCount} items</p>
           </div>
 
@@ -273,7 +275,7 @@ export default function WishlistPage() {
                       {product.name}
                     </h3>
 
-                    <p className="text-lg font-bold mt-2">
+                    <p className="text-lg font-futura-bold mt-2">
                       ₹{Number(product.sellingPrice).toLocaleString("en-IN")}
                     </p>
 

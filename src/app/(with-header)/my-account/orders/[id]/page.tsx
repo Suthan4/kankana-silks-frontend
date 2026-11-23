@@ -322,7 +322,10 @@ export default function OrderDetailsPage() {
                   <XCircle className="w-6 h-6 text-red-600" />
                 </div>
                 <div>
-                  <h3 id="cancel-order-title" className="font-bold text-lg">
+                  <h3
+                    id="cancel-order-title"
+                    className="font-futura-bold text-lg"
+                  >
                     Cancel Order
                   </h3>
                   <p className="text-sm text-gray-500">Are you sure?</p>

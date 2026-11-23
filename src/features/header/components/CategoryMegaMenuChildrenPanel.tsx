@@ -71,12 +71,14 @@ export function CategoryMegaMenuChildrenPanel({
           <Link
             href={getCategoryUrl(category.slug)}
             onClick={onNavigate}
-            className="group inline-flex items-center gap-3 text-sm font-bold uppercase tracking-[0.16em] text-black"
+            className="group inline-flex items-center gap-3 text-sm font-futura-bold uppercase tracking-[0.16em] text-black"
           >
             <span className="border-b border-transparent transition-colors duration-200 group-hover:border-black">
               View All
             </span>
-            <span className="transition-transform duration-200 group-hover:translate-x-1">→</span>
+            <span className="transition-transform duration-200 group-hover:translate-x-1">
+              →
+            </span>
           </Link>
         </div>
       </section>

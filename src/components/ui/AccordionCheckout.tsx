@@ -21,7 +21,7 @@ export const Accordion = ({
           <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center">
             <Icon className="w-3.5 h-3.5 text-white" />
           </div>
-          <h2 className="font-bold text-gray-900 text-sm">{title}</h2>
+          <h2 className="font-futura-bold text-gray-900 text-sm">{title}</h2>
         </div>
 
         <ChevronDown

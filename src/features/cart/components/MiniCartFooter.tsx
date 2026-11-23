@@ -21,10 +21,8 @@ export const MiniCartFooter = memo(function MiniCartFooter({
   return (
     <div className="p-5 border-t border-gray-100 bg-white/95 backdrop-blur-xs space-y-3">
       <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-600">
-          Subtotal ({totalItems} items)
-        </span>
-        <span className="font-bold text-base text-gray-900">
+        <span className="text-gray-600">Subtotal ({totalItems} items)</span>
+        <span className="font-futura-bold text-base text-gray-900">
           ₹{subtotal.toLocaleString("en-IN")}
         </span>
       </div>

@@ -164,7 +164,7 @@ const ProcessingOverlay = ({ step }: { step: 1 | 2 | 3 }) => {
             <Loader2 className="h-8 w-8 animate-spin" aria-hidden="true" />
           </div>
           <div className="text-center">
-            <p className="text-lg font-bold text-gray-900">
+            <p className="text-lg font-futura-bold text-gray-900">
               Processing your order
             </p>
             <p className="text-xs text-gray-500 mt-1">
@@ -232,7 +232,7 @@ const OrderSuccessOverlay = () => (
           />
         </svg>
       </div>
-      <p className="text-lg font-bold text-gray-900">Order Confirmed</p>
+      <p className="text-lg font-futura-bold text-gray-900">Order Confirmed</p>
       <p className="text-sm text-gray-500 mt-1">
         Redirecting to success page...
       </p>
@@ -1014,7 +1014,10 @@ export default function CheckoutClient() {
     }
   };
 
-  const handleRazorpayPayment = async (orderData: any, method: PaymentMethodType) => {
+  const handleRazorpayPayment = async (
+    orderData: any,
+    method: PaymentMethodType,
+  ) => {
     try {
       const options = {
         key: orderData.razorpayKeyId,
@@ -1246,7 +1249,9 @@ export default function CheckoutClient() {
               </Link>
               <div className="h-4 w-px bg-gray-300" />
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold text-gray-900">Checkout</h1>
+                <h1 className="text-xl font-futura-bold text-gray-900">
+                  Checkout
+                </h1>
                 {isBuyNowMode && (
                   <span className="text-xs bg-main-primary text-main-secondary border border-main-primary/40 px-2 py-0.5 rounded-full flex items-center gap-1">
                     <Zap className="w-3 h-3" /> Express
@@ -1415,7 +1420,7 @@ export default function CheckoutClient() {
                                 >
                                   −
                                 </button>
-                                <span className="w-5 text-center text-xs font-bold">
+                                <span className="w-5 text-center text-xs font-futura-bold">
                                   {item.quantity}
                                 </span>
                                 <button
@@ -1449,7 +1454,7 @@ export default function CheckoutClient() {
                                   +
                                 </button>
                               </div>
-                              <p className="font-bold text-xs text-gray-900">
+                              <p className="font-futura-bold text-xs text-gray-900">
                                 {Number.isFinite(unitPrice) && unitPrice > 0
                                   ? formatMoney(
                                       unitPrice * Number(item.quantity),
@@ -1610,7 +1615,7 @@ export default function CheckoutClient() {
                         <div className="text-[10px] bg-main-primary border border-main-primary rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 text-main-secondary">
                           <Info className="w-3 h-3 flex-shrink-0" />
                           Chargeable Weight:{" "}
-                          <span className="font-bold">
+                          <span className="font-futura-bold">
                             {chargeableWeight.toFixed(2)} kg
                           </span>
                         </div>
@@ -1635,14 +1640,14 @@ export default function CheckoutClient() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <span className="text-[10px] bg-main-secondary text-main-primary px-1.5 py-0 rounded-full font-bold">
+                                  <span className="text-[10px] bg-main-secondary text-main-primary px-1.5 py-0 rounded-full font-futura-bold">
                                     AFFORDABLE
                                   </span>
                                   <p className="font-semibold text-gray-900 text-xs mt-0.5">
                                     {cheapestCourier.courier_name}
                                   </p>
                                 </div>
-                                <p className="font-bold text-main-primary text-sm">
+                                <p className="font-futura-bold text-main-primary text-sm">
                                   {formatMoney(cheapestCourier.freight_charge)}
                                 </p>
                               </div>
@@ -1683,14 +1688,14 @@ export default function CheckoutClient() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between">
                                   <div>
-                                    <span className="text-[10px] bg-main-primary text-main-secondary px-1.5 py-0 rounded-full font-bold">
+                                    <span className="text-[10px] bg-main-primary text-main-secondary px-1.5 py-0 rounded-full font-futura-bold">
                                       FASTEST
                                     </span>
                                     <p className="font-semibold text-gray-900 text-xs mt-0.5">
                                       {fastestCourier.courier_name}
                                     </p>
                                   </div>
-                                  <p className="font-bold text-black text-sm">
+                                  <p className="font-futura-bold text-black text-sm">
                                     {formatMoney(fastestCourier.freight_charge)}
                                   </p>
                                 </div>
@@ -1753,7 +1758,7 @@ export default function CheckoutClient() {
                                     <span className="font-semibold text-gray-900 truncate">
                                       {courier.courier_name}
                                     </span>
-                                    <span className="font-bold text-gray-900 ml-2">
+                                    <span className="font-futura-bold text-gray-900 ml-2">
                                       {formatMoney(courier.freight_charge)}
                                     </span>
                                   </div>
@@ -1794,7 +1799,7 @@ export default function CheckoutClient() {
               >
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col lg:sticky lg:top-4">
                   <div className="px-4 py-3 border-b border-gray-100">
-                    <h2 className="font-bold text-gray-900 text-sm">
+                    <h2 className="font-futura-bold text-gray-900 text-sm">
                       Order Summary
                     </h2>
                   </div>
@@ -1819,7 +1824,7 @@ export default function CheckoutClient() {
                             <div className="flex items-center gap-2">
                               <Check className="w-4 h-4 text-green-600" />
                               <div>
-                                <p className="font-bold text-green-900 text-xs">
+                                <p className="font-futura-bold text-green-900 text-xs">
                                   {appliedCoupon.code}
                                 </p>
                                 <p className="text-[10px] text-green-700">
@@ -1842,7 +1847,7 @@ export default function CheckoutClient() {
                               <span className="text-[10px] text-green-700">
                                 Saving:
                               </span>
-                              <span className="text-xs font-bold text-green-700">
+                              <span className="text-xs font-futura-bold text-green-700">
                                 ₹{couponDiscount.toFixed(2)}
                               </span>
                             </div>
@@ -1890,7 +1895,7 @@ export default function CheckoutClient() {
                               disabled={
                                 !couponCode || validateCouponMutation.isPending
                               }
-                              className="px-3 py-2 bg-gray-900 text-white rounded-lg text-xs font-bold hover:bg-gray-800 transition disabled:opacity-50 whitespace-nowrap flex items-center gap-1"
+                              className="px-3 py-2 bg-gray-900 text-white rounded-lg text-xs font-futura-bold hover:bg-gray-800 transition disabled:opacity-50 whitespace-nowrap flex items-center gap-1"
                             >
                               {validateCouponMutation.isPending ? (
                                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -1931,10 +1936,10 @@ export default function CheckoutClient() {
                                         className={`w-full text-left px-3 py-2.5 border-b last:border-b-0 transition text-xs ${canApply ? "hover:bg-amber-50 cursor-pointer" : "opacity-50 cursor-not-allowed bg-gray-50"}`}
                                       >
                                         <div className="flex items-center gap-2 mb-0.5">
-                                          <span className="font-bold text-gray-900">
+                                          <span className="font-futura-bold text-gray-900">
                                             {coupon.code}
                                           </span>
-                                          <span className="text-[10px] bg-gradient-to-r from-amber-400 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-bold">
+                                          <span className="text-[10px] bg-gradient-to-r from-amber-400 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-futura-bold">
                                             {coupon.discountType ===
                                             "PERCENTAGE"
                                               ? `${coupon.discountValue}% OFF`
@@ -2080,7 +2085,7 @@ export default function CheckoutClient() {
                   {/* Total + CTA */}
                   <div className="border-t border-gray-200 px-4 py-3 bg-white rounded-b-xl">
                     <div className="flex items-baseline justify-between mb-3">
-                      <span className="font-bold text-gray-900 text-sm">
+                      <span className="font-futura-bold text-gray-900 text-sm">
                         Total
                       </span>
                       {invalidCartItems.length > 0 ? (
@@ -2095,7 +2100,7 @@ export default function CheckoutClient() {
                         </span>
                       ) : (
                         <div className="text-right">
-                          <span className="text-2xl font-bold text-gray-900">
+                          <span className="text-2xl font-futura-bold text-gray-900">
                             ₹
                             {total.toLocaleString(undefined, {
                               minimumFractionDigits: 2,
@@ -2117,12 +2122,12 @@ export default function CheckoutClient() {
                       (couponDiscount > 0 || isFreeShipping) && (
                         <div className="flex flex-wrap gap-1.5 mb-3">
                           {couponDiscount > 0 && (
-                            <span className="text-[10px] text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full">
+                            <span className="text-[10px] text-green-600 font-futura-bold bg-green-50 px-2 py-0.5 rounded-full">
                               🎉 Saved ₹{couponDiscount.toLocaleString()}
                             </span>
                           )}
                           {isFreeShipping && (
-                            <span className="text-[10px] text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <span className="text-[10px] text-green-600 font-futura-bold bg-green-50 px-2 py-0.5 rounded-full flex items-center gap-1">
                               <Truck className="w-3 h-3" /> Free Shipping
                             </span>
                           )}
@@ -2147,7 +2152,7 @@ export default function CheckoutClient() {
                         !isServiceable ||
                         isErrorOrderPreview
                       }
-                      className="w-full bg-gray-900 text-white font-bold py-3 rounded-xl shadow hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+                      className="w-full bg-gray-900 text-white font-futura-bold py-3 rounded-xl shadow hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
                     >
                       <Lock className="w-4 h-4" />
                       {invalidCartItems.length > 0

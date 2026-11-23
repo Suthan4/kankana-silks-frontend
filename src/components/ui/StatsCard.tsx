@@ -24,13 +24,15 @@ export default function StatsCard({
     <div
       className={cn(
         "rounded-2xl border border-border bg-card p-6 shadow-sm transition hover:shadow-md",
-        className
+        className,
       )}
     >
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-muted-foreground">{title}</p>
-          <h3 className="mt-2 text-3xl font-bold text-foreground">{value}</h3>
+          <h3 className="mt-2 text-3xl font-futura-bold text-foreground">
+            {value}
+          </h3>
         </div>
 
         {icon && (
@@ -45,7 +47,7 @@ export default function StatsCard({
           <span
             className={cn(
               "font-medium",
-              trend === "up" ? "text-emerald-600" : "text-red-600"
+              trend === "up" ? "text-emerald-600" : "text-red-600",
             )}
           >
             {trend === "up" ? "▲" : "▼"} {trendValue}

@@ -102,7 +102,9 @@ export default function VideoAppointmentPage() {
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl lg:text-3xl font-bold">Video Shopping</h1>
+              <h1 className="text-2xl lg:text-3xl font-futura-bold">
+                Video Shopping
+              </h1>
               <p className="text-sm text-gray-500 mt-1">
                 Shop from home with our expert stylists
               </p>
@@ -246,7 +248,7 @@ export default function VideoAppointmentPage() {
                     <div className="flex items-center gap-3 mb-3">
                       <Clock className="w-6 h-6" />
                       <div>
-                        <div className="text-xl lg:text-2xl font-bold">
+                        <div className="text-xl lg:text-2xl font-futura-bold">
                           {formattedDate}
                         </div>
                         <div className="text-sm opacity-90">
@@ -363,7 +365,7 @@ export default function VideoAppointmentPage() {
                           COMPLETED
                         </span>
                       </div>
-                      <p className="font-bold text-lg mb-1">
+                      <p className="font-futura-bold text-lg mb-1">
                         {platformInfo.label} Session
                       </p>
                       <p className="text-sm text-gray-600 mb-2">
@@ -406,7 +408,9 @@ export default function VideoAppointmentPage() {
                 <Video className="w-6 h-6 text-main-secondary" />
               </div>
               <div>
-                <p className="font-bold text-lg mb-2">Why Video Shopping?</p>
+                <p className="font-futura-bold text-lg mb-2">
+                  Why Video Shopping?
+                </p>
                 <ul className="text-sm text-gray-700 space-y-1">
                   <li>✓ Personal styling consultation from home</li>
                   <li>✓ See products in real-time via video</li>

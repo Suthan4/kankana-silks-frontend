@@ -16,7 +16,9 @@ const ProductGrid = dynamic(() => import("./sections/productGrid"));
 const ProductCarousel = dynamic(() => import("./sections/productCarousel"));
 const CategoryShowcase = dynamic(() => import("./sections/Categoryshowcase"));
 const MediaGridSection = dynamic(() => import("./sections/mediaGridSection"));
-const AestheticFullImage = dynamic(() => import("./sections/aestheticFullImage"));
+const AestheticFullImage = dynamic(
+  () => import("./sections/aestheticFullImage"),
+);
 const BannerSection = dynamic(() => import("./sections/bannerSection"));
 
 export default function LandingPage({
@@ -204,7 +206,7 @@ export default function LandingPage({
               />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">Oops!</h2>
+          <h2 className="text-2xl font-futura-bold text-gray-900">Oops!</h2>
           <p className="text-gray-600">{error.message}</p>
           <button
             onClick={() => window.location.reload()}

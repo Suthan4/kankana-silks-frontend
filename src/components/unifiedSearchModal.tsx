@@ -316,7 +316,7 @@ export default function UnifiedSearchModal({
                                             "Uncategorized"}
                                         </p>
                                         <div className="flex items-center gap-2 mt-1">
-                                          <span className="font-bold text-gray-900">
+                                          <span className="font-futura-bold text-gray-900">
                                             {formatPrice(product.sellingPrice)}
                                           </span>
                                           {discount > 0 && (
