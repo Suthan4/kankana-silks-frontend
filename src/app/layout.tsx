@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type React from "react";
 import type { Metadata } from "next";
+import { GoogleAnalytics } from "@next/third-parties/google";
 // @ts-ignore Next.js processes this stylesheet import during the build.
 import "./globals.css";
 import AuthModalProvider from "@/components/authModalProvider";
@@ -216,7 +217,7 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <NavigationProgress />
         </Suspense>
-        <AnalyticsConsent />
+        {/* <AnalyticsConsent /> */}
         <Providers>
           <ClientLayout>{children}</ClientLayout>
           <MiniCartDrawer />
@@ -224,6 +225,10 @@ export default function RootLayout({
         </Providers>
         <div id="portal-root" />
         <Toaster position="bottom-center" richColors />
+        {/* Google Analytics 4 */}
+        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
+        )}
       </body>
     </html>
   );
