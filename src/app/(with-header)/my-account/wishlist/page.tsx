@@ -1,13 +1,17 @@
 "use client";
 
-import { Heart, Trash2, ShoppingCart, ArrowRight, Loader2 } from "lucide-react";
+import { Heart, Trash2, ShoppingCart, ArrowRight, Loader2, AlertCircle } from "lucide-react";
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useWishlist } from "@/hooks/useWishlist";
 import { wishlistApi } from "@/lib/api/wishlist.api";
 import { toast } from "sonner";
 import { useAuthModal } from "@/store/useAuthModalStore";
 import { useQueryClient } from "@tanstack/react-query";
+import { getCartItemStockState } from "@/lib/utils/cartStock";
+
+const ProductRequestModal = dynamic(() => import("@/components/productRequestModal"));
 
 export default function WishlistPage() {
   const router = useRouter();
@@ -26,6 +30,10 @@ export default function WishlistPage() {
 
   const [removingItemId, setRemovingItemId] = useState<string | null>(null);
   const [addingToCartId, setAddingToCartId] = useState<string | null>(null);
+  const [requestProduct, setRequestProduct] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   /* ------------------ AUTH CHECK ------------------ */
 
@@ -142,7 +150,12 @@ export default function WishlistPage() {
           {items.map((item) => {
             const product = item.product;
             const image = product.media?.[0]?.url || "/placeholder.jpg";
-            const inStock = (product.stock?.[0]?.quantity ?? 0) > 0;
+            const stockState = getCartItemStockState({
+              product,
+              quantity: 1,
+              allowOutOfStockOrders: product.allowOutOfStockOrders,
+            });
+            const inStock = !stockState.isOutOfStock;
 
             const isRemoving = removingItemId === item.id;
             const isAdding = addingToCartId === item.id;
@@ -188,16 +201,31 @@ export default function WishlistPage() {
                   </p>
 
                   <button
-                    onClick={() => handleMoveToCart(item)}
-                    disabled={isAdding}
+                    onClick={() => {
+                      if (!inStock) {
+                        setRequestProduct({
+                          id: product.id,
+                          name: product.name,
+                        });
+                        return;
+                      }
+
+                      handleMoveToCart(item);
+                    }}
+                    disabled={inStock && isAdding}
                     className="mt-3 w-full bg-black text-white py-2 rounded-lg disabled:opacity-50"
                   >
-                    {isAdding ? (
+                    {inStock && isAdding ? (
                       <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                    ) : (
+                    ) : inStock ? (
                       <>
                         <ShoppingCart className="inline w-4 h-4 mr-1" />
                         Move to Cart
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle className="inline w-4 h-4 mr-1" />
+                        Request Product
                       </>
                     )}
                   </button>
@@ -207,6 +235,14 @@ export default function WishlistPage() {
           })}
         </div>
       </div>
+
+      {requestProduct && (
+        <ProductRequestModal
+          isOpen={Boolean(requestProduct)}
+          onClose={() => setRequestProduct(null)}
+          product={requestProduct}
+        />
+      )}
     </div>
   );
 }

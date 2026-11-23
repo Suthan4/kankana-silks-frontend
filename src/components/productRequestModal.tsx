@@ -12,7 +12,7 @@ import type { Product, ProductVariant } from "@/lib/api/product.api";
 interface ProductRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
-  product: Product;
+  product: Pick<Product, "id" | "name">;
   selectedVariant?: ProductVariant | null;
   // onSuccess?: () => void;
 }

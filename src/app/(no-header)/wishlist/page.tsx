@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import Link from "next/link";
 import Image from "next/image";
@@ -20,11 +22,18 @@ import { wishlistApi } from "@/lib/api/wishlist.api";
 import { useWishlist } from "@/hooks/useWishlist";
 import { ProtectedRoute } from "@/components/auth/protectedRoutes";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { getCartItemStockState } from "@/lib/utils/cartStock";
+
+const ProductRequestModal = dynamic(() => import("@/components/productRequestModal"));
 
 export default function WishlistPage() {
   const router = useRouter();
   const { user, openModal } = useAuthModal();
   const queryClient = useQueryClient();
+  const [requestProduct, setRequestProduct] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const {
     items,
@@ -211,19 +220,12 @@ export default function WishlistPage() {
           <AnimatePresence>
             {items.map((item) => {
               const product = item.product;
-              const stockQty = product.stock?.[0]?.quantity ?? 0;
-              const allowOutOfStockOrders = product.allowOutOfStockOrders;
-
-              const lowStockThreshold =
-                product.stock?.[0]?.lowStockThreshold ?? 0;
-
-              const isOutOfStock =
-                stockQty === 0 ||
-                (!allowOutOfStockOrders &&
-                  lowStockThreshold > 0 &&
-                  stockQty <= lowStockThreshold);
-
-              const inStock = !isOutOfStock;
+              const stockState = getCartItemStockState({
+                product,
+                quantity: 1,
+                allowOutOfStockOrders: product.allowOutOfStockOrders,
+              });
+              const inStock = !stockState.isOutOfStock;
 
               return (
                 <motion.div
@@ -276,25 +278,40 @@ export default function WishlistPage() {
                     </p>
 
                     <button
-                      onClick={() => handleAddToCart.mutate(item)}
-                      disabled={handleAddToCart.isPending}
+                      onClick={() => {
+                        if (!inStock) {
+                          setRequestProduct({
+                            id: product.id,
+                            name: product.name,
+                          });
+                          return;
+                        }
+
+                        handleAddToCart.mutate(item);
+                      }}
+                      disabled={inStock && handleAddToCart.isPending}
                       className={`mt-3 w-full py-2 rounded flex items-center justify-center gap-2 transition-all duration-200 ${
-                        !inStock
-                          ? "bg-gray-300 text-gray-600 cursor-pointer hover:bg-gray-400"
-                          : handleAddToCart.isPending
+                        inStock
+                          ? handleAddToCart.isPending
                             ? "bg-gray-800 text-white cursor-wait"
                             : "bg-black text-white hover:bg-gray-800 cursor-pointer active:scale-[0.98]"
+                          : "bg-black text-white hover:bg-gray-800 cursor-pointer active:scale-[0.98]"
                       }`}
                     >
-                      {handleAddToCart.isPending ? (
+                      {inStock && handleAddToCart.isPending ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
                           Moving...
                         </>
-                      ) : (
+                      ) : inStock ? (
                         <>
                           <ShoppingCart className="w-4 h-4" />
-                          {inStock ? "Move to Cart" : "Out of Stock"}
+                          Move to Cart
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="w-4 h-4" />
+                          Request Product
                         </>
                       )}
                     </button>
@@ -305,6 +322,14 @@ export default function WishlistPage() {
           </AnimatePresence>
         </div>
       </div>
+
+      {requestProduct && (
+        <ProductRequestModal
+          isOpen={Boolean(requestProduct)}
+          onClose={() => setRequestProduct(null)}
+          product={requestProduct}
+        />
+      )}
     </ProtectedRoute>
   );
 }
