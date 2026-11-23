@@ -44,7 +44,7 @@ export function ProductInformation({
                     maximumFractionDigits: 2,
                   })}
             </span>
-            <span className="bg-main-primary text-main-secondary px-2 py-0.5 rounded-full text-xs font-semibold">
+            <span className="brand-badge brand-badge--sale text-xs font-semibold">
               {discount}% OFF
             </span>
           </>

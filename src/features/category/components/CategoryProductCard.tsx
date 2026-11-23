@@ -80,7 +80,7 @@ export const CategoryProductCard = memo(function CategoryProductCard({
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
             {!isOutOfStock && discount > 0 && (
-              <div className="absolute left-3 top-3 bg-main-primary px-2.5 py-0.5 text-[10px] uppercase tracking-widest text-main-secondary">
+              <div className="brand-badge brand-badge--sale absolute left-3 top-3 text-[10px] uppercase tracking-widest">
                 {discount}% Off
               </div>
             )}

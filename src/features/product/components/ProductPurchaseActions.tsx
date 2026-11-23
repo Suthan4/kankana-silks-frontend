@@ -127,7 +127,7 @@ export function ProductMobilePurchaseActions({
           )}
         </div>
         {discount > 0 && !isOutOfStock && (
-          <span className="bg-main-primary text-main-secondary text-[10px] font-futura-bold px-2 py-0.5 rounded-full">
+          <span className="brand-badge brand-badge--sale text-[10px] font-futura-bold">
             {discount}% OFF
           </span>
         )}
