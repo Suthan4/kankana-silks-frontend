@@ -1,6 +1,18 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { ProtectedRoute } from "@/components/auth/protectedRoutes";
 import { AccountNavigation } from "@/features/account/components/AccountNavigation";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: true,
+    googleBot: {
+      index: false,
+      follow: true,
+    },
+  },
+};
 
 export default function MyAccountLayout({
   children,

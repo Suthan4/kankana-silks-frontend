@@ -8,9 +8,9 @@ type Props = {
 };
 
 /**
- * Legacy URL. The canonical product URL is /{category}/{slug}; this route
- * permanently redirects there so the same product is never served twice.
- * Products without a category keep rendering here as a fallback.
+ * Legacy URL. Products with a category permanently redirect to the canonical
+ * /{category}/{slug} route. Do not emit a canonical for a URL that redirects.
+ * Products without a category remain available on this legacy route.
  */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -19,7 +19,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!product) {
     return {
       title: "Product Not Found | Kankana Silks",
-      robots: { index: false, follow: false },
+      robots: { index: false, follow: true },
+    };
+  }
+
+  if (product.category?.slug) {
+    return {
+      title: product.metaTitle || `${product.name} | Kankana Silks`,
+      robots: { index: false, follow: true },
     };
   }
 
