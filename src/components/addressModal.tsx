@@ -248,7 +248,7 @@ export default function AddressModal({
                   </label>
                   <select
                     {...register("type")}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-main-primary bg-white"
+                    className="brand-input w-full text-sm"
                   >
                     <option value="SHIPPING">Shipping</option>
                     <option value="BILLING">Billing</option>

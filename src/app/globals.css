@@ -10,32 +10,321 @@
   --font-sans: "futura-pt", sans-serif;
   --font-futura-bold: "futura-pt-bold", sans-serif;
 
-  /* Existing colors */
-  --color-main-primary: #58292C;
-  --color-main-primary-two: #643436;
-  --color-primary: #000;
-  --color-primary-dark: #000;
-  --color-main-secondary: #C7A76E;
-  --color-background: #fff;
-  --color-surface: #fff;
-  --color-text-main: #000;
-  --color-text-muted: #000;
+  /* Warm neutrals */
+  --color-ivory-50: #FFFCF7;
+  --color-ivory-100: #FAF5EC;
+  --color-ivory-200: #F2E9DD;
+  --color-ivory-300: #E8DCCF;
+  --color-ivory-400: #D9C9B9;
+
+  --color-warm-gray-50: #F8F6F3;
+  --color-warm-gray-100: #F0ECE7;
+  --color-warm-gray-200: #E2DAD3;
+  --color-warm-gray-300: #CDC2B9;
+  --color-warm-gray-400: #AB9D93;
+  --color-warm-gray-500: #83756D;
+  --color-warm-gray-600: #6C5D58;
+  --color-warm-gray-700: #514843;
+  --color-warm-gray-800: #3B322F;
+  --color-warm-gray-900: #302927;
+
+  /* Maroon tonal scale */
+  --color-maroon-50: #F8F0EF;
+  --color-maroon-100: #EBDDDD;
+  --color-maroon-200: #D8BCBB;
+  --color-maroon-300: #C39495;
+  --color-maroon-400: #A86D70;
+  --color-maroon-500: #8B4F52;
+  --color-maroon-600: #653536;
+  --color-maroon-700: #54292D;
+  --color-maroon-800: #442326;
+  --color-maroon-900: #32191C;
+
+  /* Antique zari gold tonal scale */
+  --color-gold-50: #FBF7EE;
+  --color-gold-100: #F2E8D0;
+  --color-gold-200: #E7D5AF;
+  --color-gold-300: #D9BE88;
+  --color-gold-400: #C7A76E;
+  --color-gold-500: #A9874C;
+  --color-gold-600: #896A39;
+  --color-gold-700: #6D522B;
+  --color-gold-800: #523D21;
+  --color-gold-900: #392A18;
+
+  /* Brand tokens */
+  --color-brand-primary: #653536;
+  --color-brand-primary-hover: #54292D;
+  --color-brand-primary-deep: #442326;
+  --color-brand-primary-soft: #F7F0EF;
+  --color-brand-primary-muted: #EBDDDD;
+  --color-brand-accent: #C7A76E;
+  --color-brand-surface: #FFFCFA;
+  --color-brand-border: #E9DEDA;
+  --color-brand-on-primary: #FFFFFF;
+  --color-brand-on-accent: #442326;
+  --color-brand-on-section: #FFF9F2;
+  --color-brand-section-start: #442326;
+  --color-brand-section-end: #32191C;
+
+  /* Semantic and commerce states */
+  --color-success: #245A43;
+  --color-success-soft: #EAF3ED;
+  --color-error: #8A3434;
+  --color-error-soft: #F8ECE9;
+  --color-warning: #6B4815;
+  --color-warning-soft: #FFF5DF;
+  --color-info: #315675;
+  --color-info-soft: #EAF1F7;
+  --color-sale: #812F35;
+  --color-sale-soft: #F8ECE9;
+  --color-new-arrival: #245C4B;
+  --color-new-arrival-soft: #EAF4EF;
+  --color-low-stock: #70420F;
+  --color-low-stock-soft: #FFF4DE;
+  --color-wishlist: #7B3045;
+  --color-wishlist-soft: #F8EAF0;
+
+  /* Optional festive/category accents; use in small doses. */
+  --color-jewel-emerald: #245747;
+  --color-jewel-emerald-soft: #EAF3EE;
+  --color-jewel-royal: #2B3F58;
+  --color-jewel-royal-soft: #EFF4FA;
+  --color-jewel-peacock: #1E5557;
+  --color-jewel-peacock-soft: #E9F3F2;
+
+  /* Surface and typography roles */
+  --color-background: var(--color-ivory-50);
+  --color-surface: #FFFCFA;
+  --color-surface-elevated: var(--color-brand-surface);
+  --color-surface-muted: var(--color-ivory-100);
+  --color-text-heading: var(--color-warm-gray-900);
+  --color-text-body: var(--color-warm-gray-700);
+  --color-text-main: var(--color-warm-gray-900);
+  --color-text-muted: var(--color-warm-gray-600);
+  --color-text-disabled: #7D716A;
+  --color-border: var(--color-warm-gray-200);
+  --color-border-strong: var(--color-warm-gray-300);
+  --color-focus-ring: var(--color-brand-primary);
+  --color-overlay: rgb(37 22 24 / 0.64);
+  --color-lightbox-background: #1B1113;
+
+  /* Backward-compatible aliases */
+  --color-main-primary: var(--color-brand-primary);
+  --color-main-primary-two: var(--color-brand-primary-hover);
+  --color-main-secondary: var(--color-brand-accent);
+  --color-primary: var(--color-brand-primary);
+  --color-primary-dark: var(--color-brand-primary-deep);
+
+  /* Maroon-tinted elevations */
+  --shadow-brand-soft: 0 4px 18px rgb(68 35 38 / 0.07);
+  --shadow-brand-card: 0 12px 32px rgb(68 35 38 / 0.09);
+  --shadow-brand-float: 0 18px 50px rgb(68 35 38 / 0.16);
+  /* Legacy Tailwind colour utilities now inherit the warm brand palette. */
+  --color-white: var(--color-brand-surface);
+  --color-black: var(--color-brand-primary);
+  --color-gray-50: var(--color-warm-gray-50);
+  --color-gray-100: var(--color-warm-gray-100);
+  --color-gray-200: var(--color-warm-gray-200);
+  --color-gray-300: var(--color-warm-gray-300);
+  --color-gray-400: var(--color-warm-gray-400);
+  --color-gray-500: var(--color-warm-gray-500);
+  --color-gray-600: var(--color-warm-gray-600);
+  --color-gray-700: var(--color-warm-gray-700);
+  --color-gray-800: var(--color-warm-gray-800);
+  --color-gray-900: var(--color-warm-gray-900);
+
 }
 
-/* Global typography */
 @layer base {
   html {
+    color-scheme: light;
+    background: var(--color-background);
     font-family: var(--font-sans);
     scroll-behavior: smooth;
   }
 
   body {
-    font-family: var(--font-sans);
-    font-weight: 400;
-    font-size: 1rem;
+    min-height: 100%;
     background: var(--color-background);
     color: var(--color-text-main);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    font-weight: 400;
   }
+
+  h1, h2, h3, h4, h5, h6 { color: var(--color-text-heading); }
+  p { color: inherit; }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    border-color: var(--color-border-strong);
+    background-color: var(--color-surface-elevated);
+    color: var(--color-text-main);
+  }
+
+  input::placeholder,
+  textarea::placeholder { color: var(--color-text-muted); opacity: 0.82; }
+
+  input[type="checkbox"],
+  input[type="radio"],
+  progress { accent-color: var(--color-brand-primary); }
+}
+
+@layer components {
+  .brand-product-card {
+    border: 1px solid transparent;
+    border-radius: 0.85rem;
+    padding: 0.35rem;
+    background: var(--color-surface);
+    color: var(--color-text-main);
+    transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
+  }
+
+  .brand-product-card:hover {
+    border-color: var(--color-brand-border);
+    box-shadow: var(--shadow-brand-soft);
+    transform: translateY(-2px);
+  }
+
+  .brand-card {
+    border: 1px solid var(--color-brand-border);
+    border-radius: 1rem;
+    background: var(--color-surface);
+    color: var(--color-text-main);
+    box-shadow: var(--shadow-brand-soft);
+    transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
+  }
+
+  .brand-card:hover {
+    border-color: color-mix(in srgb, var(--color-brand-primary) 30%, var(--color-brand-border));
+    box-shadow: var(--shadow-brand-card);
+    transform: translateY(-2px);
+  }
+
+  .brand-card:focus-within,
+  .brand-card[aria-selected="true"],
+  .brand-product-card:focus-within,
+  .brand-product-card[aria-selected="true"],
+  .brand-product-card[data-selected="true"] {
+    border-color: var(--color-brand-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-primary) 18%, transparent), var(--shadow-brand-soft);
+  }
+
+  .brand-soft-surface {
+    border: 1px solid var(--color-brand-border);
+    background:
+      radial-gradient(circle at 95% 8%, color-mix(in srgb, var(--color-brand-accent) 14%, transparent), transparent 30%),
+      linear-gradient(115deg, var(--color-brand-primary-soft), var(--color-brand-surface) 58%, var(--color-ivory-100));
+    color: var(--color-text-main);
+  }
+
+  .brand-section-dark {
+    border-color: color-mix(in srgb, var(--color-brand-accent) 28%, transparent);
+    background:
+      radial-gradient(circle at 90% 0%, color-mix(in srgb, var(--color-brand-accent) 12%, transparent), transparent 35%),
+      linear-gradient(135deg, var(--color-brand-section-start), var(--color-brand-section-end));
+    color: var(--color-brand-on-section);
+  }
+
+  .brand-link {
+    color: var(--color-brand-primary);
+    text-underline-offset: 3px;
+    transition: color 160ms ease;
+  }
+
+  .brand-link:hover { color: var(--color-brand-primary-hover); text-decoration: underline; }
+
+  .brand-link:focus-visible {
+    border-radius: 0.2rem;
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 3px;
+  }
+
+  .brand-accent-rule {
+    height: 2px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, var(--color-brand-primary), var(--color-brand-accent));
+  }
+
+  .brand-luxe-gradient {
+    background: linear-gradient(112deg, var(--color-brand-section-start), var(--color-brand-primary) 58%, var(--color-gold-700));
+  }
+
+  .brand-page-gradient {
+    background: linear-gradient(135deg, var(--color-background), var(--color-ivory-100) 58%, var(--color-brand-primary-soft));
+  }
+
+  .brand-badge {
+    display: inline-flex;
+    min-height: 1.5rem;
+    align-items: center;
+    gap: 0.35rem;
+    border: 1px solid var(--color-brand-border);
+    border-radius: 9999px;
+    background: var(--color-brand-primary-soft);
+    padding: 0.25rem 0.625rem;
+    color: var(--color-brand-primary-deep);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+  }
+
+  .brand-badge--sale { border-color: color-mix(in srgb, var(--color-sale) 18%, transparent); background: var(--color-sale-soft); color: var(--color-sale); }
+  .brand-badge--new { border-color: color-mix(in srgb, var(--color-new-arrival) 18%, transparent); background: var(--color-new-arrival-soft); color: var(--color-new-arrival); }
+  .brand-badge--stock { border-color: color-mix(in srgb, var(--color-low-stock) 18%, transparent); background: var(--color-low-stock-soft); color: var(--color-low-stock); }
+  .brand-badge--success { border-color: color-mix(in srgb, var(--color-success) 18%, transparent); background: var(--color-success-soft); color: var(--color-success); }
+  .brand-badge--error { border-color: color-mix(in srgb, var(--color-error) 18%, transparent); background: var(--color-error-soft); color: var(--color-error); }
+
+  .brand-chip {
+    display: inline-flex;
+    min-height: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-border-strong);
+    border-radius: 9999px;
+    background: var(--color-surface-elevated);
+    padding: 0.5rem 0.875rem;
+    color: var(--color-text-body);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .brand-chip:hover { border-color: var(--color-brand-primary); background: var(--color-brand-primary-soft); color: var(--color-brand-primary); }
+
+  .brand-chip[aria-pressed="true"],
+  .brand-chip[aria-selected="true"],
+  .brand-chip[data-selected="true"] {
+    border-color: var(--color-brand-primary);
+    background: var(--color-brand-primary);
+    color: var(--color-brand-on-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-primary) 16%, transparent);
+  }
+
+  .brand-input {
+    width: 100%;
+    min-height: 2.75rem;
+    border: 1px solid var(--color-border-strong);
+    border-radius: 0.75rem;
+    background: var(--color-surface-elevated);
+    padding: 0.625rem 0.875rem;
+    color: var(--color-text-main);
+    transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+  }
+
+  .brand-input::placeholder { color: var(--color-text-muted); }
+  .brand-input:hover:not(:disabled) { border-color: var(--color-brand-primary); }
+  .brand-input:focus { border-color: var(--color-brand-primary); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-primary) 18%, transparent); }
+  .brand-input[aria-invalid="true"], .brand-input[data-invalid="true"] { border-color: var(--color-error); box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-error) 13%, transparent); }
+  .brand-input:disabled { cursor: not-allowed; background: var(--color-surface-muted); color: var(--color-text-disabled); opacity: 0.8; }
+
+  .brand-status-success { border: 1px solid color-mix(in srgb, var(--color-success) 20%, transparent); background: var(--color-success-soft); color: var(--color-success); }
+  .brand-status-error { border: 1px solid color-mix(in srgb, var(--color-error) 20%, transparent); background: var(--color-error-soft); color: var(--color-error); }
+  .brand-status-warning { border: 1px solid color-mix(in srgb, var(--color-warning) 20%, transparent); background: var(--color-warning-soft); color: var(--color-warning); }
+  .brand-status-info { border: 1px solid color-mix(in srgb, var(--color-info) 20%, transparent); background: var(--color-info-soft); color: var(--color-info); }
 }
 
 /* Explicit Adobe Bold family */
@@ -59,30 +348,142 @@
   background: transparent;
 }
 
-@theme {
-  /* LIGHT (default) */
-  --color-main-primary: #58292C;
-  --color-main-primary-two: #643436;
-  --color-primary: #000;
-  --color-primary-dark: #000;
-
-  --color-main-secondary: #C7A76E;
-
-  --color-background: #fff;
-  --color-surface: #fff;
-
-  --color-text-main: #000;
-  --color-text-muted: #000;
-}
-
-/* DARK overrides */
+/* Dark mode: wine-charcoal, not neutral black. */
 .dark {
-  --color-background: #000;
-  --color-surface: #000;
+  color-scheme: dark;
+  --color-ivory-50: #211719;
+  --color-ivory-100: #2A1D20;
+  --color-ivory-200: #352528;
+  --color-ivory-300: #493438;
+  --color-ivory-400: #60484B;
 
-  --color-text-main: #fff;
-  --color-text-muted: #fff;
+  --color-warm-gray-50: #352B2B;
+  --color-warm-gray-100: #403332;
+  --color-warm-gray-200: #594947;
+  --color-warm-gray-300: #76615D;
+  --color-warm-gray-400: #9B8580;
+  --color-warm-gray-500: #B7A39D;
+  --color-warm-gray-600: #CBBAB3;
+  --color-warm-gray-700: #E0D3CC;
+  --color-warm-gray-800: #F0E7E1;
+  --color-warm-gray-900: #F8F0E9;
+
+  --color-maroon-50: #382326;
+  --color-maroon-100: #493034;
+  --color-maroon-200: #654448;
+  --color-maroon-300: #875D61;
+  --color-maroon-400: #A9777B;
+  --color-maroon-500: #C18F91;
+  --color-maroon-600: #D7A29A;
+  --color-maroon-700: #E4B8AF;
+  --color-maroon-800: #F0D0C7;
+  --color-maroon-900: #F8E6DF;
+
+  --color-gold-50: #33291D;
+  --color-gold-100: #453722;
+  --color-gold-200: #604A2B;
+  --color-gold-300: #86683B;
+  --color-gold-400: #D8BC83;
+  --color-gold-500: #E0C992;
+  --color-gold-600: #E8D6A7;
+  --color-gold-700: #F0E2BE;
+  --color-gold-800: #F5EBD4;
+  --color-gold-900: #FBF5E8;
+
+  --color-brand-primary: #D7A29A;
+  --color-brand-primary-hover: #E4B8AF;
+  --color-brand-primary-deep: #F2DDD5;
+  --color-brand-primary-soft: #382326;
+  --color-brand-primary-muted: #513437;
+  --color-brand-accent: #D8BC83;
+  --color-brand-surface: #2A1D20;
+  --color-brand-border: #584044;
+  --color-brand-on-primary: #251719;
+  --color-brand-on-accent: #2A1D20;
+  --color-brand-on-section: #FFF8F1;
+  --color-brand-section-start: #2A1D20;
+  --color-brand-section-end: #211719;
+
+  --color-success: #9BC9A9;
+  --color-success-soft: #243A30;
+  --color-error: #E4A0A0;
+  --color-error-soft: #43292B;
+  --color-warning: #E9C47D;
+  --color-warning-soft: #40331F;
+  --color-info: #A9C9E7;
+  --color-info-soft: #273746;
+  --color-sale: #E6A0A0;
+  --color-sale-soft: #43292B;
+  --color-new-arrival: #9BC9AE;
+  --color-new-arrival-soft: #243A30;
+  --color-low-stock: #E9C47D;
+  --color-low-stock-soft: #40331F;
+  --color-wishlist: #E2A2B7;
+  --color-wishlist-soft: #432B35;
+
+  --color-jewel-emerald: #9BC9AE;
+  --color-jewel-emerald-soft: #243A30;
+  --color-jewel-royal: #A9C9E7;
+  --color-jewel-royal-soft: #273746;
+  --color-jewel-peacock: #9ACBCA;
+  --color-jewel-peacock-soft: #213B3D;
+
+  --color-background: #211719;
+  --color-surface: #2A1D20;
+  --color-surface-elevated: #352528;
+  --color-surface-muted: #302225;
+  --color-text-heading: #FFF8F1;
+  --color-text-body: #E0D3CC;
+  --color-text-main: #F8F0E9;
+  --color-text-muted: #CBBAB3;
+  --color-text-disabled: #9B8580;
+  --color-border: #493438;
+  --color-border-strong: #60484B;
+  --color-focus-ring: #E4B8AF;
+  --color-overlay: rgb(12 6 8 / 0.78);
+  --color-lightbox-background: #10090B;
+
+  --shadow-brand-soft: 0 4px 18px rgb(0 0 0 / 0.22);
+  --shadow-brand-card: 0 12px 32px rgb(0 0 0 / 0.28);
+  --shadow-brand-float: 0 18px 50px rgb(0 0 0 / 0.36);
+  --color-white: #2A1D20;
+  --color-black: #442326;
+
 }
+
+/* Existing neutral utility classes remain compatible when .dark is enabled. */
+.dark {
+  --color-gray-50: #302225;
+  --color-gray-100: #3A2A2D;
+  --color-gray-200: #493438;
+  --color-gray-300: #60484B;
+  --color-gray-400: #9B8580;
+  --color-gray-500: #B7A39D;
+  --color-gray-600: #CBBAB3;
+  --color-gray-700: #E0D3CC;
+  --color-gray-800: #F0E7E1;
+  --color-gray-900: #F8F0E9;
+}
+
+.dark .bg-white { background-color: var(--color-surface) !important; }
+.dark .bg-gray-50 { background-color: var(--color-surface-muted); }
+.dark .bg-gray-100 { background-color: var(--color-ivory-200); }
+.dark .text-black,
+.dark .text-white { color: var(--color-text-main); }
+.dark .bg-brand-primary .text-white,
+.dark .bg-main-primary .text-white,
+.dark .bg-brand-primary.text-white,
+.dark .bg-main-primary.text-white { color: var(--color-brand-on-primary); }
+.dark .brand-luxe-gradient {
+  background: linear-gradient(112deg, var(--color-brand-section-start), var(--color-brand-section-end));
+}
+.dark .border-gray-100 { border-color: var(--color-border); }
+.dark .border-gray-200 { border-color: var(--color-border-strong); }
+.dark .ios-modal-panel { background: var(--color-surface-elevated); color: var(--color-text-main); }
+.dark .ios-modal-panel .bg-white { background-color: var(--color-surface-elevated) !important; }
+.dark .ios-modal-panel .text-black,
+.dark .ios-modal-panel .text-white { color: var(--color-text-main); }
+.dark :focus-visible { outline-color: var(--color-focus-ring); }
 
 
 
@@ -266,17 +667,17 @@ html {
 
 /* Glass morphism effect */
 .glass {
-  background: rgba(255, 255, 255, 0.1);
+  background: color-mix(in srgb, var(--color-brand-surface) 72%, transparent);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid color-mix(in srgb, var(--color-brand-accent) 28%, transparent);
 }
 
 .glass-dark {
-  background: rgba(0, 0, 0, 0.3);
+  background: color-mix(in srgb, var(--color-brand-primary-deep) 82%, transparent);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid color-mix(in srgb, var(--color-brand-accent) 24%, transparent);
 }
 
 /* Text gradient */
@@ -289,11 +690,12 @@ html {
 
 /* Hover glow effect */
 .hover-glow {
-  transition: all 0.3s ease;
+  transition: box-shadow 220ms ease, transform 220ms ease;
 }
 
 .hover-glow:hover {
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--color-brand-primary) 20%, transparent);
+  transform: translateY(-1px);
 }
 
 /* Line clamp utilities for various lines */
@@ -345,8 +747,8 @@ html {
 
 /* Focus styles for accessibility */
 *:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: 2px;
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 3px;
 }
 
 
@@ -358,12 +760,12 @@ html {
 
 /* Custom selection colors */
 ::selection {
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: color-mix(in srgb, var(--color-brand-primary) 22%, transparent);
   color: inherit;
 }
 
 ::-moz-selection {
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: color-mix(in srgb, var(--color-brand-primary) 22%, transparent);
   color: inherit;
 }
 
@@ -413,9 +815,9 @@ html {
   height: 26px;
   margin-top: -10px;
   border-radius: 50%;
-  background: #653536;
-  border: 3px solid white;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+  background: var(--color-brand-primary);
+  border: 3px solid var(--color-surface-elevated);
+  box-shadow: 0 2px 7px color-mix(in srgb, var(--color-brand-primary-deep) 22%, transparent);
   cursor: grab;
 }
 
@@ -424,9 +826,9 @@ html {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #653536;
-  border: 3px solid white;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+  background: var(--color-brand-primary);
+  border: 3px solid var(--color-surface-elevated);
+  box-shadow: 0 2px 7px color-mix(in srgb, var(--color-brand-primary-deep) 22%, transparent);
   cursor: grab;
 }
 
@@ -578,8 +980,8 @@ html {
 
       box-sizing: border-box;
       overflow: hidden !important;
-      background: #fff !important;
-      color: #111 !important;
+      background: var(--color-surface-elevated) !important;
+      color: var(--color-text-main) !important;
       isolation: isolate;
     }
 
@@ -651,7 +1053,7 @@ html {
 
       overflow: hidden !important;
 
-      background: rgba(0, 0, 0, 0.6) !important;
+      background: var(--color-overlay) !important;
     }
 
     .ios-auth-panel {
@@ -796,7 +1198,7 @@ html {
 
       overflow: hidden !important;
 
-      background: #121212 !important;
+      background: var(--color-lightbox-background) !important;
     }
 
     .ios-lightbox-stage {
@@ -806,3 +1208,116 @@ html {
     }
   }
 }
+
+
+/* Status and utility fallbacks for legacy components. */
+.bg-success { background-color: var(--color-success); }
+.text-success { color: var(--color-success); }
+.bg-error { background-color: var(--color-error); }
+.text-error { color: var(--color-error); }
+.bg-warning { background-color: var(--color-warning); }
+.text-warning { color: var(--color-warning); }
+.bg-info { background-color: var(--color-info); }
+.text-info { color: var(--color-info); }
+
+.brand-section-dark :where(h1,h2,h3,h4,h5,h6,p,a,span,label) { color: inherit; }
+.brand-section-dark a:hover { color: var(--color-brand-accent); }
+
+/* Single unlayered CTA definitions.
+   Unlayered rules outrank Tailwind utilities without !important overrides. */
+.brand-button,
+.brand-gold-button,
+.brand-outline-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+  text-align: center;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.brand-button {
+  border-color: var(--color-brand-primary);
+  background-color: var(--color-brand-primary);
+  color: var(--color-brand-on-primary);
+  box-shadow: var(--shadow-brand-soft);
+}
+
+.brand-button:hover:not(:disabled) {
+  border-color: var(--color-brand-primary-hover);
+  background-color: var(--color-brand-primary-hover);
+  color: var(--color-brand-on-primary);
+  box-shadow: var(--shadow-brand-card);
+  transform: translateY(-1px);
+}
+
+.brand-outline-button {
+  border-color: var(--color-brand-primary);
+  background-color: var(--color-surface-elevated);
+  color: var(--color-brand-primary);
+}
+
+.brand-outline-button:hover:not(:disabled) {
+  border-color: var(--color-brand-primary-hover);
+  background-color: var(--color-brand-primary-soft);
+  color: var(--color-brand-primary-deep);
+  transform: translateY(-1px);
+}
+
+.brand-gold-button {
+  border-color: var(--color-brand-accent);
+  background-color: var(--color-brand-accent);
+  color: var(--color-brand-on-accent);
+  box-shadow: var(--shadow-brand-soft);
+}
+
+.brand-gold-button:hover:not(:disabled) {
+  border-color: var(--color-gold-600);
+  background-color: var(--color-gold-500);
+  color: var(--color-brand-on-accent);
+  transform: translateY(-1px);
+}
+
+.brand-button:active:not(:disabled),
+.brand-outline-button:active:not(:disabled),
+.brand-gold-button:active:not(:disabled) { transform: translateY(0) scale(0.99); }
+
+.brand-button:focus-visible,
+.brand-outline-button:focus-visible,
+.brand-gold-button:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--color-focus-ring) 20%, transparent);
+}
+
+.brand-button:disabled,
+.brand-outline-button:disabled,
+.brand-gold-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Generic field focus and error state: applies to existing modal forms too. */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  border-color: var(--color-brand-primary);
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+input[aria-invalid="true"],
+textarea[aria-invalid="true"],
+select[aria-invalid="true"] { border-color: var(--color-error); }
+

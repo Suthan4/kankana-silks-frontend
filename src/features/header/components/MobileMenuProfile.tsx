@@ -20,7 +20,7 @@ export function MobileMenuProfile({
     return (
       <button
         onClick={onLogin}
-        className="mb-6 w-full rounded-lg bg-black py-3 font-semibold text-white"
+        className="brand-button mb-6 w-full rounded-lg py-3"
       >
         Sign In / Sign Up
       </button>
@@ -32,13 +32,13 @@ export function MobileMenuProfile({
       <p className="font-semibold text-gray-900">Hello, {user.firstName}!</p>
       <p className="text-sm text-gray-600">{user.email}</p>
       <div className="mt-3 space-y-2">
-        <Link href="/my-account" onClick={onClose} className="block text-sm text-gray-700 hover:text-black">
+        <Link href="/my-account" onClick={onClose} className="block text-sm text-gray-700 transition-colors hover:text-brand-primary">
           My Account
         </Link>
-        <Link href="/my-account/orders" onClick={onClose} className="block text-sm text-gray-700 hover:text-black">
+        <Link href="/my-account/orders" onClick={onClose} className="block text-sm text-gray-700 transition-colors hover:text-brand-primary">
           My Orders
         </Link>
-        <Link href="/my-account/addresses" onClick={onClose} className="block text-sm text-gray-700 hover:text-black">
+        <Link href="/my-account/addresses" onClick={onClose} className="block text-sm text-gray-700 transition-colors hover:text-brand-primary">
           Address
         </Link>
         <button onClick={onLogout} className="block w-full text-left text-sm text-red-600">

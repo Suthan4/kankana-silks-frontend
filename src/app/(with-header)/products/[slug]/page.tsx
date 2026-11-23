@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import ProductDetailsClient from "@/components/sections/productDetialClient";
 import { getProductBySlug } from "@/lib/seo/server-api";
+import { seoPageTitle, seoPageDescription } from "@/lib/seo/metadata";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -18,24 +19,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!product) {
     return {
-      title: "Product Not Found | Kankana Silks",
+      title: "Product Not Found",
       robots: { index: false, follow: true },
     };
   }
 
   if (product.category?.slug) {
     return {
-      title: product.metaTitle || `${product.name} | Kankana Silks`,
+      title: seoPageTitle(product.metaTitle, `${product.name} Saree`),
       robots: { index: false, follow: true },
     };
   }
 
   return {
-    title: product.metaTitle || `${product.name} | Kankana Silks`,
-    description:
-      product.metaDesc ||
-      product.description?.replace(/\s+/g, " ").trim().slice(0, 160) ||
+    title: seoPageTitle(product.metaTitle, `${product.name} Saree`),
+    description: seoPageDescription(
+      product.metaDesc || product.description,
       `Shop ${product.name} at Kankana Silks.`,
+    ),
     alternates: { canonical: `/products/${encodeURIComponent(slug)}` },
     robots: { index: true, follow: true },
   };

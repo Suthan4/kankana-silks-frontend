@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import CityLandingPage, { type CitySeoConfig } from "@/components/seo/cityLandingPage";
 import { citySeoEntries } from "@/config/seo/cities";
+import { seoPageDescription } from "@/lib/seo/metadata";
 
 type Props = { params: Promise<{ city: string }> };
 
@@ -28,9 +29,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const canonical = `/sarees-in/${entry.slug}`;
+  const pageTitle = `Silk Sarees in ${entry.city}`;
   return {
-    title: entry.title,
-    description: entry.description,
+    title: pageTitle,
+    description: seoPageDescription(entry.description, entry.description),
     keywords: [
       `sarees in ${entry.city}`,
       `silk sarees in ${entry.city}`,
@@ -40,8 +42,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ],
     alternates: { canonical },
     openGraph: {
-      title: entry.title,
-      description: entry.description,
+      title: pageTitle + " | Kankana Silks",
+      description: seoPageDescription(entry.description, entry.description),
       url: `https://www.kankanasilks.com${canonical}`,
       siteName: "Kankana Silks",
       locale: "en_IN",
@@ -59,7 +61,7 @@ export default async function CitySareesPage({ params }: Props) {
   const config: CitySeoConfig = {
     city: entry.city,
     slug: `sarees-in/${entry.slug}`,
-    title: entry.title,
+    title: `Silk Sarees in ${entry.city}`,
     description: entry.description,
     heading: entry.heading,
     intro: entry.intro,

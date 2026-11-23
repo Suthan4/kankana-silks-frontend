@@ -82,14 +82,14 @@ function StoreLocatorModal({ onClose }: { onClose: () => void }) {
                 onClick={() => setSelected(store)}
                 className={`w-full text-left px-6 py-5 border-b border-gray-50 transition-colors ${
                   selected.id === store.id
-                    ? "bg-gray-50 border-l-2 border-l-black"
+                    ? "border-l-2 border-l-brand-primary bg-brand-primary-soft"
                     : "hover:bg-gray-50"
                 }`}
               >
                 <div className="flex items-start gap-3">
                   <div
                     className={`mt-0.5 w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
-                      selected.id === store.id ? "bg-black" : "bg-gray-100"
+                      selected.id === store.id ? "bg-brand-primary" : "bg-gray-100"
                     }`}
                   >
                     <MapPin
@@ -161,7 +161,7 @@ function StoreLocatorModal({ onClose }: { onClose: () => void }) {
                   href={selected.mapUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-black text-white text-xs font-semibold rounded-xl hover:bg-gray-800 transition-colors"
+                  className="brand-button flex-1 gap-2 rounded-xl py-2.5"
                 >
                   <Navigation className="w-3.5 h-3.5" />
                   Get Directions
@@ -170,7 +170,7 @@ function StoreLocatorModal({ onClose }: { onClose: () => void }) {
                   href={selected.mapUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 text-xs font-medium rounded-xl hover:border-black transition-colors text-gray-700"
+                  className="brand-outline-button gap-2 rounded-xl px-4 py-2.5"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   Open Maps
@@ -227,7 +227,7 @@ export default function Footer() {
   return (
     <>
       {/* ── FOOTER ── */}
-      <footer className="bg-white border-t border-gray-100">
+      <footer className="brand-section-dark border-t border-brand-accent/25">
         {/* Main grid */}
         <div className="max-w-screen-xl mx-auto px-6 md:px-10 py-12 md:py-16">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 md:gap-8">
@@ -239,9 +239,9 @@ export default function Footer() {
                 height={152}
                 sizes="120px"
                 alt="Kankana Silks"
-                className="h-14 w-auto object-contain mb-4"
+                className="h-14 w-auto object-contain mb-4 brightness-0 invert"
               />
-              <p className="text-base text-gray-500 leading-relaxed max-w-[200px]">
+              <p className="text-base text-brand-on-section/75 leading-relaxed max-w-[200px]">
                 Celebrating centuries of saree-making tradition with modern
                 elegance.
               </p>
@@ -249,16 +249,16 @@ export default function Footer() {
               {/* Store Locator CTA */}
               <button
                 onClick={() => setStoreLocatorOpen(true)}
-                className="mt-5 inline-flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-full text-base font-medium text-gray-700 hover:border-black hover:text-black transition-all group"
+                className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full border border-brand-accent/70 bg-transparent px-4 py-2 text-base font-medium text-brand-accent transition-colors hover:bg-brand-accent hover:text-brand-on-accent group"
               >
-                <MapPin className="w-3.5 h-3.5 group-hover:text-black transition-colors" />
+                <MapPin className="w-3.5 h-3.5 group-hover:text-brand-accent transition-colors" />
                 Find Our Stores
               </button>
             </div>
 
             {/* ── Shop ── */}
             <div>
-              <h4 className="mb-4 text-base font-futura-bold uppercase tracking-[0.15em] text-gray-900">
+              <h4 className="mb-4 text-base font-futura-bold uppercase tracking-[0.15em] text-brand-on-section">
                 {" "}
                 Shop
               </h4>
@@ -267,7 +267,7 @@ export default function Footer() {
                   <li key={label}>
                     <Link
                       href={href}
-                      className="text-base text-gray-500 transition-colors hover:text-black"
+                      className="text-base text-brand-on-section/75 transition-colors hover:text-brand-accent"
                     >
                       {label}
                     </Link>
@@ -278,7 +278,7 @@ export default function Footer() {
 
             {/* ── Connect ── */}
             <div>
-              <h4 className="mb-4 text-base font-futura-bold uppercase tracking-[0.15em] text-gray-900">
+              <h4 className="mb-4 text-base font-futura-bold uppercase tracking-[0.15em] text-brand-on-section">
                 {" "}
                 Connect
               </h4>
@@ -289,7 +289,7 @@ export default function Footer() {
                       href={href}
                       target={external ? "_blank" : undefined}
                       rel={external ? "noopener noreferrer" : undefined}
-                      className="text-base text-gray-500 transition-colors hover:text-black"
+                      className="text-base text-brand-on-section/75 transition-colors hover:text-brand-accent"
                     >
                       {label}
                     </a>
@@ -300,9 +300,9 @@ export default function Footer() {
                 <li>
                   <button
                     onClick={() => setStoreLocatorOpen(true)}
-                    className="text-xs text-gray-500 hover:text-black transition-colors flex items-center gap-1.5 group"
+                    className="brand-link flex items-center gap-1.5 text-xs text-gray-500 group"
                   >
-                    <MapPin className="w-3 h-3 group-hover:text-black transition-colors" />
+                    <MapPin className="w-3 h-3 group-hover:text-brand-accent transition-colors" />
                     Store Locator
                   </button>
                 </li>
@@ -311,11 +311,11 @@ export default function Footer() {
 
             {/* ── Newsletter ── */}
             <div>
-              <h4 className="mb-4 text-base font-futura-bold uppercase tracking-[0.15em] text-gray-900">
+              <h4 className="mb-4 text-base font-futura-bold uppercase tracking-[0.15em] text-brand-on-section">
                 {" "}
                 Newsletter
               </h4>
-              <p className="mb-3 text-base leading-relaxed text-gray-500">
+              <p className="mb-3 text-base leading-relaxed text-brand-on-section/75">
                 New collections and exclusive offers, straight to your inbox.
               </p>
               <form onSubmit={handleNewsletterSubmit} className="flex gap-0">
@@ -325,11 +325,11 @@ export default function Footer() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="min-w-0 flex-1 rounded-l-lg border border-r-0 border-gray-200 px-3 py-2 text-base placeholder-gray-400 transition-colors focus:border-black focus:outline-none"
+                  className="min-w-0 flex-1 rounded-l-lg border border-r-0 border-brand-on-section/30 bg-brand-primary-deep/45 px-3 py-2 text-base text-brand-on-section placeholder:text-brand-on-section/60 transition-colors focus:border-brand-accent focus:outline-none"
                 />
                 <button
                   type="submit"
-                  className="flex-shrink-0 rounded-r-lg bg-black px-4 py-2 text-base font-semibold text-white transition-colors hover:bg-gray-800"
+                  className="brand-gold-button min-h-10 flex-shrink-0 rounded-r-lg rounded-l-none px-4 py-2 text-base"
                 >
                   Join
                 </button>
@@ -339,21 +339,21 @@ export default function Footer() {
         </div>
 
         {/* ── Bottom bar ── */}
-        <div className="border-t border-gray-100">
+        <div className="border-t border-brand-accent/20 bg-brand-primary-deep/30">
           <div className="max-w-screen-xl mx-auto px-6 md:px-10 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-base text-gray-600">
+            <p className="text-base text-brand-on-section/75">
               © {new Date().getFullYear()} Kankana Silks. All rights reserved.
             </p>
             <div className="flex items-center gap-4">
               <Link
                 href="/privacy-policy"
-                className="text-base text-gray-600 transition-colors hover:text-black"
+                className="text-base text-brand-on-section/75 transition-colors hover:text-brand-accent"
               >
                 Privacy
               </Link>
               <Link
                 href="/terms-and-conditions"
-                className="text-base text-gray-600 transition-colors hover:text-black"
+                className="text-base text-brand-on-section/75 transition-colors hover:text-brand-accent"
               >
                 Terms
               </Link>
@@ -362,7 +362,7 @@ export default function Footer() {
                 onClick={() => setStoreLocatorOpen(true)}
                 className="flex items-center gap-1.5 text-base text-gray-600 transition-colors hover:text-black"
               >
-                <MapPin className="h-4 w-4 transition-colors group-hover:text-black" />{" "}
+                <MapPin className="h-4 w-4 transition-colors group-hover:text-brand-accent" />{" "}
                 Stores
               </button>
             </div>

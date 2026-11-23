@@ -36,7 +36,7 @@ export function CategoryMegaMenuLeafPanel({
       )}
 
       <div className="flex max-w-xl flex-col justify-center overflow-y-auto px-12 py-12">
-        <span className="mb-5 block h-[2px] w-8 bg-[#c4a882]" />
+        <span className="mb-5 block h-[2px] w-8 bg-brand-accent" />
         <h3 className="mb-4 font-serif text-3xl font-light uppercase tracking-[0.18em] text-gray-900">
           {category.name}
         </h3>
@@ -48,9 +48,9 @@ export function CategoryMegaMenuLeafPanel({
         <Link
           href={getCategoryUrl(category.slug)}
           onClick={onNavigate}
-          className="group mt-8 inline-flex w-fit items-center gap-3 text-sm font-semibold uppercase tracking-[0.16em] text-black"
+          className="group mt-8 inline-flex w-fit items-center gap-3 text-sm font-semibold uppercase tracking-[0.16em] text-brand-primary"
         >
-          <span className="border-b border-transparent transition-colors duration-200 group-hover:border-black">
+          <span className="border-b border-transparent transition-colors duration-200 group-hover:border-brand-primary">
             Explore Collection
           </span>
           <span className="transition-transform duration-200 group-hover:translate-x-1">→</span>

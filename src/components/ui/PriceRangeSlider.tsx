@@ -56,7 +56,7 @@ export default function PriceRangeSlider({
         <div className="absolute w-full h-1.5 bg-gray-200 rounded-full" />
 
         <div
-          className="absolute h-1.5 bg-[#653536] rounded-full"
+          className="absolute h-1.5 bg-brand-primary rounded-full"
           style={{
             left: `${minPercent}%`,
             width: `${maxPercent - minPercent}%`,

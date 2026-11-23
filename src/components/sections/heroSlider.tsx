@@ -165,13 +165,13 @@ function HeroSlider({ section }: { section: HomeSection }) {
                           target={btn.openNewTab ? "_blank" : "_self"}
                           rel={btn.openNewTab ? "noopener noreferrer" : ""}
                           className={`
-                            px-8 py-4 rounded-full font-semibold text-base md:text-lg transition-all duration-300 inline-flex items-center gap-3 shadow-2xl md:backdrop-blur-sm transform hover:scale-105
+                            px-8 py-4 rounded-full font-semibold text-base md:text-lg transition-all duration-300 inline-flex items-center gap-3 shadow-brand-float md:backdrop-blur-sm transform hover:scale-[1.02]
                             ${
                               btn.style === "PRIMARY"
-                                ? "bg-white text-gray-900 hover:bg-gray-100"
+                                ? "brand-button"
                                 : btn.style === "SECONDARY"
-                                  ? "bg-gray-900 text-white hover:bg-gray-800"
-                                  : "border-2 border-white text-white hover:bg-white hover:text-gray-900"
+                                  ? "brand-gold-button"
+                                  : "border border-white/90 bg-brand-primary-deep/20 text-white hover:bg-brand-primary hover:text-white"
                             }
                           `}
                         >

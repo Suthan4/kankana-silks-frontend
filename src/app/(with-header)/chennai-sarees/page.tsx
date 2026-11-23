@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import CityLandingPage, { type CitySeoConfig } from "@/components/seo/cityLandingPage";
+import { seoPageDescription } from "@/lib/seo/metadata";
 
 const config: CitySeoConfig = {
   city: "Chennai",
   slug: "chennai-sarees",
-  title: "Silk Sarees Online in Chennai | Kankana Silks",
+  title: "Silk Sarees in Chennai",
   description: "Explore Kanchipuram, Banarasi, Paithani and traditional silk sarees online in Chennai with Kankana Silks. Check product details and delivery availability.",
   heading: "Explore traditional silk sarees online in Chennai",
   intro: "Browse the Kankana Silks online collection from Chennai and discover traditional Indian sarees for weddings, festive occasions and celebrations. Explore available Kanchipuram, Banarasi, Paithani, Mysore silk and handloom styles, with product-specific information available on each listing.",
@@ -35,8 +36,8 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: "/chennai-sarees" },
   openGraph: {
-    title: config.title,
-    description: config.description,
+    title: `${config.title} | Kankana Silks`,
+    description: seoPageDescription(config.description, config.description),
     url: "https://www.kankanasilks.com/chennai-sarees",
     siteName: "Kankana Silks",
     locale: "en_IN",

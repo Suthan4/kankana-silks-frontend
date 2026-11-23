@@ -26,6 +26,12 @@ const ContactUs: React.FC = () => {
 
             <div className="space-y-2">
               <p>
+                Our support team can help with product information, order
+                updates, payment-related questions and general shopping
+                enquiries. Please avoid sending full card details, passwords
+                or one-time passwords by email.
+              </p>
+              <p>
                 <strong>Email:</strong> support@kankanasilks.com
               </p>
               {/* <p><strong>Phone:</strong> +91 XXXXX XXXXX</p> */}
@@ -33,6 +39,11 @@ const ContactUs: React.FC = () => {
                 <strong>Address:</strong> Kankana Silks, 464, First floor,
                 Jayachamarajendra road, 1st Stage, Vijayanagar, Mysore,
                 Karnataka
+              </p>
+              <p>
+                For an order enquiry, include your order number and the email
+                or phone number associated with the order. Do not include
+                sensitive payment credentials.
               </p>
             </div>
           </div>

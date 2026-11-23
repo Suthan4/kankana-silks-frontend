@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import CityLandingPage, { type CitySeoConfig } from "@/components/seo/cityLandingPage";
+import { seoPageDescription } from "@/lib/seo/metadata";
 
 const config: CitySeoConfig = {
   city: "Mysore",
   slug: "mysore-sarees",
   alternateCityName: "Mysuru",
-  title: "Premium Sarees in Mysore | Kankana Silks",
+  title: "Premium Sarees in Mysore",
   description: "Explore premium silk, Kanchipuram, Banarasi, Paithani and bridal sarees at Kankana Silks in Mysore. Browse online or visit our Vijayanagar store.",
   heading: "Discover premium sarees in Mysore",
   intro: "Explore a considered collection of traditional Indian sarees at Kankana Silks, a Mysore-based saree store. Browse Kanchipuram silk, Banarasi, Paithani, Mysore silk and handloom styles for weddings, festive occasions and meaningful celebrations. Customers may also search for Mysuru saree collections.",
@@ -37,8 +38,8 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: "/mysore-sarees" },
   openGraph: {
-    title: config.title,
-    description: config.description,
+    title: `${config.title} | Kankana Silks`,
+    description: seoPageDescription(config.description, config.description),
     url: "https://www.kankanasilks.com/mysore-sarees",
     siteName: "Kankana Silks",
     locale: "en_IN",

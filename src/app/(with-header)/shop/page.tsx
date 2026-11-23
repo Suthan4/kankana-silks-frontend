@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import ShopClient from "@/components/sections/shopClient";
+import { seoPageDescription } from "@/lib/seo/metadata";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 interface Category {
@@ -52,9 +53,11 @@ export const revalidate = 60;
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Shop Silk Sarees Online | Mysore & Bengaluru",
-    description:
+    title: "Shop Silk Sarees Online",
+    description: seoPageDescription(
       "Explore Kanchipuram, Banarasi, Paithani and handloom sarees at Kankana Silks, Mysore. Shop online from Bengaluru, Chennai, Hyderabad and across India.",
+      "Shop Kanchipuram, Banarasi, Paithani and handloom sarees online at Kankana Silks, Mysore.",
+    ),
     keywords: [
       "silk sarees",
       "traditional wear",
@@ -71,18 +74,22 @@ export async function generateMetadata(): Promise<Metadata> {
       "shop sarees",
     ],
     openGraph: {
-      title: "Shop Silk Sarees Online | Mysore & Bengaluru",
-      description:
+      title: "Shop Silk Sarees Online | Kankana Silks",
+      description: seoPageDescription(
         "Shop curated silk and handloom saree collections from Kankana Silks, Mysore, with delivery across India.",
+        "Shop curated silk and handloom saree collections from Kankana Silks, Mysore.",
+      ),
       type: "website",
       url: "https://www.kankanasilks.com/shop",
       siteName: "Kankana Silks",
     },
     twitter: {
       card: "summary_large_image",
-      title: "Shop Silk Sarees Online | Mysore & Bengaluru",
-      description:
+      title: "Shop Silk Sarees Online | Kankana Silks",
+      description: seoPageDescription(
         "Shop silk and handloom sarees online from Kankana Silks, Mysore. We deliver to Bengaluru and across India.",
+        "Shop silk and handloom sarees online from Kankana Silks, Mysore.",
+      ),
     },
     alternates: {
       canonical: "/shop",

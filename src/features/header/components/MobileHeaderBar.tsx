@@ -40,9 +40,9 @@ export function MobileHeaderBar({
           className="p-2"
         >
           {mobileMenuOpen ? (
-            <X className="h-6 w-6 text-black" />
+            <X className="h-6 w-6 text-brand-primary" />
           ) : (
-            <Menu className="h-6 w-6 text-black" />
+            <Menu className="h-6 w-6 text-brand-primary" />
           )}
         </motion.button>
         <Link

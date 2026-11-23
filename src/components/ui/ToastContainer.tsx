@@ -5,10 +5,10 @@ import { Portal } from "./Portal";
 import { useToastStore } from "@/store/useToastStore";
 
 const styles = {
-  success: "bg-green-600 text-white",
-  error: "bg-red-600 text-white",
-  info: "bg-blue-600 text-white",
-  warning: "bg-yellow-500 text-black",
+  success: "brand-status-success",
+  error: "brand-status-error",
+  info: "brand-status-info",
+  warning: "brand-status-warning",
 };
 
 export function ToastContainer() {
@@ -29,7 +29,7 @@ export function ToastContainer() {
               onMouseLeave={() => resumeToast(toast.id)}
               onTouchStart={() => pauseToast(toast.id)}
               onTouchEnd={() => resumeToast(toast.id)}
-              className={`rounded-xl px-4 py-3 shadow-xl text-sm font-medium flex items-start justify-between gap-3 ${
+              className={`rounded-xl border px-4 py-3 shadow-brand-soft text-sm font-medium flex items-start justify-between gap-3 ${
                 styles[toast.type]
               }`}
             >
@@ -37,7 +37,7 @@ export function ToastContainer() {
 
               <button
                 onClick={() => removeToast(toast.id)}
-                className="opacity-70 hover:opacity-100"
+                className="shrink-0 rounded-md px-1 text-current opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-offset-4"
               >
                 ✕
               </button>

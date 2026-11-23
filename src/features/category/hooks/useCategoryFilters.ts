@@ -143,9 +143,17 @@ export function useCategoryFilters(category: Category) {
     };
   }, []);
 
+  const hasActiveFilters = Boolean(
+    selectedSubCategory ||
+      ["search", "minPrice", "maxPrice", "color", "fabric", "size", "inStock"].some(
+        (key) => searchParams.has(key),
+      ),
+  );
+
   return {
     queryParams,
     isDefaultQuery,
+    hasActiveFilters,
     priceRange,
     setPriceRange,
     sortBy,

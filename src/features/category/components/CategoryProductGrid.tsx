@@ -1,6 +1,8 @@
 "use client";
 
 import type { Product, ProductVariant } from "@/lib/api/product.api";
+import Link from "next/link";
+import { ArrowRight, Sparkles } from "lucide-react";
 import type { CartLineLike } from "@/lib/utils/cartItems";
 import { CategoryProductCard } from "./CategoryProductCard";
 import { ProductGridSkeleton } from "./CategoryProductsSkeleton";
@@ -16,6 +18,7 @@ interface CategoryProductGridProps {
   canAddToCart: (product: Product) => boolean;
   isWishlisted: (productId: string) => boolean;
   isAddingToCart: boolean;
+  hasActiveFilters: boolean;
   onClearFilters: () => void;
   onAddToCart: (product: Product, variant: ProductVariant | null) => void;
   onIncrease: (product: Product, variant: ProductVariant | null, item: CartLineLike | null) => void;
@@ -36,6 +39,7 @@ export function CategoryProductGrid({
   canAddToCart,
   isWishlisted,
   isAddingToCart,
+  hasActiveFilters,
   onClearFilters,
   onAddToCart,
   onIncrease,
@@ -58,16 +62,53 @@ export function CategoryProductGrid({
 
   if (!isFetching && products.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-40">
-        <p className="mb-6 text-xs uppercase tracking-widest text-gray-400">No products found</p>
-        <button
-          type="button"
-          onClick={onClearFilters}
-          className="border border-black px-6 py-2 text-xs uppercase tracking-widest transition-colors hover:bg-black hover:text-white"
-        >
-          Clear Filters
-        </button>
-      </div>
+      <section
+        role="status"
+        aria-live="polite"
+        className="mx-auto w-full max-w-3xl px-4 py-10 sm:py-14"
+      >
+        <div className="brand-soft-surface relative overflow-hidden rounded-2xl px-5 py-9 text-center shadow-[0_12px_40px_rgba(91,54,67,0.06)] sm:px-10 sm:py-12">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-brand-primary-muted/60 blur-2xl"
+          />
+          <div className="relative mx-auto flex max-w-xl flex-col items-center">
+            <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-brand-border bg-white/85 text-brand-primary">
+              <Sparkles className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-primary">
+              {hasActiveFilters ? "A little adjustment" : "Coming soon"}
+            </p>
+            <h2 className="mt-2 text-xl font-semibold tracking-tight text-brand-primary-deep sm:text-2xl">
+              {hasActiveFilters
+                ? "No sarees match these filters"
+                : "We're preparing something beautiful"}
+            </h2>
+            <p className="mt-3 max-w-lg text-sm leading-6 text-stone-700 sm:text-base">
+              {hasActiveFilters
+                ? "Try changing the fabric, price range or subcategory to see more styles."
+                : "We're adding new saree designs to this collection. Please check back soon, or explore our other collections in the meantime."}
+            </p>
+            {hasActiveFilters ? (
+              <button
+                type="button"
+                onClick={onClearFilters}
+                className="brand-button mt-6 rounded-full px-6"
+              >
+                Clear filters
+              </button>
+            ) : (
+              <Link
+                href="/shop"
+                className="brand-button mt-6 rounded-full px-6"
+              >
+                Explore all collections
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            )}
+          </div>
+        </div>
+      </section>
     );
   }
 

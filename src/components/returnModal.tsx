@@ -382,7 +382,7 @@ export function ReturnModal({
                   onClick={onClose}
                   disabled={loading}
                   type="button"
-                  className="flex-1 py-3 border-2 border-gray-200 rounded-lg font-medium hover:bg-white disabled:opacity-50"
+                  className="brand-outline-button flex-1 rounded-lg py-3 disabled:opacity-50"
                 >
                   Cancel
                 </motion.button>
@@ -392,7 +392,7 @@ export function ReturnModal({
                   onClick={handleSubmit}
                   disabled={loading || selectedItems.length === 0}
                   type="button"
-                  className="flex-1 py-3 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="brand-button flex-1 rounded-lg py-3 disabled:opacity-50"
                 >
                   {loading ? (
                     <>

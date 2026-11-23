@@ -119,7 +119,7 @@ export function CategoryProductsView({
             )}
           </AnimatePresence>
 
-          <div className="min-w-0 flex-1 px-4 pb-16 pt-10 md:px-8 md:pt-20 xl:px-10">
+          <div className="min-w-0 flex-1 px-4 pb-16 pt-5 md:px-8 md:pt-8 xl:px-10">
             <CategoryProductGrid
               products={productsQuery.products}
               isLoading={productsQuery.isLoading}
@@ -131,6 +131,7 @@ export function CategoryProductsView({
               canAddToCart={canAddProductToCart}
               isWishlisted={wishlist.isProductWishlisted}
               isAddingToCart={cart.isAddingToCart}
+              hasActiveFilters={filters.hasActiveFilters}
               onClearFilters={filters.clearAllFilters}
               onAddToCart={cart.addProduct}
               onIncrease={cart.increaseQuantity}

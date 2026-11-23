@@ -3,7 +3,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { buildCategoryQuery } from "@/lib/shared/builders/productCategoryQuery.builder.ts";
 import { Package, LayoutGrid, Grid2x2, List } from "lucide-react";
 
 interface Category {
@@ -28,15 +27,7 @@ type GridType = "3col" | "4col" | "list";
 export default function ShopClient({ categories }: ShopClientProps) {
   const [grid, setGrid] = useState<GridType>("4col");
 
-  const getCategoryUrl = (slug: string) => {
-    const queryParams = buildCategoryQuery(slug);
-    const searchParams = new URLSearchParams();
-    Object.entries(queryParams).forEach(([key, value]) => {
-      if (value !== undefined && value !== null)
-        searchParams.append(key, String(value));
-    });
-    return `/shop/${slug}?${searchParams.toString()}`;
-  };
+  const getCategoryUrl = (slug: string) => `/shop/${encodeURIComponent(slug)}`;
 
   const parentCategories = categories.filter((cat) => !cat.parentId);
   const totalProducts = categories.reduce(
@@ -64,7 +55,7 @@ export default function ShopClient({ categories }: ShopClientProps) {
   }[grid];
 
   return (
-    <div className="min-h-screen bg-white pt-30 md:pt-30">
+    <div className="min-h-screen bg-white pt-30 md:pt-5">
       {/* ── TOOLBAR ── */}
       <div className="border-b border-gray-100 sticky top-0 z-30 bg-white">
         <div className="max-w-screen mx-auto px-6 md:px-12 flex items-center justify-between h-11">
@@ -100,6 +91,20 @@ export default function ShopClient({ categories }: ShopClientProps) {
 
       {/* ── GRID ── */}
       <div className="max-w-screen mx-auto px-6 md:px-12 py-8">
+        <header className="mb-8 max-w-3xl">
+          <h1 className="text-3xl font-semibold tracking-tight text-gray-950 sm:text-4xl">
+            Shop Silk Sarees Online
+          </h1>
+          <h2 className="mt-3 text-lg font-semibold text-gray-900">
+            Explore our saree collections
+          </h2>
+          <p className="mt-2 text-sm leading-7 text-gray-600 sm:text-base">
+            Browse Kanchipuram, Banarasi, Paithani, Mysore silk, handloom and
+            other currently listed collections at Kankana Silks. Open a category
+            to view its products, compare product details and check current
+            availability before ordering.
+          </p>
+        </header>
         {parentCategories.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <Package className="w-10 h-10 text-gray-200" />

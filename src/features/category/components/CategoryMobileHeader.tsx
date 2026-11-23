@@ -37,7 +37,7 @@ export function CategoryMobileHeader({
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="sticky top-0 z-40 border-b bg-white md:hidden"
+      className="sticky top-0 z-40 border-b border-brand-border bg-white/95 shadow-[0_4px_16px_rgba(91,54,67,0.04)] backdrop-blur md:hidden"
     >
       <div className="flex items-center gap-3 px-4 py-3">
         <Link href="/shop">
@@ -46,7 +46,7 @@ export function CategoryMobileHeader({
           </motion.div>
         </Link>
         <div>
-          <h2 className="font-semibold text-gray-900">{categoryName}</h2>
+          <p className="font-semibold text-gray-900">{categoryName}</p>
           <p className="text-xs text-gray-500">{total} items</p>
         </div>
         <div className="ml-auto flex items-center gap-3">
@@ -54,7 +54,7 @@ export function CategoryMobileHeader({
             type="button"
             onClick={() => onGridChange(1)}
             aria-label="Show one product per row"
-            className={`border p-1.5 ${grid === 1 ? "border-black bg-black text-white" : "border-gray-300"}`}
+            className={`border p-1.5 ${grid === 1 ? "border-brand-primary bg-brand-primary text-white" : "border-gray-300"}`}
           >
             <div className="grid gap-[2px]">
               <div className="h-[2px] w-3 bg-current" />
@@ -66,7 +66,7 @@ export function CategoryMobileHeader({
             type="button"
             onClick={() => onGridChange(2)}
             aria-label="Show two products per row"
-            className={`border p-1.5 ${grid === 2 ? "border-black bg-black text-white" : "border-gray-300"}`}
+            className={`border p-1.5 ${grid === 2 ? "border-brand-primary bg-brand-primary text-white" : "border-gray-300"}`}
           >
             <div className="grid grid-cols-2 gap-[2px]">
               {Array.from({ length: 4 }).map((_, index) => (
@@ -94,7 +94,7 @@ export function CategoryMobileHeader({
             onClick={() => onSortChange(option.value)}
             className={`whitespace-nowrap rounded-full px-4 py-1.5 text-xs uppercase tracking-widest transition-colors ${
               sortBy === option.value
-                ? "bg-black text-white"
+                ? "bg-brand-primary text-white"
                 : "border border-gray-300 text-gray-600 hover:border-black"
             }`}
           >

@@ -4,6 +4,7 @@ import CategoryProductsClient from "@/components/categoryProductsClient";
 import { getCategoryBySlug, getCategoryProducts } from "@/lib/seo/server-api";
 import type { Category } from "@/lib/api/category.api";
 import { JsonLd, SITE_URL, breadcrumbJsonLd } from "@/lib/seo/json-ld";
+import { seoPageTitle, brandedSeoTitle, seoPageDescription } from "@/lib/seo/metadata";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -18,18 +19,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!category) {
     return {
-      title: "Category Not Found | Kankana Silks",
+      title: "Category Not Found",
       description: "The category you're looking for could not be found.",
     };
   }
 
-  const title =
-    category.metaTitle ||
-    `${category.name} - Premium Silk Sarees | Kankana Silks`;
-  const description =
-    category.metaDesc ||
-    category.description ||
-    `Explore ${category.name.toLowerCase()} at Kankana Silks, Mysore. Shop online with delivery to Bengaluru, Chennai, Hyderabad and across India.`;
+  const title = seoPageTitle(category.metaTitle, `${category.name} Sarees`);
+  const description = seoPageDescription(
+    category.metaDesc || category.description,
+    `Explore ${category.name.toLowerCase()} at Kankana Silks, Mysore. Shop online with delivery to Bengaluru, Chennai, Hyderabad and across India.`,
+  );
 
   return {
     title,
@@ -44,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       "handcrafted saree",
     ].filter(Boolean),
     openGraph: {
-      title,
+      title: brandedSeoTitle(title),
       description,
       images: category.image
         ? [
@@ -62,7 +61,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title,
+      title: brandedSeoTitle(title),
       description,
       images: category.image ? [category.image] : [],
     },
@@ -130,6 +129,13 @@ export default async function CategoryPage({ params }: Props) {
   // The first page remains server-rendered so crawlers see product links in
   // the initial HTML. The client component handles filters and interactions.
   const listed = initialProducts?.data?.products ?? [];
+  const categoryDisplayName =
+    category.name.trim() === category.name.trim().toUpperCase()
+      ? category.name
+          .trim()
+          .toLowerCase()
+          .replace(/(^|[\\s-])([a-z])/g, (_match, separator: string, letter: string) => separator + letter.toUpperCase())
+      : category.name.trim();
 
   return (
     <>
@@ -163,10 +169,109 @@ export default async function CategoryPage({ params }: Props) {
           },
         ]}
       />
+      <section
+        aria-labelledby="category-page-heading"
+        className="relative isolate overflow-hidden border-b border-brand-border bg-gradient-to-r from-brand-primary-soft via-brand-surface to-brand-primary-muted px-4 py-4 sm:py-5 md:px-8 xl:px-10"
+      >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-brand-primary-muted/60 blur-3xl"
+        />
+        <div className="relative mx-auto max-w-[1450px]">
+          <nav aria-label="Breadcrumb" className="mb-3 flex flex-wrap items-center gap-2 text-[11px] text-neutral-500">
+            <a href="/" className="brand-link">Home</a>
+            <span aria-hidden="true">/</span>
+            <a href="/shop" className="brand-link">Shop</a>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page" className="font-medium text-brand-primary">{categoryDisplayName}</span>
+          </nav>
+          <div className="flex items-center gap-2">
+            <span className="h-px w-6 bg-[#b58b69]" />
+            <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-brand-primary sm:text-[10px]">
+              Kankana Silks · Curated collection
+            </p>
+          </div>
+          <h1
+            id="category-page-heading"
+            className="mt-1.5 text-xl font-semibold tracking-tight text-brand-primary-deep sm:text-2xl md:text-3xl"
+          >
+            {categoryDisplayName} Collection
+          </h1>
+          <p className="mt-1.5 max-w-4xl line-clamp-2 text-xs leading-5 text-[#75656a] sm:text-sm sm:leading-6">
+            {category.description?.trim() ||
+              `Browse the current ${categoryDisplayName.toLowerCase()} collection at Kankana Silks. Review individual product details and availability before ordering.`}
+          </p>
+          <div className="brand-accent-rule mt-3 w-14" />
+        </div>
+      </section>
       <CategoryProductsClient
         category={category}
         initialProducts={initialProducts ?? undefined}
       />
+      <section
+        aria-label={`More about the ${categoryDisplayName.toLowerCase()} collection`}
+        className="border-t border-brand-border bg-brand-surface px-4 py-5 sm:py-7 md:px-8 xl:px-10"
+      >
+        <div className="mx-auto max-w-[1200px]">
+          <details className="group overflow-hidden rounded-xl border border-brand-border bg-surface shadow-brand-soft">
+            <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 transition-colors hover:bg-brand-primary-soft/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-inset sm:px-6 [&::-webkit-details-marker]:hidden">
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-brand-primary-deep sm:text-base">
+                  About the {categoryDisplayName.toLowerCase()} collection
+                </span>
+                <span className="mt-0.5 block text-xs text-text-muted sm:text-sm">
+                  Product details, availability and delivery information
+                </span>
+              </span>
+              <span className="flex shrink-0 items-center gap-2 text-xs font-semibold text-brand-primary">
+                <span className="group-open:hidden">Read more</span>
+                <span className="hidden group-open:inline">Show less</span>
+                <span
+                  aria-hidden="true"
+                  className="flex h-7 w-7 items-center justify-center rounded-full border border-brand-border bg-brand-primary-soft text-base leading-none transition-transform group-open:rotate-45"
+                >
+                  +
+                </span>
+              </span>
+            </summary>
+
+            <div className="border-t border-brand-border px-4 py-5 sm:px-6 sm:py-6">
+              <h2
+                id="category-seo-heading"
+                className="text-lg font-semibold tracking-tight text-text-heading sm:text-xl"
+              >
+                About the {categoryDisplayName.toLowerCase()} collection
+              </h2>
+              <p className="mt-3 max-w-4xl text-sm leading-7 text-text-body">
+                Browse the products currently listed in this collection. Each
+                product page provides its own photographs, description, displayed
+                price and current availability, so review those details before
+                adding an item to your cart.
+              </p>
+              <h3 className="mt-6 text-base font-semibold text-text-heading">
+                Product information and availability
+              </h3>
+              <p className="mt-2 max-w-4xl text-sm leading-7 text-text-body">
+                When comparing styles, review each product&apos;s photographs,
+                description and displayed price. Material, colour, design, care
+                and weave information are specific to the individual listing.
+                Product availability can change, so use the live product page as
+                the source for current details before ordering.
+              </p>
+              <h3 className="mt-6 text-base font-semibold text-text-heading">
+                Delivery and assistance
+              </h3>
+              <p className="mt-2 max-w-4xl text-sm leading-7 text-text-body">
+                Delivery serviceability, courier options and applicable charges
+                are confirmed after you enter your delivery pincode during
+                checkout. For help choosing a product or understanding its
+                listed details, contact Kankana Silks before placing your order.
+              </p>
+            </div>
+          </details>
+        </div>
+      </section>
+
     </>
   );
 }

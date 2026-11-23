@@ -40,13 +40,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           {
             "bg-primary text-text-main hover:shadow-glow":
               variant === "primary",
-            "bg-secondary-500 text-primary hover:shadow-glow-green":
+            "bg-brand-accent text-brand-primary-deep hover:shadow-[0_6px_18px_rgba(199,167,110,0.28)]":
               variant === "secondary",
             "border-2 border-primary-500 text-primary hover:bg-primary-50 dark:hover:bg-primary-950":
               variant === "outline",
-            "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800":
+            "text-gray-700 dark:text-gray-300 hover:bg-brand-primary-soft hover:text-brand-primary":
               variant === "ghost",
-            "bg-red-500 text-primary hover:bg-red-600":
+            "bg-red-600 text-white hover:bg-red-700":
               variant === "danger",
           },
 

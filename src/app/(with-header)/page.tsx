@@ -28,12 +28,13 @@ function CityDiscoverySection() {
             id="city-discovery-title"
             className="mt-3 text-3xl font-semibold tracking-tight text-[#29231f] sm:text-4xl"
           >
-            A tradition of sarees, wherever you are.
+            Explore saree collections across India
           </h2>
           <p className="mt-4 text-sm leading-7 text-[#6e6258] sm:text-base">
-            Explore our online saree collections from cities across India.
-            Browse traditional, silk and occasion styles, then confirm delivery
-            availability for your address at checkout.
+            Discover Kanchipuram, Banarasi, Paithani, Mysore silk and handloom
+            sarees at Kankana Silks. Explore the current collection, compare
+            product details and confirm delivery serviceability for your address
+            during checkout.
           </p>
         </div>
 

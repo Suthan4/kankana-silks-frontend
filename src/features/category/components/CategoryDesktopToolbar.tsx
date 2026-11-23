@@ -47,7 +47,7 @@ export function CategoryDesktopToolbar({
           Shop
         </Link>
         <span className="text-gray-200">›</span>
-        <h1 className="text-sm font-medium uppercase tracking-widest text-black">{category.name}</h1>
+        <span className="text-sm font-medium uppercase tracking-widest text-black">{category.name}</span>
         <span className="text-xs tracking-wide text-gray-400">
           {total > 0 ? `${total} sarees` : ""}
         </span>
@@ -116,7 +116,7 @@ export function CategoryDesktopToolbar({
               aria-label={`Show ${columns} grid columns`}
               className={`border p-2 transition-colors ${
                 gridCols === columns
-                  ? "border-black bg-black text-white"
+                  ? "border-brand-primary bg-brand-primary text-white"
                   : "border-gray-300 text-gray-500 hover:border-black hover:text-black"
               }`}
             >
@@ -133,7 +133,7 @@ export function CategoryDesktopToolbar({
           onClick={onFilterToggle}
           className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs uppercase tracking-widest transition-colors ${
             filterOpen
-              ? "border-black bg-black text-white"
+              ? "border-brand-primary bg-brand-primary text-white"
               : "border-gray-300 text-gray-600 hover:border-black hover:text-black"
           }`}
         >

@@ -38,7 +38,7 @@ const inputClass =
   "placeholder:text-gray-400 shadow-none transition-colors " +
   "outline-none focus:outline-none focus-visible:outline-none " +
   "ring-0 focus:ring-0 focus-visible:ring-0 " +
-  "focus:border-black sm:text-sm";
+  "focus:border-brand-primary sm:text-sm";
 
 const iconClass =
   "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400";
@@ -183,7 +183,7 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="video-consultation-title"
-        className="flex w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl bg-white text-black shadow-xl md:rounded-2xl"
+        className="flex w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl bg-surface-elevated text-text-main shadow-brand-float md:rounded-2xl"
         style={{
           height: "min(94dvh, 820px)",
           maxHeight: "calc(100dvh - env(safe-area-inset-top) - 8px)",
@@ -287,7 +287,7 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                 <label className={labelClass}>Phone number</label>
                 <div className="flex gap-2">
                   <select
-                    className="w-20 shrink-0 rounded-lg border border-gray-300 bg-white px-2 py-3 text-base outline-none ring-0 focus:border-black focus:outline-none focus:ring-0 focus-visible:outline-none sm:text-sm"
+                    className="w-20 shrink-0 rounded-lg border border-gray-300 bg-white px-2 py-3 text-base outline-none ring-0 focus:border-brand-primary focus:outline-none focus:ring-0 focus-visible:outline-none sm:text-sm"
                     defaultValue="+91"
                   >
                     <option>+91</option>
@@ -384,7 +384,7 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                   onChange={handleInputChange}
                   placeholder="Any specific requirements or questions..."
                   rows={3}
-                  className="w-full resize-none rounded-lg border border-gray-300 bg-white px-3 py-3 text-base text-black placeholder:text-gray-400 shadow-none outline-none ring-0 transition-colors focus:border-black focus:outline-none focus:ring-0 focus-visible:outline-none sm:text-sm"
+                  className="brand-input w-full resize-none px-3 py-3 text-base sm:text-sm"
                 />
               </div>
             </div>
@@ -400,7 +400,7 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
             type="submit"
             form="video-consultation-form"
             disabled={createConsultationMutation.isPending}
-            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-black px-4 py-3 text-base font-medium text-white outline-none transition hover:bg-gray-800 focus-visible:outline-none active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+            className="brand-button min-h-12 w-full rounded-lg px-4 py-3 text-base disabled:cursor-not-allowed"
           >
             {createConsultationMutation.isPending ? (
               <>

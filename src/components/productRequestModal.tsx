@@ -146,7 +146,7 @@ export default function ProductRequestModal({
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Let us know if you have any specific requirements..."
                     rows={4}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent resize-none transition-shadow text-sm"
+                    className="brand-input w-full resize-none py-3 text-sm"
                     maxLength={500}
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -179,7 +179,7 @@ export default function ProductRequestModal({
                   <button
                     type="submit"
                     disabled={requestMutation.isPending}
-                    className="flex-1 min-w-0 px-4 py-3 bg-black text-white rounded-xl font-medium hover:bg-neutral-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm whitespace-nowrap"
+                    className="brand-button min-w-0 flex-1 rounded-xl px-4 py-3 text-sm disabled:cursor-not-allowed"
                   >
                     {requestMutation.isPending ? (
                       <>

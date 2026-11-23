@@ -51,7 +51,7 @@ export function DesktopCategoryLinks({
                   onFocus={() => onHoverCategory(category.id)}
                   className={`relative flex h-14 items-center px-5 text-sm font-medium uppercase tracking-[0.12em] transition-colors duration-300 ${
                     isHeaderWhite
-                      ? isActive ? "text-black" : "text-black hover:text-black"
+                      ? isActive ? "text-brand-primary" : "text-black hover:text-brand-primary"
                       : "text-white hover:text-white"
                   }`}
                 >
@@ -70,7 +70,7 @@ export function DesktopCategoryLinks({
                   }}
                   className={`pointer-events-none absolute bottom-0 left-1/2 h-[2px] -translate-x-1/2 rounded-full ${
                     isHeaderWhite
-                      ? "bg-black"
+                      ? "bg-brand-primary"
                       : "bg-white shadow-[0_0_8px_rgba(255,255,255,0.65)]"
                   }`}
                 />
