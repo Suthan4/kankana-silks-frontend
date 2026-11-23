@@ -23,7 +23,11 @@ interface CategoryProductCardProps {
   onViewOptions: (product: Product) => void;
   onRequestProduct: (product: Product, variant: ProductVariant | null) => void;
   onAddToCart: (product: Product, variant: ProductVariant | null) => void;
-  onIncrease: (product: Product, variant: ProductVariant | null, item: CartLineLike | null) => void;
+  onIncrease: (
+    product: Product,
+    variant: ProductVariant | null,
+    item: CartLineLike | null,
+  ) => void;
   onDecrease: (item: CartLineLike | null) => void;
 }
 
@@ -80,9 +84,22 @@ export const CategoryProductCard = memo(function CategoryProductCard({
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
             {!isOutOfStock && discount > 0 && (
-              <div className="brand-badge brand-badge--sale absolute left-3 top-3 text-[10px] uppercase tracking-widest">
-                {discount}% Off
-              </div>
+              <span
+                aria-label={`${discount}% discount`}
+                className="
+      absolute left-3 top-3 z-20
+      inline-flex min-h-7 items-center justify-center
+      rounded-sm
+      bg-brand-primary
+      px-2.5 py-1
+      text-[10px] font-semibold uppercase
+      leading-none tracking-[0.14em]
+      text-brand-accent
+      shadow-brand-soft
+    "
+              >
+                {discount}% OFF
+              </span>
             )}
             <button
               type="button"
@@ -91,11 +108,17 @@ export const CategoryProductCard = memo(function CategoryProductCard({
                 event.stopPropagation();
                 onToggleWishlist(product.id);
               }}
-              aria-label={isWishlisted ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
+              aria-label={
+                isWishlisted
+                  ? `Remove ${product.name} from wishlist`
+                  : `Add ${product.name} to wishlist`
+              }
               aria-pressed={isWishlisted}
               className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur-sm opacity-100 transition-all duration-300 hover:bg-white md:opacity-0 md:group-hover:opacity-100"
             >
-              <Heart className={`h-4 w-4 ${isWishlisted ? "fill-brand-primary text-brand-primary" : "text-black"}`} />
+              <Heart
+                className={`h-4 w-4 ${isWishlisted ? "fill-brand-primary text-brand-primary" : "text-black"}`}
+              />
             </button>
           </div>
         </div>
