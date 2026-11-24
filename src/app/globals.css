@@ -1523,27 +1523,27 @@ select[aria-invalid="true"] {
 }
 
 
-/* Premium editorial headings inspired by the Kankana campaign artwork. */
+/* Premium editorial headings use the Kankana Silks brand palette. */
 .home-section-heading {
   padding-top: 0.25rem;
 }
 
 .home-section-heading__eyebrow {
-  margin: 0 0 0.45rem;
-  color: #e47f7b;
+  max-width: 38rem;
+  margin: 0 auto 0.55rem;
+  color: var(--color-brand-primary, #653536);
   font-family: "Jost", sans-serif;
-  font-size: 0.68rem;
-  font-weight: 600;
-  line-height: 1.4;
-  letter-spacing: 0.19em;
-  text-transform: uppercase;
+  font-size: 0.7rem;
+  font-weight: 500;
+  line-height: 1.55;
+  letter-spacing: 0.035em;
 }
 
 .home-section-heading__title {
   margin: 0;
-  color: #211817;
+  color: var(--color-brand-primary, #653536);
   font-family: "Cormorant Garamond", Georgia, serif;
-  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-size: clamp(2.1rem, 5vw, 3.6rem);
   font-weight: 600;
   line-height: 1.08;
   letter-spacing: -0.025em;
@@ -1554,45 +1554,34 @@ select[aria-invalid="true"] {
   align-items: center;
   justify-content: center;
   gap: 0.55rem;
-  width: min(100%, 13rem);
-  margin: 1.05rem auto 0.9rem;
-  color: #e47f7b;
+  width: min(100%, 11rem);
+  margin: 0.9rem auto 0.7rem;
+  color: var(--color-brand-primary, #653536);
 }
 
 .home-section-heading__ornament span {
   display: block;
   flex: 1;
-  border-top: 3px dotted currentColor;
-  opacity: 0.9;
+  border-top: 2px dotted currentColor;
+  opacity: 0.72;
 }
 
 .home-section-heading__ornament i {
   display: block;
-  width: 13px;
-  height: 13px;
-  flex: 0 0 13px;
-  border: 2px solid currentColor;
+  width: 11px;
+  height: 11px;
+  flex: 0 0 11px;
+  border: 1.5px solid currentColor;
   transform: rotate(45deg);
 }
 
 .home-section-heading__ornament b {
   display: block;
-  width: 11px;
-  height: 11px;
-  flex: 0 0 11px;
+  width: 9px;
+  height: 9px;
+  flex: 0 0 9px;
   background: currentColor;
   transform: rotate(45deg);
-}
-
-.home-section-heading__subtitle {
-  max-width: 36rem;
-  color: #806b6b;
-  font-family: "Jost", sans-serif;
-  font-size: 0.9rem;
-  font-weight: 400;
-  line-height: 1.7;
-  letter-spacing: 0.015em;
-  opacity: 0.95;
 }
 
 .home-handpicked-swiper {
@@ -1606,16 +1595,12 @@ select[aria-invalid="true"] {
 
 @media (min-width: 768px) {
   .home-section-heading__eyebrow {
-    margin-bottom: 0.6rem;
-    font-size: 0.76rem;
+    margin-bottom: 0.65rem;
+    font-size: 0.82rem;
   }
 
   .home-section-heading__ornament {
-    margin-top: 1.35rem;
-    margin-bottom: 1rem;
-  }
-
-  .home-section-heading__subtitle {
-    font-size: 1rem;
+    margin-top: 1.1rem;
+    margin-bottom: 0.85rem;
   }
 }
