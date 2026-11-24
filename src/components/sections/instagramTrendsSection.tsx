@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalLink, ShoppingBag, Play } from "lucide-react";
+import { ShoppingBag, Play } from "lucide-react";
 import SmartImage from "../common/smartImage";
 import HomeSectionHeading from "../common/homeSectionHeading";
 import type { HomeSection, SectionMedia } from "@/lib/api/home-section.api";
@@ -16,11 +16,11 @@ function MediaCard({ media, index }: { media: SectionMedia; index: number }) {
           src={media.url}
           poster={media.thumbnailUrl || undefined}
           className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+          controls
           muted
           loop
           playsInline
-          autoPlay
-          preload={index < 2 ? "metadata" : "none"}
+          preload="metadata"
         />
       ) : (
         <SmartImage

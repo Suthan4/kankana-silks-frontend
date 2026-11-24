@@ -8,7 +8,7 @@ import HomeSectionHeading from "../common/homeSectionHeading";
 import type { HomeSection, SectionMedia } from "@/lib/api/home-section.api";
 
 export default function CircularCollectionsSection({ section }: { section: HomeSection }) {
-  const media = [...(section.media || [])].sort((a, b) => a.order - b.order);
+  const media = [...(section.media || [])].filter((item) => item.type === "IMAGE").sort((a, b) => a.order - b.order);
   const trackRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   if (!media.length) return null;
