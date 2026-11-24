@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import SmartImage from "../common/smartImage";
@@ -19,6 +19,20 @@ type CollectionCard = {
 export default function CircularCollectionsSection({ section }: { section: HomeSection }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(2);
+
+  // Keep pagination aligned with the number of collection cards visible at each breakpoint.
+  useEffect(() => {
+    const updateItemsPerPage = () => {
+      if (window.innerWidth >= 1024) setItemsPerPage(4);
+      else if (window.innerWidth >= 640) setItemsPerPage(3);
+      else setItemsPerPage(2);
+    };
+
+    updateItemsPerPage();
+    window.addEventListener("resize", updateItemsPerPage);
+    return () => window.removeEventListener("resize", updateItemsPerPage);
+  }, []);
 
   // Product cards reuse the selected product's existing primary image.
   const productCards = useMemo<CollectionCard[]>(() => {
@@ -59,6 +73,9 @@ export default function CircularCollectionsSection({ section }: { section: HomeS
   const cards = [...productCards, ...uploadedCards];
   if (!cards.length) return null;
 
+  const pageCount = Math.ceil(cards.length / itemsPerPage);
+  const activePage = Math.min(pageCount - 1, Math.floor(activeIndex / itemsPerPage));
+
   const scrollTo = useCallback((index: number) => {
     const track = trackRef.current;
     const item = track?.children.item(index) as HTMLElement | null;
@@ -92,7 +109,7 @@ export default function CircularCollectionsSection({ section }: { section: HomeS
             src={item.url}
             alt={item.altText}
             fill
-            sizes="(min-width: 1024px) 16vw, (min-width: 640px) 25vw, 44vw"
+            sizes="(min-width: 1024px) 22vw, (min-width: 640px) 29vw, 47vw"
             className="object-cover transition-transform duration-700 group-hover:scale-105"
           />
         </span>
@@ -101,7 +118,7 @@ export default function CircularCollectionsSection({ section }: { section: HomeS
         </span>
       </>
     );
-    const className = "group block w-[44%] flex-none snap-start text-center sm:w-[29%] md:w-[calc((100%-3rem)/3)] lg:w-[calc((100%-84px)/4)]";
+    const className = "group block w-[47%] flex-none snap-start text-center sm:w-[29%] md:w-[calc((100%-3rem)/3)] lg:w-[calc((100%-84px)/4)]";
     if (/^https?:\/\//i.test(item.href)) {
       return <a key={item.id} className={className} href={item.href} target="_blank" rel="noopener noreferrer">{content}</a>;
     }
@@ -122,17 +139,17 @@ export default function CircularCollectionsSection({ section }: { section: HomeS
           <p className="mx-auto mb-8 max-w-2xl text-center text-sm leading-7 text-neutral-600 sm:text-base">{section.description}</p>
         )}
         <div className="relative">
-          <button type="button" onClick={() => scrollTo(Math.max(0, activeIndex - 1))} disabled={activeIndex === 0} aria-label="Previous collections" className="absolute -left-2 top-[38%] z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-neutral-200 bg-white/95 text-neutral-800 shadow-md transition hover:bg-neutral-50 disabled:opacity-30 md:flex">
+          <button type="button" onClick={() => scrollTo(Math.max(0, activePage * itemsPerPage - itemsPerPage))} disabled={activePage === 0} aria-label="Previous collections" className="absolute -left-3 top-[38%] z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-neutral-200 bg-white/95 text-neutral-800 shadow-md transition hover:bg-neutral-50 disabled:opacity-30 lg:flex">
             <ChevronLeft size={19} />
           </button>
           <div ref={trackRef} onScroll={handleScroll} className="flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain scroll-smooth pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-6 lg:gap-7">
             {cards.map(renderCard)}
           </div>
-          <button type="button" onClick={() => scrollTo(Math.min(cards.length - 1, activeIndex + 1))} disabled={activeIndex >= cards.length - 1} aria-label="Next collections" className="absolute -right-2 top-[38%] z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-neutral-200 bg-white/95 text-neutral-800 shadow-md transition hover:bg-neutral-50 disabled:opacity-30 md:flex">
+          <button type="button" onClick={() => scrollTo(Math.min(cards.length - 1, (activePage + 1) * itemsPerPage))} disabled={activePage >= pageCount - 1} aria-label="Next collections" className="absolute -right-3 top-[38%] z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-neutral-200 bg-white/95 text-neutral-800 shadow-md transition hover:bg-neutral-50 disabled:opacity-30 lg:flex">
             <ChevronRight size={19} />
           </button>
         </div>
-        {cards.length > 1 && (
+        {pageCount > 1 && (
           <div className="mt-3 flex items-center justify-center gap-2.5 sm:mt-5" aria-label="Choose collection">
             {cards.map((item, index) => (
               <button key={item.id} type="button" onClick={() => scrollTo(index)} aria-label={"Go to collection " + (index + 1)} aria-current={activeIndex === index ? "true" : undefined} className={"h-2.5 rounded-full transition-all duration-300 " + (activeIndex === index ? "w-7 bg-neutral-900" : "w-2.5 bg-neutral-300 hover:bg-neutral-500")} />
