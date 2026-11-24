@@ -8,11 +8,12 @@ import HomeSectionHeading from "../common/homeSectionHeading";
 import type { HomeSection, SectionMedia } from "@/lib/api/home-section.api";
 
 /**
- * Card shape. Mobile is taller (closer to a reel) so cards feel bigger and
- * tappable; from `sm` up it returns to the classic 3:4.
- * Want it even taller? Try aspect-[9/16]. Shorter? Try aspect-[2/3].
+ * Card shape. On mobile the cards sit in a swipeable row and are wide
+ * (about 78% of the screen), so 2:3 gives a big portrait card that is not
+ * too tall. From `sm` up it returns to the classic 3:4 grid.
+ * Taller? Use aspect-[3/5]. Shorter? Use aspect-[3/4].
  */
-const CARD_ASPECT = "aspect-[9/14] sm:aspect-[3/4]";
+const CARD_ASPECT = "aspect-[2/3] sm:aspect-[3/4]";
 
 // Every mounted video, so unmuting one can mute the rest.
 const allVideos = new Set<HTMLVideoElement>();
@@ -287,10 +288,10 @@ function VideoCard({ media }: { media: SectionMedia }) {
 
 function MediaCard({
   media,
-  centerOnMobile = false,
+  fullWidthOnMobile = false,
 }: {
   media: SectionMedia;
-  centerOnMobile?: boolean;
+  fullWidthOnMobile?: boolean;
 }) {
   const href = media.linkUrl?.trim();
   const isExternal = Boolean(href && /^https?:\/\//i.test(href));
@@ -344,11 +345,9 @@ function MediaCard({
 
   return (
     <div
-      className={`${className} ${
-        centerOnMobile
-          ? "col-span-2 mx-auto w-1/2 sm:col-span-1 sm:mx-0 sm:w-full"
-          : ""
-      }`}
+      className={`${className} shrink-0 snap-start sm:shrink ${
+        fullWidthOnMobile ? "w-full" : "w-[78%]"
+      } sm:w-auto`}
     >
       {content}
     </div>
@@ -361,16 +360,46 @@ export default function InstagramTrendsSection({
   section: HomeSection;
 }) {
   const media = [...(section.media || [])].sort((a, b) => a.order - b.order);
+
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  // Distance between the start of one card and the next.
+  const getStep = useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el || el.children.length < 2) return 0;
+    const a = el.children[0] as HTMLElement;
+    const b = el.children[1] as HTMLElement;
+    return b.offsetLeft - a.offsetLeft;
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollerRef.current;
+    const step = getStep();
+    if (!el || !step) return;
+    setActiveIndex(Math.round(el.scrollLeft / step));
+  }, [getStep]);
+
+  const goTo = useCallback(
+    (index: number) => {
+      scrollerRef.current?.scrollTo({
+        left: getStep() * index,
+        behavior: "smooth",
+      });
+    },
+    [getStep],
+  );
+
   if (!media.length) return null;
 
   const desktopGridClass =
     media.length === 1
-      ? "grid-cols-1 max-w-sm"
+      ? "sm:grid-cols-1 sm:max-w-sm"
       : media.length === 2
-        ? "grid-cols-2 max-w-5xl"
+        ? "sm:grid-cols-2 sm:max-w-5xl"
         : media.length === 3
-          ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 max-w-6xl"
-          : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 max-w-7xl";
+          ? "sm:grid-cols-3 sm:max-w-6xl"
+          : "sm:grid-cols-3 lg:grid-cols-4 sm:max-w-7xl";
 
   return (
     <section
@@ -378,7 +407,7 @@ export default function InstagramTrendsSection({
       style={{ backgroundColor: section.backgroundColor || "#ffffff" }}
       aria-label={section.title || "Instagram trends"}
     >
-      <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full px-3 sm:px-6 lg:px-8">
         <HomeSectionHeading
           title={section.title || "Instagram Trends"}
           subtitle={section.subtitle}
@@ -391,17 +420,42 @@ export default function InstagramTrendsSection({
             {section.description}
           </p>
         )}
+
+        {/* Mobile: swipeable row with the next card peeking in.
+            sm and up: normal grid. */}
         <div
-          className={`mx-auto grid w-full gap-3.5 sm:gap-5 lg:gap-6 ${desktopGridClass}`}
+          ref={scrollerRef}
+          onScroll={handleScroll}
+          className={`relative -mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scroll-pl-3 px-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-auto sm:grid sm:w-full sm:snap-none sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:gap-6 ${desktopGridClass}`}
         >
           {media.map((item, index) => (
             <MediaCard
               key={item.id || item.url || index}
               media={item}
-              centerOnMobile={media.length === 3 && index === 2}
+              fullWidthOnMobile={media.length === 1}
             />
           ))}
         </div>
+
+        {/* Mobile position dots */}
+        {media.length > 1 && (
+          <div className="mt-4 flex justify-center gap-1.5 sm:hidden">
+            {media.map((item, index) => (
+              <button
+                key={`dot-${item.id || item.url || index}`}
+                type="button"
+                onClick={() => goTo(index)}
+                aria-label={`Go to item ${index + 1}`}
+                aria-current={index === activeIndex}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  index === activeIndex
+                    ? "w-5 bg-[#68413d]"
+                    : "w-1.5 bg-neutral-300"
+                }`}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
