@@ -110,11 +110,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  experimental: {
-    // Inlines the ~25 KB of CSS into the HTML so it no longer blocks rendering
-    // as 3 separate requests. Remove this line if you see any styling issue.
-    inlineCss: true,
-  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
