@@ -7,7 +7,7 @@ interface HomeSectionHeadingProps {
   className?: string;
 }
 
-/** Shared editorial heading treatment for homepage content sections. */
+/** Shared minimal heading treatment for homepage content sections. */
 export default function HomeSectionHeading({
   title,
   subtitle,
@@ -18,20 +18,17 @@ export default function HomeSectionHeading({
   if ((!showTitle || !title) && (!showSubtitle || !subtitle)) return null;
 
   return (
-    <header className={`home-section-heading mx-auto mb-8 max-w-4xl px-4 text-center md:mb-12 ${className}`}>
+    <header className={`home-section-heading mx-auto w-full px-4 text-center ${className}`}>
       {showSubtitle && subtitle && (
-        <p className="home-section-heading__eyebrow mx-auto text-balance">
+        <p className="home-section-heading__eyebrow mx-auto">
           {subtitle}
         </p>
       )}
 
       {showTitle && title && (
-        <>
-          <h2 className="home-section-heading__title text-balance">
-            {title}
-          </h2>
-          <div className="home-section-heading__rule" aria-hidden="true" />
-        </>
+        <h2 className="home-section-heading__title">
+          {title}
+        </h2>
       )}
     </header>
   );

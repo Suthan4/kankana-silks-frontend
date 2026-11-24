@@ -78,7 +78,7 @@ export default function SquareCollectionsCarousel() {
     <section className="relative w-full bg-white py-16 sm:py-32 overflow-hidden">
       {/* HEADER */}
       <div className="px-6 sm:px-16 mb-12 sm:mb-16">
-        <h2 className="text-3xl sm:text-5xl font-light tracking-tight">
+        <h2 className="home-section-title text-left">
           Curated Collections
         </h2>
       </div>
