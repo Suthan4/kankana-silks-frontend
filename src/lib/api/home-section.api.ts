@@ -34,6 +34,7 @@ export interface SectionMedia {
   mobileUrl?: string | null;
   thumbnailUrl?: string | null;
   title?: string | null;
+  linkUrl?: string | null;
   altText?: string | null;
   overlayTitle?: string | null;
   overlaySubtitle?: string | null;
