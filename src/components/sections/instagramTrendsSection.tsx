@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ShoppingBag, Play, Pause } from "lucide-react";
+import { ShoppingBag, Play, Pause, Loader2 } from "lucide-react";
 import SmartImage from "../common/smartImage";
 import HomeSectionHeading from "../common/homeSectionHeading";
 import type { HomeSection, SectionMedia } from "@/lib/api/home-section.api";
@@ -10,20 +10,41 @@ import type { HomeSection, SectionMedia } from "@/lib/api/home-section.api";
 // Only one video plays at a time (also saves mobile data).
 let currentlyPlaying: HTMLVideoElement | null = null;
 
+const MEDIA_ERROR_NAMES: Record<number, string> = {
+  1: "ABORTED",
+  2: "NETWORK",
+  3: "DECODE",
+  4: "SRC_NOT_SUPPORTED (bad codec, wrong content-type, or no Range support)",
+};
+
 /**
  * Cross-browser video card (Safari iOS/macOS, Edge, Chrome).
- *  - muted is set via ref: React doesn't reliably render the `muted` attribute
- *    on the server, and iOS blocks inline playback without it.
- *  - `#t=0.001` makes Safari paint the first frame instead of a black box.
- *  - play() is called only from a tap, and its promise is caught.
- *  - onError shows a fallback instead of the browser's broken-video icon.
+ *
+ * Loading strategy:
+ *  1. Normal streaming via <video src>.
+ *  2. If Safari rejects it (very common when the server has the wrong
+ *     Content-Type or doesn't answer Range requests), download the file
+ *     once, wrap it in a Blob typed as video/mp4, and play that instead.
+ *     Blob playback needs no Range support and ignores the server's type.
+ *  3. If that also fails (e.g. the codec itself is unsupported, or CORS blocks
+ *     the download), show a clean "Open video" fallback instead of a broken icon.
+ *
+ * What code cannot fix: a file whose codec Safari can't decode (HEVC variants,
+ * VP9, AV1, 10-bit). The console message below tells you exactly which case it is.
  */
 function VideoCard({ media }: { media: SectionMedia }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const triedBlob = useRef(false);
+  const blobUrl = useRef<string | null>(null);
+  const playWhenReady = useRef(false);
+
+  const [src, setSrc] = useState(`${media.url}#t=0.001`);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
+  const [recovering, setRecovering] = useState(false);
   const [failed, setFailed] = useState(false);
 
+  // Runs on mount and again whenever the <video> is re-created (src change).
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -34,7 +55,49 @@ function VideoCard({ media }: { media: SectionMedia }) {
     return () => {
       if (currentlyPlaying === video) currentlyPlaying = null;
     };
+  }, [src]);
+
+  // Free the downloaded blob when the card unmounts.
+  useEffect(() => {
+    return () => {
+      if (blobUrl.current) URL.revokeObjectURL(blobUrl.current);
+    };
   }, []);
+
+  const recoverWithBlob = useCallback(async () => {
+    if (triedBlob.current) {
+      setFailed(true);
+      return;
+    }
+    triedBlob.current = true;
+    setRecovering(true);
+    try {
+      const res = await fetch(media.url, { mode: "cors" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const buffer = await res.arrayBuffer();
+      const blob = new Blob([buffer], { type: "video/mp4" });
+      const url = URL.createObjectURL(blob);
+      blobUrl.current = url;
+      setSrc(url);
+    } catch (err) {
+      console.warn("[video] blob recovery failed (CORS or network):", err);
+      setFailed(true);
+    } finally {
+      setRecovering(false);
+    }
+  }, [media.url]);
+
+  const handleError = useCallback(
+    (e: React.SyntheticEvent<HTMLVideoElement>) => {
+      const err = e.currentTarget.error;
+      console.warn(
+        `[video] failed to load ${media.url} ->`,
+        err ? (MEDIA_ERROR_NAMES[err.code] ?? err.code) : "unknown",
+      );
+      recoverWithBlob();
+    },
+    [media.url, recoverWithBlob],
+  );
 
   const togglePlay = useCallback(async () => {
     const video = videoRef.current;
@@ -53,11 +116,17 @@ function VideoCard({ media }: { media: SectionMedia }) {
       await video.play();
       currentlyPlaying = video;
       setHasStarted(true);
-    } catch {
-      // Autoplay policy block or unsupported codec.
-      setFailed(true);
+    } catch (err) {
+      const name = (err as DOMException)?.name;
+      if (name === "NotSupportedError") {
+        // Remember the tap and resume once the recovered video is ready.
+        playWhenReady.current = true;
+        recoverWithBlob();
+      } else if (name !== "AbortError" && name !== "NotAllowedError") {
+        setFailed(true);
+      }
     }
-  }, []);
+  }, [recoverWithBlob]);
 
   if (failed) {
     return (
@@ -88,10 +157,13 @@ function VideoCard({ media }: { media: SectionMedia }) {
   return (
     <>
       <video
+        // key forces a fresh element when the source switches to the blob,
+        // which is the reliable way to make Safari reload.
+        key={src}
         ref={videoRef}
+        src={src}
         poster={media.thumbnailUrl || undefined}
         className="absolute inset-0 h-full w-full object-cover"
-        // After the first play, native controls (seek, volume, fullscreen) appear.
         controls={hasStarted}
         muted
         loop
@@ -99,14 +171,23 @@ function VideoCard({ media }: { media: SectionMedia }) {
         preload="metadata"
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
-        onError={() => setFailed(true)}
+        onError={handleError}
+        onLoadedData={() => {
+          if (playWhenReady.current) {
+            playWhenReady.current = false;
+            togglePlay();
+          }
+        }}
         onClick={() => {
-          // Before first play there are no native controls, so tap toggles.
           if (!hasStarted) togglePlay();
         }}
-      >
-        <source src={`${media.url}#t=0.001`} type="video/mp4" />
-      </video>
+      />
+
+      {recovering && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/30">
+          <Loader2 className="h-7 w-7 animate-spin text-white" />
+        </div>
+      )}
 
       {/* Play / pause button */}
       <button

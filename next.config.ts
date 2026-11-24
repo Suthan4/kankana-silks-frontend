@@ -15,6 +15,11 @@ const API_ORIGIN = (() => {
   }
 })();
 
+// Hosts that serve uploaded media (images AND videos).
+const MEDIA_CLOUDFRONT = "https://d2eb3zuw9j68gk.cloudfront.net";
+const MEDIA_S3 = "https://kankana-bucket.s3.ap-south-1.amazonaws.com";
+const MEDIA_VERCEL_BLOB = "https://*.public.blob.vercel-storage.com";
+
 /**
  * Compatibility CSP for the current statically rendered App Router storefront.
  *
@@ -35,11 +40,18 @@ const contentSecurityPolicy = [
   "form-action 'self' https://*.razorpay.com",
   "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://*.razorpay.com https://use.typekit.net https://www.clarity.ms https://*.clarity.ms",
   "style-src 'self' 'unsafe-inline' https://use.typekit.net",
-  "img-src 'self' data: blob: https://d2eb3zuw9j68gk.cloudfront.net https://kankana-bucket.s3.ap-south-1.amazonaws.com https://*.public.blob.vercel-storage.com https://p.typekit.net https://www.google-analytics.com https://c.bing.com",
+  `img-src 'self' data: blob: ${MEDIA_CLOUDFRONT} ${MEDIA_S3} ${MEDIA_VERCEL_BLOB} https://p.typekit.net https://www.google-analytics.com https://c.bing.com`,
+  // Without media-src, <video> falls back to default-src 'self' and videos
+  // from CloudFront/S3 are blocked (Safari shows a slashed play icon).
+  // blob: is required for the video card's blob recovery fallback.
+  `media-src 'self' blob: ${MEDIA_CLOUDFRONT} ${MEDIA_S3} ${MEDIA_VERCEL_BLOB}`,
   "font-src 'self' data: https://use.typekit.net https://p.typekit.net",
   [
     "connect-src 'self'",
     API_ORIGIN,
+    // Needed for the video card's blob recovery (fetch of the video file).
+    MEDIA_CLOUDFRONT,
+    MEDIA_S3,
     "https://www.googletagmanager.com",
     "https://www.google-analytics.com",
     "https://region1.google-analytics.com",
