@@ -30,13 +30,7 @@ export default function HomeSectionHeading({
           <h2 className="home-section-heading__title text-balance">
             {title}
           </h2>
-          <div className="home-section-heading__ornament" aria-hidden="true">
-            <span />
-            <i />
-            <b />
-            <i />
-            <span />
-          </div>
+          <div className="home-section-heading__rule" aria-hidden="true" />
         </>
       )}
     </header>
