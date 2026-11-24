@@ -20,6 +20,8 @@ const AestheticFullImage = dynamic(
   () => import("./sections/aestheticFullImage"),
 );
 const BannerSection = dynamic(() => import("./sections/bannerSection"));
+const InstagramTrendsSection = dynamic(() => import("./sections/instagramTrendsSection"));
+const CircularCollectionsSection = dynamic(() => import("./sections/circularCollectionsSection"));
 
 export default function LandingPage({
   initialSections,
@@ -76,6 +78,14 @@ export default function LandingPage({
       ...section,
       title: displayTitle,
     };
+
+    const customLayoutName = (section.customTypeName || "").trim().toLowerCase();
+    if (customLayoutName === "instagram trends") {
+      return <InstagramTrendsSection key={section.id} section={sectionWithTitle} />;
+    }
+    if (customLayoutName === "circular collections" || customLayoutName === "round collections") {
+      return <CircularCollectionsSection key={section.id} section={sectionWithTitle} />;
+    }
 
     // ✅ HARD OVERRIDE — aesthetic always wins
     if (layout === "aesthetic-fullscreen") {
