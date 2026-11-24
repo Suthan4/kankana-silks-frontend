@@ -3,6 +3,7 @@
 import { HomeSection } from "@/lib/api/home-section.api";
 import { useState, useRef, useEffect } from "react";
 import SmartImage from "../common/smartImage";
+import HomeSectionHeading from "../common/homeSectionHeading";
 
 function MediaGridSection({ section }: { section: HomeSection }) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -165,26 +166,14 @@ function MediaGridSection({ section }: { section: HomeSection }) {
       </div>
 
       <div className="relative max-w-7xl mx-auto px-4 md:px-8">
-        {(section.showTitle || section.showSubtitle) && (
-          <div className="text-center mb-10 md:mb-16 animate-fadeIn">
-            {section.showTitle && (
-              <h2
-                className="text-3xl md:text-5xl lg:text-6xl font-futura-bold mb-4 tracking-tight"
-                style={{ color: section.textColor }}
-              >
-                {section.title}
-              </h2>
-            )}
-            {section.showSubtitle && section.subtitle && (
-              <p
-                className="text-base md:text-xl opacity-80 max-w-3xl mx-auto leading-relaxed"
-                style={{ color: section.textColor }}
-              >
-                {section.subtitle}
-              </p>
-            )}
-          </div>
-        )}
+        <HomeSectionHeading
+          title={section.title}
+          subtitle={section.subtitle}
+          showTitle={section.showTitle}
+          showSubtitle={section.showSubtitle}
+          textColor={section.textColor || "#4A2C2E"}
+          className="animate-fadeIn"
+        />
 
         <div className="relative">
           {/* Navigation buttons - only show if more items than columns */}

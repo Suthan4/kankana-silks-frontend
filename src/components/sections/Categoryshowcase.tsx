@@ -3,6 +3,7 @@
 import { Category } from "@/lib/api/home-section.api";
 import { useState } from "react";
 import SmartImage from "../common/smartImage";
+import HomeSectionHeading from "../common/homeSectionHeading";
 
 function CategoryShowcase({
   title,
@@ -82,26 +83,14 @@ function CategoryShowcase({
       </div>
 
       <div className="relative max-w-7xl mx-auto px-4 md:px-8">
-        {(showTitle || showSubtitle) && (
-          <div className="text-center mb-10 md:mb-16 animate-fadeIn">
-            {showTitle && (
-              <h2
-                className="text-3xl md:text-5xl lg:text-6xl font-futura-bold mb-4 tracking-tight"
-                style={{ color: textColor }}
-              >
-                {title}
-              </h2>
-            )}
-            {showSubtitle && subtitle && (
-              <p
-                className="text-base md:text-xl opacity-80 max-w-3xl mx-auto leading-relaxed"
-                style={{ color: textColor }}
-              >
-                {subtitle}
-              </p>
-            )}
-          </div>
-        )}
+        <HomeSectionHeading
+          title={title}
+          subtitle={subtitle}
+          showTitle={showTitle}
+          showSubtitle={showSubtitle}
+          textColor={textColor}
+          className="animate-fadeIn"
+        />
 
         <div className="relative">
           {/* Navigation buttons - only show if more categories than columns */}
