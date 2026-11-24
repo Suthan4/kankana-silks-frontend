@@ -28,7 +28,7 @@ export default function CircularCollectionsSection({ section }: { section: HomeS
         const image = product.media?.find((item) => item.type === "IMAGE")?.url;
         if (!image) return null;
         const configured = links.find((item) => String(item.productId) === String(product.id));
-        const href = configured?.linkUrl?.trim() || (product.slug ? "/products/" + product.slug : "");
+        const href = configured?.linkUrl?.trim() || (product.slug && product.category?.slug ? "/" + product.category.slug + "/" + product.slug : "");
         if (!href) return null;
         return {
           id: "product-" + product.id,
@@ -101,7 +101,7 @@ export default function CircularCollectionsSection({ section }: { section: HomeS
         </span>
       </>
     );
-    const className = "group block w-[44%] flex-none snap-start text-center sm:w-[29%] md:w-[21%] lg:w-[16%]";
+    const className = "group block w-[44%] flex-none snap-start text-center sm:w-[29%] md:w-[calc((100%-3rem)/3)] lg:w-[calc((100%-84px)/4)]";
     if (/^https?:\/\//i.test(item.href)) {
       return <a key={item.id} className={className} href={item.href} target="_blank" rel="noopener noreferrer">{content}</a>;
     }
