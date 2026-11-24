@@ -151,8 +151,8 @@ export default function CircularCollectionsSection({ section }: { section: HomeS
         </div>
         {pageCount > 1 && (
           <div className="mt-3 flex items-center justify-center gap-2.5 sm:mt-5" aria-label="Choose collection">
-            {cards.map((item, index) => (
-              <button key={item.id} type="button" onClick={() => scrollTo(index)} aria-label={"Go to collection " + (index + 1)} aria-current={activeIndex === index ? "true" : undefined} className={"h-2.5 rounded-full transition-all duration-300 " + (activeIndex === index ? "w-7 bg-neutral-900" : "w-2.5 bg-neutral-300 hover:bg-neutral-500")} />
+            {Array.from({ length: pageCount }).map((_, page) => (
+              <button key={page} type="button" onClick={() => scrollTo(page * itemsPerPage)} aria-label={"Go to collection page " + (page + 1)} aria-current={activePage === page ? "true" : undefined} className={"h-2.5 rounded-full transition-all duration-300 " + (activePage === page ? "w-7 bg-neutral-900" : "w-2.5 bg-neutral-300 hover:bg-neutral-500")} />
             ))}
           </div>
         )}
