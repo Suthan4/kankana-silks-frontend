@@ -1,7 +1,7 @@
 "use client";
 
 import { HomeSection } from "@/lib/api/home-section.api";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type TouchEvent } from "react";
 import SmartImage from "../common/smartImage";
 
 const AUTOPLAY_MS = 5000;
@@ -17,7 +17,7 @@ function HeroSlider({ section }: { section: HomeSection }) {
   // Touch tracking lives in refs: storing it in state re-rendered the whole
   // slider (and its full-screen images) on every touchmove, which janks on iOS.
   const touchStartX = useRef<number | null>(null);
-  const touchEndX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
 
   const handleNext = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % slideCount);
@@ -32,28 +32,23 @@ function HeroSlider({ section }: { section: HomeSection }) {
     setIsAutoPlaying(false);
   };
 
-  const onTouchStart = (e: React.TouchEvent) => {
+  const onTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    if (event.touches.length !== 1) return;
     setIsAutoPlaying(false);
-    touchEndX.current = null;
-    touchStartX.current = e.targetTouches[0].clientX;
+    touchStartX.current = event.touches[0].clientX;
+    touchStartY.current = event.touches[0].clientY;
   };
 
-  const onTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.targetTouches[0].clientX;
-  };
-
-  const onTouchEnd = () => {
-    if (touchStartX.current === null || touchEndX.current === null) return;
-
-    const distance = touchStartX.current - touchEndX.current;
+  const onTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const touch = event.changedTouches[0];
+    const deltaX = touchStartX.current - touch.clientX;
+    const deltaY = touchStartY.current - touch.clientY;
     touchStartX.current = null;
-    touchEndX.current = null;
-
-    if (distance > MIN_SWIPE_DISTANCE) {
-      handleNext(); // swipe left -> next
-    } else if (distance < -MIN_SWIPE_DISTANCE) {
-      handlePrev(); // swipe right -> prev
-    }
+    touchStartY.current = null;
+    if (Math.abs(deltaX) < MIN_SWIPE_DISTANCE || Math.abs(deltaX) <= Math.abs(deltaY)) return;
+    if (deltaX > 0) handleNext();
+    else handlePrev();
   };
 
   // Auto-play. currentIndex is a dependency so a manual change restarts the timer.
@@ -97,7 +92,6 @@ function HeroSlider({ section }: { section: HomeSection }) {
   overscroll-x-contain
 "
         onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
         {slides.map((slide, index) => (
@@ -132,7 +126,7 @@ function HeroSlider({ section }: { section: HomeSection }) {
             )}
 
             {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-white/75 via-white/20 to-transparent" />
 
             {/* Content overlay */}
             {(slide.overlayTitle || slide.overlaySubtitle) && (
@@ -143,14 +137,14 @@ function HeroSlider({ section }: { section: HomeSection }) {
                     : "justify-center"
                 } items-center text-center px-4 md:px-8`}
               >
-                <div className="hero-text max-w-5xl mx-auto space-y-4 md:space-y-6">
+                <div className="hero-text max-w-5xl mx-auto space-y-4 md:space-y-6 rounded-2xl bg-white/85 px-5 py-4 shadow-xl backdrop-blur-sm sm:px-8 sm:py-6">
                   {slide.overlayTitle && (
-                    <h1 className="text-4xl md:text-6xl lg:text-7xl xl:text-8xl font-futura-bold text-white tracking-tight leading-tight text-shadow-hero">
+                    <h1 className="text-4xl md:text-6xl lg:text-7xl xl:text-8xl font-futura-bold text-black tracking-tight leading-tight">
                       {slide.overlayTitle}
                     </h1>
                   )}
                   {slide.overlaySubtitle && (
-                    <p className="text-lg md:text-2xl lg:text-3xl text-white/90 max-w-3xl mx-auto leading-relaxed text-shadow-hero-sm">
+                    <p className="text-lg md:text-2xl lg:text-3xl text-black/80 max-w-3xl mx-auto leading-relaxed">
                       {slide.overlaySubtitle}
                     </p>
                   )}
