@@ -61,10 +61,9 @@ export default function LandingPage({
   const normalizeTitle = (section: HomeSection) =>
     getDisplayTitle(section).trim().toLowerCase();
   const getDisplayTitle = (section: HomeSection): string => {
-    if (section.type === SectionType.CUSTOM && section.customTypeName) {
-      return section.customTypeName;
-    }
-    return section.title ?? "";
+    // The custom type selects the renderer; the editable section title is the
+    // customer-facing heading (e.g. "Our Collections").
+    return section.title?.trim() || section.customTypeName || "";
   };
 
   /**
