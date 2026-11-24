@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState, useEffect, useCallback } from "react";
+import HomeSectionHeading from "../common/homeSectionHeading";
 
 interface BannerSlide {
   id: string;
@@ -163,26 +164,14 @@ export default function BannerSection({ section }: { section: HomeSection }) {
     >
       <div className="w-full">
         {/* Section Header if showTitle or showSubtitle */}
-        {(section.showTitle || section.showSubtitle) && (
-          <div className="max-w-7xl mx-auto text-center mb-4 md:mb-6 animate-fadeIn px-4 md:px-8">
-            {section.showTitle && section.title && (
-              <h2
-                className="text-2xl md:text-4xl font-futura-bold tracking-tight"
-                style={{ color: section.textColor || "#000000" }}
-              >
-                {section.title}
-              </h2>
-            )}
-            {section.showSubtitle && section.subtitle && (
-              <p
-                className="text-sm md:text-base opacity-80 mt-1.5 max-w-2xl mx-auto"
-                style={{ color: section.textColor || "#666666" }}
-              >
-                {section.subtitle}
-              </p>
-            )}
-          </div>
-        )}
+        <HomeSectionHeading
+          title={section.title}
+          subtitle={section.subtitle}
+          showTitle={section.showTitle}
+          showSubtitle={section.showSubtitle}
+          textColor={section.textColor || "#4A2C2E"}
+          className="mb-6 animate-fadeIn"
+        />
 
         {/* Hero Section Carousel Frame — full-bleed on every breakpoint */}
         <div

@@ -8,6 +8,7 @@ import type { HomeSection } from "@/lib/api/home-section.api";
 import SmartImage from "../common/smartImage";
 import Link from "next/link";
 import WishlistButton from "@/components/ui/WishlistButton";
+import HomeSectionHeading from "../common/homeSectionHeading";
 
 // Keep slide dimensions stable before and after Swiper initialisation.
 // The width already accounts for the gap between mobile slides.
@@ -56,7 +57,7 @@ function ProductGrid({
           <div className={isHandpicked ? "mb-0 flex items-baseline justify-between text-left" : "mb-6 text-center md:mb-10"}>
             {(isHandpicked || section.showTitle) && (
               <h2
-                className={isHandpicked ? "mb-0 text-[26px] font-semibold leading-tight tracking-normal md:text-4xl" : "mb-2 min-h-8 text-2xl font-semibold leading-8 tracking-tight md:min-h-10 md:text-4xl md:leading-10"}
+                className={isHandpicked ? "home-section-heading__title mb-0 text-left text-[27px] md:text-4xl" : "mb-2 min-h-8 text-2xl font-semibold leading-8 tracking-tight md:min-h-10 md:text-4xl md:leading-10"}
                 style={{ color: isHandpicked ? "#5E3538" : section.textColor, ...(isHandpicked ? { fontFamily: "'Cormorant Garamond', serif" } : {}) }}
               >
                 {section.title}
@@ -78,6 +79,11 @@ function ProductGrid({
               >
                 View all <span aria-hidden="true">→</span>
               </Link>
+            )}
+            {isHandpicked && section.showSubtitle && section.subtitle && (
+              <p className="home-section-heading__subtitle mt-2 max-w-[290px] text-left text-sm" style={{ color: "#7A6466" }}>
+                {section.subtitle}
+              </p>
             )}
           </div>
         )}
@@ -130,8 +136,11 @@ function ProductGrid({
           )}
 
           <Swiper
-            className={`[&_.swiper-wrapper]:gap-3.5 md:[&_.swiper-wrapper]:gap-5 lg:[&_.swiper-wrapper]:gap-6 ${isHandpicked ? "home-handpicked-swiper" : ""}`}
+            className={isHandpicked ? "home-handpicked-swiper" : ""}
             slidesPerView="auto"
+            spaceBetween={14}
+            breakpoints={{ 768: { spaceBetween: 20 }, 1024: { spaceBetween: 24 } }}
+            initialSlide={0}
             slidesPerGroupAuto
             spaceBetween={0}
             watchOverflow

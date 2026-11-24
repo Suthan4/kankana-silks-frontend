@@ -19,6 +19,7 @@ import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
 import "swiper/css/pagination";
 import SmartImage from "../common/smartImage";
+import HomeSectionHeading from "../common/homeSectionHeading";
 
 const stripHtml = (html?: string) => (html ? html.replace(/<[^>]+>/g, "") : "");
 const inr = (value: number | string) => Number(value).toLocaleString("en-IN");
@@ -114,20 +115,13 @@ export default function ProductCarousel({
       className="pb-10 pt-10 md:pb-14 md:pt-14"
       style={{ backgroundColor, color: textColor }}
     >
-      {(showTitle || (showSubtitle && subtitle)) && (
-        <div className="mb-6 px-4 text-center md:mb-10">
-          {showTitle && (
-            <h2 className="text-2xl font-semibold tracking-tight md:text-4xl">
-              {title || "Best of One"}
-            </h2>
-          )}
-          {showSubtitle && subtitle && (
-            <p className="mx-auto mt-2 max-w-2xl text-sm opacity-70 md:text-base">
-              {subtitle}
-            </p>
-          )}
-        </div>
-      )}
+      <HomeSectionHeading
+        title={title || "Best of One"}
+        subtitle={subtitle}
+        showTitle={showTitle}
+        showSubtitle={showSubtitle}
+        textColor={textColor}
+      />
 
       {/* MOBILE: horizontal card swiper */}
       <div className="md:hidden">

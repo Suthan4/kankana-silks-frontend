@@ -1521,3 +1521,80 @@ select[aria-invalid="true"] {
     padding-bottom: 64px;
   }
 }
+
+
+/* Shared premium editorial heading system for homepage sections. */
+.home-section-heading {
+  padding-top: 0.25rem;
+}
+
+.home-section-heading__title {
+  margin: 0;
+  color: #4a2c2e;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: clamp(2rem, 7vw, 3.25rem);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+
+.home-section-heading__ornament {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  width: min(100%, 9rem);
+  margin: 1rem auto 0.85rem;
+  color: #c68b83;
+}
+
+.home-section-heading__ornament span {
+  display: block;
+  width: 2.6rem;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.75;
+}
+
+.home-section-heading__ornament i {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border: 1px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.home-section-heading__subtitle {
+  max-width: 36rem;
+  color: #806b6b;
+  font-family: "Jost", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.7;
+  letter-spacing: 0.005em;
+  opacity: 0.95;
+}
+
+.home-handpicked-section .home-section-heading__ornament {
+  display: none;
+}
+
+.home-handpicked-swiper {
+  padding-top: 1rem;
+  padding-bottom: 0.75rem;
+}
+
+.home-handpicked-swiper .swiper-slide {
+  height: auto;
+}
+
+@media (min-width: 768px) {
+  .home-section-heading__ornament {
+    margin-top: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .home-section-heading__subtitle {
+    font-size: 1rem;
+  }
+}
