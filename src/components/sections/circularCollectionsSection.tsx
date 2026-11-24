@@ -109,8 +109,8 @@ export default function CircularCollectionsSection({ section }: { section: HomeS
   };
 
   return (
-    <section className="bg-white py-12 sm:py-16 lg:py-20" style={{ backgroundColor: section.backgroundColor || "#ffffff" }}>
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <section className="bg-white py-10 sm:py-12 lg:py-14" style={{ backgroundColor: section.backgroundColor || "#ffffff" }}>
+      <div className="mx-auto w-full max-w-[1500px] px-4 sm:px-6 lg:px-10">
         <HomeSectionHeading
           title={section.title || "Our Collections"}
           subtitle={section.subtitle}
@@ -125,7 +125,7 @@ export default function CircularCollectionsSection({ section }: { section: HomeS
           <button type="button" onClick={() => scrollTo(Math.max(0, activeIndex - 1))} disabled={activeIndex === 0} aria-label="Previous collections" className="absolute -left-2 top-[38%] z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-neutral-200 bg-white/95 text-neutral-800 shadow-md transition hover:bg-neutral-50 disabled:opacity-30 md:flex">
             <ChevronLeft size={19} />
           </button>
-          <div ref={trackRef} onScroll={handleScroll} className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-6 md:gap-7">
+          <div ref={trackRef} onScroll={handleScroll} className="flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain scroll-smooth pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-6 lg:gap-7">
             {cards.map(renderCard)}
           </div>
           <button type="button" onClick={() => scrollTo(Math.min(cards.length - 1, activeIndex + 1))} disabled={activeIndex >= cards.length - 1} aria-label="Next collections" className="absolute -right-2 top-[38%] z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-neutral-200 bg-white/95 text-neutral-800 shadow-md transition hover:bg-neutral-50 disabled:opacity-30 md:flex">
@@ -133,7 +133,7 @@ export default function CircularCollectionsSection({ section }: { section: HomeS
           </button>
         </div>
         {cards.length > 1 && (
-          <div className="mt-7 flex items-center justify-center gap-2.5" aria-label="Choose collection">
+          <div className="mt-5 flex items-center justify-center gap-2.5" aria-label="Choose collection">
             {cards.map((item, index) => (
               <button key={item.id} type="button" onClick={() => scrollTo(index)} aria-label={"Go to collection " + (index + 1)} aria-current={activeIndex === index ? "true" : undefined} className={"h-2.5 rounded-full transition-all duration-300 " + (activeIndex === index ? "w-7 bg-neutral-900" : "w-2.5 bg-neutral-300 hover:bg-neutral-500")} />
             ))}

@@ -66,13 +66,21 @@ export default function InstagramTrendsSection({ section }: { section: HomeSecti
   const media = [...(section.media || [])].sort((a, b) => a.order - b.order);
   if (!media.length) return null;
 
+  const desktopGridClass = media.length === 1
+    ? "grid-cols-1 max-w-sm"
+    : media.length === 2
+      ? "grid-cols-2 max-w-5xl"
+      : media.length === 3
+        ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 max-w-6xl"
+        : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 max-w-7xl";
+
   return (
     <section
-      className="bg-white py-12 sm:py-16 lg:py-20"
+      className="bg-white py-10 sm:py-12 lg:py-14"
       style={{ backgroundColor: section.backgroundColor || "#ffffff" }}
       aria-label={section.title || "Instagram trends"}
     >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
         <HomeSectionHeading
           title={section.title || "Instagram Trends"}
           subtitle={section.subtitle}
@@ -85,7 +93,7 @@ export default function InstagramTrendsSection({ section }: { section: HomeSecti
             {section.description}
           </p>
         )}
-        <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4 lg:gap-6">
+        <div className={`mx-auto grid w-full gap-3.5 sm:gap-5 lg:gap-6 ${desktopGridClass}`}>
           {media.map((item, index) => (
             <MediaCard key={item.id || item.url || index} media={item} />
           ))}
