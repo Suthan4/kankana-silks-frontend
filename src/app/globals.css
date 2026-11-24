@@ -123,7 +123,6 @@
   --shadow-brand-float: 0 18px 50px rgb(68 35 38 / 0.16);
   /* Legacy Tailwind colour utilities now inherit the warm brand palette. */
   --color-white: var(--color-brand-surface);
-  --color-black: var(--color-brand-primary);
   --color-gray-50: var(--color-warm-gray-50);
   --color-gray-100: var(--color-warm-gray-100);
   --color-gray-200: var(--color-warm-gray-200);
@@ -528,7 +527,6 @@
   --shadow-brand-card: 0 12px 32px rgb(0 0 0 / 0.28);
   --shadow-brand-float: 0 18px 50px rgb(0 0 0 / 0.36);
   --color-white: #2A1D20;
-  --color-black: #442326;
 
 }
 
