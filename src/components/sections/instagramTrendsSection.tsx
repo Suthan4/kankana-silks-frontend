@@ -59,19 +59,7 @@ function MediaCard({ media }: { media: SectionMedia }) {
   const className =
     "group relative block aspect-[3/4] min-w-0 overflow-hidden rounded-[1.35rem] bg-neutral-100 shadow-[0_8px_24px_rgba(0,0,0,0.07)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-neutral-900";
 
-  if (media.type === "VIDEO" || !href) return <div className={className}>{content}</div>;
-  if (isExternal) {
-    return (
-      <a className={className} href={href} target="_blank" rel="noopener noreferrer" aria-label={media.title || "View Instagram post"}>
-        {content}
-      </a>
-    );
-  }
-  return (
-    <Link className={className} href={href} aria-label={media.title || "Shop this look"}>
-      {content}
-    </Link>
-  );
+  return <div className={className}>{content}</div>;
 }
 
 export default function InstagramTrendsSection({ section }: { section: HomeSection }) {
