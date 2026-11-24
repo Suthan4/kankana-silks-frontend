@@ -1523,16 +1523,27 @@ select[aria-invalid="true"] {
 }
 
 
-/* Shared premium editorial heading system for homepage sections. */
+/* Premium editorial headings inspired by the Kankana campaign artwork. */
 .home-section-heading {
   padding-top: 0.25rem;
 }
 
+.home-section-heading__eyebrow {
+  margin: 0 0 0.45rem;
+  color: #e47f7b;
+  font-family: "Jost", sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.19em;
+  text-transform: uppercase;
+}
+
 .home-section-heading__title {
   margin: 0;
-  color: #4a2c2e;
+  color: #211817;
   font-family: "Cormorant Garamond", Georgia, serif;
-  font-size: clamp(2rem, 7vw, 3.25rem);
+  font-size: clamp(2rem, 5vw, 3.5rem);
   font-weight: 600;
   line-height: 1.08;
   letter-spacing: -0.025em;
@@ -1543,24 +1554,33 @@ select[aria-invalid="true"] {
   align-items: center;
   justify-content: center;
   gap: 0.55rem;
-  width: min(100%, 9rem);
-  margin: 1rem auto 0.85rem;
-  color: #c68b83;
+  width: min(100%, 13rem);
+  margin: 1.05rem auto 0.9rem;
+  color: #e47f7b;
 }
 
 .home-section-heading__ornament span {
   display: block;
-  width: 2.6rem;
-  height: 1px;
-  background: currentColor;
-  opacity: 0.75;
+  flex: 1;
+  border-top: 3px dotted currentColor;
+  opacity: 0.9;
 }
 
 .home-section-heading__ornament i {
   display: block;
-  width: 7px;
-  height: 7px;
-  border: 1px solid currentColor;
+  width: 13px;
+  height: 13px;
+  flex: 0 0 13px;
+  border: 2px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.home-section-heading__ornament b {
+  display: block;
+  width: 11px;
+  height: 11px;
+  flex: 0 0 11px;
+  background: currentColor;
   transform: rotate(45deg);
 }
 
@@ -1571,16 +1591,12 @@ select[aria-invalid="true"] {
   font-size: 0.9rem;
   font-weight: 400;
   line-height: 1.7;
-  letter-spacing: 0.005em;
+  letter-spacing: 0.015em;
   opacity: 0.95;
 }
 
-.home-handpicked-section .home-section-heading__ornament {
-  display: none;
-}
-
 .home-handpicked-swiper {
-  padding-top: 1rem;
+  padding-top: 0.5rem;
   padding-bottom: 0.75rem;
 }
 
@@ -1589,8 +1605,13 @@ select[aria-invalid="true"] {
 }
 
 @media (min-width: 768px) {
+  .home-section-heading__eyebrow {
+    margin-bottom: 0.6rem;
+    font-size: 0.76rem;
+  }
+
   .home-section-heading__ornament {
-    margin-top: 1.25rem;
+    margin-top: 1.35rem;
     margin-bottom: 1rem;
   }
 
