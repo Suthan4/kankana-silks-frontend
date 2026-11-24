@@ -3,6 +3,7 @@
 import { HomeSection } from "@/lib/api/home-section.api";
 import { useState, useRef, useEffect } from "react";
 import SmartImage from "../common/smartImage";
+import HomeSectionHeading from "../common/homeSectionHeading";
 
 function MediaGridSection({ section }: { section: HomeSection }) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -11,7 +12,7 @@ function MediaGridSection({ section }: { section: HomeSection }) {
 
   if (!section.media || section.media.length === 0) return null;
 
-  const itemsPerView = section.columns || 4;
+  const itemsPerView = Math.min(section.columns || 4, 4);
   const showNavigation = section.media.length > itemsPerView;
   const totalSlides = Math.ceil(section.media.length / itemsPerView);
 
@@ -31,12 +32,12 @@ function MediaGridSection({ section }: { section: HomeSection }) {
   };
 
   const getGridColumns = () => {
-    const cols = section.columns || 4;
+    const cols = Math.min(itemsPerView, visibleMedia.length);
     const colMap: Record<number, string> = {
       1: "grid-cols-1",
-      2: "grid-cols-1 md:grid-cols-2",
-      3: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
-      4: "grid-cols-1 md:grid-cols-2 lg:grid-cols-4",
+      2: "grid-cols-1 sm:grid-cols-2",
+      3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+      4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
     };
     return colMap[cols] || "grid-cols-1 md:grid-cols-2 lg:grid-cols-4";
   };
@@ -60,7 +61,7 @@ function MediaGridSection({ section }: { section: HomeSection }) {
     return (
       <div
         key={media.id}
-        className="group relative overflow-hidden rounded-2xl aspect-[4/3] transform transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl cursor-pointer"
+        className={`group relative block min-w-0 overflow-hidden rounded-2xl transition-all duration-500 hover:shadow-2xl ${media.type === "VIDEO" ? "aspect-[3/4]" : "aspect-[4/3]"}`}
         style={{ animationDelay: `${index * 0.1}s` }}
         onMouseEnter={() => setIsHovered(index)}
         onMouseLeave={() => setIsHovered(null)}
@@ -77,7 +78,7 @@ function MediaGridSection({ section }: { section: HomeSection }) {
           <video
             src={media.url}
             poster={media.thumbnailUrl || undefined}
-            className="w-full h-full object-cover"
+            className="h-full w-full object-cover"
             loop
             muted
             playsInline
@@ -149,7 +150,7 @@ function MediaGridSection({ section }: { section: HomeSection }) {
 
   return (
     <section
-      className="py-8 md:py-20 lg:py-8 relative overflow-hidden"
+      className="relative overflow-hidden py-7 sm:py-12 lg:py-14"
       style={{ backgroundColor: section.backgroundColor }}
     >
       {/* Background decoration */}
@@ -164,27 +165,15 @@ function MediaGridSection({ section }: { section: HomeSection }) {
         />
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 md:px-8">
-        {(section.showTitle || section.showSubtitle) && (
-          <div className="text-center mb-10 md:mb-16 animate-fadeIn">
-            {section.showTitle && (
-              <h2
-                className="text-3xl md:text-5xl lg:text-6xl font-futura-bold mb-4 tracking-tight"
-                style={{ color: section.textColor }}
-              >
-                {section.title}
-              </h2>
-            )}
-            {section.showSubtitle && section.subtitle && (
-              <p
-                className="text-base md:text-xl opacity-80 max-w-3xl mx-auto leading-relaxed"
-                style={{ color: section.textColor }}
-              >
-                {section.subtitle}
-              </p>
-            )}
-          </div>
-        )}
+      <div className={`relative mx-auto w-full px-4 md:px-8 ${visibleMedia.length === 1 ? "max-w-xl" : visibleMedia.length === 2 ? "max-w-5xl" : visibleMedia.length === 3 ? "max-w-6xl" : "max-w-7xl"}`}>
+        <HomeSectionHeading
+          title={section.title}
+          subtitle={section.subtitle}
+          showTitle={section.showTitle}
+          showSubtitle={section.showSubtitle}
+          textColor={section.textColor || "#4A2C2E"}
+          className="animate-fadeIn mb-5 sm:mb-9"
+        />
 
         <div className="relative">
           {/* Navigation buttons - only show if more items than columns */}

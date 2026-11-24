@@ -47,9 +47,9 @@ export function MobileBottomNavigation({
     <motion.nav
       aria-label="Quick links"
       initial={false}
-      className="fixed bottom-0 left-0 right-0 z-50 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.08)] md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-50 h-[76px] border-t border-[#EADFDB] bg-white shadow-none md:hidden"
     >
-      <ul className="flex items-center justify-around py-3">
+      <ul className="flex h-full items-start justify-around pt-2 pb-1">
         {items.filter((item) => visibleItems.includes(item.name)).map((item, index) => {
           const Icon = item.icon;
           const isActive = item.url === "/"
@@ -67,7 +67,7 @@ export function MobileBottomNavigation({
                       openLogin();
                     }
                   }}
-                  className="relative flex flex-col items-center gap-1 py-2"
+                  className="relative flex flex-col items-center gap-1 py-1"
                 >
                   {isActive && (
                     <motion.div
@@ -77,7 +77,7 @@ export function MobileBottomNavigation({
                     />
                   )}
                   <Icon className={`h-5 w-5 transition-colors ${isActive ? "text-brand-primary" : "text-gray-500"}`} />
-                  <span className={`text-[10px] font-medium transition-colors ${isActive ? "text-brand-primary" : "text-gray-500"}`}>
+                  <span className={`text-[11px] font-medium transition-colors ${isActive ? "text-brand-primary" : "text-gray-500"}`}>
                     {item.name}
                   </span>
                   {!!item.badgeCount && item.badgeCount > 0 && (
@@ -90,10 +90,10 @@ export function MobileBottomNavigation({
                 <button
                   type="button"
                   onClick={item.onClick}
-                  className="flex w-full flex-col items-center gap-1 py-2"
+                  className="flex w-full flex-col items-center gap-1 py-1"
                 >
-                  <Icon className="h-5 w-5 text-gray-500" />
-                  <span className="text-[10px] text-gray-500">{item.name}</span>
+                  <Icon className="h-6 w-6 text-gray-500" />
+                  <span className="text-[11px] text-gray-500">{item.name}</span>
                 </button>
               )}
             </li>
@@ -114,7 +114,7 @@ export function MobileBottomNavigation({
               />
             )}
             <User className={`h-5 w-5 transition-colors ${pathname?.startsWith("/my-account") ? "text-brand-primary" : "text-gray-500"}`} />
-            <span className={`text-[10px] font-medium transition-colors ${pathname?.startsWith("/my-account") ? "text-brand-primary" : "text-gray-500"}`}>
+            <span className={`text-[11px] font-medium transition-colors ${pathname?.startsWith("/my-account") ? "text-brand-primary" : "text-gray-500"}`}>
               {user ? "Account" : "Login"}
             </span>
           </button>

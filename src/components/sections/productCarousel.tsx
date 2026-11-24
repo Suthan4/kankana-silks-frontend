@@ -19,6 +19,7 @@ import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
 import "swiper/css/pagination";
 import SmartImage from "../common/smartImage";
+import HomeSectionHeading from "../common/homeSectionHeading";
 
 const stripHtml = (html?: string) => (html ? html.replace(/<[^>]+>/g, "") : "");
 const inr = (value: number | string) => Number(value).toLocaleString("en-IN");
@@ -111,23 +112,16 @@ export default function ProductCarousel({
 
   return (
     <section
-      className="pb-10 pt-10 md:pb-14 md:pt-14"
+      className="pb-8 pt-8 md:pb-12 md:pt-12 lg:pb-14 lg:pt-14"
       style={{ backgroundColor, color: textColor }}
     >
-      {(showTitle || (showSubtitle && subtitle)) && (
-        <div className="mb-6 px-4 text-center md:mb-10">
-          {showTitle && (
-            <h2 className="text-2xl font-semibold tracking-tight md:text-4xl">
-              {title || "Best of One"}
-            </h2>
-          )}
-          {showSubtitle && subtitle && (
-            <p className="mx-auto mt-2 max-w-2xl text-sm opacity-70 md:text-base">
-              {subtitle}
-            </p>
-          )}
-        </div>
-      )}
+      <HomeSectionHeading
+        title={title || "Best of One"}
+        subtitle={subtitle}
+        showTitle={showTitle}
+        showSubtitle={showSubtitle}
+        textColor={textColor}
+      />
 
       {/* MOBILE: horizontal card swiper */}
       <div className="md:hidden">
@@ -213,7 +207,7 @@ export default function ProductCarousel({
 
       {/* TABLET + DESKTOP: image and details, grouped and centered */}
       <div className="hidden w-full md:block">
-        <div className="mx-auto grid w-full max-w-5xl items-center gap-8 px-6 md:grid-cols-[minmax(0,380px)_minmax(0,1fr)] lg:grid-cols-[minmax(0,460px)_minmax(0,1fr)] lg:gap-14 lg:px-10">
+        <div className="mx-auto grid w-full max-w-6xl items-center gap-8 px-6 md:grid-cols-[minmax(0,440px)_minmax(0,1fr)] lg:grid-cols-[minmax(0,500px)_minmax(0,1fr)] lg:gap-16 lg:px-10">
           {/* Image */}
           <div className="group relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-[#f7f7f5]">
             {currentProduct.media?.[0]?.url ? (
@@ -222,7 +216,7 @@ export default function ProductCarousel({
                 src={currentProduct.media[0].url}
                 alt={currentProduct.name}
                 fill
-                sizes="(min-width: 1024px) 460px, 380px"
+                sizes="(min-width: 1024px) 500px, 440px"
                 className="object-cover object-top transition duration-500 ease-out group-hover:scale-[1.02]"
               />
             ) : (

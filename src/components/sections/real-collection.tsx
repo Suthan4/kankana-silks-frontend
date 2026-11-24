@@ -62,7 +62,7 @@ export default function RealCollection() {
     <section className="relative w-full overflow-hidden bg-white py-24 md:py-10">
       {/* HEADER */}
       <div className="px-4 mb-6 md:px-16 md:mb-12">
-        <h2 className="text-3xl md:text-5xl font-light tracking-tight">
+        <h2 className="home-section-title text-left">
           Premium Collections
         </h2>
       </div>

@@ -15,10 +15,10 @@ export default function CTASection() {
       className="
         relative
         overflow-hidden
-        bg-black
-        px-4
-        pb-16
-        pt-10
+        bg-[#5E3538]
+        px-7
+        pb-[calc(76px+env(safe-area-inset-bottom)+32px)]
+        pt-12
 
         sm:pb-24
         sm:pt-16
@@ -58,7 +58,7 @@ export default function CTASection() {
           whileInView={{ opacity: 1, scaleX: 1 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true, amount: 0.1 }}
-          className="mx-auto mb-4 h-px w-10 bg-white/40 sm:mb-6 sm:w-14"
+          className="mx-auto mb-0 h-px w-14 bg-white/40 sm:mb-6 sm:w-14"
         />
 
         <motion.h2
@@ -67,10 +67,12 @@ export default function CTASection() {
           transition={{ duration: 0.6 }}
           viewport={{ once: true, amount: 0.1 }}
           className="
-            mb-4
+            mt-5 mb-0
+            home-editorial-title
             text-balance
-            text-3xl
-            font-light
+            text-[30px]
+            font-medium
+            leading-tight
             tracking-tight
             text-white
 
@@ -90,9 +92,12 @@ export default function CTASection() {
           transition={{ duration: 0.6, delay: 0.15 }}
           viewport={{ once: true, amount: 0.1 }}
           className="
-            mb-8
-            text-sm
-            font-light
+            mt-4 mb-0
+            mx-auto
+            max-w-[280px]
+            text-[15px]
+            leading-[1.55]
+            font-normal
             text-white/85
 
             sm:mb-12
@@ -111,10 +116,11 @@ export default function CTASection() {
             mx-auto
             flex
             w-full
-            max-w-xs
+            mt-6
+            max-w-[300px]
             flex-col
             justify-center
-            gap-3
+            gap-0
 
             sm:max-w-none
             sm:flex-row
@@ -138,8 +144,9 @@ export default function CTASection() {
                 gap-2
                 bg-white
                 px-8
-                py-3.5
-                text-xs
+                h-[52px]
+                py-0
+                text-sm
                 font-semibold
                 uppercase
                 tracking-[0.16em]
@@ -165,18 +172,19 @@ export default function CTASection() {
                 w-full
                 items-center
                 justify-center
-                border
+                border-0
                 border-white/70
-                px-8
-                py-3.5
-                text-xs
+                px-0
+                py-0
+                text-sm
                 font-semibold
                 uppercase
                 tracking-[0.16em]
                 text-white
-                transition-all
-                hover:border-white
-                hover:bg-white/10
+                underline
+                underline-offset-[6px]
+                transition-opacity
+                hover:opacity-80
 
                 sm:w-auto
                 sm:py-3

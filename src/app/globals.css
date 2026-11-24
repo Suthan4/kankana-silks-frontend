@@ -1,22 +1,16 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
-/* =========================================
-   KANKANA SILKS - TYPOGRAPHY
-   Adobe Fonts: Futura PT
-   Project: gmp5qfk
-========================================= */
-
+/* =========================================   KANKANA SILKS - TYPOGRAPHY   Adobe Fonts: Futura PT   Project: gmp5qfk========================================= */
 @theme {
   --font-sans: "futura-pt", sans-serif;
   --font-futura-bold: "futura-pt-bold", sans-serif;
-
   /* Warm neutrals */
   --color-ivory-50: #FFFCF7;
   --color-ivory-100: #FAF5EC;
   --color-ivory-200: #F2E9DD;
   --color-ivory-300: #E8DCCF;
   --color-ivory-400: #D9C9B9;
-
   --color-warm-gray-50: #F8F6F3;
   --color-warm-gray-100: #F0ECE7;
   --color-warm-gray-200: #E2DAD3;
@@ -27,7 +21,6 @@
   --color-warm-gray-700: #514843;
   --color-warm-gray-800: #3B322F;
   --color-warm-gray-900: #302927;
-
   /* Maroon tonal scale */
   --color-maroon-50: #F8F0EF;
   --color-maroon-100: #EBDDDD;
@@ -39,7 +32,6 @@
   --color-maroon-700: #54292D;
   --color-maroon-800: #442326;
   --color-maroon-900: #32191C;
-
   /* Antique zari gold tonal scale */
   --color-gold-50: #FBF7EE;
   --color-gold-100: #F2E8D0;
@@ -51,7 +43,6 @@
   --color-gold-700: #6D522B;
   --color-gold-800: #523D21;
   --color-gold-900: #392A18;
-
   /* Brand tokens */
   --color-brand-primary: #653536;
   --color-brand-primary-hover: #54292D;
@@ -66,7 +57,6 @@
   --color-brand-on-section: #FFF9F2;
   --color-brand-section-start: #442326;
   --color-brand-section-end: #32191C;
-
   /* Semantic and commerce states */
   --color-success: #245A43;
   --color-success-soft: #EAF3ED;
@@ -84,7 +74,6 @@
   --color-low-stock-soft: #FFF4DE;
   --color-wishlist: #7B3045;
   --color-wishlist-soft: #F8EAF0;
-
   /* Optional festive/category accents; use in small doses. */
   --color-jewel-emerald: #245747;
   --color-jewel-emerald-soft: #EAF3EE;
@@ -92,7 +81,6 @@
   --color-jewel-royal-soft: #EFF4FA;
   --color-jewel-peacock: #1E5557;
   --color-jewel-peacock-soft: #E9F3F2;
-
   /* Surface and typography roles */
   --color-background: var(--color-ivory-50);
   --color-surface: #FFFCFA;
@@ -108,14 +96,12 @@
   --color-focus-ring: var(--color-brand-primary);
   --color-overlay: rgb(37 22 24 / 0.64);
   --color-lightbox-background: #1B1113;
-
   /* Backward-compatible aliases */
   --color-main-primary: var(--color-brand-primary);
   --color-main-primary-two: var(--color-brand-primary-hover);
   --color-main-secondary: var(--color-brand-accent);
   --color-primary: var(--color-brand-primary);
   --color-primary-dark: var(--color-brand-primary-deep);
-
   /* Maroon-tinted elevations */
   --shadow-brand-soft: 0 4px 18px rgb(68 35 38 / 0.07);
   --shadow-brand-card: 0 12px 32px rgb(68 35 38 / 0.09);
@@ -133,7 +119,6 @@
   --color-gray-700: var(--color-warm-gray-700);
   --color-gray-800: var(--color-warm-gray-800);
   --color-gray-900: var(--color-warm-gray-900);
-
 }
 
 @layer base {
@@ -161,23 +146,18 @@
     color: inherit;
   }
 
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-  select,
-  textarea {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea {
     border-color: var(--color-border-strong);
     background-color: var(--color-surface-elevated);
     color: var(--color-text-main);
   }
 
-  input::placeholder,
-  textarea::placeholder {
+  input::placeholder, textarea::placeholder {
     color: var(--color-text-muted);
     opacity: 0.82;
   }
 
-  input[type="checkbox"],
-  input[type="radio"],
-  progress {
+  input[type="checkbox"], input[type="radio"], progress {
     accent-color: var(--color-brand-primary);
   }
 }
@@ -213,28 +193,20 @@
     transform: translateY(-2px);
   }
 
-  .brand-card:focus-within,
-  .brand-card[aria-selected="true"],
-  .brand-product-card:focus-within,
-  .brand-product-card[aria-selected="true"],
-  .brand-product-card[data-selected="true"] {
+  .brand-card:focus-within, .brand-card[aria-selected="true"], .brand-product-card:focus-within, .brand-product-card[aria-selected="true"], .brand-product-card[data-selected="true"] {
     border-color: var(--color-brand-primary);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-primary) 18%, transparent), var(--shadow-brand-soft);
   }
 
   .brand-soft-surface {
     border: 1px solid var(--color-brand-border);
-    background:
-      radial-gradient(circle at 95% 8%, color-mix(in srgb, var(--color-brand-accent) 14%, transparent), transparent 30%),
-      linear-gradient(115deg, var(--color-brand-primary-soft), var(--color-brand-surface) 58%, var(--color-ivory-100));
+    background: radial-gradient(circle at 95% 8%, color-mix(in srgb, var(--color-brand-accent) 14%, transparent), transparent 30%), linear-gradient(115deg, var(--color-brand-primary-soft), var(--color-brand-surface) 58%, var(--color-ivory-100));
     color: var(--color-text-main);
   }
 
   .brand-section-dark {
     border-color: color-mix(in srgb, var(--color-brand-accent) 28%, transparent);
-    background:
-      radial-gradient(circle at 90% 0%, color-mix(in srgb, var(--color-brand-accent) 12%, transparent), transparent 35%),
-      linear-gradient(135deg, var(--color-brand-section-start), var(--color-brand-section-end));
+    background: radial-gradient(circle at 90% 0%, color-mix(in srgb, var(--color-brand-accent) 12%, transparent), transparent 35%), linear-gradient(135deg, var(--color-brand-section-start), var(--color-brand-section-end));
     color: var(--color-brand-on-section);
   }
 
@@ -336,9 +308,7 @@
     color: var(--color-brand-primary);
   }
 
-  .brand-chip[aria-pressed="true"],
-  .brand-chip[aria-selected="true"],
-  .brand-chip[data-selected="true"] {
+  .brand-chip[aria-pressed="true"], .brand-chip[aria-selected="true"], .brand-chip[data-selected="true"] {
     border-color: var(--color-brand-primary);
     background: var(--color-brand-primary);
     color: var(--color-brand-on-primary);
@@ -436,7 +406,6 @@
   --color-ivory-200: #352528;
   --color-ivory-300: #493438;
   --color-ivory-400: #60484B;
-
   --color-warm-gray-50: #352B2B;
   --color-warm-gray-100: #403332;
   --color-warm-gray-200: #594947;
@@ -447,7 +416,6 @@
   --color-warm-gray-700: #E0D3CC;
   --color-warm-gray-800: #F0E7E1;
   --color-warm-gray-900: #F8F0E9;
-
   --color-maroon-50: #382326;
   --color-maroon-100: #493034;
   --color-maroon-200: #654448;
@@ -458,7 +426,6 @@
   --color-maroon-700: #E4B8AF;
   --color-maroon-800: #F0D0C7;
   --color-maroon-900: #F8E6DF;
-
   --color-gold-50: #33291D;
   --color-gold-100: #453722;
   --color-gold-200: #604A2B;
@@ -469,7 +436,6 @@
   --color-gold-700: #F0E2BE;
   --color-gold-800: #F5EBD4;
   --color-gold-900: #FBF5E8;
-
   --color-brand-primary: #D7A29A;
   --color-brand-primary-hover: #E4B8AF;
   --color-brand-primary-deep: #F2DDD5;
@@ -483,7 +449,6 @@
   --color-brand-on-section: #FFF8F1;
   --color-brand-section-start: #2A1D20;
   --color-brand-section-end: #211719;
-
   --color-success: #9BC9A9;
   --color-success-soft: #243A30;
   --color-error: #E4A0A0;
@@ -500,14 +465,12 @@
   --color-low-stock-soft: #40331F;
   --color-wishlist: #E2A2B7;
   --color-wishlist-soft: #432B35;
-
   --color-jewel-emerald: #9BC9AE;
   --color-jewel-emerald-soft: #243A30;
   --color-jewel-royal: #A9C9E7;
   --color-jewel-royal-soft: #273746;
   --color-jewel-peacock: #9ACBCA;
   --color-jewel-peacock-soft: #213B3D;
-
   --color-background: #211719;
   --color-surface: #2A1D20;
   --color-surface-elevated: #352528;
@@ -522,13 +485,11 @@
   --color-focus-ring: #E4B8AF;
   --color-overlay: rgb(12 6 8 / 0.78);
   --color-lightbox-background: #10090B;
-
   --shadow-brand-soft: 0 4px 18px rgb(0 0 0 / 0.22);
   --shadow-brand-card: 0 12px 32px rgb(0 0 0 / 0.28);
   --shadow-brand-float: 0 18px 50px rgb(0 0 0 / 0.36);
   --color-white: #2A1D20;
   --color-black: #442326;
-
 }
 
 /* Existing neutral utility classes remain compatible when .dark is enabled. */
@@ -557,15 +518,11 @@
   background-color: var(--color-ivory-200);
 }
 
-.dark .text-black,
-.dark .text-white {
+.dark .text-black, .dark .text-white {
   color: var(--color-text-main);
 }
 
-.dark .bg-brand-primary .text-white,
-.dark .bg-main-primary .text-white,
-.dark .bg-brand-primary.text-white,
-.dark .bg-main-primary.text-white {
+.dark .bg-brand-primary .text-white, .dark .bg-main-primary .text-white, .dark .bg-brand-primary.text-white, .dark .bg-main-primary.text-white {
   color: var(--color-brand-on-primary);
 }
 
@@ -590,16 +547,13 @@
   background-color: var(--color-surface-elevated) !important;
 }
 
-.dark .ios-modal-panel .text-black,
-.dark .ios-modal-panel .text-white {
+.dark .ios-modal-panel .text-black, .dark .ios-modal-panel .text-white {
   color: var(--color-text-main);
 }
 
 .dark :focus-visible {
   outline-color: var(--color-focus-ring);
 }
-
-
 
 @keyframes fadeIn {
   from {
@@ -735,10 +689,7 @@
 }
 
 .animate-shimmer {
-  background: linear-gradient(90deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.2) 50%,
-      transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
   background-size: 1000px 100%;
   animation: shimmer 2s infinite;
 }
@@ -751,10 +702,7 @@
   animation: rotate 20s linear infinite;
 }
 
-/* NOTE: do not redefine .backdrop-blur-* here. Unlayered CSS beats Tailwind's
-   layered utilities and the old overrides dropped -webkit-backdrop-filter,
-   which iOS Safari needs. Tailwind already emits both prefixes. */
-
+/* NOTE: do not redefine .backdrop-blur-* here. Unlayered CSS beats Tailwind's   layered utilities and the old overrides dropped -webkit-backdrop-filter,   which iOS Safari needs. Tailwind already emits both prefixes. */
 /* Custom gradients */
 .gradient-radial {
   background: radial-gradient(circle, var(--tw-gradient-stops));
@@ -865,9 +813,7 @@ html {
   outline-offset: 3px;
 }
 
-
-/* The skip link moves focus to <main>; a ring around the whole page body is
-   noise, not a useful focus indicator. Higher specificity than the rule above. */
+/* The skip link moves focus to <main>; a ring around the whole page body is   noise, not a useful focus indicator. Higher specificity than the rule above. */
 #main-content:focus {
   outline: none;
 }
@@ -893,7 +839,6 @@ html {
 }
 
 /* Price range selector */
-
 .range-thumb {
   position: absolute;
   width: 100%;
@@ -951,8 +896,7 @@ html {
   transform: scale(1.12);
 }
 
-/* iOS Safari: isolate only the moving drawer layer.
-   Framer Motion owns the transform; do not add a second CSS transform animation. */
+/* iOS Safari: isolate only the moving drawer layer.   Framer Motion owns the transform; do not add a second CSS transform animation. */
 .mobile-drawer-panel {
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
@@ -966,21 +910,12 @@ html {
   }
 }
 
-
-/* Keep the viewport width stable when any modal locks document scrolling.
-   This prevents every shared modal/drawer from causing a horizontal layout
-   shift as the browser scrollbar disappears. */
+/* Keep the viewport width stable when any modal locks document scrolling.   This prevents every shared modal/drawer from causing a horizontal layout   shift as the browser scrollbar disappears. */
 html {
   scrollbar-gutter: stable;
 }
 
-/* ------------------------------------------------------------------
-   iOS / WebKit-safe slider helpers
-   - Text legibility uses text-shadow instead of filter: drop-shadow().
-     A filter on text inside an element whose opacity/transform animates
-     makes WebKit re-rasterise the text, which shows up as a flicker/pop.
-   - Slides are promoted to their own layer once and stay there.
-   ------------------------------------------------------------------ */
+/* ------------------------------------------------------------------   iOS / WebKit-safe slider helpers   - Text legibility uses text-shadow instead of filter: drop-shadow().     A filter on text inside an element whose opacity/transform animates     makes WebKit re-rasterise the text, which shows up as a flicker/pop.   - Slides are promoted to their own layer once and stay there.   ------------------------------------------------------------------ */
 .text-shadow-hero {
   text-shadow: 0 2px 14px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.35);
 }
@@ -989,10 +924,7 @@ html {
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
 }
 
-/* Cross-fading hero slides (HeroSlider).
-   The incoming slide fades in ON TOP while the outgoing one stays fully
-   opaque underneath and only disappears after the fade has finished, so the
-   section background never shows through mid-transition. */
+/* Cross-fading hero slides (HeroSlider).   The incoming slide fades in ON TOP while the outgoing one stays fully   opaque underneath and only disappears after the fade has finished, so the   section background never shows through mid-transition. */
 .hero-slide {
   position: absolute;
   inset: 0;
@@ -1012,33 +944,20 @@ html {
   transition: opacity 700ms ease-in-out;
 }
 
-/* Text reveal: pure CSS transition, no animation class to re-add (re-adding
-   a keyframe class restarts the animation and flashes on WebKit). */
+/* Text reveal: pure CSS transition, no animation class to re-add (re-adding   a keyframe class restarts the animation and flashes on WebKit). */
 .hero-text {
   opacity: 0;
   transform: translate3d(0, 24px, 0);
-  transition:
-    opacity 300ms ease-out,
-    transform 300ms ease-out;
+  transition: opacity 300ms ease-out, transform 300ms ease-out;
 }
 
 .hero-slide[data-active="true"] .hero-text {
   opacity: 1;
   transform: translate3d(0, 0, 0);
-  transition:
-    opacity 700ms ease-out 350ms,
-    transform 700ms ease-out 350ms;
+  transition: opacity 700ms ease-out 350ms, transform 700ms ease-out 350ms;
 }
 
-/* ==========================================================================
-   iOS MODAL LAYOUT STABILIZATION
-   Fixes Safari/WebKit viewport resizing, modal flickering, scroll conflicts,
-   and layout glitches on mobile dialogs.
-
-   Scoped to iOS WebKit and mobile widths.
-   Desktop, Android, and consultation modal remain untouched.
-   ========================================================================== */
-
+/* ==========================================================================   iOS MODAL LAYOUT STABILIZATION   Fixes Safari/WebKit viewport resizing, modal flickering, scroll conflicts,   and layout glitches on mobile dialogs.   Scoped to iOS WebKit and mobile widths.   Desktop, Android, and consultation modal remain untouched.   ========================================================================== */
 @supports (-webkit-touch-callout: none) {
   @media screen and (max-width: 767px) {
     html {
@@ -1089,9 +1008,7 @@ html {
       flex-direction: column;
       min-width: 0;
       min-height: 0;
-
       max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px) !important;
-
       box-sizing: border-box;
       overflow: hidden !important;
       background: var(--color-surface-elevated) !important;
@@ -1103,29 +1020,19 @@ html {
     .ios-modal-content {
       flex: 1 1 auto;
       min-height: 0;
-
       overflow-x: hidden !important;
       overflow-y: auto !important;
-
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
       touch-action: pan-y;
     }
 
     /* Prevent Safari auto-zoom on input focus */
-    .ios-modal-panel input:not([type="checkbox"]):not([type="radio"]),
-    .ios-modal-panel select,
-    .ios-modal-panel textarea,
-    .ios-location-sheet input,
-    .ios-location-sheet select,
-    .ios-location-sheet textarea {
+    .ios-modal-panel input:not([type="checkbox"]):not([type="radio"]), .ios-modal-panel select, .ios-modal-panel textarea, .ios-location-sheet input, .ios-location-sheet select, .ios-location-sheet textarea {
       font-size: 16px !important;
     }
 
-    /* ------------------------------------------------------------------
-       SET LOCATION SHEET
-       ------------------------------------------------------------------ */
-
+    /* ------------------------------------------------------------------       SET LOCATION SHEET       ------------------------------------------------------------------ */
     .ios-location-overlay {
       background: transparent !important;
     }
@@ -1133,112 +1040,69 @@ html {
     .ios-location-sheet {
       position: absolute !important;
       inset: auto 0 0 !important;
-
       width: 100% !important;
-
       max-height: calc(100dvh - env(safe-area-inset-top) - 8px) !important;
-
       min-height: 0;
-
       overflow-x: hidden !important;
       overflow-y: auto !important;
-
-      padding-bottom: max(24px,
-          env(safe-area-inset-bottom)) !important;
-
+      padding-bottom: max(24px, env(safe-area-inset-bottom)) !important;
       border-radius: 24px 24px 0 0;
-
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
       touch-action: pan-y;
     }
 
-    /* ------------------------------------------------------------------
-       AUTH MODAL
-       ------------------------------------------------------------------ */
-
+    /* ------------------------------------------------------------------       AUTH MODAL       ------------------------------------------------------------------ */
     .ios-auth-overlay {
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-
-      padding:
-        max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) !important;
-
+      padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) !important;
       overflow: hidden !important;
-
       background: var(--color-overlay) !important;
     }
 
     .ios-auth-panel {
       width: min(100%, 24rem) !important;
-
       max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px) !important;
-
       flex: 0 1 auto;
     }
 
-    /* ------------------------------------------------------------------
-       CART / SHOPPING BAG DRAWER
-       ------------------------------------------------------------------ */
-
+    /* ------------------------------------------------------------------       CART / SHOPPING BAG DRAWER       ------------------------------------------------------------------ */
     .ios-cart-drawer {
       position: fixed !important;
       inset: auto 0 0 !important;
-
       width: 100% !important;
-
       max-height: calc(100dvh - env(safe-area-inset-top) - 8px) !important;
-
       border-radius: 24px 24px 0 0;
-
-      padding-bottom: max(8px,
-          env(safe-area-inset-bottom)) !important;
-
+      padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
       touch-action: pan-y;
     }
 
-    /* ------------------------------------------------------------------
-       CATEGORY FILTER & SORT SHEET
-       ------------------------------------------------------------------ */
-
+    /* ------------------------------------------------------------------       CATEGORY FILTER & SORT SHEET       ------------------------------------------------------------------ */
     .ios-filter-sheet {
       position: fixed !important;
       inset: auto 0 0 !important;
-
       width: 100% !important;
-
       max-height: calc(100dvh - env(safe-area-inset-top) - 8px) !important;
-
       overflow-x: hidden !important;
       overflow-y: auto !important;
-
-      padding-bottom: max(16px,
-          env(safe-area-inset-bottom)) !important;
-
+      padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
     }
 
-    /* ------------------------------------------------------------------
-       SEARCH MODAL
-       ------------------------------------------------------------------ */
-
+    /* ------------------------------------------------------------------       SEARCH MODAL       ------------------------------------------------------------------ */
     .ios-search-positioner {
       min-height: 100dvh !important;
-
       align-items: flex-start !important;
       justify-content: center !important;
-
-      padding:
-        max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) !important;
-
+      padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) !important;
       box-sizing: border-box;
     }
 
     .ios-search-panel {
       width: 100% !important;
-
       max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px) !important;
     }
 
@@ -1246,72 +1110,45 @@ html {
       max-height: none !important;
     }
 
-    /* ------------------------------------------------------------------
-       PRODUCT REQUEST MODAL
-       ------------------------------------------------------------------ */
-
+    /* ------------------------------------------------------------------       PRODUCT REQUEST MODAL       ------------------------------------------------------------------ */
     .ios-request-modal-viewport {
       align-items: flex-end !important;
-
-      padding-bottom: max(0px,
-          env(safe-area-inset-bottom)) !important;
-
+      padding-bottom: max(0px, env(safe-area-inset-bottom)) !important;
       pointer-events: none;
     }
 
     .ios-request-panel {
       max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 8px) !important;
-
       overflow-x: hidden !important;
       overflow-y: auto !important;
-
       border-radius: 24px 24px 0 0;
-
       pointer-events: auto;
-
       -webkit-overflow-scrolling: touch;
     }
 
-    /* ------------------------------------------------------------------
-       ADDRESS MODAL & RETURN MODAL
-       ------------------------------------------------------------------ */
-
-    .ios-address-overlay,
-    .ios-return-overlay {
+    /* ------------------------------------------------------------------       ADDRESS MODAL & RETURN MODAL       ------------------------------------------------------------------ */
+    .ios-address-overlay, .ios-return-overlay {
       align-items: center !important;
       justify-content: center !important;
-
-      padding:
-        max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) !important;
+      padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) !important;
     }
 
-    .ios-address-panel,
-    .ios-return-panel {
+    .ios-address-panel, .ios-return-panel {
       width: 100% !important;
-
       max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px) !important;
     }
 
-    /* ------------------------------------------------------------------
-       PRODUCT IMAGE — VIEW DETAILS LIGHTBOX
-       ------------------------------------------------------------------ */
-
+    /* ------------------------------------------------------------------       PRODUCT IMAGE — VIEW DETAILS LIGHTBOX       ------------------------------------------------------------------ */
     .ios-product-lightbox {
       position: fixed !important;
       inset: 0 !important;
-
       width: 100% !important;
-
       height: 100vh !important;
       height: 100dvh !important;
-
       max-height: 100dvh !important;
-
       padding-top: env(safe-area-inset-top);
       padding-bottom: env(safe-area-inset-bottom);
-
       overflow: hidden !important;
-
       background: var(--color-lightbox-background) !important;
     }
 
@@ -1322,7 +1159,6 @@ html {
     }
   }
 }
-
 
 /* Status and utility fallbacks for legacy components. */
 .bg-success {
@@ -1365,11 +1201,8 @@ html {
   color: var(--color-brand-accent);
 }
 
-/* Single unlayered CTA definitions.
-   Unlayered rules outrank Tailwind utilities without !important overrides. */
-.brand-button,
-.brand-gold-button,
-.brand-outline-button {
+/* Single unlayered CTA definitions.   Unlayered rules outrank Tailwind utilities without !important overrides. */
+.brand-button, .brand-gold-button, .brand-outline-button {
   display: inline-flex;
   min-height: 44px;
   align-items: center;
@@ -1429,23 +1262,17 @@ html {
   transform: translateY(-1px);
 }
 
-.brand-button:active:not(:disabled),
-.brand-outline-button:active:not(:disabled),
-.brand-gold-button:active:not(:disabled) {
+.brand-button:active:not(:disabled), .brand-outline-button:active:not(:disabled), .brand-gold-button:active:not(:disabled) {
   transform: translateY(0) scale(0.99);
 }
 
-.brand-button:focus-visible,
-.brand-outline-button:focus-visible,
-.brand-gold-button:focus-visible {
+.brand-button:focus-visible, .brand-outline-button:focus-visible, .brand-gold-button:focus-visible {
   outline: 3px solid var(--color-focus-ring);
   outline-offset: 3px;
   box-shadow: 0 0 0 5px color-mix(in srgb, var(--color-focus-ring) 20%, transparent);
 }
 
-.brand-button:disabled,
-.brand-outline-button:disabled,
-.brand-gold-button:disabled {
+.brand-button:disabled, .brand-outline-button:disabled, .brand-gold-button:disabled {
   cursor: not-allowed;
   opacity: 0.52;
   box-shadow: none;
@@ -1453,17 +1280,13 @@ html {
 }
 
 /* Generic field focus and error state: applies to existing modal forms too. */
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
+input:focus-visible, select:focus-visible, textarea:focus-visible {
   border-color: var(--color-brand-primary);
   outline: 3px solid var(--color-focus-ring);
   outline-offset: 2px;
 }
 
-input[aria-invalid="true"],
-textarea[aria-invalid="true"],
-select[aria-invalid="true"] {
+input[aria-invalid="true"], textarea[aria-invalid="true"], select[aria-invalid="true"] {
   border-color: var(--color-error);
 }
 
@@ -1494,5 +1317,169 @@ select[aria-invalid="true"] {
     gap: 0.25rem;
     font-size: 0.625rem;
     letter-spacing: 0.025em;
+  }
+}
+
+/* Breathing-room homepage typography and mobile layout tokens. */
+.home-breathing-room {
+  font-family: "Jost", sans-serif;
+}
+
+.home-mobile-header {
+  font-family: "Jost", sans-serif;
+}
+
+.home-handpicked-section {
+  padding-top: 44px;
+  padding-bottom: 44px;
+}
+
+.home-handpicked-swiper {
+  padding-top: 18px;
+}
+
+@media (min-width: 768px) {
+  .home-handpicked-section {
+    padding-top: 64px;
+    padding-bottom: 64px;
+  }
+}
+
+/* Premium editorial headings use the Kankana Silks brand palette. */
+.home-section-heading {
+  padding-top: 0.25rem;
+}
+
+.home-section-heading__eyebrow {
+  max-width: 38rem;
+  margin: 0 auto 0.55rem;
+  color: var(--color-brand-primary, #653536);
+  font-family: "Jost", sans-serif;
+  font-size: 0.7rem;
+  font-weight: 500;
+  line-height: 1.55;
+  letter-spacing: 0.035em;
+}
+
+.home-section-heading__title {
+  margin: 0;
+  color: var(--color-brand-primary, #653536);
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: clamp(2.1rem, 5vw, 3.6rem);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+
+.home-section-heading__ornament {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  width: min(100%, 11rem);
+  margin: 0.9rem auto 0.7rem;
+  color: var(--color-brand-primary, #653536);
+}
+
+.home-section-heading__ornament span {
+  display: block;
+  flex: 1;
+  border-top: 2px dotted currentColor;
+  opacity: 0.72;
+}
+
+.home-section-heading__ornament i {
+  display: block;
+  width: 11px;
+  height: 11px;
+  flex: 0 0 11px;
+  border: 1.5px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.home-section-heading__ornament b {
+  display: block;
+  width: 9px;
+  height: 9px;
+  flex: 0 0 9px;
+  background: currentColor;
+  transform: rotate(45deg);
+}
+
+.home-handpicked-swiper {
+  padding-top: 0.5rem;
+  padding-bottom: 0.75rem;
+}
+
+.home-handpicked-swiper .swiper-slide {
+  height: auto;
+}
+
+@media (min-width: 768px) {
+  .home-section-heading__eyebrow {
+    margin-bottom: 0.65rem;
+    font-size: 0.82rem;
+  }
+
+  .home-section-heading__ornament {
+    margin-top: 1.1rem;
+    margin-bottom: 0.85rem;
+  }
+}
+
+/* Storefront typography: quiet, modern, and consistent across all sections. */
+.home-section-heading {
+  width: 100%;
+  max-width: none;
+  margin: 0 auto clamp(1.5rem, 4vw, 2.75rem);
+  padding: 0 1rem;
+}
+
+.home-section-heading__eyebrow {
+  margin: 0 auto 0.45rem;
+  color: #666;
+  font-family: "Jost", Arial, sans-serif;
+  font-size: clamp(0.62rem, 1.8vw, 0.72rem);
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.home-section-heading__title,
+.home-section-title {
+  display: block;
+  width: 100%;
+  margin: 0;
+  color: #171717 !important;
+  font-family: "Jost", Arial, sans-serif !important;
+  font-size: clamp(1.12rem, 5.2vw, 2.25rem) !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.035em !important;
+  white-space: nowrap !important;
+  text-wrap: nowrap !important;
+}
+
+.home-section-title {
+  text-align: center;
+}
+
+.home-editorial-title {
+  font-family: "Jost", Arial, sans-serif !important;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+@media (min-width: 768px) {
+  .home-section-heading__eyebrow {
+    margin-bottom: 0.6rem;
+    font-size: 0.72rem;
+  }
+
+  .home-section-heading__title,
+  .home-section-title {
+    font-size: clamp(2rem, 3vw, 2.35rem) !important;
   }
 }

@@ -70,7 +70,7 @@ export default function CollectionsSection() {
           viewport={{ once: false, margin: "-100px" }}
           className="text-center mb-16"
         >
-          <h2 className="text-5xl md:text-6xl font-light mb-6 text-foreground text-balance">Curated Collections</h2>
+          <h2 className="home-section-title mb-8">Curated Collections</h2>
           <div className="w-12 h-px bg-accent mx-auto" />
         </motion.div>
 

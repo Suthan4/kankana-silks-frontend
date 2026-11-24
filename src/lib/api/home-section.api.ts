@@ -34,6 +34,7 @@ export interface SectionMedia {
   mobileUrl?: string | null;
   thumbnailUrl?: string | null;
   title?: string | null;
+  linkUrl?: string | null;
   altText?: string | null;
   overlayTitle?: string | null;
   overlaySubtitle?: string | null;
@@ -94,6 +95,7 @@ export interface HomeSection {
   media: SectionMedia[];
   ctaButtons: CTAButton[];
   products: Product[];
+  productLinks?: { productId: string; title?: string | null; linkUrl?: string | null; order: number }[] | null;
   categories: Category[];
   createdAt: string;
   updatedAt: string;

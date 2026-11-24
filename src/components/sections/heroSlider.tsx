@@ -1,84 +1,37 @@
 "use client";
 
 import { HomeSection } from "@/lib/api/home-section.api";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { A11y, Autoplay, Keyboard } from "swiper/modules";
+import type { Swiper as SwiperType } from "swiper";
+import "swiper/css";
 import SmartImage from "../common/smartImage";
 
 const AUTOPLAY_MS = 5000;
-const MIN_SWIPE_DISTANCE = 50;
 
 function HeroSlider({ section }: { section: HomeSection }) {
   const slides = section.media ?? [];
   const slideCount = slides.length;
 
+  const swiperRef = useRef<SwiperType | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
-  // Touch tracking lives in refs: storing it in state re-rendered the whole
-  // slider (and its full-screen images) on every touchmove, which janks on iOS.
-  const touchStartX = useRef<number | null>(null);
-  const touchEndX = useRef<number | null>(null);
-
-  const handleNext = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % slideCount);
-  }, [slideCount]);
-
-  const handlePrev = useCallback(() => {
-    setCurrentIndex((prev) => (prev - 1 + slideCount) % slideCount);
-  }, [slideCount]);
-
-  const goToSlide = (index: number) => {
-    setCurrentIndex(index);
-    setIsAutoPlaying(false);
-  };
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    setIsAutoPlaying(false);
-    touchEndX.current = null;
-    touchStartX.current = e.targetTouches[0].clientX;
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.targetTouches[0].clientX;
-  };
-
-  const onTouchEnd = () => {
-    if (touchStartX.current === null || touchEndX.current === null) return;
-
-    const distance = touchStartX.current - touchEndX.current;
-    touchStartX.current = null;
-    touchEndX.current = null;
-
-    if (distance > MIN_SWIPE_DISTANCE) {
-      handleNext(); // swipe left -> next
-    } else if (distance < -MIN_SWIPE_DISTANCE) {
-      handlePrev(); // swipe right -> prev
-    }
-  };
-
-  // Auto-play. currentIndex is a dependency so a manual change restarts the timer.
+  // Play / pause button (desktop). Swiper owns the timer.
   useEffect(() => {
-    if (!isAutoPlaying || slideCount <= 1) return;
-
-    const interval = setInterval(handleNext, AUTOPLAY_MS);
-    return () => clearInterval(interval);
-  }, [isAutoPlaying, currentIndex, slideCount, handleNext]);
-
-  // Keyboard navigation
-  useEffect(() => {
-    if (slideCount <= 1) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") handlePrev();
-      if (e.key === "ArrowRight") handleNext();
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [slideCount, handleNext, handlePrev]);
+    const swiper = swiperRef.current;
+    if (!swiper?.autoplay) return;
+    if (isAutoPlaying) swiper.autoplay.start();
+    else swiper.autoplay.stop();
+  }, [isAutoPlaying]);
 
   // Hooks above must run on every render, so this early return stays below them.
   if (slideCount === 0) return null;
+
+  const hasMultiple = slideCount > 1;
+  // Swiper's loop needs 3+ slides to look right; with 2 we rewind instead.
+  const useLoop = slideCount > 2;
 
   return (
     <section
@@ -88,25 +41,38 @@ function HeroSlider({ section }: { section: HomeSection }) {
       className="relative w-full h-svh min-h-[600px] overflow-hidden"
       style={{ backgroundColor: section.backgroundColor }}
     >
-      {/* Slides */}
-      <div
-        className="
-  relative w-full h-full
-  touch-pan-y
-  select-none
-  overscroll-x-contain
-"
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
+      <Swiper
+        modules={[Autoplay, Keyboard, A11y]}
+        className="h-full w-full select-none"
+        slidesPerView={1}
+        speed={600}
+        // Swipe settings: touch drag on mobile, mouse drag on desktop.
+        allowTouchMove={hasMultiple}
+        simulateTouch={hasMultiple}
+        grabCursor={hasMultiple}
+        threshold={5}
+        touchStartPreventDefault={false}
+        loop={hasMultiple && useLoop}
+        rewind={hasMultiple && !useLoop}
+        keyboard={{ enabled: hasMultiple }}
+        autoplay={
+          hasMultiple
+            ? {
+                delay: AUTOPLAY_MS,
+                // Keep autoplay going after a swipe; the pause button and
+                // hover-pause still work.
+                disableOnInteraction: false,
+                pauseOnMouseEnter: true,
+              }
+            : false
+        }
+        onSwiper={(swiper) => {
+          swiperRef.current = swiper;
+        }}
+        onSlideChange={(swiper) => setCurrentIndex(swiper.realIndex)}
       >
         {slides.map((slide, index) => (
-          <div
-            key={slide.id}
-            className="hero-slide"
-            data-active={index === currentIndex}
-            aria-hidden={index !== currentIndex}
-          >
+          <SwiperSlide key={slide.id} className="relative !h-full">
             {slide.type === "IMAGE" ? (
               <SmartImage
                 src={slide.url}
@@ -118,6 +84,7 @@ function HeroSlider({ section }: { section: HomeSection }) {
                 // when first shown, which flashes blank on iOS mid-transition.
                 loading="eager"
                 className="object-cover"
+                draggable={false}
               />
             ) : (
               <video
@@ -132,7 +99,7 @@ function HeroSlider({ section }: { section: HomeSection }) {
             )}
 
             {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-white/75 via-white/20 to-transparent" />
 
             {/* Content overlay */}
             {(slide.overlayTitle || slide.overlaySubtitle) && (
@@ -143,14 +110,14 @@ function HeroSlider({ section }: { section: HomeSection }) {
                     : "justify-center"
                 } items-center text-center px-4 md:px-8`}
               >
-                <div className="hero-text max-w-5xl mx-auto space-y-4 md:space-y-6">
+                <div className="hero-text mx-auto max-w-5xl space-y-3 px-5 py-4 text-center sm:space-y-4 sm:px-8 sm:py-6">
                   {slide.overlayTitle && (
-                    <h1 className="text-4xl md:text-6xl lg:text-7xl xl:text-8xl font-futura-bold text-white tracking-tight leading-tight text-shadow-hero">
+                    <h1 className="home-editorial-title text-2xl font-semibold uppercase leading-tight tracking-[0.08em] text-white text-shadow-hero sm:text-4xl lg:text-5xl">
                       {slide.overlayTitle}
                     </h1>
                   )}
                   {slide.overlaySubtitle && (
-                    <p className="text-lg md:text-2xl lg:text-3xl text-white/90 max-w-3xl mx-auto leading-relaxed text-shadow-hero-sm">
+                    <p className="mx-auto max-w-3xl text-sm leading-relaxed text-white/90 text-shadow-hero-sm sm:text-base lg:text-lg">
                       {slide.overlaySubtitle}
                     </p>
                   )}
@@ -186,18 +153,16 @@ function HeroSlider({ section }: { section: HomeSection }) {
                 </div>
               </div>
             )}
-          </div>
+          </SwiperSlide>
         ))}
-      </div>
+      </Swiper>
 
       {/* Navigation Controls - only show if multiple slides */}
-      {/* Navigation Controls */}
-      {slides.length > 1 && (
+      {hasMultiple && (
         <>
           {/* DESKTOP ONLY ARROWS */}
           <button
-            onClick={handlePrev}
-            onMouseEnter={() => setIsAutoPlaying(false)}
+            onClick={() => swiperRef.current?.slidePrev()}
             className="
         hidden md:flex
         absolute left-6 top-1/2 -translate-y-1/2 z-30
@@ -230,8 +195,7 @@ function HeroSlider({ section }: { section: HomeSection }) {
           </button>
 
           <button
-            onClick={handleNext}
-            onMouseEnter={() => setIsAutoPlaying(false)}
+            onClick={() => swiperRef.current?.slideNext()}
             className="
         hidden md:flex
         absolute right-6 top-1/2 -translate-y-1/2 z-30
@@ -264,7 +228,7 @@ function HeroSlider({ section }: { section: HomeSection }) {
           </button>
 
           {/* MOBILE SWIPE INDICATOR */}
-          <div className="md:hidden absolute bottom-24 left-1/2 -translate-x-1/2 z-30">
+          <div className="pointer-events-none md:hidden absolute bottom-24 left-1/2 -translate-x-1/2 z-30">
             <div
               className="
         px-4 py-1.5
@@ -291,7 +255,10 @@ function HeroSlider({ section }: { section: HomeSection }) {
             {slides.map((_, index) => (
               <button
                 key={index}
-                onClick={() => goToSlide(index)}
+                onClick={() => {
+                  if (useLoop) swiperRef.current?.slideToLoop(index);
+                  else swiperRef.current?.slideTo(index);
+                }}
                 className={`
             rounded-full
             transition-[width,height,background-color] duration-500
@@ -302,13 +269,14 @@ function HeroSlider({ section }: { section: HomeSection }) {
             }
           `}
                 aria-label={`Go to slide ${index + 1}`}
+                aria-current={index === currentIndex}
               />
             ))}
           </div>
 
           {/* AUTOPLAY BUTTON DESKTOP ONLY */}
           <button
-            onClick={() => setIsAutoPlaying(!isAutoPlaying)}
+            onClick={() => setIsAutoPlaying((v) => !v)}
             className="
         hidden md:flex
         absolute bottom-10 right-8 z-30
@@ -357,8 +325,7 @@ function HeroSlider({ section }: { section: HomeSection }) {
       )}
 
       {/* Scroll indicator */}
-      <div className="hidden md:block absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
-        {" "}
+      <div className="pointer-events-none hidden md:block absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
         <svg
           className="w-6 h-6 text-white opacity-70"
           fill="none"
