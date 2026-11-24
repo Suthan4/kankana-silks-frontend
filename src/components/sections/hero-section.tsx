@@ -302,7 +302,7 @@ export default function HeroSection({
 
                   {/* Bottom gradient keeps the text readable. */}
                   <div
-                    className="pointer-events-none absolute inset-x-0 bottom-0 h-32 sm:h-44 md:h-56"
+                    className="absolute inset-0"
                     style={{
                       background:
                         "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 25%, rgba(0,0,0,0.10) 100%)",
