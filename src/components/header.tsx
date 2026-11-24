@@ -51,6 +51,7 @@ function Header() {
     hasHeroBehindHeader,
     isScrolled,
     showNav,
+    showMobileHeader,
     navBottom,
     navRef,
     handleHeaderEnter,
@@ -155,6 +156,7 @@ function Header() {
         location={locationState.location}
         onOpenLocation={() => setLocationModalOpen(true)}
         onOpenSearch={() => setIsSearchOpen(true)}
+        isVisible={showMobileHeader || mobileMenuOpen || locationModalOpen}
       />
       <MobileLocationSheet
         open={locationModalOpen}
