@@ -6,7 +6,7 @@ import SmartImage from "../common/smartImage";
 import HomeSectionHeading from "../common/homeSectionHeading";
 import type { HomeSection, SectionMedia } from "@/lib/api/home-section.api";
 
-function MediaCard({ media, index }: { media: SectionMedia; index: number }) {
+function MediaCard({ media }: { media: SectionMedia }) {
   const href = media.linkUrl?.trim();
   const isExternal = Boolean(href && /^https?:\/\//i.test(href));
   const content = (
@@ -38,10 +38,15 @@ function MediaCard({ media, index }: { media: SectionMedia; index: number }) {
         </span>
       )}
       {href && (
-        <span className="absolute right-3 top-3 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-neutral-900 shadow-lg transition-transform group-hover:scale-105 sm:h-12 sm:w-12">
-          <ShoppingBag size={19} strokeWidth={1.7} />
-          <span className="sr-only">Shop this look</span>
-        </span>
+        isExternal ? (
+          <a href={href} target="_blank" rel="noopener noreferrer" aria-label="Shop this look" className="absolute right-3 top-3 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-neutral-900 shadow-lg transition-transform hover:scale-105 sm:h-12 sm:w-12">
+            <ShoppingBag size={19} strokeWidth={1.7} />
+          </a>
+        ) : (
+          <Link href={href} aria-label="Shop this look" className="absolute right-3 top-3 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-neutral-900 shadow-lg transition-transform hover:scale-105 sm:h-12 sm:w-12">
+            <ShoppingBag size={19} strokeWidth={1.7} />
+          </Link>
+        )
       )}
       {media.title && (
         <span className="absolute bottom-4 left-4 right-4 line-clamp-2 text-left text-sm font-medium tracking-wide text-white drop-shadow-md sm:text-base">
@@ -54,7 +59,7 @@ function MediaCard({ media, index }: { media: SectionMedia; index: number }) {
   const className =
     "group relative block aspect-[3/4] min-w-0 overflow-hidden rounded-[1.35rem] bg-neutral-100 shadow-[0_8px_24px_rgba(0,0,0,0.07)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-neutral-900";
 
-  if (!href) return <div className={className}>{content}</div>;
+  if (media.type === "VIDEO" || !href) return <div className={className}>{content}</div>;
   if (isExternal) {
     return (
       <a className={className} href={href} target="_blank" rel="noopener noreferrer" aria-label={media.title || "View Instagram post"}>
@@ -94,7 +99,7 @@ export default function InstagramTrendsSection({ section }: { section: HomeSecti
         )}
         <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4 lg:gap-6">
           {media.map((item, index) => (
-            <MediaCard key={item.id || item.url || index} media={item} index={index} />
+            <MediaCard key={item.id || item.url || index} media={item} />
           ))}
         </div>
       </div>
