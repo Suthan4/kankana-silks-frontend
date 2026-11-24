@@ -30,6 +30,7 @@ function ProductGrid({
   const [swiper, setSwiper] = useState<SwiperType | null>(null);
   const [isBeginning, setIsBeginning] = useState(true);
   const [isEnd, setIsEnd] = useState(true);
+  const [activeProductIndex, setActiveProductIndex] = useState(0);
 
   if (!section.products?.length) return null;
 
@@ -43,6 +44,7 @@ function ProductGrid({
   const sync = (s: SwiperType) => {
     setIsBeginning(s.isBeginning);
     setIsEnd(s.isEnd);
+    setActiveProductIndex(s.realIndex);
   };
 
   const scrollable = !(isBeginning && isEnd);
@@ -225,6 +227,27 @@ function ProductGrid({
               );
             })}
           </Swiper>
+
+          {isHandpicked && products.length > 2 && (
+            <div className="mt-4 flex items-center justify-center gap-3 md:hidden" aria-label="Product carousel navigation">
+              <span className="text-[11px] font-medium tracking-wide text-warm-gray-500">
+                Swipe to explore
+              </span>
+              <div className="flex items-center gap-1.5">
+                {Array.from({ length: Math.ceil(products.length / 2) }).map((_, pageIndex) => (
+                  <button
+                    key={pageIndex}
+                    type="button"
+                    onClick={() => swiper?.slideTo(pageIndex * 2)}
+                    aria-label={`Show product group ${pageIndex + 1}`}
+                    aria-current={Math.floor(activeProductIndex / 2) === pageIndex ? "true" : undefined}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${Math.floor(activeProductIndex / 2) === pageIndex ? "w-5 bg-brand-primary" : "w-1.5 bg-brand-primary/25 hover:bg-brand-primary/55"}`}
+                  />
+                ))}
+              </div>
+              <span aria-hidden="true" className="text-xs text-brand-primary">→</span>
+            </div>
+          )}
         </div>
       </div>
     </section>

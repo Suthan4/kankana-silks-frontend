@@ -1,5 +1,3 @@
-import type { CSSProperties } from "react";
-
 interface HomeSectionHeadingProps {
   title?: string;
   subtitle?: string;
@@ -15,19 +13,21 @@ export default function HomeSectionHeading({
   subtitle,
   showTitle = true,
   showSubtitle = true,
-  textColor = "#4A2C2E",
   className = "",
 }: HomeSectionHeadingProps) {
   if ((!showTitle || !title) && (!showSubtitle || !subtitle)) return null;
 
-  const headingStyle: CSSProperties = { color: textColor };
-
   return (
     <header className={`home-section-heading mx-auto mb-8 max-w-4xl px-4 text-center md:mb-12 ${className}`}>
+      {showSubtitle && subtitle && (
+        <p className="home-section-heading__eyebrow mx-auto text-balance">
+          {subtitle}
+        </p>
+      )}
+
       {showTitle && title && (
         <>
-          <p className="home-section-heading__eyebrow">GET CELEBRATION-READY</p>
-          <h2 className="home-section-heading__title text-balance" style={headingStyle}>
+          <h2 className="home-section-heading__title text-balance">
             {title}
           </h2>
           <div className="home-section-heading__ornament" aria-hidden="true">
@@ -38,12 +38,6 @@ export default function HomeSectionHeading({
             <span />
           </div>
         </>
-      )}
-
-      {showSubtitle && subtitle && (
-        <p className="home-section-heading__subtitle mx-auto text-balance" style={headingStyle}>
-          {subtitle}
-        </p>
       )}
     </header>
   );
