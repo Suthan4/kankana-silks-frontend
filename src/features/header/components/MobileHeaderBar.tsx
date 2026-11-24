@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ChevronDown, MapPin, Menu, Search, X } from "lucide-react";
+import { MapPin, Menu, X } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import type { HeaderLocation } from "../types";
 
@@ -29,15 +29,15 @@ export function MobileHeaderBar({
   return (
     <motion.header
       initial={false}
-      className="fixed left-0 right-0 top-0 z-40 bg-white shadow-md md:hidden"
+      className="home-mobile-header fixed left-0 right-0 top-0 z-40 bg-[#FDFBF9] md:hidden"
     >
-      <div className="flex items-center justify-between px-4 pt-3">
+      <div className="flex h-16 items-center justify-between px-5 pt-0">
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={() => setMobileMenuOpen((open) => !open)}
           aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileMenuOpen}
-          className="p-2"
+          className="-ml-2 flex h-11 w-11 items-center justify-center p-0"
         >
           {mobileMenuOpen ? (
             <X className="h-6 w-6 text-brand-primary" />
@@ -48,7 +48,7 @@ export function MobileHeaderBar({
         <Link
           href="/"
           aria-label="Kankana Silks home"
-          className="relative block h-9 w-[120px]"
+          className="relative block h-10 w-[180px]"
         >
           <Image
             src="/removed-bg-logo.png"
@@ -59,24 +59,24 @@ export function MobileHeaderBar({
             className="object-contain"
           />
         </Link>
-        <div className="w-10" />
+        <div className="w-11" />
       </div>
 
       <div
-        className={`px-4 pb-3 pt-2.5 transition-opacity duration-300 ${
+        className={`px-5 pb-0 pt-0 transition-opacity duration-300 ${
           isProductDetailPage || isCategoryPage ? "hidden" : ""
         }`}
       >
         <motion.div
           initial={false}
-          className="flex items-stretch overflow-hidden rounded-full border border-gray-200 bg-gray-50 shadow-sm"
+          className="flex h-12 items-stretch overflow-hidden rounded-full border border-[#EADFDB] bg-white shadow-none"
         >
           <button
             onClick={onOpenLocation}
-            className="relative flex max-w-[42%] shrink-0 items-center gap-1.5 py-2.5 pl-3.5 pr-3 active:bg-gray-100"
+            className="relative flex max-w-[42%] shrink-0 items-center gap-2 py-0 pl-4 pr-3 active:bg-gray-50"
           >
             <span className="relative flex-shrink-0">
-              <MapPin className="h-4 w-4 text-gray-600" />
+              <MapPin className="h-5 w-5 text-[#5E3538]" />
               {location?.isServiceable !== undefined && (
                 <span
                   className={`absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-white ${
@@ -85,18 +85,16 @@ export function MobileHeaderBar({
                 />
               )}
             </span>
-            <span className="truncate text-xs font-semibold text-gray-900">
+            <span className="truncate text-sm font-medium text-[#4A2C2E]">
               {location ? location.pincode : "Set location"}
             </span>
-            <ChevronDown className="h-3 w-3 flex-shrink-0 text-gray-400" />
           </button>
-          <div className="my-2 w-px bg-gray-200" />
+          <div className="my-2 w-px bg-[#D9CCC8]" />
           <button
             onClick={onOpenSearch}
-            className="flex flex-1 items-center gap-2 px-3 py-2.5 text-left active:bg-gray-100"
+            className="flex flex-1 items-center px-3 py-0 text-left active:bg-gray-50"
           >
-            <Search className="h-4 w-4 flex-shrink-0 text-gray-400" />
-            <span className="truncate text-sm text-gray-600">
+            <span className="truncate text-sm text-[#7A6466]">
               Search sarees, silks…
             </span>
           </button>

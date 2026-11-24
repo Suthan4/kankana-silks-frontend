@@ -112,7 +112,10 @@ export default function LandingPage({
 
     // Products
     if (hasProducts) {
-      if (layout === "carousel") {
+      if (
+        layout === "carousel" &&
+        displayTitle.trim().toLowerCase() !== "handpicked for you"
+      ) {
         return (
           <ProductCarousel
             key={section.id}
@@ -220,7 +223,7 @@ export default function LandingPage({
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="home-breathing-room min-h-screen">
       {banners_data?.length > 0 && (
         <HeroSection
           banners={banners_data}

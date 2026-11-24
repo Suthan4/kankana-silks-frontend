@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
 /* =========================================
@@ -1494,5 +1495,29 @@ select[aria-invalid="true"] {
     gap: 0.25rem;
     font-size: 0.625rem;
     letter-spacing: 0.025em;
+  }
+}
+/* Breathing-room homepage typography and mobile layout tokens. */
+.home-breathing-room {
+  font-family: "Jost", sans-serif;
+}
+
+.home-mobile-header {
+  font-family: "Jost", sans-serif;
+}
+
+.home-handpicked-section {
+  padding-top: 44px;
+  padding-bottom: 44px;
+}
+
+.home-handpicked-swiper {
+  padding-top: 18px;
+}
+
+@media (min-width: 768px) {
+  .home-handpicked-section {
+    padding-top: 64px;
+    padding-bottom: 64px;
   }
 }

@@ -6,11 +6,15 @@ import "swiper/css";
 import type { Swiper as SwiperType } from "swiper";
 import type { HomeSection } from "@/lib/api/home-section.api";
 import SmartImage from "../common/smartImage";
+import Link from "next/link";
+import WishlistButton from "@/components/ui/WishlistButton";
 
 // Keep slide dimensions stable before and after Swiper initialisation.
 // The width already accounts for the gap between mobile slides.
 const SLIDE_CLASS =
   "!w-[calc((100%-0.75rem)/2)] md:!w-[240px] lg:!w-[270px] xl:!w-[290px]";
+
+const HANDPICKED_SLIDE_CLASS = "!w-[150px] md:!w-[240px] lg:!w-[270px] xl:!w-[290px]";
 
 const arrowClass =
   "absolute top-1/3 z-20 hidden h-11 w-11 items-center justify-center rounded-full bg-white shadow-lg transition hover:scale-105 md:flex";
@@ -28,6 +32,8 @@ function ProductGrid({
 
   if (!section.products?.length) return null;
 
+  const isHandpicked = section.title.trim().toLowerCase() === "handpicked for you";
+
   const products =
     section.limit > 0
       ? section.products.slice(0, section.limit)
@@ -42,28 +48,36 @@ function ProductGrid({
 
   return (
     <section
-      className="relative overflow-hidden pb-10 pt-10 md:pt-14"
-      style={{ backgroundColor: section.backgroundColor }}
+      className={`relative overflow-hidden pb-10 pt-10 md:pt-14 ${isHandpicked ? "home-handpicked-section" : ""}`}
+      style={{ backgroundColor: isHandpicked ? "#FDFBF9" : section.backgroundColor }}
     >
-      <div className="relative mx-auto w-full max-w-[1600px] px-4 md:px-6 lg:px-10 2xl:px-14">
-        {(section.showTitle || section.showSubtitle) && (
-          <div className="mb-6 text-center md:mb-10">
-            {section.showTitle && (
+      <div className={`relative mx-auto w-full max-w-[1600px] ${isHandpicked ? "px-5 md:px-6 lg:px-10 2xl:px-14" : "px-4 md:px-6 lg:px-10 2xl:px-14"}`}>
+        {(isHandpicked || section.showTitle || section.showSubtitle) && (
+          <div className={isHandpicked ? "mb-0 flex items-baseline justify-between text-left" : "mb-6 text-center md:mb-10"}>
+            {(isHandpicked || section.showTitle) && (
               <h2
-                className="mb-2 min-h-8 text-2xl font-semibold leading-8 tracking-tight md:min-h-10 md:text-4xl md:leading-10"
-                style={{ color: section.textColor }}
+                className={isHandpicked ? "mb-0 text-[26px] font-semibold leading-tight tracking-normal md:text-4xl" : "mb-2 min-h-8 text-2xl font-semibold leading-8 tracking-tight md:min-h-10 md:text-4xl md:leading-10"}
+                style={{ color: isHandpicked ? "#5E3538" : section.textColor, ...(isHandpicked ? { fontFamily: "'Cormorant Garamond', serif" } : {}) }}
               >
                 {section.title}
               </h2>
             )}
 
-            {section.showSubtitle && section.subtitle && (
+            {!isHandpicked && section.showSubtitle && section.subtitle && (
               <p
                 className="mx-auto min-h-6 max-w-3xl text-base leading-relaxed opacity-80 md:text-xl"
                 style={{ color: section.textColor }}
               >
                 {section.subtitle}
               </p>
+            )}
+            {isHandpicked && (
+              <Link
+                href="/shop"
+                className="shrink-0 text-[13px] font-medium text-[#5E3538] no-underline"
+              >
+                View all <span aria-hidden="true">→</span>
+              </Link>
             )}
           </div>
         )}
@@ -116,7 +130,7 @@ function ProductGrid({
           )}
 
           <Swiper
-            className="[&_.swiper-wrapper]:gap-3 md:[&_.swiper-wrapper]:gap-5 lg:[&_.swiper-wrapper]:gap-6"
+            className={`[&_.swiper-wrapper]:gap-3.5 md:[&_.swiper-wrapper]:gap-5 lg:[&_.swiper-wrapper]:gap-6 ${isHandpicked ? "home-handpicked-swiper" : ""}`}
             slidesPerView="auto"
             slidesPerGroupAuto
             spaceBetween={0}
@@ -142,12 +156,13 @@ function ProductGrid({
                   : 0;
 
               return (
-                <SwiperSlide key={product.id} className={SLIDE_CLASS}>
-                  <a
-                    href={`/${product.category.slug}/${product.slug}`}
-                    className="group flex h-full min-w-0 flex-col"
-                  >
-                    <div className="relative aspect-[4/5] w-full overflow-hidden bg-gray-50">
+                <SwiperSlide key={product.id} className={isHandpicked ? HANDPICKED_SLIDE_CLASS : SLIDE_CLASS}>
+                  <div className="group relative flex h-full min-w-0 flex-col">
+                    <Link
+                      href={`/${product.category.slug}/${product.slug}`}
+                      className="flex h-full min-w-0 flex-col"
+                    >
+                    <div className={`relative aspect-[4/5] w-full overflow-hidden bg-gray-50 ${isHandpicked ? "rounded-xl" : ""}`}>
                       {image ? (
                         <SmartImage
                           src={image}
@@ -184,15 +199,15 @@ function ProductGrid({
                     </div>
 
                     <div
-                      className="flex flex-1 flex-col pt-3"
+                      className={`flex flex-1 flex-col ${isHandpicked ? "pt-2.5" : "pt-3"}`}
                       style={{ color: section.textColor }}
                     >
-                      <h3 className="line-clamp-2 text-sm font-medium leading-5 tracking-tight transition-opacity group-hover:opacity-80 md:text-[15px]">
+                      <h3 className={`line-clamp-2 font-medium leading-5 tracking-tight transition-opacity group-hover:opacity-80 ${isHandpicked ? "text-[14px] md:text-[15px]" : "text-sm md:text-[15px]"}`}>
                         {product.name}
                       </h3>
 
-                      <div className="mt-auto flex flex-wrap items-baseline gap-x-2 pt-1.5">
-                        <span className="text-base font-semibold tracking-tight">
+                      <div className="mt-auto flex flex-wrap items-baseline gap-x-2 pt-1">
+                        <span className={isHandpicked ? "text-[13px] font-normal tracking-normal text-[#7A6466] md:text-base md:font-semibold" : "text-base font-semibold tracking-tight"}>
                           ₹{sellingPrice.toLocaleString("en-IN")}
                         </span>
 
@@ -203,7 +218,13 @@ function ProductGrid({
                         )}
                       </div>
                     </div>
-                  </a>
+                    </Link>
+                    <WishlistButton
+                      productId={product.id}
+                      size="sm"
+                      className="absolute right-2 top-2 z-10 h-8 w-8 border-0 bg-black/10 text-white shadow-none backdrop-blur-sm hover:bg-black/20"
+                    />
+                  </div>
                 </SwiperSlide>
               );
             })}
