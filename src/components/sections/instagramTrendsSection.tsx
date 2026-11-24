@@ -2,13 +2,20 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ShoppingBag, Play, Pause, Loader2 } from "lucide-react";
+import { ShoppingBag, Play, Volume2, VolumeX, Loader2 } from "lucide-react";
 import SmartImage from "../common/smartImage";
 import HomeSectionHeading from "../common/homeSectionHeading";
 import type { HomeSection, SectionMedia } from "@/lib/api/home-section.api";
 
-// Only one video plays at a time (also saves mobile data).
-let currentlyPlaying: HTMLVideoElement | null = null;
+/**
+ * Card shape. Mobile is taller (closer to a reel) so cards feel bigger and
+ * tappable; from `sm` up it returns to the classic 3:4.
+ * Want it even taller? Try aspect-[9/16]. Shorter? Try aspect-[2/3].
+ */
+const CARD_ASPECT = "aspect-[9/14] sm:aspect-[3/4]";
+
+// Every mounted video, so unmuting one can mute the rest.
+const allVideos = new Set<HTMLVideoElement>();
 
 const MEDIA_ERROR_NAMES: Record<number, string> = {
   1: "ABORTED",
@@ -17,52 +24,43 @@ const MEDIA_ERROR_NAMES: Record<number, string> = {
   4: "SRC_NOT_SUPPORTED (bad codec, wrong content-type, or no Range support)",
 };
 
+function canAutoplay(): boolean {
+  if (typeof window === "undefined") return false;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+    return false;
+  const conn = (
+    navigator as Navigator & { connection?: { saveData?: boolean } }
+  ).connection;
+  if (conn?.saveData) return false;
+  return true;
+}
+
 /**
- * Cross-browser video card (Safari iOS/macOS, Edge, Chrome).
+ * Interactive, cross-browser video card (Safari iOS/macOS, Edge, Chrome).
  *
- * Loading strategy:
- *  1. Normal streaming via <video src>.
- *  2. If Safari rejects it (very common when the server has the wrong
- *     Content-Type or doesn't answer Range requests), download the file
- *     once, wrap it in a Blob typed as video/mp4, and play that instead.
- *     Blob playback needs no Range support and ignores the server's type.
- *  3. If that also fails (e.g. the codec itself is unsupported, or CORS blocks
- *     the download), show a clean "Open video" fallback instead of a broken icon.
+ *  - Plays muted automatically when it scrolls into view, pauses when it leaves.
+ *  - Tap the card to pause / resume. A large play button shows when paused.
+ *  - Sound toggle (top-left) and a thin progress bar (bottom).
+ *  - Loading: normal streaming first; if Safari rejects it, download once and
+ *    play from a video/mp4 Blob; if that fails too, show an "Open video" card.
  *
- * What code cannot fix: a file whose codec Safari can't decode (HEVC variants,
- * VP9, AV1, 10-bit). The console message below tells you exactly which case it is.
+ * Code cannot fix a file whose codec Safari can't decode (HEVC variants, VP9,
+ * AV1, 10-bit). The console message tells you exactly which case it is.
  */
 function VideoCard({ media }: { media: SectionMedia }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const progressRef = useRef<HTMLSpanElement>(null);
   const triedBlob = useRef(false);
   const blobUrl = useRef<string | null>(null);
   const playWhenReady = useRef(false);
+  const inView = useRef(false);
+  const userPaused = useRef(false);
 
   const [src, setSrc] = useState(`${media.url}#t=0.001`);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [hasStarted, setHasStarted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const [recovering, setRecovering] = useState(false);
   const [failed, setFailed] = useState(false);
-
-  // Runs on mount and again whenever the <video> is re-created (src change).
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.muted = true;
-    video.defaultMuted = true;
-    video.setAttribute("playsinline", "");
-    video.setAttribute("webkit-playsinline", "");
-    return () => {
-      if (currentlyPlaying === video) currentlyPlaying = null;
-    };
-  }, [src]);
-
-  // Free the downloaded blob when the card unmounts.
-  useEffect(() => {
-    return () => {
-      if (blobUrl.current) URL.revokeObjectURL(blobUrl.current);
-    };
-  }, []);
 
   const recoverWithBlob = useCallback(async () => {
     if (triedBlob.current) {
@@ -87,6 +85,62 @@ function VideoCard({ media }: { media: SectionMedia }) {
     }
   }, [media.url]);
 
+  const attemptPlay = useCallback(async () => {
+    const video = videoRef.current;
+    if (!video) return;
+    try {
+      await video.play();
+    } catch (err) {
+      const name = (err as DOMException)?.name;
+      if (name === "NotSupportedError") {
+        // Resume automatically once the recovered video is ready.
+        playWhenReady.current = true;
+        recoverWithBlob();
+      } else if (name !== "AbortError" && name !== "NotAllowedError") {
+        setFailed(true);
+      }
+    }
+  }, [recoverWithBlob]);
+
+  // Runs on mount and whenever the <video> is re-created (src change).
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = true;
+    video.defaultMuted = true;
+    video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
+    setIsMuted(true);
+    allVideos.add(video);
+
+    // Autoplay (muted) while at least 60% of the card is visible.
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        inView.current = entry.isIntersecting;
+        if (entry.isIntersecting) {
+          if (canAutoplay() && !userPaused.current) attemptPlay();
+        } else {
+          video.pause();
+        }
+      },
+      { threshold: 0.6 },
+    );
+    observer.observe(video);
+
+    return () => {
+      observer.disconnect();
+      allVideos.delete(video);
+    };
+  }, [src, attemptPlay]);
+
+  // Free the downloaded blob when the card unmounts.
+  useEffect(() => {
+    return () => {
+      if (blobUrl.current) URL.revokeObjectURL(blobUrl.current);
+    };
+  }, []);
+
   const handleError = useCallback(
     (e: React.SyntheticEvent<HTMLVideoElement>) => {
       const err = e.currentTarget.error;
@@ -99,34 +153,31 @@ function VideoCard({ media }: { media: SectionMedia }) {
     [media.url, recoverWithBlob],
   );
 
-  const togglePlay = useCallback(async () => {
+  const togglePlay = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
-
     if (!video.paused) {
+      userPaused.current = true;
       video.pause();
-      return;
+    } else {
+      userPaused.current = false;
+      attemptPlay();
     }
+  }, [attemptPlay]);
 
-    if (currentlyPlaying && currentlyPlaying !== video) {
-      currentlyPlaying.pause();
+  const toggleMute = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+    const nextMuted = !video.muted;
+    if (!nextMuted) {
+      // Only one video makes sound at a time.
+      allVideos.forEach((other) => {
+        if (other !== video) other.muted = true;
+      });
     }
-
-    try {
-      await video.play();
-      currentlyPlaying = video;
-      setHasStarted(true);
-    } catch (err) {
-      const name = (err as DOMException)?.name;
-      if (name === "NotSupportedError") {
-        // Remember the tap and resume once the recovered video is ready.
-        playWhenReady.current = true;
-        recoverWithBlob();
-      } else if (name !== "AbortError" && name !== "NotAllowedError") {
-        setFailed(true);
-      }
-    }
-  }, [recoverWithBlob]);
+    video.muted = nextMuted;
+  }, []);
 
   if (failed) {
     return (
@@ -163,25 +214,44 @@ function VideoCard({ media }: { media: SectionMedia }) {
         ref={videoRef}
         src={src}
         poster={media.thumbnailUrl || undefined}
-        className="absolute inset-0 h-full w-full object-cover"
-        controls={hasStarted}
+        className="absolute inset-0 h-full w-full cursor-pointer object-cover"
         muted
         loop
         playsInline
         preload="metadata"
+        onClick={togglePlay}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
+        onVolumeChange={(e) => setIsMuted(e.currentTarget.muted)}
         onError={handleError}
         onLoadedData={() => {
-          if (playWhenReady.current) {
+          if (
+            playWhenReady.current ||
+            (inView.current && canAutoplay() && !userPaused.current)
+          ) {
             playWhenReady.current = false;
-            togglePlay();
+            attemptPlay();
           }
         }}
-        onClick={() => {
-          if (!hasStarted) togglePlay();
+        onTimeUpdate={(e) => {
+          const v = e.currentTarget;
+          if (progressRef.current && v.duration) {
+            progressRef.current.style.transform = `scaleX(${v.currentTime / v.duration})`;
+          }
         }}
       />
+
+      {/* Large play button while paused */}
+      {!isPlaying && !recovering && (
+        <button
+          type="button"
+          onClick={togglePlay}
+          aria-label="Play video"
+          className="absolute left-1/2 top-1/2 z-10 inline-flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#4f2f2c] shadow-[0_8px_24px_rgba(0,0,0,0.3)] backdrop-blur-sm transition-transform active:scale-90"
+        >
+          <Play size={22} fill="currentColor" className="ml-0.5" />
+        </button>
+      )}
 
       {recovering && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/30">
@@ -189,21 +259,28 @@ function VideoCard({ media }: { media: SectionMedia }) {
         </div>
       )}
 
-      {/* Play / pause button */}
+      {/* Sound toggle */}
       <button
         type="button"
-        onClick={togglePlay}
-        aria-label={isPlaying ? "Pause video" : "Play video"}
-        className={`absolute left-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-opacity ${
-          isPlaying ? "opacity-70" : "opacity-100"
-        }`}
+        onClick={toggleMute}
+        aria-label={isMuted ? "Turn sound on" : "Turn sound off"}
+        aria-pressed={!isMuted}
+        className="absolute left-3 top-3 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-transform active:scale-90"
       >
-        {isPlaying ? (
-          <Pause size={14} fill="currentColor" />
-        ) : (
-          <Play size={14} fill="currentColor" />
-        )}
+        {isMuted ? <VolumeX size={17} /> : <Volume2 size={17} />}
       </button>
+
+      {/* Progress bar */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[3px] bg-white/25"
+      >
+        <span
+          ref={progressRef}
+          className="block h-full origin-left bg-white"
+          style={{ transform: "scaleX(0)" }}
+        />
+      </span>
     </>
   );
 }
@@ -240,7 +317,7 @@ function MediaCard({
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Shop this look"
-            className="absolute right-3 top-3 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-neutral-900 shadow-lg transition-transform hover:scale-105 sm:h-12 sm:w-12"
+            className="absolute right-3 top-3 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-neutral-900 shadow-lg transition-transform hover:scale-105 active:scale-90 sm:h-12 sm:w-12"
           >
             <ShoppingBag size={19} strokeWidth={1.7} />
           </a>
@@ -248,23 +325,22 @@ function MediaCard({
           <Link
             href={href}
             aria-label="Shop this look"
-            className="absolute right-3 top-3 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-neutral-900 shadow-lg transition-transform hover:scale-105 sm:h-12 sm:w-12"
+            className="absolute right-3 top-3 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-neutral-900 shadow-lg transition-transform hover:scale-105 active:scale-90 sm:h-12 sm:w-12"
           >
             <ShoppingBag size={19} strokeWidth={1.7} />
           </Link>
         ))}
       {media.title && (
-        <span className="pointer-events-none absolute bottom-4 left-4 right-4 line-clamp-2 text-left text-sm font-medium tracking-wide text-white drop-shadow-md sm:text-base">
+        <span className="pointer-events-none absolute bottom-5 left-4 right-4 line-clamp-2 text-left text-sm font-medium tracking-wide text-white drop-shadow-md sm:text-base">
           {media.title}
         </span>
       )}
     </>
   );
 
-  const className =
-    // transform-gpu + isolate: Safari otherwise ignores rounded corners
-    // (overflow-hidden) on video elements while they animate or play.
-    "group relative block aspect-[3/4] min-w-0 isolate transform-gpu overflow-hidden rounded-[1.35rem] bg-neutral-100 shadow-[0_8px_24px_rgba(0,0,0,0.07)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-neutral-900";
+  const className = `group relative block ${CARD_ASPECT} min-w-0 isolate transform-gpu overflow-hidden rounded-[1.35rem] bg-neutral-100 shadow-[0_8px_24px_rgba(0,0,0,0.07)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-neutral-900`;
+  // transform-gpu + isolate: Safari otherwise ignores rounded corners
+  // (overflow-hidden) on video elements while they animate or play.
 
   return (
     <div
