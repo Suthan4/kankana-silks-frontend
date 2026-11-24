@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import HeroSection from "./sections/hero-section";
 import CTASection from "./sections/cta-section";
+import { ShieldCheck, Truck, RefreshCw, Video } from "lucide-react";
 import homeSectionService, {
   type HomeSection,
   SectionType,
@@ -22,6 +23,40 @@ const AestheticFullImage = dynamic(
 const BannerSection = dynamic(() => import("./sections/bannerSection"));
 const InstagramTrendsSection = dynamic(() => import("./sections/instagramTrendsSection"));
 const CircularCollectionsSection = dynamic(() => import("./sections/circularCollectionsSection"));
+
+function TrustStrip() {
+  const benefits = [
+    { label: "Pure Silk Certified", Icon: ShieldCheck },
+    { label: "Free Shipping", Icon: Truck },
+    { label: "Easy Returns", Icon: RefreshCw },
+    { label: "Video Consultation", Icon: Video },
+  ];
+
+  return (
+    <section
+      aria-label="Shopping benefits"
+      className="relative z-[1] border-y border-[#eadfd6] bg-[#fbf8f4]"
+    >
+      <div className="mx-auto grid max-w-[1500px] grid-cols-2 divide-x divide-y divide-[#eadfd6] px-4 sm:grid-cols-4 sm:divide-y-0 sm:px-6 lg:px-10">
+        {benefits.map(({ label, Icon }) => (
+          <div
+            key={label}
+            className="flex min-h-[58px] items-center justify-center gap-2.5 px-2 py-3 text-center sm:min-h-[64px] sm:gap-3 sm:px-3 lg:py-3.5"
+          >
+            <Icon
+              aria-hidden="true"
+              className="h-[18px] w-[18px] shrink-0 text-[#68413d] sm:h-5 sm:w-5"
+              strokeWidth={1.6}
+            />
+            <span className="text-[11px] font-medium leading-tight tracking-[0.01em] text-[#292321] sm:text-xs lg:text-[13px]">
+              {label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 export default function LandingPage({
   initialSections,
@@ -245,6 +280,9 @@ export default function LandingPage({
           error={error}
         />
       )}
+
+      {/* Position 2: concise trust signals directly beneath the hero. */}
+      <TrustStrip />
 
       {/* Only render the wrapper (and its padding) when there's something to show */}
       {orderedSections.length > 0 && (
