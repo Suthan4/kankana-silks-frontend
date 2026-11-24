@@ -15,7 +15,7 @@ import HomeSectionHeading from "../common/homeSectionHeading";
 const SLIDE_CLASS =
   "!w-[calc((100%-0.75rem)/2)] md:!w-[240px] lg:!w-[270px] xl:!w-[290px]";
 
-const HANDPICKED_SLIDE_CLASS = "!w-[150px] md:!w-[240px] lg:!w-[270px] xl:!w-[290px]";
+const HANDPICKED_SLIDE_CLASS = "!w-[calc((100%-0.75rem)/2)] md:!w-[240px] lg:!w-[270px] xl:!w-[290px]";
 
 const arrowClass =
   "absolute top-1/3 z-20 hidden h-11 w-11 items-center justify-center rounded-full bg-white shadow-lg transition hover:scale-105 md:flex";
@@ -54,36 +54,24 @@ function ProductGrid({
     >
       <div className={`relative mx-auto w-full max-w-[1600px] ${isHandpicked ? "px-5 md:px-6 lg:px-10 2xl:px-14" : "px-4 md:px-6 lg:px-10 2xl:px-14"}`}>
         {(isHandpicked || section.showTitle || section.showSubtitle) && (
-          <div className={isHandpicked ? "mb-0 flex items-baseline justify-between text-left" : "mb-6 text-center md:mb-10"}>
-            {(isHandpicked || section.showTitle) && (
-              <h2
-                className={isHandpicked ? "home-section-heading__title mb-0 text-left text-[27px] md:text-4xl" : "mb-2 min-h-8 text-2xl font-semibold leading-8 tracking-tight md:min-h-10 md:text-4xl md:leading-10"}
-                style={{ color: isHandpicked ? "#5E3538" : section.textColor, ...(isHandpicked ? { fontFamily: "'Cormorant Garamond', serif" } : {}) }}
-              >
-                {section.title}
-              </h2>
-            )}
-
-            {!isHandpicked && section.showSubtitle && section.subtitle && (
-              <p
-                className="mx-auto min-h-6 max-w-3xl text-base leading-relaxed opacity-80 md:text-xl"
-                style={{ color: section.textColor }}
-              >
-                {section.subtitle}
-              </p>
-            )}
+          <div className="mb-5">
+            <HomeSectionHeading
+              title={section.title}
+              subtitle={section.subtitle}
+              showTitle={isHandpicked || section.showTitle}
+              showSubtitle={section.showSubtitle}
+              textColor={isHandpicked ? "#211817" : section.textColor}
+              className="mb-0 max-w-none px-0"
+            />
             {isHandpicked && (
-              <Link
-                href="/shop"
-                className="shrink-0 text-[13px] font-medium text-[#5E3538] no-underline"
-              >
-                View all <span aria-hidden="true">→</span>
-              </Link>
-            )}
-            {isHandpicked && section.showSubtitle && section.subtitle && (
-              <p className="home-section-heading__subtitle mt-2 max-w-[290px] text-left text-sm" style={{ color: "#7A6466" }}>
-                {section.subtitle}
-              </p>
+              <div className="mt-3 flex justify-end">
+                <Link
+                  href="/shop"
+                  className="inline-flex items-center gap-1 text-[13px] font-medium tracking-wide text-[#653536] underline decoration-[#C68B83]/60 underline-offset-4"
+                >
+                  View all <span aria-hidden="true">→</span>
+                </Link>
+              </div>
             )}
           </div>
         )}
@@ -138,11 +126,10 @@ function ProductGrid({
           <Swiper
             className={isHandpicked ? "home-handpicked-swiper" : ""}
             slidesPerView="auto"
-            spaceBetween={14}
+            spaceBetween={12}
             breakpoints={{ 768: { spaceBetween: 20 }, 1024: { spaceBetween: 24 } }}
             initialSlide={0}
             slidesPerGroupAuto
-            spaceBetween={0}
             watchOverflow
             onSwiper={(s) => {
               setSwiper(s);
