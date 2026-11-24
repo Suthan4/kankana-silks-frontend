@@ -13,7 +13,7 @@ import HomeSectionHeading from "../common/homeSectionHeading";
 // Keep slide dimensions stable before and after Swiper initialisation.
 // The width already accounts for the gap between mobile slides.
 const SLIDE_CLASS =
-  "!w-[calc((100%-0.75rem)/2)] md:!w-[240px] lg:!w-[270px] xl:!w-[290px]";
+  "!w-[calc((100%-0.75rem)/2)] md:!w-[calc((100%-2.5rem)/3)] lg:!w-[calc((100%-4.5rem)/4)]";
 
 const HANDPICKED_SLIDE_CLASS = "!w-[calc((100%-0.75rem)/2)] md:!w-[240px] lg:!w-[270px] xl:!w-[290px]";
 
@@ -51,7 +51,7 @@ function ProductGrid({
 
   return (
     <section
-      className={`relative overflow-hidden pb-10 pt-10 md:pt-14 ${isHandpicked ? "home-handpicked-section" : ""}`}
+      className={`relative overflow-hidden pb-8 pt-8 md:pb-12 md:pt-12 lg:pb-14 lg:pt-14 ${isHandpicked ? "home-handpicked-section" : ""}`}
       style={{ backgroundColor: isHandpicked ? "#FDFBF9" : section.backgroundColor }}
     >
       <div className={`relative mx-auto w-full max-w-[1600px] ${isHandpicked ? "px-5 md:px-6 lg:px-10 2xl:px-14" : "px-4 md:px-6 lg:px-10 2xl:px-14"}`}>
@@ -169,7 +169,7 @@ function ProductGrid({
                           quality={60}
                           priority={productIndex < eagerCount}
                           loading={productIndex < eagerCount ? "eager" : "lazy"}
-                          sizes="(min-width: 1280px) 290px, (min-width: 1024px) 270px, (min-width: 768px) 240px, 48vw"
+                          sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 48vw"
                           draggable={false}
                           className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
                         />
@@ -227,6 +227,21 @@ function ProductGrid({
               );
             })}
           </Swiper>
+
+          {!isHandpicked && products.length > 4 && (
+            <div className="mt-5 hidden items-center justify-center gap-2 md:flex" aria-label="Product carousel navigation">
+              {Array.from({ length: Math.ceil(products.length / 4) }).map((_, pageIndex) => (
+                <button
+                  key={pageIndex}
+                  type="button"
+                  onClick={() => swiper?.slideTo(pageIndex * 4)}
+                  aria-label={`Show product group ${pageIndex + 1}`}
+                  aria-current={Math.floor(activeProductIndex / 4) === pageIndex ? "true" : undefined}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${Math.floor(activeProductIndex / 4) === pageIndex ? "w-6 bg-neutral-900" : "w-1.5 bg-neutral-300 hover:bg-neutral-500"}`}
+                />
+              ))}
+            </div>
+          )}
 
           {isHandpicked && products.length > 2 && (
             <div className="mt-4 flex items-center justify-center gap-3 md:hidden" aria-label="Product carousel navigation">

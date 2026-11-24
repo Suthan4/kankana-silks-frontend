@@ -112,7 +112,7 @@ export default function ProductCarousel({
 
   return (
     <section
-      className="pb-10 pt-10 md:pb-14 md:pt-14"
+      className="pb-8 pt-8 md:pb-12 md:pt-12 lg:pb-14 lg:pt-14"
       style={{ backgroundColor, color: textColor }}
     >
       <HomeSectionHeading
@@ -207,7 +207,7 @@ export default function ProductCarousel({
 
       {/* TABLET + DESKTOP: image and details, grouped and centered */}
       <div className="hidden w-full md:block">
-        <div className="mx-auto grid w-full max-w-5xl items-center gap-8 px-6 md:grid-cols-[minmax(0,380px)_minmax(0,1fr)] lg:grid-cols-[minmax(0,460px)_minmax(0,1fr)] lg:gap-14 lg:px-10">
+        <div className="mx-auto grid w-full max-w-6xl items-center gap-8 px-6 md:grid-cols-[minmax(0,440px)_minmax(0,1fr)] lg:grid-cols-[minmax(0,500px)_minmax(0,1fr)] lg:gap-16 lg:px-10">
           {/* Image */}
           <div className="group relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-[#f7f7f5]">
             {currentProduct.media?.[0]?.url ? (
@@ -216,7 +216,7 @@ export default function ProductCarousel({
                 src={currentProduct.media[0].url}
                 alt={currentProduct.name}
                 fill
-                sizes="(min-width: 1024px) 460px, 380px"
+                sizes="(min-width: 1024px) 500px, 440px"
                 className="object-cover object-top transition duration-500 ease-out group-hover:scale-[1.02]"
               />
             ) : (
