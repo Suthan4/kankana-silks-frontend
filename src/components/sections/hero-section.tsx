@@ -1,16 +1,19 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import "swiper/css";
+
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { getImageProps } from "next/image";
 import { preload } from "react-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { Swiper as SwiperInstance } from "swiper";
+import { A11y, Autoplay, Keyboard } from "swiper/modules";
+import { Swiper, SwiperSlide } from "swiper/react";
 
 import { type Banner, MediaType } from "@/lib/api/banner.api";
 
 const AUTOPLAY_DELAY = 5000;
-const MIN_SWIPE_DISTANCE = 50;
 
 interface IHeroSection {
   banners: Banner[];
@@ -19,22 +22,27 @@ interface IHeroSection {
   error: Error | null;
 }
 
+const SECTION_SIZE = `
+  relative mt-[108px]
+  aspect-[16/10] h-auto w-full
+  sm:mt-[108px] sm:aspect-auto
+  sm:h-[75vh] sm:min-h-[480px]
+  md:mt-0 md:h-[100svh] md:min-h-[640px]
+`;
+
 /**
- * One responsive, optimised banner image.
- * - Served through the Next.js image optimiser (AVIF/WebP, right-sized per
- *   screen) instead of the original 3840x2160 JPEG.
+ * One responsive, optimised banner image (same optimisation as before):
+ * - Served through the Next.js image optimiser, right-sized per screen.
  * - Mobile gets its own source when the banner has a mobileUrl.
- * - Only the first slide is high priority; later slides load at low priority.
+ * - Only the first slide is high priority.
  */
 function BannerPicture({
   banner,
   isFirst,
-  isActive,
   onFirstSettled,
 }: {
   banner: Banner;
   isFirst: boolean;
-  isActive: boolean;
   onFirstSettled: () => void;
 }) {
   const common = {
@@ -57,9 +65,7 @@ function BannerPicture({
   });
   const { srcSet: desktopSrcSet, ...imgProps } = desktop;
 
-  // The first banner is the LCP element. Tell the browser about it in <head>
-  // right away (one hint per screen size) so it starts downloading before the
-  // page's JavaScript runs. (<picture> images are not preloaded by default.)
+  // The first banner is the LCP element: preload one hint per screen size.
   if (isFirst) {
     preload(mobile.src, {
       as: "image",
@@ -77,56 +83,61 @@ function BannerPicture({
     });
   }
 
-  // Inactive banners are display:none, and Safari does not decode an image it
-  // has never painted. Without this, the swap decodes a full-screen image on
-  // the main thread and the hero flashes black for a moment (Chrome on Android
-  // decodes off-thread, which is why only iOS showed it). decode() warms the
-  // cache while the banner is still hidden.
-  const imgRef = useRef<HTMLImageElement | null>(null);
-  useEffect(() => {
-    const img = imgRef.current;
-    if (!img || isActive || typeof img.decode !== "function") return;
-
-    const warm = () => {
-      img.decode().catch(() => {
-        /* a failed decode just falls back to decoding at swap time */
-      });
-    };
-
-    if (img.complete) {
-      warm();
-      return;
-    }
-    img.addEventListener("load", warm, { once: true });
-    return () => img.removeEventListener("load", warm);
-  }, [isActive]);
-
   return (
-    // .hero-slide (globals.css) cross-fades: the incoming slide fades in on top
-    // while the outgoing one stays fully opaque underneath and only drops out
-    // after the fade, so the black section background never shows through.
-    // Inactive slides stay painted at opacity 0 (not display:none) so Safari
-    // has already decoded them when they are revealed.
-    <picture
-      className="hero-slide"
-      data-active={isActive}
-      aria-hidden={!isActive}
-    >
+    <picture>
       <source media="(max-width: 767px)" srcSet={mobile.srcSet} sizes="100vw" />
       <source media="(min-width: 768px)" srcSet={desktopSrcSet} sizes="100vw" />
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         {...imgProps}
         ref={(node) => {
-          imgRef.current = node;
           // The image may finish loading before React hydrates.
           if (isFirst && node?.complete) onFirstSettled();
         }}
         onLoad={isFirst ? onFirstSettled : undefined}
         onError={isFirst ? onFirstSettled : undefined}
-        className="absolute inset-0 block h-full w-full object-cover object-[50%_25%] md:object-center"
+        // pointer-events-none stops the browser's native image drag from
+        // fighting Swiper's mouse drag on desktop.
+        className="pointer-events-none absolute inset-0 block h-full w-full select-none object-cover object-[50%_25%] md:object-center"
       />
     </picture>
+  );
+}
+
+/** Video banner: plays only while its slide is the active one. */
+function BannerVideo({
+  banner,
+  isActive,
+}: {
+  banner: Banner;
+  isActive: boolean;
+}) {
+  const ref = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    const video = ref.current;
+    if (!video) return;
+    if (isActive) {
+      video.play().catch(() => {
+        /* autoplay can be blocked; poster stays visible */
+      });
+    } else {
+      video.pause();
+    }
+  }, [isActive]);
+
+  return (
+    <video
+      ref={ref}
+      src={banner.url}
+      poster={banner.thumbnailUrl || undefined}
+      className="pointer-events-none absolute inset-0 h-full w-full object-cover object-[50%_25%] md:object-center"
+      muted
+      loop
+      playsInline
+      preload={isActive ? "auto" : "metadata"}
+      aria-hidden={!isActive}
+    />
   );
 }
 
@@ -135,23 +146,13 @@ export default function HeroSection({
   isError,
   isLoading,
 }: IHeroSection) {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  // The slide that was showing before the current one. It must stay mounted
-  // while the new slide fades in over it (see .hero-slide in globals.css).
-  const [trackedSlide, setTrackedSlide] = useState(0);
-  const [previousSlide, setPreviousSlide] = useState<number | null>(null);
-  if (trackedSlide !== currentSlide) {
-    setTrackedSlide(currentSlide);
-    setPreviousSlide(trackedSlide);
-  }
-  const [autoPlay, setAutoPlay] = useState(true);
-  // The first banner decides when autoplay may start and when the next
-  // banner is allowed to download (never all banners at once).
+  const swiperRef = useRef<SwiperInstance | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [firstLoaded, setFirstLoaded] = useState(false);
-
-  const touchStartX = useRef<number | null>(null);
-  const touchStartY = useRef<number | null>(null);
-  const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  // Slides whose media has been mounted. Once mounted a slide stays mounted,
+  // so swiping back never flashes black.
+  const [mounted, setMounted] = useState<Set<number>>(() => new Set([0]));
 
   const totalSlides = banners.length;
 
@@ -163,169 +164,75 @@ export default function HeroSection({
   const ready = firstLoaded || !firstIsImage;
 
   useEffect(() => {
-    if (ready || banners.length === 0) return;
+    if (ready || totalSlides === 0) return;
     const timer = setTimeout(() => setFirstLoaded(true), 4000);
     return () => clearTimeout(timer);
-  }, [ready, banners.length]);
+  }, [ready, totalSlides]);
 
-  // Keep slide index within the available banner range.
+  // Respect "reduce motion": no autoplay, swiping still works.
   useEffect(() => {
-    setCurrentSlide((current) =>
-      totalSlides === 0 ? 0 : current % totalSlides,
-    );
-  }, [totalSlides]);
-
-  // Clear autoplay.
-  const clearAutoplay = useCallback(() => {
-    if (autoplayRef.current !== null) {
-      clearInterval(autoplayRef.current);
-      autoplayRef.current = null;
-    }
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
   }, []);
 
-  // Next slide.
-  const nextSlide = useCallback(() => {
-    if (totalSlides <= 1) return;
-
-    setCurrentSlide((current) => (current + 1) % totalSlides);
-  }, [totalSlides]);
-
-  // Previous slide.
-  const prevSlide = useCallback(() => {
-    if (totalSlides <= 1) return;
-
-    setCurrentSlide((current) => (current - 1 + totalSlides) % totalSlides);
-  }, [totalSlides]);
-
-  // Autoplay.
+  // After the first banner is ready, load only the neighbours of the active
+  // slide (next for autoplay, previous for swiping back), never all at once.
   useEffect(() => {
-    clearAutoplay();
+    if (!ready || totalSlides === 0) return;
+    setMounted((prev) => {
+      const next = new Set(prev);
+      next.add(activeIndex);
+      next.add((activeIndex + 1) % totalSlides);
+      next.add((activeIndex - 1 + totalSlides) % totalSlides);
+      return next.size === prev.size ? prev : next;
+    });
+  }, [activeIndex, ready, totalSlides]);
 
-    if (!autoPlay || !ready || totalSlides <= 1) {
-      return;
-    }
-
-    const startAutoplay = () => {
-      clearAutoplay();
-
-      if (document.hidden) return;
-
-      autoplayRef.current = setInterval(() => {
-        setCurrentSlide((current) => (current + 1) % totalSlides);
-      }, AUTOPLAY_DELAY);
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        clearAutoplay();
-      } else {
-        startAutoplay();
-      }
-    };
-
-    startAutoplay();
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      clearAutoplay();
-
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [autoPlay, ready, totalSlides, clearAutoplay]);
-
-  // Manual navigation pauses autoplay.
-  const handleManualNavigation = useCallback((callback: () => void) => {
-    setAutoPlay(false);
-    callback();
-  }, []);
-
-  // Navigate to a particular slide.
-  const goToSlide = useCallback(
-    (index: number) => {
-      if (index < 0 || index >= totalSlides) return;
-
-      setAutoPlay(false);
-      setCurrentSlide(index);
-    },
-    [totalSlides],
-  );
-
-  // Touch start.
-  const onTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (event.touches.length !== 1) return;
-
-    touchStartX.current = event.touches[0].clientX;
-    touchStartY.current = event.touches[0].clientY;
-  };
-
-  // Touch end.
-  const onTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (touchStartX.current === null || touchStartY.current === null) {
-      return;
-    }
-
-    const touch = event.changedTouches[0];
-
-    const deltaX = touchStartX.current - touch.clientX;
-    const deltaY = touchStartY.current - touch.clientY;
-
-    touchStartX.current = null;
-    touchStartY.current = null;
-
-    // Ignore vertical scrolling.
-    if (Math.abs(deltaY) > Math.abs(deltaX)) return;
-
-    if (Math.abs(deltaX) < MIN_SWIPE_DISTANCE) return;
-
-    setAutoPlay(false);
-
-    if (deltaX > 0) {
-      nextSlide();
+  // Autoplay only starts once the first banner has painted.
+  useEffect(() => {
+    const swiper = swiperRef.current;
+    if (!swiper?.autoplay) return;
+    if (ready && !reducedMotion && totalSlides > 1) {
+      swiper.autoplay.start();
     } else {
-      prevSlide();
+      swiper.autoplay.stop();
     }
-  };
+  }, [ready, reducedMotion, totalSlides]);
 
-  // Reset touch tracking.
-  const onTouchCancel = () => {
-    touchStartX.current = null;
-    touchStartY.current = null;
-  };
+  // Keep the active index valid if the banner list shrinks.
+  useEffect(() => {
+    if (totalSlides > 0 && activeIndex >= totalSlides) {
+      setActiveIndex(0);
+      swiperRef.current?.slideTo(0, 0);
+    }
+  }, [totalSlides, activeIndex]);
+
+  const goPrev = useCallback(() => swiperRef.current?.slidePrev(), []);
+  const goNext = useCallback(() => swiperRef.current?.slideNext(), []);
+  const goTo = useCallback(
+    (index: number) => swiperRef.current?.slideTo(index),
+    [],
+  );
 
   // Loading state.
   if (isLoading) {
     return (
       <section
-        className="
-        relative mt-[108px] flex aspect-[16/10] w-full
-        items-center justify-center bg-black
-        sm:mt-[108px] sm:aspect-auto sm:h-[75vh]
-        sm:min-h-[480px]
-        md:mt-0 md:h-[100svh] md:min-h-[640px]
-      "
+        className={`${SECTION_SIZE} flex items-center justify-center bg-black`}
       >
-        <div
-          className="
-          h-10 w-10 animate-spin rounded-full
-          border-4 border-white/20 border-t-white
-        "
-        />
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/20 border-t-white" />
       </section>
     );
   }
 
-  // Error state.
+  // Error / empty state.
   if (isError || totalSlides === 0) {
     return (
       <section
-        className="
-        relative mt-[108px] flex aspect-[16/10] w-full
-        items-center justify-center bg-black
-        sm:mt-[108px] sm:aspect-auto sm:h-[75vh]
-        sm:min-h-[480px]
-        md:mt-0 md:h-[100svh] md:min-h-[640px]
-      "
+        className={`${SECTION_SIZE} flex items-center justify-center bg-black`}
       >
         <p className="text-sm text-white/70">
           {isError ? "Unable to load banners" : "No banners available"}
@@ -334,260 +241,172 @@ export default function HeroSection({
     );
   }
 
-  const activeBanner = banners[currentSlide];
-
   return (
     <section
       data-testid="hero-banner"
-      className="
-        relative mt-[108px]
-        aspect-[16/10] h-auto w-full
-        overflow-hidden bg-black
-        isolate
-        sm:mt-[108px] sm:aspect-auto
-        sm:h-[75vh] sm:min-h-[480px]
-        md:mt-0 md:h-[100svh] md:min-h-[640px]
-      "
+      className={`${SECTION_SIZE} isolate overflow-hidden bg-black`}
       aria-roledescription="carousel"
       aria-label="Promotional banners"
     >
       {/* =====================================
-          BANNER SLIDER
-          Opacity-only cross-fade (.hero-slide); no layout or filter animation.
+          SWIPER
+          Mobile: finger swipe (vertical scroll still works).
+          Desktop: mouse drag, arrows, dots and arrow keys.
+          Autoplay pauses while the pointer is over the hero.
       ====================================== */}
-
-      <div
-        className="
-          absolute inset-0
-          touch-pan-y
-          select-none
-          overflow-hidden
-        "
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-        onTouchCancel={onTouchCancel}
-      >
-        {banners.map((banner, index) => {
-          const isActive = index === currentSlide;
-
-          // Image banners.
-          if (banner.type === MediaType.IMAGE) {
-            // Mount the visible slide, the one fading out, and, once the
-            // first banner is ready, only the NEXT one (never all at once).
-            const nextIndex = (currentSlide + 1) % totalSlides;
+      <div className="absolute inset-0">
+        <Swiper
+          className="h-full w-full md:cursor-grab md:active:cursor-grabbing"
+          modules={[Autoplay, Keyboard, A11y]}
+          slidesPerView={1}
+          speed={600}
+          rewind
+          grabCursor
+          threshold={8}
+          touchAngle={30}
+          resistanceRatio={0.6}
+          keyboard={{ enabled: true, onlyInViewport: true }}
+          autoplay={{
+            delay: AUTOPLAY_DELAY,
+            disableOnInteraction: false,
+            pauseOnMouseEnter: true,
+          }}
+          a11y={{
+            prevSlideMessage: "Previous slide",
+            nextSlideMessage: "Next slide",
+          }}
+          onSwiper={(swiper) => {
+            swiperRef.current = swiper;
+            if (!ready) swiper.autoplay?.stop();
+          }}
+          onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
+        >
+          {banners.map((banner, index) => {
+            const isActive = index === activeIndex;
             const shouldMount =
-              index === 0 ||
-              index === currentSlide ||
-              index === previousSlide ||
-              (ready && index === nextIndex);
-            if (!shouldMount) return null;
+              index === 0 || index === activeIndex || mounted.has(index);
 
             return (
-              <BannerPicture
-                key={banner.id}
-                banner={banner}
-                isFirst={index === 0}
-                isActive={isActive}
-                onFirstSettled={handleFirstSettled}
-              />
+              <SwiperSlide key={banner.id} className="!h-full">
+                <div className="relative h-full w-full">
+                  {shouldMount &&
+                    (banner.type === MediaType.IMAGE ? (
+                      <BannerPicture
+                        banner={banner}
+                        isFirst={index === 0}
+                        onFirstSettled={handleFirstSettled}
+                      />
+                    ) : (
+                      <BannerVideo banner={banner} isActive={isActive} />
+                    ))}
+
+                  {/* Bottom gradient keeps the text readable. */}
+                  <div
+                    className="pointer-events-none absolute inset-x-0 bottom-0 h-32 sm:h-44 md:h-56"
+                    style={{
+                      background:
+                        "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 25%, rgba(0,0,0,0.10) 100%)",
+                    }}
+                    aria-hidden="true"
+                  />
+
+                  {/* Slide text travels with its own image while swiping. */}
+                  <div className="absolute inset-0 flex items-end justify-center px-5 pb-14 sm:px-8 sm:pb-24">
+                    <div className="mx-auto w-full max-w-5xl text-center">
+                      {/* Only the first slide is the page's h1. */}
+                      {index === 0 ? (
+                        <h1 className={HEADING_CLASS}>
+                          {banner.title || "Timeless Elegance"}
+                        </h1>
+                      ) : (
+                        <h2 className={HEADING_CLASS}>
+                          {banner.title || "Timeless Elegance"}
+                        </h2>
+                      )}
+
+                      {banner.text && (
+                        <p className="mx-auto mt-4 hidden max-w-3xl text-base font-light tracking-wide text-white/90 text-shadow-hero-sm sm:block lg:text-lg">
+                          {banner.text}
+                        </p>
+                      )}
+
+                      {banner.link && (
+                        <Link
+                          href={banner.link}
+                          tabIndex={isActive ? 0 : -1}
+                          // min-h-11 = 44px, the recommended touch target.
+                          className="mt-4 inline-flex min-h-11 min-w-36 items-center justify-center border border-white bg-black/30 px-6 text-xs font-semibold uppercase tracking-[0.16em] text-white transition-colors hover:bg-white hover:text-black focus-visible:bg-white focus-visible:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black active:scale-[0.98] sm:mt-7 sm:min-w-44 sm:px-8 sm:text-sm md:bg-black/15 md:backdrop-blur-sm"
+                        >
+                          Explore Collection
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </SwiperSlide>
             );
-          }
-
-          // Video banners.
-          return (
-            <video
-              key={banner.id}
-              src={banner.url}
-              poster={banner.thumbnailUrl || undefined}
-              className="
-                absolute inset-0
-                h-full w-full
-                object-cover
-                object-[50%_25%]
-                md:object-center
-              "
-              style={{
-                display: isActive ? "block" : "none",
-              }}
-              autoPlay={isActive}
-              muted
-              loop
-              playsInline
-              preload={isActive ? "auto" : "none"}
-              aria-hidden={!isActive}
-            />
-          );
-        })}
+          })}
+        </Swiper>
       </div>
-
-      {/* =====================================
-          BOTTOM GRADIENT
-      ====================================== */}
-
-      <div
-        className="
-          pointer-events-none
-          absolute inset-x-0 bottom-0 z-[5]
-          h-24 bg-gradient-to-t
-          from-black to-transparent
-          sm:h-32 md:h-40
-        "
-        aria-hidden="true"
-      />
-
-      {/* =====================================
-          HERO CONTENT
-      ====================================== */}
-
-      <div
-        className="
-          relative z-10
-          flex h-full items-end justify-center
-          px-5 pb-12
-          sm:px-8 sm:pb-20
-          lg:pb-20
-        "
-      >
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeBanner.id}
-            className="mx-auto w-full max-w-5xl text-center [backface-visibility:hidden]"
-            // Keep the reveal on a stable compositing layer for its whole
-            // lifetime. WebKit otherwise promotes it only while animating and
-            // re-rasterises the text when it is demoted, which looks like a pop.
-            style={{ willChange: "transform, opacity" }}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{
-              duration: 0.35,
-              ease: "easeOut",
-            }}
-          >
-            <h1
-              className="
-                text-xl font-semibold uppercase
-                leading-tight tracking-[0.08em]
-                text-white text-shadow-hero
-                sm:text-4xl sm:tracking-[0.12em]
-                lg:text-5xl
-              "
-            >
-              {activeBanner.title || "Timeless Elegance"}
-            </h1>
-
-            {activeBanner.text && (
-              <p
-                className="
-                  mx-auto mt-4 hidden max-w-3xl
-                  text-base font-light tracking-wide
-                  text-white/90 text-shadow-hero-sm
-                  sm:block lg:text-lg
-                "
-              >
-                {activeBanner.text}
-              </p>
-            )}
-
-            {activeBanner.link && (
-              <Link
-                href={activeBanner.link}
-                className="
-                  mt-4 inline-flex min-w-32
-                  items-center justify-center
-                  border border-white bg-black/30 md:bg-black/15
-                  px-5 py-2 text-[10px]
-                  font-semibold uppercase tracking-[0.16em]
-                  text-white md:backdrop-blur-sm
-                  transition-colors
-                  hover:bg-white hover:text-black
-                  sm:mt-7 sm:min-w-40 sm:px-8
-                  sm:py-3 sm:text-sm
-                "
-              >
-                Explore Collection
-              </Link>
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </div>
-
-      {/* =====================================
-          DESKTOP ARROWS
-      ====================================== */}
 
       {totalSlides > 1 && (
         <>
+          {/* =====================================
+              DESKTOP ARROWS (mobile uses swipe)
+          ====================================== */}
           <button
             type="button"
-            onClick={() => handleManualNavigation(prevSlide)}
-            className="
-              absolute left-4 top-1/2 z-30
-              hidden h-12 w-12
-              -translate-y-1/2
-              items-center justify-center
-              rounded-full border border-white/30
-              bg-black/20 text-white
-              backdrop-blur-md transition-all
-              hover:bg-black/45
-              md:flex lg:left-8
-            "
+            onClick={goPrev}
+            className={`${ARROW_CLASS} left-4 lg:left-8`}
             aria-label="Previous slide"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-6 w-6" />
           </button>
 
           <button
             type="button"
-            onClick={() => handleManualNavigation(nextSlide)}
-            className="
-              absolute right-4 top-1/2 z-30
-              hidden h-12 w-12
-              -translate-y-1/2
-              items-center justify-center
-              rounded-full border border-white/30
-              bg-black/20 text-white
-              backdrop-blur-md transition-all
-              hover:bg-black/45
-              md:flex lg:right-8
-            "
+            onClick={goNext}
+            className={`${ARROW_CLASS} right-4 lg:right-8`}
             aria-label="Next slide"
           >
-            <ChevronRight className="h-5 w-5" />
+            <ChevronRight className="h-6 w-6" />
           </button>
 
           {/* =====================================
               SLIDE INDICATORS
+              Each dot has a 32px tall tap area even though it looks small.
           ====================================== */}
-
-          <div
-            className="
-              absolute bottom-5 left-1/2 z-30
-              flex -translate-x-1/2
-              items-center gap-2
-              sm:bottom-9
-            "
-          >
-            {banners.map((banner, index) => (
-              <button
-                key={banner.id}
-                type="button"
-                onClick={() => goToSlide(index)}
-                className={`
-                  rounded-full transition-[width,height,background-color] duration-300
-                  ${
-                    index === currentSlide
-                      ? "h-[3px] w-10 bg-white"
-                      : "h-2 w-2 bg-white/40 hover:bg-white/70"
-                  }
-                `}
-                aria-label={`Go to slide ${index + 1}`}
-                aria-current={index === currentSlide ? "true" : undefined}
-              />
-            ))}
+          <div className="absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center sm:bottom-6">
+            {banners.map((banner, index) => {
+              const isActive = index === activeIndex;
+              return (
+                <button
+                  key={banner.id}
+                  type="button"
+                  onClick={() => goTo(index)}
+                  className="group flex h-8 items-center px-1 focus-visible:outline-none"
+                  aria-label={`Go to slide ${index + 1}`}
+                  aria-current={isActive ? "true" : undefined}
+                >
+                  <span
+                    className={`block rounded-full transition-[width,height,background-color] duration-300 group-focus-visible:ring-2 group-focus-visible:ring-white group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-black ${
+                      isActive
+                        ? "h-[3px] w-10 bg-white"
+                        : "h-2 w-2 bg-white/50 group-hover:bg-white/80"
+                    }`}
+                  />
+                </button>
+              );
+            })}
           </div>
         </>
       )}
     </section>
   );
 }
+
+const HEADING_CLASS =
+  "text-xl font-semibold uppercase leading-tight tracking-[0.08em] text-white text-shadow-hero sm:text-4xl sm:tracking-[0.12em] lg:text-5xl";
+
+const ARROW_CLASS =
+  "absolute top-1/2 z-30 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-black/30 text-white backdrop-blur-md transition-all hover:scale-105 hover:bg-black/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white active:scale-95 md:flex";
