@@ -54,12 +54,15 @@ export default function LandingPage({
     initialData: initialBanners,
     staleTime: 60 * 1000,
   });
+  const HANDPICKED = "handpicked for you";
 
-  const getDisplayTitle = (section: HomeSection) => {
+  const normalizeTitle = (section: HomeSection) =>
+    getDisplayTitle(section).trim().toLowerCase();
+  const getDisplayTitle = (section: HomeSection): string => {
     if (section.type === SectionType.CUSTOM && section.customTypeName) {
       return section.customTypeName;
     }
-    return section.title;
+    return section.title ?? "";
   };
 
   /**
@@ -112,10 +115,7 @@ export default function LandingPage({
 
     // Products
     if (hasProducts) {
-      if (
-        layout === "carousel" &&
-        displayTitle.trim().toLowerCase() !== "handpicked for you"
-      ) {
+      if (layout === "carousel" && normalizeTitle(section) !== HANDPICKED) {
         return (
           <ProductCarousel
             key={section.id}
@@ -171,13 +171,9 @@ export default function LandingPage({
   };
 
   const orderedSections = [...sections].sort((a, b) => {
-    const titleA = getDisplayTitle(a).trim().toLowerCase();
-    const titleB = getDisplayTitle(b).trim().toLowerCase();
-    const aIsHandpicked = titleA === "handpicked for you";
-    const bIsHandpicked = titleB === "handpicked for you";
+    const aIsHandpicked = normalizeTitle(a) === HANDPICKED;
+    const bIsHandpicked = normalizeTitle(b) === HANDPICKED;
 
-    // Put the live Handpicked product grid directly below the hero so
-    // shoppers can browse products without scrolling past editorial sections.
     if (aIsHandpicked !== bIsHandpicked) return aIsHandpicked ? -1 : 1;
     return (a.order ?? 0) - (b.order ?? 0);
   });
