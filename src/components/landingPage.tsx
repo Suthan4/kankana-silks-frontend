@@ -112,7 +112,10 @@ export default function LandingPage({
 
     // Products
     if (hasProducts) {
-      if (layout === "carousel") {
+      if (
+        layout === "carousel" &&
+        displayTitle.trim().toLowerCase() !== "handpicked for you"
+      ) {
         return (
           <ProductCarousel
             key={section.id}

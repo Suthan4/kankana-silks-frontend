@@ -52,9 +52,9 @@ function ProductGrid({
       style={{ backgroundColor: isHandpicked ? "#FDFBF9" : section.backgroundColor }}
     >
       <div className={`relative mx-auto w-full max-w-[1600px] ${isHandpicked ? "px-5 md:px-6 lg:px-10 2xl:px-14" : "px-4 md:px-6 lg:px-10 2xl:px-14"}`}>
-        {(section.showTitle || section.showSubtitle) && (
+        {(isHandpicked || section.showTitle || section.showSubtitle) && (
           <div className={isHandpicked ? "mb-0 flex items-baseline justify-between text-left" : "mb-6 text-center md:mb-10"}>
-            {section.showTitle && (
+            {(isHandpicked || section.showTitle) && (
               <h2
                 className={isHandpicked ? "mb-0 text-[26px] font-semibold leading-tight tracking-normal md:text-4xl" : "mb-2 min-h-8 text-2xl font-semibold leading-8 tracking-tight md:min-h-10 md:text-4xl md:leading-10"}
                 style={{ color: isHandpicked ? "#5E3538" : section.textColor, ...(isHandpicked ? { fontFamily: "'Cormorant Garamond', serif" } : {}) }}
@@ -63,7 +63,7 @@ function ProductGrid({
               </h2>
             )}
 
-            {section.showSubtitle && section.subtitle && (
+            {!isHandpicked && section.showSubtitle && section.subtitle && (
               <p
                 className="mx-auto min-h-6 max-w-3xl text-base leading-relaxed opacity-80 md:text-xl"
                 style={{ color: section.textColor }}
