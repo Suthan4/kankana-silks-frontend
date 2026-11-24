@@ -1,7 +1,7 @@
 "use client";
 
 import { HomeSection } from "@/lib/api/home-section.api";
-import { useState } from "react";
+import { useRef, useState, type TouchEvent } from "react";
 import { getImageProps } from "next/image";
 import { preload } from "react-dom";
 import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
@@ -102,6 +102,8 @@ export default function AestheticFullImage({
   // Slides that may be mounted. Only the current + next slide are loaded, so a
   // section with many slides doesn't download every image up front.
   const [mounted, setMounted] = useState<number[]>([0]);
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
   // 🔥 SMART MEDIA FALLBACK
   const media = section.media?.length
     ? section.media
@@ -128,8 +130,31 @@ export default function AestheticFullImage({
 
   const prevSlide = () => goTo(currentSlide - 1);
 
+  const handleTouchStart = (event: TouchEvent<HTMLElement>) => {
+    if (event.touches.length !== 1) return;
+    touchStartX.current = event.touches[0].clientX;
+    touchStartY.current = event.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (event: TouchEvent<HTMLElement>) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const touch = event.changedTouches[0];
+    const deltaX = touchStartX.current - touch.clientX;
+    const deltaY = touchStartY.current - touch.clientY;
+    touchStartX.current = null;
+    touchStartY.current = null;
+    if (Math.abs(deltaX) < 45 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
+    if (deltaX > 0) nextSlide();
+    else prevSlide();
+  };
+
+  const handleTouchCancel = () => {
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
+
   return (
-    <section className="relative w-full h-[70vh] md:h-screen overflow-hidden">
+    <section className="relative w-full h-[70vh] md:h-screen overflow-hidden touch-pan-y select-none" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onTouchCancel={handleTouchCancel}>
       {/* Background Images/Videos */}
       {media.map((item, index) => {
         const shouldMount = index === 0 || mounted.includes(index);
@@ -167,20 +192,19 @@ export default function AestheticFullImage({
             )}
 
             {/* Gradient Overlay for text readability — matches Banner carousel */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-black/10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-white/20 to-transparent" />
           </div>
         );
       })}
 
       {/* Content Overlay - Bottom anchored, matches Banner carousel */}
-      <div className="absolute inset-x-0 bottom-8 sm:bottom-14 lg:bottom-16 z-10 px-6 sm:px-12 md:px-16 text-center flex flex-col items-center justify-center">
+      <div className="absolute inset-x-0 bottom-8 sm:bottom-14 lg:bottom-16 z-10 px-4 sm:px-12 md:px-16 text-center flex flex-col items-center justify-center rounded-2xl bg-white/85 py-4 shadow-xl backdrop-blur-sm sm:py-6">
         {/* Subtitle / Overlay Text */}
         {((section.showSubtitle && section.subtitle) || section.title) && (
           <div className="max-w-3xl space-y-1.5 sm:space-y-2 mb-4 md:mb-6">
             {section.title && (
               <h1
-                className="text-xl sm:text-3xl lg:text-4xl font-extrabold uppercase tracking-wider text-white drop-shadow-lg line-clamp-1"
-                style={{ color: "#ffffff" }}
+                className="text-xl sm:text-3xl lg:text-4xl font-extrabold uppercase tracking-wider text-black line-clamp-1"
               >
                 {section.title}
               </h1>
@@ -188,8 +212,7 @@ export default function AestheticFullImage({
 
             {section.subtitle && (
               <p
-                className="text-xs sm:text-sm lg:text-base text-white/90 font-light drop-shadow line-clamp-2"
-                style={{ color: section.textColor || undefined }}
+                className="text-xs sm:text-sm lg:text-base text-black/80 font-light line-clamp-2"
               >
                 {section.subtitle}
               </p>
@@ -268,7 +291,7 @@ export default function AestheticFullImage({
           <button
             onClick={prevSlide}
             aria-label="Previous slide"
-            className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md border border-white/20 flex items-center justify-center shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-white/80 active:scale-95"
+            className="hidden md:flex absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-md border border-white/20 items-center justify-center shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-white/80 active:scale-95"
           >
             <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
@@ -276,14 +299,16 @@ export default function AestheticFullImage({
           <button
             onClick={nextSlide}
             aria-label="Next slide"
-            className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md border border-white/20 flex items-center justify-center shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-white/80 active:scale-95"
+            className="hidden md:flex absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-md border border-white/20 items-center justify-center shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-white/80 active:scale-95"
           >
             <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
 
-          {/* Slide Indicators — pill dot bar, matches Banner carousel */}
+          <div className="md:hidden absolute bottom-10 left-1/2 -translate-x-1/2 z-20 rounded-full bg-black/45 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-white/90 backdrop-blur-sm" aria-hidden="true">Swipe</div>
+
+          {/* Consistent slide indicators */}
           <div
-            className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/85 backdrop-blur-md shadow-md border border-white/40"
+            className="absolute bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2"
             role="tablist"
             aria-label="Slide pagination"
           >
@@ -298,8 +323,8 @@ export default function AestheticFullImage({
                   aria-current={isActive ? "true" : undefined}
                   className={`transition-all duration-300 rounded-full focus:outline-none focus:ring-2 focus:ring-black ${
                     isActive
-                      ? "w-7 sm:w-8 h-2.5 bg-black"
-                      : "w-2.5 h-2.5 bg-gray-400 hover:bg-gray-700"
+                      ? "w-8 h-[3px] bg-white"
+                      : "w-2 h-2 bg-white/45 hover:bg-white/80"
                   }`}
                 />
               );
