@@ -137,14 +137,14 @@ function HeroSlider({ section }: { section: HomeSection }) {
                     : "justify-center"
                 } items-center text-center px-4 md:px-8`}
               >
-                <div className="hero-text max-w-5xl mx-auto space-y-4 md:space-y-6 rounded-2xl bg-white/85 px-5 py-4 shadow-xl backdrop-blur-sm sm:px-8 sm:py-6">
+                <div className="hero-text mx-auto max-w-5xl space-y-3 px-5 py-4 text-center sm:space-y-4 sm:px-8 sm:py-6">
                   {slide.overlayTitle && (
-                    <h1 className="text-4xl md:text-6xl lg:text-7xl xl:text-8xl font-futura-bold text-black tracking-tight leading-tight">
+                    <h1 className="home-editorial-title text-2xl font-semibold uppercase leading-tight tracking-[0.08em] text-white text-shadow-hero sm:text-4xl lg:text-5xl">
                       {slide.overlayTitle}
                     </h1>
                   )}
                   {slide.overlaySubtitle && (
-                    <p className="text-lg md:text-2xl lg:text-3xl text-black/80 max-w-3xl mx-auto leading-relaxed">
+                    <p className="mx-auto max-w-3xl text-sm leading-relaxed text-white/90 text-shadow-hero-sm sm:text-base lg:text-lg">
                       {slide.overlaySubtitle}
                     </p>
                   )}

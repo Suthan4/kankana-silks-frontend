@@ -1602,3 +1602,35 @@ select[aria-invalid="true"] {
     margin-bottom: 0.85rem;
   }
 }
+
+
+/* Unified contemporary premium typography for storefront section titles. */
+.home-editorial-title,
+.home-section-heading__title {
+  font-family: "Jost", var(--font-sans), sans-serif !important;
+  font-size: clamp(1.55rem, 4.2vw, 2.35rem);
+  font-weight: 500;
+  line-height: 1.14;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.home-section-heading { padding-top: 0; margin-bottom: clamp(1.5rem, 3.5vw, 2.75rem); }
+.home-section-heading__eyebrow {
+  margin: 0 auto 0.55rem;
+  color: var(--color-brand-accent);
+  font-family: "Jost", var(--font-sans), sans-serif;
+  font-size: 0.68rem; font-weight: 600; line-height: 1.5;
+  letter-spacing: 0.14em; text-transform: uppercase;
+}
+.home-section-heading__title { color: var(--color-brand-primary); }
+.home-section-heading__rule {
+  width: 2.25rem; height: 2px; margin: 0.85rem auto 0;
+  border-radius: 9999px; background: var(--color-brand-accent);
+}
+@media (min-width: 768px) {
+  .home-editorial-title, .home-section-heading__title {
+    font-size: clamp(2rem, 3vw, 2.6rem); letter-spacing: -0.04em;
+  }
+  .home-section-heading__eyebrow { margin-bottom: 0.7rem; font-size: 0.72rem; }
+  .home-section-heading__rule { margin-top: 1rem; }
+}

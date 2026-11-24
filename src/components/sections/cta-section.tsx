@@ -68,13 +68,13 @@ export default function CTASection() {
           viewport={{ once: true, amount: 0.1 }}
           className="
             mt-5 mb-0
+            home-editorial-title
             text-balance
-            text-[34px]
+            text-[30px]
             font-medium
             leading-tight
-            tracking-normal
+            tracking-tight
             text-white
-            [font-family:'Cormorant_Garamond',serif]
 
             sm:mb-6
             sm:text-5xl

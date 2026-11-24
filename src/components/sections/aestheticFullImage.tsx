@@ -192,19 +192,19 @@ export default function AestheticFullImage({
             )}
 
             {/* Gradient Overlay for text readability — matches Banner carousel */}
-            <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-white/20 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
           </div>
         );
       })}
 
       {/* Content Overlay - Bottom anchored, matches Banner carousel */}
-      <div className="absolute inset-x-0 bottom-8 sm:bottom-14 lg:bottom-16 z-10 px-4 sm:px-12 md:px-16 text-center flex flex-col items-center justify-center rounded-2xl bg-white/85 py-4 shadow-xl backdrop-blur-sm sm:py-6">
+      <div className="absolute inset-x-0 bottom-8 sm:bottom-14 lg:bottom-16 z-10 flex flex-col items-center justify-center px-4 text-center sm:px-12 md:px-16">
         {/* Subtitle / Overlay Text */}
         {((section.showSubtitle && section.subtitle) || section.title) && (
           <div className="max-w-3xl space-y-1.5 sm:space-y-2 mb-4 md:mb-6">
             {section.title && (
               <h1
-                className="text-xl sm:text-3xl lg:text-4xl font-extrabold uppercase tracking-wider text-black line-clamp-1"
+                className="home-editorial-title text-xl font-semibold uppercase tracking-[0.08em] text-white text-shadow-hero sm:text-3xl lg:text-4xl line-clamp-2"
               >
                 {section.title}
               </h1>
@@ -212,7 +212,7 @@ export default function AestheticFullImage({
 
             {section.subtitle && (
               <p
-                className="text-xs sm:text-sm lg:text-base text-black/80 font-light line-clamp-2"
+                className="mx-auto text-xs font-normal leading-relaxed text-white/90 text-shadow-hero-sm sm:text-sm lg:text-base line-clamp-2"
               >
                 {section.subtitle}
               </p>
