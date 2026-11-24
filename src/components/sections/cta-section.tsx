@@ -17,8 +17,8 @@ export default function CTASection() {
         overflow-hidden
         bg-[#5E3538]
         px-7
-        pb-10
-        pt-11
+        pb-[calc(76px+env(safe-area-inset-bottom)+32px)]
+        pt-12
 
         sm:pb-24
         sm:pt-16
@@ -67,7 +67,7 @@ export default function CTASection() {
           transition={{ duration: 0.6 }}
           viewport={{ once: true, amount: 0.1 }}
           className="
-            mt-7 mb-0
+            mt-5 mb-0
             text-balance
             text-[34px]
             font-medium
@@ -92,7 +92,8 @@ export default function CTASection() {
           transition={{ duration: 0.6, delay: 0.15 }}
           viewport={{ once: true, amount: 0.1 }}
           className="
-            mt-3 mb-0
+            mt-4 mb-0
+            mx-auto
             max-w-[280px]
             text-[15px]
             leading-[1.55]
@@ -115,7 +116,7 @@ export default function CTASection() {
             mx-auto
             flex
             w-full
-            mt-7
+            mt-6
             max-w-[300px]
             flex-col
             justify-center

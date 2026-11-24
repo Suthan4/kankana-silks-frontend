@@ -170,9 +170,17 @@ export default function LandingPage({
     );
   };
 
-  const orderedSections = [...sections].sort(
-    (a, b) => (a.order ?? 0) - (b.order ?? 0),
-  );
+  const orderedSections = [...sections].sort((a, b) => {
+    const titleA = getDisplayTitle(a).trim().toLowerCase();
+    const titleB = getDisplayTitle(b).trim().toLowerCase();
+    const aIsHandpicked = titleA === "handpicked for you";
+    const bIsHandpicked = titleB === "handpicked for you";
+
+    // Put the live Handpicked product grid directly below the hero so
+    // shoppers can browse products without scrolling past editorial sections.
+    if (aIsHandpicked !== bIsHandpicked) return aIsHandpicked ? -1 : 1;
+    return (a.order ?? 0) - (b.order ?? 0);
+  });
 
   if (loading) {
     return (
