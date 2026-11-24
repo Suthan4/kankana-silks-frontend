@@ -33,7 +33,7 @@ export default function CircularCollectionsSection({ section }: { section: HomeS
         return {
           id: "product-" + product.id,
           url: image,
-          title: product.name,
+          title: configured?.title?.trim() || product.name,
           href,
           altText: product.name,
           order: configured?.order ?? index,

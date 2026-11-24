@@ -95,7 +95,7 @@ export interface HomeSection {
   media: SectionMedia[];
   ctaButtons: CTAButton[];
   products: Product[];
-  productLinks?: { productId: string; linkUrl?: string | null; order: number }[] | null;
+  productLinks?: { productId: string; title?: string | null; linkUrl?: string | null; order: number }[] | null;
   categories: Category[];
   createdAt: string;
   updatedAt: string;
