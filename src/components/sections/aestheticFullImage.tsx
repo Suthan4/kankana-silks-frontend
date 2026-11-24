@@ -154,7 +154,12 @@ export default function AestheticFullImage({
   };
 
   return (
-    <section className="relative w-full h-[70vh] md:h-screen overflow-hidden touch-pan-y select-none" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onTouchCancel={handleTouchCancel}>
+    <section
+      className="relative w-full h-[70vh] md:h-screen overflow-hidden touch-pan-y select-none"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchCancel}
+    >
       {/* Background Images/Videos */}
       {media.map((item, index) => {
         const shouldMount = index === 0 || mounted.includes(index);
@@ -192,7 +197,13 @@ export default function AestheticFullImage({
             )}
 
             {/* Gradient Overlay for text readability — matches Banner carousel */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 25%, rgba(0,0,0,0.10) 100%)",
+              }}
+            />
           </div>
         );
       })}
@@ -203,17 +214,13 @@ export default function AestheticFullImage({
         {((section.showSubtitle && section.subtitle) || section.title) && (
           <div className="max-w-3xl space-y-1.5 sm:space-y-2 mb-4 md:mb-6">
             {section.title && (
-              <h1
-                className="home-editorial-title text-xl font-semibold uppercase tracking-[0.08em] text-white text-shadow-hero sm:text-3xl lg:text-4xl line-clamp-2"
-              >
+              <h1 className="home-editorial-title text-xl font-semibold uppercase tracking-[0.08em] text-white text-shadow-hero sm:text-3xl lg:text-4xl line-clamp-2">
                 {section.title}
               </h1>
             )}
 
             {section.subtitle && (
-              <p
-                className="mx-auto text-xs font-normal leading-relaxed text-white/90 text-shadow-hero-sm sm:text-sm lg:text-base line-clamp-2"
-              >
+              <p className="mx-auto text-xs font-normal leading-relaxed text-white/90 text-shadow-hero-sm sm:text-sm lg:text-base line-clamp-2">
                 {section.subtitle}
               </p>
             )}
@@ -304,7 +311,12 @@ export default function AestheticFullImage({
             <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
 
-          <div className="md:hidden absolute bottom-10 left-1/2 -translate-x-1/2 z-20 rounded-full bg-black/45 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-white/90 backdrop-blur-sm" aria-hidden="true">Swipe</div>
+          <div
+            className="md:hidden absolute bottom-10 left-1/2 -translate-x-1/2 z-20 rounded-full bg-black/45 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-white/90 backdrop-blur-sm"
+            aria-hidden="true"
+          >
+            Swipe
+          </div>
 
           {/* Consistent slide indicators */}
           <div
