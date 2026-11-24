@@ -298,11 +298,11 @@ export default function HeroSection({
     return (
       <section
         className="
-        home-hero-banner relative mx-5 mt-[132px] flex h-[300px] w-[calc(100%-2.5rem)]
-        items-center justify-center overflow-hidden rounded-2xl bg-black
-        sm:mt-[132px] sm:h-[75vh] sm:min-h-[480px]
-        md:mx-0 md:mt-0 md:h-[100svh] md:w-full md:rounded-none
-        md:min-h-[640px]
+        relative mt-[108px] flex aspect-[16/10] w-full
+        items-center justify-center bg-black
+        sm:mt-[108px] sm:aspect-auto sm:h-[75vh]
+        sm:min-h-[480px]
+        md:mt-0 md:h-[100svh] md:min-h-[640px]
       "
       >
         <div
@@ -320,11 +320,11 @@ export default function HeroSection({
     return (
       <section
         className="
-        home-hero-banner relative mx-5 mt-[132px] flex h-[300px] w-[calc(100%-2.5rem)]
-        items-center justify-center overflow-hidden rounded-2xl bg-black
-        sm:mt-[132px] sm:h-[75vh] sm:min-h-[480px]
-        md:mx-0 md:mt-0 md:h-[100svh] md:w-full md:rounded-none
-        md:min-h-[640px]
+        relative mt-[108px] flex aspect-[16/10] w-full
+        items-center justify-center bg-black
+        sm:mt-[108px] sm:aspect-auto sm:h-[75vh]
+        sm:min-h-[480px]
+        md:mt-0 md:h-[100svh] md:min-h-[640px]
       "
       >
         <p className="text-sm text-white/70">
@@ -340,13 +340,13 @@ export default function HeroSection({
     <section
       data-testid="hero-banner"
       className="
-        home-hero-banner relative mx-5 mt-[132px]
-        h-[300px] w-[calc(100%-2.5rem)]
-        overflow-hidden rounded-2xl bg-black
+        relative mt-[108px]
+        aspect-[16/10] h-auto w-full
+        overflow-hidden bg-black
         isolate
-        sm:mt-[132px] sm:h-[75vh] sm:min-h-[480px]
-        md:mx-0 md:mt-0 md:h-[100svh] md:w-full md:rounded-none
-        md:min-h-[640px]
+        sm:mt-[108px] sm:aspect-auto
+        sm:h-[75vh] sm:min-h-[480px]
+        md:mt-0 md:h-[100svh] md:min-h-[640px]
       "
       aria-roledescription="carousel"
       aria-label="Promotional banners"
@@ -443,7 +443,7 @@ export default function HeroSection({
         className="
           relative z-10
           flex h-full items-end justify-center
-          px-7 pb-10
+          px-5 pb-12
           sm:px-8 sm:pb-20
           lg:pb-20
         "
@@ -451,7 +451,7 @@ export default function HeroSection({
         <AnimatePresence mode="wait">
           <motion.div
             key={activeBanner.id}
-            className="mx-auto w-full max-w-5xl text-left sm:text-center [backface-visibility:hidden]"
+            className="mx-auto w-full max-w-5xl text-center [backface-visibility:hidden]"
             // Keep the reveal on a stable compositing layer for its whole
             // lifetime. WebKit otherwise promotes it only while animating and
             // re-rasterises the text when it is demoted, which looks like a pop.
@@ -466,8 +466,8 @@ export default function HeroSection({
           >
             <h1
               className="
-                text-[30px] font-semibold
-                leading-[1.15] tracking-normal
+                text-xl font-semibold uppercase
+                leading-tight tracking-[0.08em]
                 text-white text-shadow-hero
                 sm:text-4xl sm:tracking-[0.12em]
                 lg:text-5xl
