@@ -6,7 +6,7 @@ import SmartImage from "../common/smartImage";
 import HomeSectionHeading from "../common/homeSectionHeading";
 import type { HomeSection, SectionMedia } from "@/lib/api/home-section.api";
 
-function MediaCard({ media }: { media: SectionMedia }) {
+function MediaCard({ media, centerOnMobile = false }: { media: SectionMedia; centerOnMobile?: boolean }) {
   const href = media.linkUrl?.trim();
   const isExternal = Boolean(href && /^https?:\/\//i.test(href));
   const content = (
@@ -59,7 +59,7 @@ function MediaCard({ media }: { media: SectionMedia }) {
   const className =
     "group relative block aspect-[3/4] min-w-0 overflow-hidden rounded-[1.35rem] bg-neutral-100 shadow-[0_8px_24px_rgba(0,0,0,0.07)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-neutral-900";
 
-  return <div className={className}>{content}</div>;
+  return <div className={`${className} ${centerOnMobile ? "col-span-2 mx-auto w-1/2 sm:col-span-1 sm:mx-0 sm:w-full" : ""}`}>{content}</div>;
 }
 
 export default function InstagramTrendsSection({ section }: { section: HomeSection }) {
@@ -76,7 +76,7 @@ export default function InstagramTrendsSection({ section }: { section: HomeSecti
 
   return (
     <section
-      className="bg-white py-10 sm:py-12 lg:py-14"
+      className="bg-white py-7 sm:py-12 lg:py-14"
       style={{ backgroundColor: section.backgroundColor || "#ffffff" }}
       aria-label={section.title || "Instagram trends"}
     >
@@ -86,7 +86,7 @@ export default function InstagramTrendsSection({ section }: { section: HomeSecti
           subtitle={section.subtitle}
           showTitle={section.showTitle}
           showSubtitle={section.showSubtitle}
-          className="mb-7 sm:mb-9"
+          className="mb-5 sm:mb-9"
         />
         {section.description && (
           <p className="mx-auto mb-8 max-w-3xl text-center text-sm leading-7 text-neutral-600 sm:mb-10 sm:text-base sm:leading-8">
@@ -95,7 +95,7 @@ export default function InstagramTrendsSection({ section }: { section: HomeSecti
         )}
         <div className={`mx-auto grid w-full gap-3.5 sm:gap-5 lg:gap-6 ${desktopGridClass}`}>
           {media.map((item, index) => (
-            <MediaCard key={item.id || item.url || index} media={item} />
+            <MediaCard key={item.id || item.url || index} media={item} centerOnMobile={media.length === 3 && index === 2} />
           ))}
         </div>
       </div>

@@ -61,7 +61,7 @@ function MediaGridSection({ section }: { section: HomeSection }) {
     return (
       <div
         key={media.id}
-        className="group relative block aspect-[4/3] min-w-0 overflow-hidden rounded-2xl transition-all duration-500 hover:shadow-2xl"
+        className={`group relative block min-w-0 overflow-hidden rounded-2xl transition-all duration-500 hover:shadow-2xl ${media.type === "VIDEO" ? "aspect-[3/4]" : "aspect-[4/3]"}`}
         style={{ animationDelay: `${index * 0.1}s` }}
         onMouseEnter={() => setIsHovered(index)}
         onMouseLeave={() => setIsHovered(null)}
@@ -150,7 +150,7 @@ function MediaGridSection({ section }: { section: HomeSection }) {
 
   return (
     <section
-      className="relative overflow-hidden py-10 sm:py-12 lg:py-14"
+      className="relative overflow-hidden py-7 sm:py-12 lg:py-14"
       style={{ backgroundColor: section.backgroundColor }}
     >
       {/* Background decoration */}
@@ -172,7 +172,7 @@ function MediaGridSection({ section }: { section: HomeSection }) {
           showTitle={section.showTitle}
           showSubtitle={section.showSubtitle}
           textColor={section.textColor || "#4A2C2E"}
-          className="animate-fadeIn"
+          className="animate-fadeIn mb-5 sm:mb-9"
         />
 
         <div className="relative">

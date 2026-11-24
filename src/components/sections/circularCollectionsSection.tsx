@@ -96,7 +96,7 @@ export default function CircularCollectionsSection({ section }: { section: HomeS
             className="object-cover transition-transform duration-700 group-hover:scale-105"
           />
         </span>
-        <span className="mt-3 block min-h-[2.8rem] text-center font-[Jost,sans-serif] text-sm font-medium leading-6 tracking-[-0.02em] text-neutral-900 sm:mt-4 sm:text-base">
+        <span className="mt-2 block min-h-[2.8rem] text-center font-[Jost,sans-serif] text-sm font-medium leading-6 tracking-[-0.02em] text-neutral-900 sm:mt-4 sm:text-base">
           {item.title}
         </span>
       </>
@@ -109,14 +109,14 @@ export default function CircularCollectionsSection({ section }: { section: HomeS
   };
 
   return (
-    <section className="bg-white py-10 sm:py-12 lg:py-14" style={{ backgroundColor: section.backgroundColor || "#ffffff" }}>
+    <section className="bg-white py-7 sm:py-12 lg:py-14" style={{ backgroundColor: section.backgroundColor || "#ffffff" }}>
       <div className="mx-auto w-full max-w-[1500px] px-4 sm:px-6 lg:px-10">
         <HomeSectionHeading
           title={section.title || "Our Collections"}
           subtitle={section.subtitle}
           showTitle={section.showTitle}
           showSubtitle={section.showSubtitle}
-          className="mb-8 sm:mb-10"
+          className="mb-5 sm:mb-10"
         />
         {section.description && (
           <p className="mx-auto mb-8 max-w-2xl text-center text-sm leading-7 text-neutral-600 sm:text-base">{section.description}</p>
@@ -133,7 +133,7 @@ export default function CircularCollectionsSection({ section }: { section: HomeS
           </button>
         </div>
         {cards.length > 1 && (
-          <div className="mt-5 flex items-center justify-center gap-2.5" aria-label="Choose collection">
+          <div className="mt-3 flex items-center justify-center gap-2.5 sm:mt-5" aria-label="Choose collection">
             {cards.map((item, index) => (
               <button key={item.id} type="button" onClick={() => scrollTo(index)} aria-label={"Go to collection " + (index + 1)} aria-current={activeIndex === index ? "true" : undefined} className={"h-2.5 rounded-full transition-all duration-300 " + (activeIndex === index ? "w-7 bg-neutral-900" : "w-2.5 bg-neutral-300 hover:bg-neutral-500")} />
             ))}

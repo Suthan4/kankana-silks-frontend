@@ -131,7 +131,7 @@ const nextConfig: NextConfig = {
     // WebP only: AVIF takes ~9x longer to encode, which slows the first
     // (uncached) request for each banner size.
     formats: ["image/webp"],
-    qualities: [60, 75],
+    qualities: [60, 75, 80],
     // Optimised images are cached for 30 days (banner URLs are content-hashed).
     minimumCacheTTL: 60 * 60 * 24 * 30,
   },
