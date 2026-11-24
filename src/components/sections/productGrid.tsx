@@ -157,10 +157,11 @@ function ProductGrid({
 
               return (
                 <SwiperSlide key={product.id} className={isHandpicked ? HANDPICKED_SLIDE_CLASS : SLIDE_CLASS}>
-                  <Link
-                    href={`/${product.category.slug}/${product.slug}`}
-                    className="group flex h-full min-w-0 flex-col"
-                  >
+                  <div className="group relative flex h-full min-w-0 flex-col">
+                    <Link
+                      href={`/${product.category.slug}/${product.slug}`}
+                      className="flex h-full min-w-0 flex-col"
+                    >
                     <div className={`relative aspect-[4/5] w-full overflow-hidden bg-gray-50 ${isHandpicked ? "rounded-xl" : ""}`}>
                       {image ? (
                         <SmartImage
@@ -195,11 +196,6 @@ function ProductGrid({
                           </span>
                         )}
                       </div>
-                      <WishlistButton
-                        productId={product.id}
-                        size="sm"
-                        className="absolute right-2 top-2 z-10 h-8 w-8 border-0 bg-black/10 text-white shadow-none backdrop-blur-sm hover:bg-black/20"
-                      />
                     </div>
 
                     <div
@@ -222,7 +218,13 @@ function ProductGrid({
                         )}
                       </div>
                     </div>
-                  </Link>
+                    </Link>
+                    <WishlistButton
+                      productId={product.id}
+                      size="sm"
+                      className="absolute right-2 top-2 z-10 h-8 w-8 border-0 bg-black/10 text-white shadow-none backdrop-blur-sm hover:bg-black/20"
+                    />
+                  </div>
                 </SwiperSlide>
               );
             })}

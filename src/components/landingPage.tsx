@@ -220,7 +220,7 @@ export default function LandingPage({
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="home-breathing-room min-h-screen">
       {banners_data?.length > 0 && (
         <HeroSection
           banners={banners_data}
