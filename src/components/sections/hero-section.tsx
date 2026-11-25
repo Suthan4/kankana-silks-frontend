@@ -1,7 +1,5 @@
 "use client";
 
-import "swiper/css";
-
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { getImageProps } from "next/image";
@@ -237,15 +235,32 @@ export default function HeroSection({
       aria-roledescription="carousel"
       aria-label="Promotional banners"
     >
+      {/* First image is kept outside Swiper so it can paint from the server HTML
+          immediately, without waiting for the carousel's client initialization.
+          Swiper reuses the same visual layer for slide one and controls later slides. */}
+      {firstIsImage && (
+        <div
+          className="pointer-events-none absolute inset-0 z-0"
+          aria-hidden="true"
+          data-lcp-hero-image
+        >
+          <BannerPicture
+            banner={banners[0]}
+            isFirst
+            onFirstSettled={handleFirstSettled}
+          />
+        </div>
+      )}
+
       {/* =====================================
           SWIPER
           Mobile: finger swipe (vertical scroll still works).
           Desktop: mouse drag, arrows, dots and arrow keys.
           Autoplay pauses while the pointer is over the hero.
       ====================================== */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 z-10">
         <Swiper
-          className="h-full w-full md:cursor-grab md:active:cursor-grabbing"
+          className="home-hero-swiper h-full w-full md:cursor-grab md:active:cursor-grabbing"
           modules={[Autoplay, Keyboard, A11y]}
           slidesPerView={1}
           speed={600}
@@ -280,11 +295,13 @@ export default function HeroSection({
                 <div className="relative h-full w-full">
                   {shouldMount &&
                     (banner.type === MediaType.IMAGE ? (
-                      <BannerPicture
-                        banner={banner}
-                        isFirst={index === 0}
-                        onFirstSettled={handleFirstSettled}
-                      />
+                      index === 0 ? null : (
+                        <BannerPicture
+                          banner={banner}
+                          isFirst={false}
+                          onFirstSettled={handleFirstSettled}
+                        />
+                      )
                     ) : (
                       <BannerVideo banner={banner} isActive={isActive} />
                     ))}
