@@ -107,8 +107,6 @@ export function ReturnModal({
 
   const isFreeReturn = isFreeReturnReason(reason);
 
-  if (!isOpen) return null;
-
   return (
     <AnimatePresence>
       {isOpen && (
@@ -118,7 +116,9 @@ export function ReturnModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onPointerDown={(event) => {
+              if (event.target === event.currentTarget) onClose();
+            }}
             className="ios-modal-backdrop ios-modal-motion absolute inset-0 bg-black/60"
           />
 
