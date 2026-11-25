@@ -89,7 +89,7 @@ export function ProductRequestStatusButton({
         {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
         {isLoading ? "Checking request..." : meta?.label ?? "Request Product"}
       </button>
-      {meta && (
+      {request && meta && (
         <p className="mt-1.5 text-center text-[11px] text-gray-500" aria-live="polite">
           {meta.detail}
           {request.estimatedAvailability && request.status === "APPROVED"
