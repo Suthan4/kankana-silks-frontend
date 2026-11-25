@@ -53,17 +53,34 @@ export default function SmartImage({
   style,
   loading,
   draggable,
+  onLoad,
+  onError,
+  onClick,
 }: SmartImageProps) {
-  if (!canOptimize(src)) {
+  // Media URLs saved before the CDN migration may be relative paths without a
+  // leading slash. Resolve those from the site root, not the current product URL.
+  const trimmedSrc = src.trim();
+  const imageSrc =
+    trimmedSrc &&
+    !trimmedSrc.startsWith("/") &&
+    !/^(?:https?:)?\/\//i.test(trimmedSrc) &&
+    !/^(?:data|blob):/i.test(trimmedSrc)
+      ? `/${trimmedSrc.replace(/^\.\//, "")}`
+      : trimmedSrc;
+
+  if (!canOptimize(imageSrc)) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={src}
+        src={imageSrc}
         alt={alt}
         className={className}
         loading={priority ? "eager" : (loading ?? "lazy")}
         draggable={draggable}
         decoding="async"
+        onLoad={onLoad}
+        onError={onError}
+        onClick={onClick}
         style={
           fill
             ? {
@@ -81,7 +98,7 @@ export default function SmartImage({
 
   return (
     <Image
-      src={src}
+      src={imageSrc}
       alt={alt}
       fill={fill}
       sizes={sizes}
@@ -89,6 +106,9 @@ export default function SmartImage({
       priority={priority}
       loading={priority ? undefined : loading}
       draggable={draggable}
+      onLoad={onLoad}
+      onError={onError}
+      onClick={onClick}
       className={className}
       style={style}
     />
