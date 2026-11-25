@@ -195,7 +195,7 @@ export function ProductMobilePurchaseActions({
               className="w-12 h-12 flex-shrink-0 rounded-xl border border-brand-border bg-brand-primary-soft hover:bg-brand-primary-muted flex items-center justify-center"
             />
           </>
-        )}
+        ) : null}
       </div>
     </div>
   );
