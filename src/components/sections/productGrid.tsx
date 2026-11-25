@@ -186,25 +186,25 @@ function ProductGrid({
                       )}
 
                       <div className="absolute left-0 top-0 flex flex-col gap-2">
-                        {stockOverview.isOutOfStock && (
+                        {stockOverview.isZeroStock && (
                           <span className="rounded-full bg-red-600 px-3 py-1.5 text-xs font-futura-bold text-white shadow-lg">
                             Sold Out
                           </span>
                         )}
 
-                        {!stockOverview.isOutOfStock && stockState.isLastOne && (
+                        {!stockOverview.isZeroStock && !stockOverview.isOutOfStock && stockState.isLastOne && (
                           <span className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-futura-bold text-amber-900 shadow-sm">
                             Last one
                           </span>
                         )}
 
-                        {!stockOverview.isOutOfStock && stockState.isLimited && !stockState.isLastOne && (
+                        {!stockOverview.isZeroStock && !stockOverview.isOutOfStock && stockState.isLimited && !stockState.isLastOne && (
                           <span className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-futura-bold text-amber-900 shadow-sm">
                             Limited to 1
                           </span>
                         )}
 
-                        {!stockOverview.isOutOfStock && discount > 0 && (
+                        {!stockOverview.isZeroStock && discount > 0 && (
                           <span className="bg-main-primary/90 px-2.5 py-1 text-[11px] font-medium text-main-secondary backdrop-blur-md">
                             {discount}% OFF
                           </span>
@@ -222,18 +222,18 @@ function ProductGrid({
 
                       <div className="mt-auto flex flex-wrap items-baseline gap-x-2 pt-1">
                         <span className={isHandpicked ? "text-[13px] font-normal tracking-normal text-[#7A6466] md:text-base md:font-semibold" : "text-base font-semibold tracking-tight"}>
-                          {stockOverview.isOutOfStock
+                          {stockOverview.isZeroStock
                             ? formatMaskedPrice(sellingPrice)
                             : `₹${sellingPrice.toLocaleString("en-IN")}`}
                         </span>
 
-                        {!stockOverview.isOutOfStock && discount > 0 && (
+                        {!stockOverview.isZeroStock && discount > 0 && (
                           <span className="text-xs text-gray-500 line-through">
                             ₹{basePrice.toLocaleString("en-IN")}
                           </span>
                         )}
                       </div>
-                      {!stockOverview.isOutOfStock && stockMessage && (
+                      {!stockOverview.isZeroStock && stockMessage && (
                         <p className="mt-1 text-[11px] font-medium leading-4 text-amber-700">
                           {stockMessage.message}
                         </p>
