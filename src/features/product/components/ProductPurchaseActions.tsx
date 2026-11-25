@@ -1,11 +1,13 @@
 "use client";
 import { motion } from "framer-motion";
-import { AlertCircle, Loader2, ShoppingCart, Zap } from "lucide-react";
+import { Loader2, ShoppingCart, Zap } from "lucide-react";
 import { formatMaskedPrice } from "@/lib/utils/priceMasked";
 import WishlistButton from "@/components/ui/WishlistButton";
+import { ProductRequestStatusButton } from "@/features/product/components/ProductRequestStatusButton";
 
 interface ProductPurchaseActionsProps {
   productId: string;
+  variantId?: string | null;
   isOutOfStock: boolean;
   isAddingToCart: boolean;
   onAddToCart: () => void;
@@ -18,6 +20,7 @@ interface ProductPurchaseActionsProps {
 
 export function ProductDesktopPurchaseActions({
   productId,
+  variantId,
   isOutOfStock,
   isAddingToCart,
   onAddToCart,
@@ -27,17 +30,15 @@ export function ProductDesktopPurchaseActions({
   return (
     <div className="hidden md:block flex-none pt-3 space-y-2.5 border-t border-gray-200 mt-2">
       {/* Action Buttons */}
-      <div className="flex gap-2.5">
-        {isOutOfStock ? (
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={onRequestProduct}
-            className="brand-button flex-1 rounded-xl py-3 text-sm"
-          >
-            <AlertCircle className="w-4 h-4" /> Request Product
-          </motion.button>
-        ) : (
+      <div className="flex flex-col gap-2.5">
+        <ProductRequestStatusButton
+          productId={productId}
+          variantId={variantId}
+          onRequest={onRequestProduct}
+          showWhenNoRequest={isOutOfStock}
+          className="brand-button w-full rounded-xl py-3 text-sm"
+        />
+        {!isOutOfStock ? (
           <>
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -68,7 +69,7 @@ export function ProductDesktopPurchaseActions({
               <Zap className="w-4 h-4" /> Buy Now
             </motion.button>
           </>
-        )}
+        ) : null}
         <WishlistButton
           productId={productId}
           variant="icon"
@@ -99,6 +100,7 @@ export function ProductDesktopPurchaseActions({
 
 export function ProductMobilePurchaseActions({
   productId,
+  variantId,
   isOutOfStock,
   isAddingToCart,
   onAddToCart,
@@ -135,20 +137,17 @@ export function ProductMobilePurchaseActions({
 
       {/* Buttons row */}
       <div
-        className="flex items-center gap-2 px-4 pb-4 pt-1"
+        className="flex flex-col gap-2 px-4 pb-4 pt-1"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
       >
-        {isOutOfStock ? (
-          /* Out of stock — Request button full width */
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={onRequestProduct}
-            className="brand-button flex-1 rounded-xl py-3.5 font-futura-bold text-sm"
-          >
-            <AlertCircle className="w-4 h-4" />
-            Request Product
-          </motion.button>
-        ) : (
+        <ProductRequestStatusButton
+          productId={productId}
+          variantId={variantId}
+          onRequest={onRequestProduct}
+          showWhenNoRequest={isOutOfStock}
+          className="brand-button w-full rounded-xl py-3.5 font-futura-bold text-sm"
+        />
+        {!isOutOfStock ? (
           <>
             {/* Add to Cart */}
             <motion.button
@@ -196,7 +195,7 @@ export function ProductMobilePurchaseActions({
               className="w-12 h-12 flex-shrink-0 rounded-xl border border-brand-border bg-brand-primary-soft hover:bg-brand-primary-muted flex items-center justify-center"
             />
           </>
-        )}
+        ) : null}
       </div>
     </div>
   );

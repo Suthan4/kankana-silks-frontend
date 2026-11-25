@@ -174,7 +174,7 @@ export const getCartItemStockState = (
   const isBelowThreshold =
     hasStockData &&
     threshold > 0 &&
-    available <= threshold;
+    available < threshold;
 
   // Physical stock zero ALWAYS blocks purchasing.
   const isZeroStock =

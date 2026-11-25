@@ -4,7 +4,7 @@ import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, AlertCircle, Send, Package } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { productRequestApi } from "@/lib/api/product-request.api";
 import { toast } from "sonner";
 import type { Product, ProductVariant } from "@/lib/api/product.api";
@@ -14,7 +14,6 @@ interface ProductRequestModalProps {
   onClose: () => void;
   product: Pick<Product, "id" | "name">;
   selectedVariant?: ProductVariant | null;
-  // onSuccess?: () => void;
 }
 
 export default function ProductRequestModal({
@@ -22,47 +21,46 @@ export default function ProductRequestModal({
   onClose,
   product,
   selectedVariant,
-  // onSuccess,
 }: ProductRequestModalProps) {
   useModalScrollLock(isOpen);
-
+  const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
 
   const requestMutation = useMutation({
-    mutationFn: async () => {
-      return await productRequestApi.createRequest({
+    mutationFn: () =>
+      productRequestApi.createRequest({
         productId: product.id,
         variantId: selectedVariant?.id,
-        requestType: "OUT_OF_STOCK",
-        message: message || `Request for out-of-stock product: ${product.name}`,
-      });
-    },
+        quantity: 1,
+        customerNote: message.trim() || undefined,
+      }),
     onSuccess: () => {
-      toast.success("Request submitted successfully!", {
-        description: "We'll notify you when this product is back in stock.",
+      toast.success("Request submitted successfully", {
+        description:
+          "You can track its status from My Account → Product Requests.",
       });
       setMessage("");
       onClose();
-      // onSuccess?.();
     },
     onError: (error: any) => {
       toast.error("Failed to submit request", {
-        description: error.message || "Please try again later.",
+        description:
+          error?.response?.data?.message ||
+          error.message ||
+          "Please try again.",
       });
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (requestMutation.isPending) return;
-    requestMutation.mutate();
+    if (!requestMutation.isPending) requestMutation.mutate();
   };
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -70,8 +68,6 @@ export default function ProductRequestModal({
             onClick={onClose}
             className="ios-modal-backdrop ios-modal-motion fixed inset-0 bg-black/60 z-50"
           />
-
-          {/* Modal */}
           <div className="ios-modal-viewport ios-request-modal-viewport fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -80,15 +76,14 @@ export default function ProductRequestModal({
               transition={{ type: "spring", duration: 0.5 }}
               className="ios-modal-panel ios-request-panel ios-modal-motion bg-white rounded-t-3xl md:rounded-2xl shadow-2xl max-w-md w-full overflow-hidden max-h-[92vh] overflow-y-auto"
             >
-              {/* Header */}
               <div className="relative bg-gray-100 p-6 border-b border-gray-100">
                 <button
                   onClick={onClose}
+                  aria-label="Close request dialog"
                   className="absolute top-4 right-4 p-2 hover:bg-white/50 rounded-full transition-colors"
                 >
                   <X className="w-5 h-5 text-gray-600" />
                 </button>
-
                 <div className="flex items-start gap-4">
                   <div className="p-3 bg-black rounded-xl shadow-lg">
                     <Package className="w-6 h-6 text-white" />
@@ -98,21 +93,19 @@ export default function ProductRequestModal({
                       Request Product
                     </h3>
                     <p className="text-sm text-gray-600">
-                      We'll notify you when it's available
+                      Send a request to our team
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Content */}
               <form onSubmit={handleSubmit} className="ios-modal-content p-6">
-                {/* Product Info */}
                 <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <p className="text-sm font-medium text-gray-900 mb-1">
                     {product.name}
                   </p>
                   {selectedVariant && (
-                    <div className="flex gap-2 text-xs text-gray-600">
+                    <div className="flex flex-wrap gap-2 text-xs text-gray-600">
                       {selectedVariant.size && (
                         <span className="px-2 py-1 bg-white rounded-md border border-gray-200">
                           Size: {selectedVariant.size}
@@ -132,47 +125,45 @@ export default function ProductRequestModal({
                   )}
                 </div>
 
-                {/* Message Input */}
                 <div className="mb-6">
                   <label
-                    htmlFor="message"
+                    htmlFor="product-request-note"
                     className="block text-sm font-semibold text-gray-700 mb-2"
                   >
-                    Additional Message (Optional)
+                    Message (Optional)
                   </label>
                   <textarea
-                    id="message"
+                    id="product-request-note"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Let us know if you have any specific requirements..."
+                    placeholder="Any specific requirements?"
                     rows={4}
-                    className="brand-input w-full resize-none py-3 text-sm"
                     maxLength={500}
+                    className="brand-input w-full resize-none py-3 text-sm"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     {message.length}/500 characters
                   </p>
                 </div>
 
-                {/* Info Banner */}
                 <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-xl flex gap-3">
                   <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-blue-900">
                     <p className="font-medium mb-1">What happens next?</p>
                     <p className="text-blue-700">
-                      We'll email you as soon as this product is back in stock.
-                      You can track all your requests in your account.
+                      Our team will review your request. Track approval,
+                      rejection, and availability updates in My Account →
+                      Product Requests.
                     </p>
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-2 sm:gap:3">
+                <div className="flex gap-2 sm:gap-3">
                   <button
                     type="button"
                     onClick={onClose}
                     disabled={requestMutation.isPending}
-                    className="min-w-[110px] px-4 py-3 border border-gray-300 rounded-xl font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50 text-sm"
+                    className="min-w-[110px] px-4 py-3 border border-gray-300 rounded-xl font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 text-sm"
                   >
                     Cancel
                   </button>
@@ -183,7 +174,7 @@ export default function ProductRequestModal({
                   >
                     {requestMutation.isPending ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         Submitting...
                       </>
                     ) : (
