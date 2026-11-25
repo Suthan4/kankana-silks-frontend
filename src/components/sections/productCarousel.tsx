@@ -67,7 +67,7 @@ export default function ProductCarousel({
   const currentStockMessage = getCartItemStockMessage(currentStockOverview.item);
   const currentInStock = !currentStockOverview.isOutOfStock;
   const currentDiscount =
-    !currentStockOverview.isOutOfStock &&
+    !currentStockOverview.isZeroStock &&
     Number(currentProduct.basePrice) > Number(currentProduct.sellingPrice);
 
   const handleAddToCart = async (product: Product) => {
@@ -202,7 +202,7 @@ export default function ProductCarousel({
                     </h3>
                     <div className="mt-3 flex items-center justify-between gap-3">
                       <span className="font-medium">
-                        {stockOverview.isOutOfStock
+                        {stockOverview.isZeroStock
                           ? formatMaskedPrice(Number(product.sellingPrice))
                           : `₹${inr(product.sellingPrice)}`}
                       </span>
@@ -217,10 +217,16 @@ export default function ProductCarousel({
                         className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-2 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <ShoppingCart size={14} />
-                        {!inStock ? "Sold out" : product.hasVariants ? "Options" : "Add"}
+                        {!inStock
+                          ? stockOverview.isZeroStock
+                            ? "Sold out"
+                            : "Unavailable"
+                          : product.hasVariants
+                            ? "Options"
+                            : "Add"}
                       </button>
                     </div>
-                    {!stockOverview.isOutOfStock && stockMessage && (
+                    {!stockOverview.isZeroStock && stockMessage && (
                       <p className="mt-2 text-xs font-medium text-amber-700">
                         {stockMessage.message}
                       </p>
@@ -317,7 +323,7 @@ export default function ProductCarousel({
 
             <div className="mt-5 flex items-baseline gap-3">
               <span className="text-2xl font-medium tracking-tight lg:text-3xl">
-                {currentStockOverview.isOutOfStock
+                {currentStockOverview.isZeroStock
                   ? formatMaskedPrice(Number(currentProduct.sellingPrice))
                   : `₹${inr(currentProduct.sellingPrice)}`}
               </span>
@@ -328,7 +334,7 @@ export default function ProductCarousel({
               )}
             </div>
 
-            {!currentStockOverview.isOutOfStock && currentStockMessage && (
+            {!currentStockOverview.isZeroStock && currentStockMessage && (
               <p className="mt-2 text-sm font-medium text-amber-700" aria-live="polite">
                 {currentStockMessage.message}
               </p>
@@ -355,7 +361,9 @@ export default function ProductCarousel({
               >
                 <ShoppingCart size={17} strokeWidth={1.8} />
                 {!currentInStock
-                  ? "Sold out"
+                  ? currentStockOverview.isZeroStock
+                    ? "Sold out"
+                    : "Unavailable"
                   : currentProduct.hasVariants
                     ? "Choose options"
                     : "Add to cart"}
