@@ -4,7 +4,7 @@ import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, AlertCircle, Send, Package } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { productRequestApi } from "@/lib/api/product-request.api";
 import { toast } from "sonner";
 import type { Product, ProductVariant } from "@/lib/api/product.api";
@@ -22,7 +22,7 @@ export default function ProductRequestModal({
   product,
   selectedVariant,
 }: ProductRequestModalProps) {
-  useModalScrollLock(isOpen);
+  useModalScrollLock(isOpen);\n  const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
 
   const requestMutation = useMutation({
