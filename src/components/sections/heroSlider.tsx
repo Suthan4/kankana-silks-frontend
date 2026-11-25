@@ -80,9 +80,8 @@ function HeroSlider({ section }: { section: HomeSection }) {
                 fill
                 sizes="100vw"
                 quality={60}
-                // Eager for every slide: a lazy image is fetched and decoded only
-                // when first shown, which flashes blank on iOS mid-transition.
-                loading="eager"
+                priority={index === 0}
+                loading={index === 0 ? undefined : "lazy"}
                 className="object-cover"
                 draggable={false}
               />
