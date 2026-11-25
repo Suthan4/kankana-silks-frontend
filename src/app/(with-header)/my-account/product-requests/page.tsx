@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { AlertCircle, CalendarDays, Package, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { productRequestApi, type ProductRequest, type ProductRequestStatus } from "@/lib/api/product-request.api";
@@ -19,12 +20,12 @@ function formatDate(value?: string | null) {
   return Number.isNaN(date.getTime()) ? null : new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" }).format(date);
 }
 
-function RequestCard({ request, onCancel, cancelling }: { request: ProductRequest; onCancel: (id: string) => void; cancelling: boolean }) {
+function RequestCard({ request, onCancel, cancelling, highlighted }: { request: ProductRequest; onCancel: (id: string) => void; cancelling: boolean; highlighted: boolean }) {
   const meta = statusMeta[request.status];
   const variant = [request.variant?.size, request.variant?.color, request.variant?.fabric].filter(Boolean).join(" / ");
 
   return (
-    <article className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 shadow-sm">
+    <article id={"product-request-" + request.id} className={"rounded-2xl border bg-white p-4 sm:p-5 shadow-sm " + (highlighted ? "border-emerald-400 ring-2 ring-emerald-100" : "border-gray-200")}>
       <div className="flex gap-4">
         {request.product.media?.[0]?.url ? (
           <img src={request.product.media[0].url} alt={request.product.name} className="h-20 w-20 rounded-xl object-cover bg-gray-100" />
@@ -78,6 +79,8 @@ function RequestCard({ request, onCancel, cancelling }: { request: ProductReques
 
 export default function ProductRequestsPage() {
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const highlightedRequestId = searchParams.get("requestId");
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["my-product-requests"],
     queryFn: () => productRequestApi.getMyRequests({ page: 1, limit: 50 }),
@@ -123,7 +126,7 @@ export default function ProductRequestsPage() {
             <span className="rounded-full bg-amber-50 px-3 py-1 text-amber-800">{requests.filter((r) => r.status === "PENDING").length} under review</span>
             <span className="rounded-full bg-green-50 px-3 py-1 text-green-800">{requests.filter((r) => r.status === "APPROVED").length} approved</span>
           </div>
-          {requests.map((request) => <RequestCard key={request.id} request={request} onCancel={(id) => cancelMutation.mutate(id)} cancelling={cancelMutation.isPending && cancelMutation.variables === request.id} />)}
+          {requests.map((request) => <RequestCard key={request.id} request={request} onCancel={(id) => cancelMutation.mutate(id)} cancelling={cancelMutation.isPending && cancelMutation.variables === request.id} highlighted={request.id === highlightedRequestId} />)}
         </div>
       )}
     </div>
