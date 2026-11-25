@@ -146,7 +146,6 @@ function ProductGrid({
             {products.map((product, productIndex) => {
               const image = product.media?.[0]?.url;
               const stockOverview = getProductStockOverview(product);
-              const stockState = stockOverview.state;
               const stockLabel = getProductStockLabel(stockOverview);
 
               const basePrice = Number(product.basePrice);
