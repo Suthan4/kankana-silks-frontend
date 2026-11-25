@@ -425,12 +425,17 @@ export default function ProductCarousel({
                       aria-label={`View ${p.name}`}
                       aria-current={i === safeIndex ? "true" : undefined}
                       onClick={() => setIndex(i)}
-                      className={`h-1.5 shrink-0 rounded-full transition-all duration-300 ${
-                        i === safeIndex
-                          ? "w-8 bg-[#653A3A]"
-                          : "w-2 bg-stone-300 hover:bg-stone-500"
-                      }`}
-                    />
+                      className="flex h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#653A3A] focus-visible:ring-offset-2"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={`block rounded-full transition-all duration-300 ${
+                          i === safeIndex
+                            ? "h-[3px] w-8 bg-[#653A3A]"
+                            : "h-2 w-2 bg-stone-400 hover:bg-stone-600"
+                        }`}
+                      />
+                    </button>
                   ))}
                 </div>
               </div>
