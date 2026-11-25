@@ -11,6 +11,7 @@ interface ProductRequestStatusButtonProps {
   variantId?: string | null;
   onRequest: () => void;
   className?: string;
+  showWhenNoRequest?: boolean;
 }
 
 function findMatchingRequest(
@@ -38,6 +39,7 @@ export function ProductRequestStatusButton({
   variantId,
   onRequest,
   className = "",
+  showWhenNoRequest = false,
 }: ProductRequestStatusButtonProps) {
   const router = useRouter();
   const { user, openModal } = useAuthModal();
@@ -57,6 +59,8 @@ export function ProductRequestStatusButton({
     variantId,
   );
   const isLoading = Boolean(user) && requestQuery.isLoading;
+  if (!request && !showWhenNoRequest) return null;
+
   const meta = request ? buttonCopy[request.status] : null;
   const Icon = meta?.icon ?? AlertCircle;
 
