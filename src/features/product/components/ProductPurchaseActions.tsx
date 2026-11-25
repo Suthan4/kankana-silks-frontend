@@ -69,7 +69,7 @@ export function ProductDesktopPurchaseActions({
               <Zap className="w-4 h-4" /> Buy Now
             </motion.button>
           </>
-        )}
+        ) : null}
         <WishlistButton
           productId={productId}
           variant="icon"
@@ -137,7 +137,7 @@ export function ProductMobilePurchaseActions({
 
       {/* Buttons row */}
       <div
-        className="flex items-center gap-2 px-4 pb-4 pt-1"
+        className="flex flex-col gap-2 px-4 pb-4 pt-1"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
       >
         <ProductRequestStatusButton
