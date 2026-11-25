@@ -1,8 +1,9 @@
 "use client";
 import { motion } from "framer-motion";
-import { AlertCircle, Loader2, ShoppingCart, Zap } from "lucide-react";
+import { Loader2, ShoppingCart, Zap } from "lucide-react";
 import { formatMaskedPrice } from "@/lib/utils/priceMasked";
 import WishlistButton from "@/components/ui/WishlistButton";
+import { ProductRequestStatusButton } from "@/features/product/components/ProductRequestStatusButton";
 
 interface ProductPurchaseActionsProps {
   productId: string;
@@ -29,14 +30,14 @@ export function ProductDesktopPurchaseActions({
       {/* Action Buttons */}
       <div className="flex gap-2.5">
         {isOutOfStock ? (
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={onRequestProduct}
-            className="brand-button flex-1 rounded-xl py-3 text-sm"
-          >
-            <AlertCircle className="w-4 h-4" /> Request Product
-          </motion.button>
+          <div className="flex-1">
+            <ProductRequestStatusButton
+              productId={productId}
+              variantId={variantId}
+              onRequest={onRequestProduct}
+              className="brand-button w-full rounded-xl py-3 text-sm"
+            />
+          </div>
         ) : (
           <>
             <motion.button
@@ -140,14 +141,12 @@ export function ProductMobilePurchaseActions({
       >
         {isOutOfStock ? (
           /* Out of stock — Request button full width */
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={onRequestProduct}
+          <ProductRequestStatusButton
+            productId={productId}
+            variantId={variantId}
+            onRequest={onRequestProduct}
             className="brand-button flex-1 rounded-xl py-3.5 font-futura-bold text-sm"
-          >
-            <AlertCircle className="w-4 h-4" />
-            Request Product
-          </motion.button>
+          />
         ) : (
           <>
             {/* Add to Cart */}
