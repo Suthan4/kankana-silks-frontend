@@ -411,7 +411,7 @@ export function ZoomGallery({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
-            onMouseDown={(event) => {
+            onPointerDown={(event) => {
               if (event.target === event.currentTarget) closeLightbox();
             }}
             ref={lightboxRef}

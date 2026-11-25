@@ -250,7 +250,9 @@ export default function AuthModal() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="ios-auth-overlay ios-modal-viewport ios-modal-motion fixed inset-0 bg-black/60 flex items-center justify-center p-3 z-50"
-            onClick={closeModal}
+            onPointerDown={(event) => {
+              if (event.target === event.currentTarget) closeModal();
+            }}
             role="presentation"
           >
             <motion.div

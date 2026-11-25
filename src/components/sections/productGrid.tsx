@@ -9,6 +9,8 @@ import SmartImage from "../common/smartImage";
 import Link from "next/link";
 import WishlistButton from "@/components/ui/WishlistButton";
 import HomeSectionHeading from "../common/homeSectionHeading";
+import { getProductStockLabel, getProductStockOverview } from "@/lib/utils/cartStock";
+import { formatMaskedPrice } from "@/lib/utils/priceMasked";
 
 // Keep slide dimensions stable before and after Swiper initialisation.
 // The width already accounts for the gap between mobile slides.
@@ -143,7 +145,8 @@ function ProductGrid({
           >
             {products.map((product, productIndex) => {
               const image = product.media?.[0]?.url;
-              const inStock = product.stock?.some((s) => s.quantity > 0);
+              const stockOverview = getProductStockOverview(product);
+              const stockLabel = getProductStockLabel(stockOverview);
 
               const basePrice = Number(product.basePrice);
               const sellingPrice = Number(product.sellingPrice);
@@ -182,13 +185,7 @@ function ProductGrid({
                       )}
 
                       <div className="absolute left-0 top-0 flex flex-col gap-2">
-                        {!inStock && (
-                          <span className="rounded-full bg-red-600 px-3 py-1.5 text-xs font-futura-bold text-white shadow-lg">
-                            Sold Out
-                          </span>
-                        )}
-
-                        {discount > 0 && (
+                        {!stockOverview.isZeroStock && discount > 0 && (
                           <span className="bg-main-primary/90 px-2.5 py-1 text-[11px] font-medium text-main-secondary backdrop-blur-md">
                             {discount}% OFF
                           </span>
@@ -206,15 +203,25 @@ function ProductGrid({
 
                       <div className="mt-auto flex flex-wrap items-baseline gap-x-2 pt-1">
                         <span className={isHandpicked ? "text-[13px] font-normal tracking-normal text-[#7A6466] md:text-base md:font-semibold" : "text-base font-semibold tracking-tight"}>
-                          ₹{sellingPrice.toLocaleString("en-IN")}
+                          {stockOverview.isZeroStock
+                            ? formatMaskedPrice(sellingPrice)
+                            : `₹${sellingPrice.toLocaleString("en-IN")}`}
                         </span>
 
-                        {discount > 0 && (
+                        {!stockOverview.isZeroStock && discount > 0 && (
                           <span className="text-xs text-gray-500 line-through">
                             ₹{basePrice.toLocaleString("en-IN")}
                           </span>
                         )}
                       </div>
+                      {stockLabel && (
+                        <p
+                          className="mt-1 min-h-4 text-[11px] font-medium leading-4 text-stone-500"
+                          aria-live="polite"
+                        >
+                          {stockLabel}
+                        </p>
+                      )}
                     </div>
                     </Link>
                     <WishlistButton

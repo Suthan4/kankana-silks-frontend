@@ -51,6 +51,8 @@ export interface Product {
   sellingPrice: number;
   sku: string;
   isActive: boolean;
+  hasVariants?: boolean;
+  allowOutOfStockOrders?: boolean;
   media: Array<{
     id: string;
     type: "IMAGE" | "VIDEO";
@@ -64,6 +66,8 @@ export interface Product {
   };
   stock: Array<{
     quantity: number;
+    variantId?: string | null;
+    lowStockThreshold?: number | null;
   }>;
 }
 

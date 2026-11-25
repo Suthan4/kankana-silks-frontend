@@ -287,7 +287,7 @@ export default function BannerSection({ section }: { section: HomeSection }) {
                       fill
                       sizes="100vw"
                       priority={index === 0}
-                      loading={index === 0 ? undefined : "eager"}
+                      loading={index === 0 ? undefined : "lazy"}
                       className="object-cover object-center"
                       onError={() =>
                         setFailedImages((prev) => ({

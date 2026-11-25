@@ -20,11 +20,11 @@ import "swiper/css";
 import "swiper/css/pagination";
 import SmartImage from "../common/smartImage";
 import HomeSectionHeading from "../common/homeSectionHeading";
+import { getCartItemStockMessage, getProductStockLabel, getProductStockOverview } from "@/lib/utils/cartStock";
+import { formatMaskedPrice } from "@/lib/utils/priceMasked";
 
 const stripHtml = (html?: string) => (html ? html.replace(/<[^>]+>/g, "") : "");
 const inr = (value: number | string) => Number(value).toLocaleString("en-IN");
-const isInStock = (p: Product) => p.stock?.some((s) => s.quantity > 0);
-
 const arrowClass =
   "absolute top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-black/5 bg-white/90 text-xl text-gray-900 shadow-sm backdrop-blur-sm transition hover:scale-105 hover:bg-white active:scale-95";
 
@@ -63,14 +63,29 @@ export default function ProductCarousel({
 
   const safeIndex = Math.min(Math.max(index, 0), products.length - 1);
   const currentProduct = products[safeIndex];
-  const currentInStock = isInStock(currentProduct);
+  const currentStockOverview = getProductStockOverview(currentProduct);
+  const currentStockLabel = currentStockOverview.isOutOfStock
+    ? null
+    : getProductStockLabel(currentStockOverview);
+  const currentInStock = !currentStockOverview.isOutOfStock;
   const currentDiscount =
+    !currentStockOverview.isZeroStock &&
     Number(currentProduct.basePrice) > Number(currentProduct.sellingPrice);
 
   const handleAddToCart = async (product: Product) => {
-    const availableStock = product.stock?.[0]?.quantity ?? 0;
-    if (availableStock === 0) {
-      toast.error("Out of stock");
+    const stockOverview = getProductStockOverview(product);
+
+    if (stockOverview.isOutOfStock) {
+      toast.error(
+        getCartItemStockMessage(stockOverview.item)?.message ??
+          "This product is currently unavailable.",
+      );
+      return;
+    }
+
+    // Variable products require an explicit variant selection on the detail page.
+    if (product.hasVariants) {
+      handleViewDetails(product);
       return;
     }
 
@@ -89,7 +104,11 @@ export default function ProductCarousel({
           sellingPrice: Number(product.sellingPrice),
           basePrice: Number(product.basePrice),
           media: product.media || [],
-          stock: product.stock || [],
+          allowOutOfStockOrders: product.allowOutOfStockOrders ?? false,
+          stock: product.stock?.map((stock) => ({
+            ...stock,
+            lowStockThreshold: stock.lowStockThreshold ?? 0,
+          })) || [],
         },
         variant: null,
       });
@@ -112,7 +131,7 @@ export default function ProductCarousel({
 
   return (
     <section
-      className="pb-8 pt-8 md:pb-12 md:pt-12 lg:pb-14 lg:pt-14"
+      className="pb-8 pt-7 sm:pb-10 sm:pt-9 lg:pb-12 lg:pt-10"
       style={{ backgroundColor, color: textColor }}
     >
       <HomeSectionHeading
@@ -124,7 +143,7 @@ export default function ProductCarousel({
       />
 
       {/* MOBILE: horizontal card swiper */}
-      <div className="md:hidden">
+      <div className="lg:hidden">
         <Swiper
           modules={[Autoplay, Pagination]}
           onSwiper={(s) => (swiperRef.current = s)}
@@ -143,55 +162,112 @@ export default function ProductCarousel({
           autoplay={{ delay: 6000, disableOnInteraction: false }}
           pagination={{ clickable: true }}
           slidesPerView={1.08}
+          breakpoints={{
+            640: { slidesPerView: 1.3, spaceBetween: 16 },
+            768: { slidesPerView: 1.55, spaceBetween: 18 },
+          }}
           centeredSlides
-          spaceBetween={12}
+          spaceBetween={10}
         >
           {products.map((product) => {
-            const inStock = isInStock(product);
+            const stockOverview = getProductStockOverview(product);
+            const stockLabel = stockOverview.isOutOfStock
+              ? null
+              : getProductStockLabel(stockOverview);
+            const inStock = !stockOverview.isOutOfStock;
+
+            const basePrice = Number(product.basePrice);
+            const sellingPrice = Number(product.sellingPrice);
+            const discount =
+              basePrice > sellingPrice
+                ? Math.round(((basePrice - sellingPrice) / basePrice) * 100)
+                : 0;
 
             return (
               <SwiperSlide key={product.id}>
-                <article className="mx-2 overflow-hidden rounded-2xl bg-white text-black shadow-sm">
-                  <button
-                    type="button"
-                    aria-label={`View ${product.name}`}
-                    onClick={() => handleViewDetails(product)}
-                    className="relative block aspect-[4/5] w-full overflow-hidden bg-[#f7f7f5]"
-                  >
-                    {product.media?.[0]?.url ? (
-                      <SmartImage
-                        src={product.media[0].url}
-                        alt={product.name}
-                        fill
-                        sizes="(max-width: 768px) 92vw"
-                        className="object-cover object-top"
-                      />
-                    ) : (
-                      <span className="flex h-full items-center justify-center text-sm text-gray-400">
-                        No image available
+                <article className="mx-auto w-full max-w-[560px] overflow-hidden rounded-2xl border border-stone-100 bg-white text-black shadow-[0_12px_36px_rgba(32,22,18,0.08)]">
+                  <div className="relative">
+                    <button
+                      type="button"
+                      aria-label={`View ${product.name}`}
+                      onClick={() => handleViewDetails(product)}
+                      className="relative block aspect-[4/4.5] max-h-[58svh] w-full overflow-hidden bg-[#f7f5f2]"
+                    >
+                      {product.media?.[0]?.url ? (
+                        <SmartImage
+                          src={product.media[0].url}
+                          alt={product.name}
+                          fill
+                          sizes="(max-width: 640px) 92vw, 560px"
+                          className="object-cover object-top"
+                        />
+                      ) : (
+                        <span className="flex h-full items-center justify-center text-sm text-gray-400">
+                          No image available
+                        </span>
+                      )}
+                    </button>
+
+                    {discount > 0 && !stockOverview.isZeroStock && (
+                      <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-semibold tracking-wide text-[#653A3A] shadow-sm backdrop-blur">
+                        {discount}% OFF
                       </span>
                     )}
-                  </button>
+                    <div className="absolute right-3 top-3">
+                      <WishlistButton
+                        productId={product.id}
+                        variant="icon"
+                        size="md"
+                        className="border border-stone-200/70 bg-white/95 shadow-sm backdrop-blur transition hover:bg-white"
+                      />
+                    </div>
+                  </div>
 
-                  <div className="p-4">
-                    <p className="text-[11px] uppercase tracking-[0.18em] opacity-60">
+                  <div className="p-4 sm:p-5">
+                    <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-stone-500">
                       {product.category?.name || "Collection"}
                     </p>
-                    <h3 className="mt-1 line-clamp-2 text-base font-semibold">
+                    <h3 className="mt-1.5 line-clamp-2 min-h-11 text-base font-semibold leading-6 text-stone-900">
                       {product.name}
                     </h3>
-                    <div className="mt-3 flex items-center justify-between gap-3">
-                      <span className="font-medium">₹{inr(product.sellingPrice)}</span>
-                      <button
-                        type="button"
-                        disabled={!inStock}
-                        onClick={() => handleAddToCart(product)}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-2 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <ShoppingCart size={14} />
-                        {inStock ? "Add" : "Sold out"}
-                      </button>
+
+                    <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                      <span className="text-xl font-semibold tracking-tight text-stone-950">
+                        {stockOverview.isZeroStock
+                          ? formatMaskedPrice(sellingPrice)
+                          : `₹${inr(sellingPrice)}`}
+                      </span>
+                      {!stockOverview.isZeroStock && discount > 0 && (
+                        <span className="text-sm text-stone-400 line-through">
+                          ₹{inr(basePrice)}
+                        </span>
+                      )}
+                      {stockLabel && (
+                        <span className="text-xs font-medium text-stone-500" aria-live="polite">
+                          {stockLabel}
+                        </span>
+                      )}
                     </div>
+
+                    <button
+                      type="button"
+                      disabled={!inStock}
+                      onClick={() =>
+                        product.hasVariants
+                          ? handleViewDetails(product)
+                          : handleAddToCart(product)
+                      }
+                      className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#653A3A] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#4f2c2c] active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-stone-300"
+                    >
+                      <ShoppingCart size={16} />
+                      {!inStock
+                        ? stockOverview.isZeroStock
+                          ? "Sold out"
+                          : "Unavailable"
+                        : product.hasVariants
+                          ? "Choose options"
+                          : "Add to bag"}
+                    </button>
                   </div>
                 </article>
               </SwiperSlide>
@@ -206,17 +282,17 @@ export default function ProductCarousel({
       </div>
 
       {/* TABLET + DESKTOP: image and details, grouped and centered */}
-      <div className="hidden w-full md:block">
-        <div className="mx-auto grid w-full max-w-6xl items-center gap-8 px-6 md:grid-cols-[minmax(0,440px)_minmax(0,1fr)] lg:grid-cols-[minmax(0,500px)_minmax(0,1fr)] lg:gap-16 lg:px-10">
+      <div className="hidden w-full lg:block">
+        <div className="mx-auto grid w-full max-w-[1440px] items-center gap-8 px-5 sm:px-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-10 xl:gap-14 xl:px-12">
           {/* Image */}
-          <div className="group relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-[#f7f7f5]">
+          <div className="group relative aspect-[0.9] max-h-[min(72vh,760px)] w-full overflow-hidden rounded-2xl bg-[#f7f7f5] shadow-sm">
             {currentProduct.media?.[0]?.url ? (
               <SmartImage
                 key={currentProduct.id}
                 src={currentProduct.media[0].url}
                 alt={currentProduct.name}
                 fill
-                sizes="(min-width: 1024px) 500px, 440px"
+                sizes="(min-width: 1536px) 680px, (min-width: 1024px) 52vw, 100vw"
                 className="object-cover object-top transition duration-500 ease-out group-hover:scale-[1.02]"
               />
             ) : (
@@ -277,14 +353,16 @@ export default function ProductCarousel({
             </h3>
 
             {currentProduct.description && (
-              <p className="mt-4 line-clamp-3 max-w-xl text-sm leading-7 opacity-75 lg:text-[15px]">
+              <p className="mt-4 line-clamp-3 max-w-2xl text-sm leading-7 opacity-75 xl:text-base">
                 {stripHtml(currentProduct.description)}
               </p>
             )}
 
-            <div className="mt-5 flex items-baseline gap-3">
-              <span className="text-2xl font-medium tracking-tight lg:text-3xl">
-                ₹{inr(currentProduct.sellingPrice)}
+            <div className="mt-6 flex flex-wrap items-baseline gap-3">
+              <span className="text-3xl font-medium tracking-tight xl:text-4xl">
+                {currentStockOverview.isZeroStock
+                  ? formatMaskedPrice(Number(currentProduct.sellingPrice))
+                  : `₹${inr(currentProduct.sellingPrice)}`}
               </span>
               {currentDiscount && (
                 <span className="text-sm text-gray-500 line-through lg:text-base">
@@ -293,11 +371,17 @@ export default function ProductCarousel({
               )}
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center gap-3">
+            {currentStockLabel && (
+              <p className="mt-2 text-sm font-medium text-stone-500" aria-live="polite">
+                {currentStockLabel}
+              </p>
+            )}
+
+            <div className="mt-7 flex flex-wrap items-center gap-3">
               <button
                 type="button"
                 onClick={() => handleViewDetails(currentProduct)}
-                className="inline-flex items-center justify-center rounded-full bg-black px-7 py-3 text-sm font-medium text-white transition hover:bg-gray-800 active:scale-[0.98]"
+                className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#653A3A] px-8 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#4f2c2c] active:scale-[0.98]"
               >
                 View Product
               </button>
@@ -305,36 +389,51 @@ export default function ProductCarousel({
               <button
                 type="button"
                 disabled={!currentInStock}
-                onClick={() => handleAddToCart(currentProduct)}
-                className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-5 py-3 text-sm font-medium text-gray-700 transition hover:border-gray-400 hover:bg-gray-50 hover:text-black active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() =>
+                  currentProduct.hasVariants
+                    ? handleViewDetails(currentProduct)
+                    : handleAddToCart(currentProduct)
+                }
+                className="inline-flex min-h-12 items-center gap-2 rounded-full border border-stone-300 bg-white px-6 py-3 text-sm font-semibold text-stone-800 transition hover:border-stone-500 hover:bg-stone-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ShoppingCart size={17} strokeWidth={1.8} />
-                {currentInStock ? "Add to cart" : "Sold out"}
+                {!currentInStock
+                  ? currentStockOverview.isZeroStock
+                    ? "Sold out"
+                    : "Unavailable"
+                  : currentProduct.hasVariants
+                    ? "Choose options"
+                    : "Add to cart"}
               </button>
             </div>
 
             {products.length > 1 && (
-              <>
-                <div className="mt-8 h-px w-full max-w-xl bg-gray-100" />
-                <div className="mt-5 flex items-center gap-3">
-                  <span className="mr-2 text-[11px] uppercase tracking-[0.18em] opacity-50">
+              <div className="mt-8 flex max-w-2xl items-center justify-between gap-4 border-t border-stone-200 pt-5">
+                <div className="flex shrink-0 items-center gap-3">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-400">
                     Explore
                   </span>
+                  <span className="text-xs font-semibold tabular-nums text-stone-700">
+                    {String(safeIndex + 1).padStart(2, "0")} / {String(products.length).padStart(2, "0")}
+                  </span>
+                </div>
+                <div className="flex max-w-[65%] items-center justify-end gap-1.5 overflow-x-auto py-1">
                   {products.map((p, i) => (
                     <button
                       key={p.id}
                       type="button"
-                      aria-label={`View product ${i + 1}`}
+                      aria-label={`View ${p.name}`}
+                      aria-current={i === safeIndex ? "true" : undefined}
                       onClick={() => setIndex(i)}
-                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                      className={`h-1.5 shrink-0 rounded-full transition-all duration-300 ${
                         i === safeIndex
-                          ? "w-8 bg-black"
-                          : "w-2 bg-gray-300 hover:bg-gray-500"
+                          ? "w-8 bg-[#653A3A]"
+                          : "w-2 bg-stone-300 hover:bg-stone-500"
                       }`}
                     />
                   ))}
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>
