@@ -7,6 +7,7 @@ import { ProductRequestStatusButton } from "@/features/product/components/Produc
 
 interface ProductPurchaseActionsProps {
   productId: string;
+  variantId?: string | null;
   isOutOfStock: boolean;
   isAddingToCart: boolean;
   onAddToCart: () => void;
@@ -19,6 +20,7 @@ interface ProductPurchaseActionsProps {
 
 export function ProductDesktopPurchaseActions({
   productId,
+  variantId,
   isOutOfStock,
   isAddingToCart,
   onAddToCart,
@@ -100,6 +102,7 @@ export function ProductDesktopPurchaseActions({
 
 export function ProductMobilePurchaseActions({
   productId,
+  variantId,
   isOutOfStock,
   isAddingToCart,
   onAddToCart,
