@@ -261,7 +261,6 @@ export default function HeroSection({
       {firstIsImage && (
         <div
           className="pointer-events-none absolute inset-0 z-0"
-          aria-hidden="true"
           data-lcp-hero-image
         >
           <BannerPicture
@@ -269,6 +268,37 @@ export default function HeroSection({
             isFirst
             onFirstSettled={handleFirstSettled}
           />
+
+          {/* Keep the primary heading in the server HTML while the carousel
+              waits for the first image paint and its deferred initialization. */}
+          {!carouselReady && (
+            <>
+              <div
+                className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent"
+                aria-hidden="true"
+              />
+              <div className="absolute inset-0 flex items-end justify-center px-5 pb-14 sm:px-8 sm:pb-24">
+                <div className="mx-auto w-full max-w-5xl text-center">
+                  <h1 className={HEADING_CLASS}>
+                    {banners[0].title || "Timeless Elegance"}
+                  </h1>
+                  {banners[0].text && (
+                    <p className="mx-auto mt-4 hidden max-w-3xl text-base font-light tracking-wide text-white/90 text-shadow-hero-sm sm:block lg:text-lg">
+                      {banners[0].text}
+                    </p>
+                  )}
+                  {banners[0].link && (
+                    <Link
+                      href={banners[0].link}
+                      className="pointer-events-auto mt-4 inline-flex min-h-11 min-w-36 items-center justify-center border border-white bg-black/30 px-6 text-xs font-semibold uppercase tracking-[0.16em] text-white transition-colors hover:bg-white hover:text-black focus-visible:bg-white focus-visible:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black active:scale-[0.98] sm:mt-7 sm:min-w-44 sm:px-8 sm:text-sm md:bg-black/15 md:backdrop-blur-sm"
+                    >
+                      Explore Collection
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
