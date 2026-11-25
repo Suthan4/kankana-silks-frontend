@@ -13,6 +13,7 @@ import { Toaster } from "sonner";
 import MiniCartDrawer from "@/components/miniCartDrawerProvider";
 import { SkipLink } from "@/components/ui/SkipLink";
 import { NavigationProgress } from "@/components/ui/NavigationProgress";
+import DeferredBrandFonts from "@/components/DeferredBrandFonts";
 
 // --------------------------------------------------
 // Site Configuration
@@ -219,7 +220,6 @@ export default function RootLayout({
     <html lang="en-IN">
       <head>
         <link rel="preconnect" href="https://use.typekit.net" crossOrigin="" />
-        <link rel="stylesheet" href="https://use.typekit.net/gmp5qfk.css" />
 
         <script
           type="application/ld+json"
@@ -233,6 +233,7 @@ export default function RootLayout({
       </head>
 
       <body className="bg-[#faf7f2] text-neutral-900 antialiased overflow-x-hidden">
+        <DeferredBrandFonts />
         <SkipLink />
 
         {/* Navigation Progress */}
