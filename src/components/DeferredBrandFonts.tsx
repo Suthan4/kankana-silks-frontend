@@ -21,11 +21,15 @@ export default function DeferredBrandFonts() {
     ];
 
     for (const stylesheet of deferredStylesheets) {
-      if (
-        document.head.querySelector(
-          `link[data-deferred-brand-font="${stylesheet.id}"]`,
-        )
-      ) {
+      const existing = document.head.querySelector<HTMLLinkElement>(
+        `link[data-deferred-brand-font="${stylesheet.id}"]`,
+      );
+
+      if (existing) {
+        // The stylesheet was preloaded from the server head, so switch it to
+        // an active stylesheet after hydration without issuing another request.
+        existing.rel = "stylesheet";
+        existing.removeAttribute("as");
         continue;
       }
 
