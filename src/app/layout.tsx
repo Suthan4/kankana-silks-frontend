@@ -220,6 +220,18 @@ export default function RootLayout({
     <html lang="en-IN">
       <head>
         <link rel="preconnect" href="https://use.typekit.net" crossOrigin="" />
+        <link
+          rel="preload"
+          as="style"
+          href="https://use.typekit.net/gmp5qfk.css"
+          data-deferred-brand-font="kankana-adobe-fonts"
+        />
+        <link
+          rel="preload"
+          as="style"
+          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@400;500;600&display=swap"
+          data-deferred-brand-font="kankana-editorial-fonts"
+        />
 
         <script
           type="application/ld+json"
