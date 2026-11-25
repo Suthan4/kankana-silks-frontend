@@ -2,6 +2,7 @@
 
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import React, { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   X,
   User,
@@ -151,8 +152,6 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
     setFormData((prev) => ({ ...prev, platform }));
   };
 
-  if (!isOpen) return null;
-
   const today = new Date().toISOString().split("T")[0];
 
   const steps = [
@@ -172,13 +171,20 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
   ];
 
   return (
-    <div
-      className="fixed inset-0 z-[1000] flex items-end justify-center bg-black/50 md:items-center md:p-4"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-      role="presentation"
-    >
+    <AnimatePresence>
+      {isOpen && (
+      <motion.div
+        key="video-consultation-modal"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.18, ease: "easeOut" }}
+        className="fixed inset-0 z-[1000] flex items-end justify-center bg-black/50 md:items-center md:p-4"
+        onPointerDown={(event) => {
+          if (event.target === event.currentTarget) onClose();
+        }}
+        role="presentation"
+      >
       <section
         role="dialog"
         aria-modal="true"
@@ -416,7 +422,9 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
           </button>
         </div>
       </section>
-    </div>
+      </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 
