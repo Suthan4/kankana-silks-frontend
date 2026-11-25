@@ -191,14 +191,14 @@ export const CategoryProductCard = memo(function CategoryProductCard({
                 {isAddingToCart ? "Adding..." : "Add to Cart"}
               </button>
             )
-          ) : (
-            <ProductRequestStatusButton
-              productId={product.id}
-              variantId={selectedVariant?.id}
-              onRequest={() => onRequestProduct(product, selectedVariant)}
-              className="brand-button w-full py-2.5"
-            />
-          )}
+          ) : null}
+          <ProductRequestStatusButton
+            productId={product.id}
+            variantId={selectedVariant?.id}
+            onRequest={() => onRequestProduct(product, selectedVariant)}
+            showWhenNoRequest={!showAddToCart}
+            className="brand-button w-full py-2.5"
+          />
         </div>
       </div>
     </motion.div>
