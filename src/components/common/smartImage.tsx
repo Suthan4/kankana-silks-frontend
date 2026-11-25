@@ -131,11 +131,11 @@ export default function SmartImage({
       loading={priority ? undefined : loading}
       draggable={draggable}
       onLoad={onLoad}
-      onError={(event) => {
+      onError={() => {
         // Retry directly from the original media URL if Next's optimizer cannot
         // fetch a supported remote image (e.g. older CDN/S3 objects).
+        // Do not bubble this transient optimizer error: the native image may load.
         setFailedOptimizedSource(imageSrc);
-        onError?.(event);
       }}
       onClick={onClick}
       className={className}
