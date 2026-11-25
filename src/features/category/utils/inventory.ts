@@ -6,5 +6,7 @@ export function isProductUnavailable(product: Product): boolean {
 }
 
 export function isProductOutOfStock(product: Product): boolean {
-  return getProductStockOverview(product).isOutOfStock;
+  // "Sold Out" refers to zero physical inventory; threshold-blocked items
+  // still have stock and should display the separate unavailable message.
+  return getProductStockOverview(product).isZeroStock;
 }
