@@ -21,13 +21,16 @@ export function useHeaderScroll({
   const [isScrolled, setIsScrolled] = useState(!hasHeroBehindHeader);
   const [showNav, setShowNav] = useState(true);
   const [showMobileHeader, setShowMobileHeader] = useState(true);
-  const [navBottom, setNavBottom] = useState(140);
   const navRef = useRef<HTMLElement>(null);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRafRef = useRef<number | null>(null);
   const lastScrollYRef = useRef(0);
   const accumulatedScrollRef = useRef(0);
   const mobileScrollDeltaRef = useRef(0);
+  // Header top row is 65px; desktop category nav is 42px when visible.
+  // Derive the menu offset from these fixed dimensions instead of forcing
+  // synchronous layout reads during hover/resize.
+  const navBottom = 65 + (showNav ? 42 : 0);
 
   useEffect(() => {
     const getSafeScrollY = () => Math.max(0, window.scrollY);
@@ -122,15 +125,6 @@ export function useHeaderScroll({
     setIsHeaderHovered,
   ]);
 
-  useEffect(() => {
-    const updateNavBottom = () => {
-      if (navRef.current) setNavBottom(navRef.current.getBoundingClientRect().bottom);
-    };
-    updateNavBottom();
-    window.addEventListener("resize", updateNavBottom);
-    return () => window.removeEventListener("resize", updateNavBottom);
-  }, [showNav]);
-
   const clearHoverTimeout = () => {
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
@@ -156,7 +150,6 @@ export function useHeaderScroll({
   const handleCategoryHover = (categoryId: string) => {
     clearHoverTimeout();
     setHoveredCategory(categoryId);
-    if (navRef.current) setNavBottom(navRef.current.getBoundingClientRect().bottom);
   };
 
   return {
