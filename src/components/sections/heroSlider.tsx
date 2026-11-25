@@ -3,6 +3,7 @@
 import { HomeSection } from "@/lib/api/home-section.api";
 import { useEffect, useRef, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
 import { A11y, Autoplay, Keyboard } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
 import SmartImage from "../common/smartImage";
