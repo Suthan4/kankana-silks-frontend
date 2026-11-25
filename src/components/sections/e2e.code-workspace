@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"name": "e2e",
+			"path": "E:/Downloads/ios-safari-fixes (1)/ios-safari-fixes/e2e"
+		},
+		{
+			"name": "kangana-silks-fronend",
+			"path": "../../.."
+		}
+	],
+	"settings": {
+		"prisma-smart-formatter.typescript.defaultFormatter": "esbenp.prettier-vscode",
+		"prisma-smart-formatter.typescriptreact.defaultFormatter": "esbenp.prettier-vscode"
+	}
+}
