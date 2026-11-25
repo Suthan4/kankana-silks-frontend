@@ -333,12 +333,17 @@ export default function AestheticFullImage({
                   onClick={() => goTo(index)}
                   aria-label={`Go to slide ${index + 1}`}
                   aria-current={isActive ? "true" : undefined}
-                  className={`transition-all duration-300 rounded-full focus:outline-none focus:ring-2 focus:ring-black ${
-                    isActive
-                      ? "w-8 h-[3px] bg-white"
-                      : "w-2 h-2 bg-white/45 hover:bg-white/80"
-                  }`}
-                />
+                  className="flex h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-black"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`block rounded-full transition-all duration-300 ${
+                      isActive
+                        ? "h-[3px] w-8 bg-white"
+                        : "h-2 w-2 bg-white/60 hover:bg-white"
+                    }`}
+                  />
+                </button>
               );
             })}
           </div>

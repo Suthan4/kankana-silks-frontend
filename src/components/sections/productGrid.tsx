@@ -167,7 +167,7 @@ function ProductGrid({
                       {image ? (
                         <SmartImage
                           src={image}
-                          alt={product.name}
+                          alt=""
                           fill
                           quality={60}
                           priority={productIndex < eagerCount}
@@ -209,14 +209,14 @@ function ProductGrid({
                         </span>
 
                         {!stockOverview.isZeroStock && discount > 0 && (
-                          <span className="text-xs text-gray-500 line-through">
+                          <span className="text-xs text-stone-600 line-through">
                             ₹{basePrice.toLocaleString("en-IN")}
                           </span>
                         )}
                       </div>
                       {stockLabel && (
                         <p
-                          className="mt-1 min-h-4 text-[11px] font-medium leading-4 text-stone-500"
+                          className="mt-1 min-h-4 text-[11px] font-medium leading-4 text-stone-600"
                           aria-live="polite"
                         >
                           {stockLabel}
@@ -244,8 +244,13 @@ function ProductGrid({
                   onClick={() => swiper?.slideTo(pageIndex * 4)}
                   aria-label={`Show product group ${pageIndex + 1}`}
                   aria-current={Math.floor(activeProductIndex / 4) === pageIndex ? "true" : undefined}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${Math.floor(activeProductIndex / 4) === pageIndex ? "w-6 bg-neutral-900" : "w-1.5 bg-neutral-300 hover:bg-neutral-500"}`}
-                />
+                  className="flex h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`block h-1.5 rounded-full transition-all duration-300 ${Math.floor(activeProductIndex / 4) === pageIndex ? "w-6 bg-neutral-900" : "w-1.5 bg-neutral-400 hover:bg-neutral-600"}`}
+                  />
+                </button>
               ))}
             </div>
           )}
@@ -263,8 +268,13 @@ function ProductGrid({
                     onClick={() => swiper?.slideTo(pageIndex * 2)}
                     aria-label={`Show product group ${pageIndex + 1}`}
                     aria-current={Math.floor(activeProductIndex / 2) === pageIndex ? "true" : undefined}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${Math.floor(activeProductIndex / 2) === pageIndex ? "w-5 bg-brand-primary" : "w-1.5 bg-brand-primary/25 hover:bg-brand-primary/55"}`}
-                  />
+                    className="flex h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`block h-1.5 rounded-full transition-all duration-300 ${Math.floor(activeProductIndex / 2) === pageIndex ? "w-5 bg-brand-primary" : "w-1.5 bg-brand-primary/40 hover:bg-brand-primary/70"}`}
+                    />
+                  </button>
                 ))}
               </div>
               <span aria-hidden="true" className="text-xs text-brand-primary">→</span>

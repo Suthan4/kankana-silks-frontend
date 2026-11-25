@@ -67,7 +67,7 @@ export function MobileBottomNavigation({
                       openLogin();
                     }
                   }}
-                  className="relative flex flex-col items-center gap-1 py-1"
+                  className="relative flex min-h-11 flex-col items-center justify-center gap-1 py-1"
                 >
                   {isActive && (
                     <motion.div
@@ -76,8 +76,8 @@ export function MobileBottomNavigation({
                       transition={{ type: "spring", stiffness: 380, damping: 30 }}
                     />
                   )}
-                  <Icon className={`h-5 w-5 transition-colors ${isActive ? "text-brand-primary" : "text-gray-500"}`} />
-                  <span className={`text-[11px] font-medium transition-colors ${isActive ? "text-brand-primary" : "text-gray-500"}`}>
+                  <Icon className={`h-5 w-5 transition-colors ${isActive ? "text-brand-primary" : "text-neutral-700"}`} />
+                  <span className={`text-xs font-semibold transition-colors ${isActive ? "text-brand-primary" : "text-neutral-700"}`}>
                     {item.name}
                   </span>
                   {!!item.badgeCount && item.badgeCount > 0 && (
@@ -90,10 +90,10 @@ export function MobileBottomNavigation({
                 <button
                   type="button"
                   onClick={item.onClick}
-                  className="flex w-full flex-col items-center gap-1 py-1"
+                  className="flex min-h-11 w-full flex-col items-center justify-center gap-1 py-1"
                 >
-                  <Icon className="h-6 w-6 text-gray-500" />
-                  <span className="text-[11px] text-gray-500">{item.name}</span>
+                  <Icon className="h-6 w-6 text-neutral-700" />
+                  <span className="text-xs font-semibold text-neutral-800">{item.name}</span>
                 </button>
               )}
             </li>
@@ -104,7 +104,7 @@ export function MobileBottomNavigation({
           <button
             type="button"
             onClick={onAccountClick}
-            className="relative flex w-full flex-col items-center gap-1 py-2"
+            className="relative flex min-h-11 w-full flex-col items-center justify-center gap-1 py-2"
           >
             {pathname?.startsWith("/my-account") && (
               <motion.div
@@ -113,8 +113,8 @@ export function MobileBottomNavigation({
                 transition={{ type: "spring", stiffness: 380, damping: 30 }}
               />
             )}
-            <User className={`h-5 w-5 transition-colors ${pathname?.startsWith("/my-account") ? "text-brand-primary" : "text-gray-500"}`} />
-            <span className={`text-[11px] font-medium transition-colors ${pathname?.startsWith("/my-account") ? "text-brand-primary" : "text-gray-500"}`}>
+            <User className={`h-5 w-5 transition-colors ${pathname?.startsWith("/my-account") ? "text-brand-primary" : "text-neutral-700"}`} />
+            <span className={`text-xs font-semibold transition-colors ${pathname?.startsWith("/my-account") ? "text-brand-primary" : "text-neutral-700"}`}>
               {user ? "Account" : "Login"}
             </span>
           </button>

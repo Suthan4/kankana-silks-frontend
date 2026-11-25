@@ -45,7 +45,10 @@ function BannerPicture({
   onFirstSettled: () => void;
 }) {
   const common = {
-    alt: banner.title || "Promotional banner",
+    alt:
+      banner.title?.trim() ||
+      banner.text?.trim() ||
+      "Kankana Silks silk saree collection banner",
     fill: true,
     sizes: "100vw",
     quality: 60,
@@ -71,6 +74,11 @@ function BannerPicture({
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         {...imgProps}
+        alt={
+          banner.title?.trim() ||
+          banner.text?.trim() ||
+          "Kankana Silks silk saree collection banner"
+        }
         ref={(node) => {
           // The image may finish loading before React hydrates.
           if (isFirst && node?.complete) onFirstSettled();
@@ -351,7 +359,7 @@ export default function HeroSection({
 
           {/* =====================================
               SLIDE INDICATORS
-              Each dot has a 32px tall tap area even though it looks small.
+              Each indicator has a 44px touch target; the visual dot stays compact.
           ====================================== */}
           <div className="absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center sm:bottom-6">
             {banners.map((banner, index) => {
@@ -361,7 +369,7 @@ export default function HeroSection({
                   key={banner.id}
                   type="button"
                   onClick={() => goTo(index)}
-                  className="group flex h-8 items-center px-1 focus-visible:outline-none"
+                  className="group flex h-11 min-w-11 shrink-0 items-center justify-center rounded-full px-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                   aria-label={`Go to slide ${index + 1}`}
                   aria-current={isActive ? "true" : undefined}
                 >

@@ -107,7 +107,7 @@ export default function CircularCollectionsSection({ section }: { section: HomeS
         <span className="relative block aspect-square overflow-hidden rounded-full bg-neutral-100 ring-1 ring-black/[0.04] transition-all duration-500 group-hover:shadow-[0_14px_35px_rgba(0,0,0,0.12)]">
           <SmartImage
             src={item.url}
-            alt={item.altText}
+            alt=""
             fill
             sizes="(min-width: 1024px) 22vw, (min-width: 640px) 29vw, 47vw"
             className="object-cover transition-transform duration-700 group-hover:scale-105"
@@ -152,7 +152,24 @@ export default function CircularCollectionsSection({ section }: { section: HomeS
         {pageCount > 1 && (
           <div className="mt-3 flex items-center justify-center gap-2.5 sm:mt-5" aria-label="Choose collection">
             {Array.from({ length: pageCount }).map((_, page) => (
-              <button key={page} type="button" onClick={() => scrollTo(page * itemsPerPage)} aria-label={"Go to collection page " + (page + 1)} aria-current={activePage === page ? "true" : undefined} className={"h-2.5 rounded-full transition-all duration-300 " + (activePage === page ? "w-7 bg-neutral-900" : "w-2.5 bg-neutral-300 hover:bg-neutral-500")} />
+              <button
+                key={page}
+                type="button"
+                onClick={() => scrollTo(page * itemsPerPage)}
+                aria-label={"Go to collection page " + (page + 1)}
+                aria-current={activePage === page ? "true" : undefined}
+                className="flex h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
+              >
+                <span
+                  aria-hidden="true"
+                  className={
+                    "block h-2.5 rounded-full transition-all duration-300 " +
+                    (activePage === page
+                      ? "w-7 bg-neutral-900"
+                      : "w-2.5 bg-neutral-400 hover:bg-neutral-600")
+                  }
+                />
+              </button>
             ))}
           </div>
         )}
