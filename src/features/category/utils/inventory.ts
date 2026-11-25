@@ -46,9 +46,9 @@ export function isProductOutOfStock(product: Product): boolean {
 
     return (
       statesWithInventory.length > 0 &&
-      statesWithInventory.every((state) => state.isZeroStock)
+      statesWithInventory.every((state) => state.isOutOfStock)
     );
   }
 
-  return getProductStockState(product).isZeroStock;
+  return getProductStockState(product).isOutOfStock;
 }
