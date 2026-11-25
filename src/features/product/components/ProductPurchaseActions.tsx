@@ -30,17 +30,15 @@ export function ProductDesktopPurchaseActions({
   return (
     <div className="hidden md:block flex-none pt-3 space-y-2.5 border-t border-gray-200 mt-2">
       {/* Action Buttons */}
-      <div className="flex gap-2.5">
-        {isOutOfStock ? (
-          <div className="flex-1">
-            <ProductRequestStatusButton
-              productId={productId}
-              variantId={variantId}
-              onRequest={onRequestProduct}
-              className="brand-button w-full rounded-xl py-3 text-sm"
-            />
-          </div>
-        ) : (
+      <div className="flex flex-col gap-2.5">
+        <ProductRequestStatusButton
+          productId={productId}
+          variantId={variantId}
+          onRequest={onRequestProduct}
+          showWhenNoRequest={isOutOfStock}
+          className="brand-button w-full rounded-xl py-3 text-sm"
+        />
+        {!isOutOfStock ? (
           <>
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -142,15 +140,14 @@ export function ProductMobilePurchaseActions({
         className="flex items-center gap-2 px-4 pb-4 pt-1"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
       >
-        {isOutOfStock ? (
-          /* Out of stock — Request button full width */
-          <ProductRequestStatusButton
-            productId={productId}
-            variantId={variantId}
-            onRequest={onRequestProduct}
-            className="brand-button flex-1 rounded-xl py-3.5 font-futura-bold text-sm"
-          />
-        ) : (
+        <ProductRequestStatusButton
+          productId={productId}
+          variantId={variantId}
+          onRequest={onRequestProduct}
+          showWhenNoRequest={isOutOfStock}
+          className="brand-button w-full rounded-xl py-3.5 font-futura-bold text-sm"
+        />
+        {!isOutOfStock ? (
           <>
             {/* Add to Cart */}
             <motion.button
