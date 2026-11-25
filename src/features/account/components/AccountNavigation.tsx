@@ -59,7 +59,7 @@ export function AccountNavigation() {
 
       {!showPasswordModal && (
         <nav aria-label="Account quick links" className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg">
-          <div className="grid grid-cols-6 h-16">
+          <div className="grid grid-cols-7 h-16">
             <button type="button" onClick={() => router.push("/")} className="flex flex-col items-center justify-center gap-1 text-gray-900 hover:text-black">
               <Home className="w-5 h-5" /><span className="text-[10px] font-medium">Home</span>
             </button>
