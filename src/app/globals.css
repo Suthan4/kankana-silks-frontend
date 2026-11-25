@@ -1520,19 +1520,23 @@ input[aria-invalid="true"], textarea[aria-invalid="true"], select[aria-invalid="
 }
 
 
-/* Minimal Swiper core layout for the homepage hero.
-   Avoid importing the full Swiper stylesheet into the critical homepage CSS. */
-.home-hero-swiper.swiper {
+/* Minimal Swiper core styles shared by home sliders, product carousels and grids.
+   Keep these in the existing global stylesheet rather than importing multiple
+   Swiper CSS chunks into the homepage critical path. */
+.swiper {
   position: relative;
   display: block;
   width: 100%;
   height: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0;
   overflow: hidden;
+  list-style: none;
   z-index: 1;
-  touch-action: pan-y;
 }
 
-.home-hero-swiper .swiper-wrapper {
+.swiper-wrapper {
   position: relative;
   z-index: 1;
   display: flex;
@@ -1542,7 +1546,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"], select[aria-invalid="
   transition-property: transform;
 }
 
-.home-hero-swiper .swiper-slide {
+.swiper-slide {
   position: relative;
   display: block;
   flex-shrink: 0;
@@ -1551,7 +1555,15 @@ input[aria-invalid="true"], textarea[aria-invalid="true"], select[aria-invalid="
   transition-property: transform;
 }
 
-.home-hero-swiper .swiper-notification {
+.swiper-horizontal {
+  touch-action: pan-y;
+}
+
+.swiper-vertical {
+  touch-action: pan-x;
+}
+
+.swiper-notification {
   position: absolute;
   top: 0;
   left: 0;
