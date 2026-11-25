@@ -45,6 +45,8 @@ export default function ProductDetailsClient({
     hasVariants,
     selectedVariant,
     images,
+    productImages,
+    hasVariantImages,
     options: variantOptions,
     getSelectedAttributeValue,
     getSwatchImage,
@@ -60,8 +62,15 @@ export default function ProductDetailsClient({
   } = useProductDelivery(initialProduct.id);
   const { addToCartMutation } = useProductCart();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [useProductImagesFallback, setUseProductImagesFallback] = useState(false);
+  const galleryImages =
+    useProductImagesFallback && productImages.length > 0
+      ? productImages
+      : images;
+
   useEffect(() => {
     setSelectedImageIndex(0);
+    setUseProductImagesFallback(false);
   }, [selectedVariant?.id]);
   const [quantity, setQuantity] = useState(1);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
@@ -200,7 +209,7 @@ export default function ProductDetailsClient({
         basePrice: Number(product.basePrice),
         media: [
           {
-            url: images?.[0]?.url ?? "/placeholder.jpg",
+            url: galleryImages?.[0]?.url ?? "/placeholder.jpg",
             altText: product.name,
             isActive: true,
           },
@@ -245,13 +254,13 @@ export default function ProductDetailsClient({
   };
 
   const nextImage = () => {
-    if (!images.length) return;
-    setSelectedImageIndex((prev) => (prev + 1) % images.length);
+    if (!galleryImages.length) return;
+    setSelectedImageIndex((prev) => (prev + 1) % galleryImages.length);
   };
   const prevImage = () => {
-    if (!images.length) return;
+    if (!galleryImages.length) return;
     setSelectedImageIndex((prev) =>
-      prev === 0 ? images.length - 1 : prev - 1,
+      prev === 0 ? galleryImages.length - 1 : prev - 1,
     );
   };
 
@@ -287,7 +296,13 @@ export default function ProductDetailsClient({
           <div className="flex flex-col md:grid md:grid-cols-2 gap-5 pb-28 md:pb-6 pt-10">
             {/* ── Left: Image Gallery ── */}
             <ProductImageGallery
-              images={images}
+              images={galleryImages}
+              onImageError={() => {
+                if (hasVariantImages && !useProductImagesFallback && productImages.length > 0) {
+                  setUseProductImagesFallback(true);
+                  setSelectedImageIndex(0);
+                }
+              }}
               selectedImageIndex={selectedImageIndex}
               setSelectedImageIndex={setSelectedImageIndex}
               prevImage={prevImage}
