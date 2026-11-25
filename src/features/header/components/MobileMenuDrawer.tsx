@@ -43,7 +43,11 @@ export function MobileMenuDrawer({
   return createPortal(
     <AnimatePresence initial={false}>
       {open && (
-        <div
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
           className="md:hidden fixed inset-0 z-[110] isolate"
           role="dialog"
           aria-modal="true"
@@ -96,7 +100,7 @@ export function MobileMenuDrawer({
               />
             </div>
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>,
     portalRoot,

@@ -20,11 +20,11 @@ import "swiper/css";
 import "swiper/css/pagination";
 import SmartImage from "../common/smartImage";
 import HomeSectionHeading from "../common/homeSectionHeading";
+import { getCartItemStockMessage, getProductStockOverview } from "@/lib/utils/cartStock";
+import { formatMaskedPrice } from "@/lib/utils/priceMasked";
 
 const stripHtml = (html?: string) => (html ? html.replace(/<[^>]+>/g, "") : "");
 const inr = (value: number | string) => Number(value).toLocaleString("en-IN");
-const isInStock = (p: Product) => p.stock?.some((s) => s.quantity > 0);
-
 const arrowClass =
   "absolute top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-black/5 bg-white/90 text-xl text-gray-900 shadow-sm backdrop-blur-sm transition hover:scale-105 hover:bg-white active:scale-95";
 
@@ -63,14 +63,27 @@ export default function ProductCarousel({
 
   const safeIndex = Math.min(Math.max(index, 0), products.length - 1);
   const currentProduct = products[safeIndex];
-  const currentInStock = isInStock(currentProduct);
+  const currentStockOverview = getProductStockOverview(currentProduct);
+  const currentStockMessage = getCartItemStockMessage(currentStockOverview.item);
+  const currentInStock = !currentStockOverview.isOutOfStock;
   const currentDiscount =
+    !currentStockOverview.isZeroStock &&
     Number(currentProduct.basePrice) > Number(currentProduct.sellingPrice);
 
   const handleAddToCart = async (product: Product) => {
-    const availableStock = product.stock?.[0]?.quantity ?? 0;
-    if (availableStock === 0) {
-      toast.error("Out of stock");
+    const stockOverview = getProductStockOverview(product);
+
+    if (stockOverview.isOutOfStock) {
+      toast.error(
+        getCartItemStockMessage(stockOverview.item)?.message ??
+          "This product is currently unavailable.",
+      );
+      return;
+    }
+
+    // Variable products require an explicit variant selection on the detail page.
+    if (product.hasVariants) {
+      handleViewDetails(product);
       return;
     }
 
@@ -89,7 +102,11 @@ export default function ProductCarousel({
           sellingPrice: Number(product.sellingPrice),
           basePrice: Number(product.basePrice),
           media: product.media || [],
-          stock: product.stock || [],
+          allowOutOfStockOrders: product.allowOutOfStockOrders ?? false,
+          stock: product.stock?.map((stock) => ({
+            ...stock,
+            lowStockThreshold: stock.lowStockThreshold ?? 0,
+          })) || [],
         },
         variant: null,
       });
@@ -147,7 +164,10 @@ export default function ProductCarousel({
           spaceBetween={12}
         >
           {products.map((product) => {
-            const inStock = isInStock(product);
+            const stockOverview = getProductStockOverview(product);
+            const stockState = stockOverview.state;
+            const stockMessage = getCartItemStockMessage(stockOverview.item);
+            const inStock = !stockOverview.isOutOfStock;
 
             return (
               <SwiperSlide key={product.id}>
@@ -181,17 +201,36 @@ export default function ProductCarousel({
                       {product.name}
                     </h3>
                     <div className="mt-3 flex items-center justify-between gap-3">
-                      <span className="font-medium">₹{inr(product.sellingPrice)}</span>
+                      <span className="font-medium">
+                        {stockOverview.isZeroStock
+                          ? formatMaskedPrice(Number(product.sellingPrice))
+                          : `₹${inr(product.sellingPrice)}`}
+                      </span>
                       <button
                         type="button"
                         disabled={!inStock}
-                        onClick={() => handleAddToCart(product)}
+                        onClick={() =>
+                          product.hasVariants
+                            ? handleViewDetails(product)
+                            : handleAddToCart(product)
+                        }
                         className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-2 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <ShoppingCart size={14} />
-                        {inStock ? "Add" : "Sold out"}
+                        {!inStock
+                          ? stockOverview.isZeroStock
+                            ? "Sold out"
+                            : "Unavailable"
+                          : product.hasVariants
+                            ? "Options"
+                            : "Add"}
                       </button>
                     </div>
+                    {!stockOverview.isZeroStock && stockMessage && (
+                      <p className="mt-2 text-xs font-medium text-amber-700">
+                        {stockMessage.message}
+                      </p>
+                    )}
                   </div>
                 </article>
               </SwiperSlide>
@@ -284,7 +323,9 @@ export default function ProductCarousel({
 
             <div className="mt-5 flex items-baseline gap-3">
               <span className="text-2xl font-medium tracking-tight lg:text-3xl">
-                ₹{inr(currentProduct.sellingPrice)}
+                {currentStockOverview.isZeroStock
+                  ? formatMaskedPrice(Number(currentProduct.sellingPrice))
+                  : `₹${inr(currentProduct.sellingPrice)}`}
               </span>
               {currentDiscount && (
                 <span className="text-sm text-gray-500 line-through lg:text-base">
@@ -292,6 +333,12 @@ export default function ProductCarousel({
                 </span>
               )}
             </div>
+
+            {!currentStockOverview.isZeroStock && currentStockMessage && (
+              <p className="mt-2 text-sm font-medium text-amber-700" aria-live="polite">
+                {currentStockMessage.message}
+              </p>
+            )}
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <button
@@ -305,11 +352,21 @@ export default function ProductCarousel({
               <button
                 type="button"
                 disabled={!currentInStock}
-                onClick={() => handleAddToCart(currentProduct)}
+                onClick={() =>
+                  currentProduct.hasVariants
+                    ? handleViewDetails(currentProduct)
+                    : handleAddToCart(currentProduct)
+                }
                 className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-5 py-3 text-sm font-medium text-gray-700 transition hover:border-gray-400 hover:bg-gray-50 hover:text-black active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ShoppingCart size={17} strokeWidth={1.8} />
-                {currentInStock ? "Add to cart" : "Sold out"}
+                {!currentInStock
+                  ? currentStockOverview.isZeroStock
+                    ? "Sold out"
+                    : "Unavailable"
+                  : currentProduct.hasVariants
+                    ? "Choose options"
+                    : "Add to cart"}
               </button>
             </div>
 

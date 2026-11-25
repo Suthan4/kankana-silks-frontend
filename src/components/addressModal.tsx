@@ -128,16 +128,17 @@ export default function AddressModal({
     }
   };
 
-  if (!isOpen) return null;
-
   return (
     <AnimatePresence>
+      {isOpen && (
       <motion.div
         className="ios-modal-viewport ios-address-overlay ios-modal-motion fixed inset-0 z-50 bg-black/60 flex items-end md:items-center justify-center p-0 md:p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        onClick={onClose}
+        onPointerDown={(event) => {
+          if (event.target === event.currentTarget) onClose();
+        }}
       >
         <motion.div
           onClick={(e) => e.stopPropagation()}
@@ -314,6 +315,7 @@ export default function AddressModal({
           </form>
         </motion.div>
       </motion.div>
+      )}
     </AnimatePresence>
   );
 }

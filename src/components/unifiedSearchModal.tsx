@@ -48,7 +48,7 @@ export default function UnifiedSearchModal({
     removeRecentSearch,
   } = useUnifiedSearch();
 
-  useOnClickOutside(modalRef, onClose);
+  useOnClickOutside(modalRef, onClose, isOpen);
   useModalScrollLock(isOpen);
 
   // Focus input when modal opens
