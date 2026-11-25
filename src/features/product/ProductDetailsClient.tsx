@@ -381,6 +381,7 @@ export default function ProductDetailsClient({
 
               <ProductDesktopPurchaseActions
                 productId={product.id}
+                variantId={selectedVariant?.id}
                 isOutOfStock={isOutOfStock}
                 isAddingToCart={addToCartMutation.isPending}
                 onAddToCart={() => handleAddToCart(product, selectedVariant)}
@@ -403,6 +404,7 @@ export default function ProductDetailsClient({
 
       <ProductMobilePurchaseActions
         productId={product.id}
+        variantId={selectedVariant?.id}
         isOutOfStock={isOutOfStock}
         isAddingToCart={addToCartMutation.isPending}
         onAddToCart={() => handleAddToCart(product, selectedVariant)}

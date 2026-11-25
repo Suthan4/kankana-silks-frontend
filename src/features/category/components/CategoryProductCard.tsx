@@ -4,11 +4,12 @@ import { memo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { AlertCircle, Heart } from "lucide-react";
+import { Heart } from "lucide-react";
 import type { Product, ProductVariant } from "@/lib/api/product.api";
 import type { CartLineLike } from "@/lib/utils/cartItems";
 import { formatMaskedPrice } from "@/lib/utils/priceMasked";
 import { canIncreaseCartItemQuantity } from "@/lib/utils/cartStock";
+import { ProductRequestStatusButton } from "@/features/product/components/ProductRequestStatusButton";
 
 interface CategoryProductCardProps {
   product: Product;
@@ -190,17 +191,14 @@ export const CategoryProductCard = memo(function CategoryProductCard({
                 {isAddingToCart ? "Adding..." : "Add to Cart"}
               </button>
             )
-          ) : (
-            <motion.button
-              type="button"
-              whileTap={{ scale: 0.97 }}
-              onClick={() => onRequestProduct(product, selectedVariant)}
-              className="brand-button w-full py-2.5 disabled:cursor-wait"
-            >
-              <AlertCircle className="h-4 w-4" />
-              Request Product
-            </motion.button>
-          )}
+          ) : null}
+          <ProductRequestStatusButton
+            productId={product.id}
+            variantId={selectedVariant?.id}
+            onRequest={() => onRequestProduct(product, selectedVariant)}
+            showWhenNoRequest={!showAddToCart}
+            className="brand-button w-full py-2.5"
+          />
         </div>
       </div>
     </motion.div>
