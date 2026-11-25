@@ -25,6 +25,7 @@ interface ZoomGalleryProps {
   product: any;
   discount: number;
   isOutOfStock: boolean;
+  onImageError?: (imageUrl: string) => void;
 }
 
 export function ZoomGallery({
@@ -36,6 +37,7 @@ export function ZoomGallery({
   product,
   discount,
   isOutOfStock,
+  onImageError,
 }: ZoomGalleryProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [loadedImageUrls, setLoadedImageUrls] = useState<string[]>([]);
@@ -214,7 +216,10 @@ export function ZoomGallery({
                     sizes="100vw"
                     className="object-cover object-top"
                     onLoad={() => handleMainImageLoad(img.url)}
-                    onError={() => handleMainImageError(img.url)}
+                    onError={() => {
+                      handleMainImageError(img.url);
+                      if (idx === selectedImageIndex) onImageError?.(img.url);
+                    }}
                   />
 
                   {idx === selectedImageIndex &&
@@ -333,7 +338,10 @@ export function ZoomGallery({
                   transformOrigin: hoverOrigin,
                 }}
                 onLoad={() => handleMainImageLoad(activeImageUrl)}
-                onError={() => handleMainImageError(activeImageUrl)}
+                onError={() => {
+                  handleMainImageError(activeImageUrl);
+                  onImageError?.(activeImageUrl);
+                }}
                 draggable={false}
               />
             )}
