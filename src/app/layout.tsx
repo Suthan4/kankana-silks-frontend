@@ -219,7 +219,6 @@ export default function RootLayout({
     <html lang="en-IN">
       <head>
         <link rel="preconnect" href="https://use.typekit.net" crossOrigin="" />
-        <link rel="preconnect" href="https://p.typekit.net" crossOrigin="" />
         <link rel="stylesheet" href="https://use.typekit.net/gmp5qfk.css" />
 
         <script
