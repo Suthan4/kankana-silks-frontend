@@ -47,9 +47,9 @@ export function MobileBottomNavigation({
     <motion.nav
       aria-label="Quick links"
       initial={false}
-      className="fixed bottom-0 left-0 right-0 z-50 h-[76px] border-t border-[#EADFDB] bg-white shadow-none md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-50 h-[calc(76px+env(safe-area-inset-bottom))] border-t border-[#EADFDB] bg-white pb-[env(safe-area-inset-bottom)] shadow-none md:hidden"
     >
-      <ul className="flex h-full items-start justify-around pt-2 pb-1">
+      <ul className="flex h-[76px] items-start justify-around pt-2 pb-1">
         {items.filter((item) => visibleItems.includes(item.name)).map((item, index) => {
           const Icon = item.icon;
           const isActive = item.url === "/"
