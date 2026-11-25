@@ -1,7 +1,5 @@
 "use client";
 
-import "swiper/css";
-
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { getImageProps } from "next/image";
@@ -9,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Swiper as SwiperInstance } from "swiper";
 import { A11y, Autoplay, Keyboard } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
 
 import { type Banner, MediaType } from "@/lib/api/banner.api";
 
@@ -245,7 +244,7 @@ export default function HeroSection({
       ====================================== */}
       <div className="absolute inset-0">
         <Swiper
-          className="h-full w-full md:cursor-grab md:active:cursor-grabbing"
+          className="home-hero-swiper h-full w-full md:cursor-grab md:active:cursor-grabbing"
           modules={[Autoplay, Keyboard, A11y]}
           slidesPerView={1}
           speed={600}

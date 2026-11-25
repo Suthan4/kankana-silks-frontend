@@ -1,7 +1,4 @@
 import LandingPage from "@/components/landingPage";
-import { getImageProps } from "next/image";
-import { preload } from "react-dom";
-import { MediaType } from "@/lib/api/banner.api";
 import { getActiveBanners, getActiveHomeSections } from "@/lib/seo/server-api";
 import Link from "next/link";
 import {
@@ -137,45 +134,6 @@ export default async function Home() {
     getActiveHomeSections(),
     getActiveBanners(),
   ]);
-
-  // Emit the first hero image preload from the server response, before the
-  // client carousel hydrates. This shortens the LCP image request discovery delay.
-  const firstBanner = initialBanners?.[0];
-  if (firstBanner?.type === MediaType.IMAGE) {
-    const imageOptions = {
-      alt: firstBanner.title || "Promotional banner",
-      fill: true,
-      sizes: "100vw",
-      quality: 60,
-      draggable: false,
-      loading: "eager" as const,
-      fetchPriority: "high" as const,
-    };
-
-    const { props: mobileImage } = getImageProps({
-      ...imageOptions,
-      src: firstBanner.mobileUrl || firstBanner.url,
-    });
-    const { props: desktopImage } = getImageProps({
-      ...imageOptions,
-      src: firstBanner.url,
-    });
-
-    preload(mobileImage.src, {
-      as: "image",
-      imageSrcSet: mobileImage.srcSet,
-      imageSizes: "100vw",
-      media: "(max-width: 767px)",
-      fetchPriority: "high",
-    });
-    preload(desktopImage.src, {
-      as: "image",
-      imageSrcSet: desktopImage.srcSet,
-      imageSizes: "100vw",
-      media: "(min-width: 768px)",
-      fetchPriority: "high",
-    });
-  }
 
   return (
     <>

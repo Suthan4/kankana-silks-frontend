@@ -13,11 +13,10 @@ import { useAuthModal } from "@/store/useAuthModalStore";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, Pagination } from "swiper/modules";
+import "swiper/css";
+import { Autoplay } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
 
-import "swiper/css";
-import "swiper/css/pagination";
 import SmartImage from "../common/smartImage";
 import HomeSectionHeading from "../common/homeSectionHeading";
 import { getCartItemStockMessage, getProductStockLabel, getProductStockOverview } from "@/lib/utils/cartStock";
@@ -47,7 +46,6 @@ export default function ProductCarousel({
 }) {
   const [index, setIndex] = useState(0);
   const swiperRef = useRef<SwiperType | null>(null);
-  const paginationRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
   const { addItem: addToLocalCart } = useCartStore();
   const { open: openCartDrawer } = useCartDrawer();
@@ -145,29 +143,29 @@ export default function ProductCarousel({
       {/* MOBILE: horizontal card swiper */}
       <div className="lg:hidden">
         <Swiper
-          modules={[Autoplay, Pagination]}
-          onSwiper={(s) => (swiperRef.current = s)}
-          onSlideChange={(s) => setIndex(s.realIndex)}
-          onBeforeInit={(swiper) => {
-            const pagination = swiper.params.pagination;
-
-            if (pagination && typeof pagination !== "boolean") {
-              swiper.params.pagination = {
-                ...pagination,
-                el: paginationRef.current,
-              };
-            }
+          modules={[Autoplay]}
+          className="product-carousel-swiper"
+          onSwiper={(swiper) => {
+            swiperRef.current = swiper;
           }}
+          onSlideChange={(swiper) => setIndex(swiper.realIndex)}
           loop={products.length > 2}
-          autoplay={{ delay: 6000, disableOnInteraction: false }}
-          pagination={{ clickable: true }}
-          slidesPerView={1.08}
+          watchOverflow
+          allowTouchMove={products.length > 1}
+          grabCursor={products.length > 1}
+          touchStartPreventDefault={false}
+          autoplay={
+            products.length > 1
+              ? { delay: 6000, disableOnInteraction: false, pauseOnMouseEnter: true }
+              : false
+          }
+          slidesPerView={1.04}
           breakpoints={{
-            640: { slidesPerView: 1.3, spaceBetween: 16 },
-            768: { slidesPerView: 1.55, spaceBetween: 18 },
+            640: { slidesPerView: 1.18, spaceBetween: 16 },
+            768: { slidesPerView: 1.3, spaceBetween: 18 },
           }}
-          centeredSlides
-          spaceBetween={10}
+          centeredSlides={products.length > 1}
+          spaceBetween={12}
         >
           {products.map((product) => {
             const stockOverview = getProductStockOverview(product);
@@ -191,7 +189,7 @@ export default function ProductCarousel({
                       type="button"
                       aria-label={`View ${product.name}`}
                       onClick={() => handleViewDetails(product)}
-                      className="relative block aspect-[4/4.5] max-h-[58svh] w-full overflow-hidden bg-[#f7f5f2]"
+                      className="relative block aspect-[4/3] max-h-[42svh] min-h-[210px] w-full overflow-hidden bg-[#f7f5f2]"
                     >
                       {product.media?.[0]?.url ? (
                         <SmartImage
@@ -275,10 +273,39 @@ export default function ProductCarousel({
           })}
         </Swiper>
 
-        <div
-          ref={paginationRef}
-          className="product-carousel-pagination mt-1 flex min-h-11 items-center justify-center gap-0"
-        />
+        {products.length > 1 && (
+          <div
+            className="mt-1 flex min-h-11 items-center justify-center gap-1"
+            aria-label="Product carousel pagination"
+          >
+            {products.map((product, productIndex) => (
+              <button
+                key={product.id}
+                type="button"
+                aria-label={`Go to product ${productIndex + 1}: ${product.name}`}
+                aria-current={productIndex === safeIndex ? "true" : undefined}
+                onClick={() => {
+                  const swiper = swiperRef.current;
+                  if (swiper) {
+                    if (swiper.params.loop) swiper.slideToLoop(productIndex);
+                    else swiper.slideTo(productIndex);
+                  }
+                  setIndex(productIndex);
+                }}
+                className="flex h-11 min-w-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#653A3A] focus-visible:ring-offset-2"
+              >
+                <span
+                  aria-hidden="true"
+                  className={`block rounded-full transition-all duration-200 ${
+                    productIndex === safeIndex
+                      ? "h-[3px] w-7 bg-[#653A3A]"
+                      : "h-2 w-2 bg-stone-400"
+                  }`}
+                />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* TABLET + DESKTOP: image and details, grouped and centered */}

@@ -1483,38 +1483,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"], select[aria-invalid="
   }
 }
 
-/* Accessible 44px tap targets for Swiper product-carousel pagination. */
-.product-carousel-pagination .swiper-pagination-bullet {
-  display: inline-flex;
-  width: 44px !important;
-  min-width: 44px;
-  height: 44px !important;
-  margin: 0 !important;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9999px;
-  background: transparent !important;
-  opacity: 1 !important;
-  cursor: pointer;
-}
 
-.product-carousel-pagination .swiper-pagination-bullet::after {
-  display: block;
-  width: 8px;
-  height: 8px;
-  border-radius: 9999px;
-  background: #a8a29e;
-  content: "";
-  transition: width 180ms ease, height 180ms ease, background-color 180ms ease;
-}
 
-.product-carousel-pagination .swiper-pagination-bullet-active::after {
-  width: 28px;
-  height: 3px;
-  background: #653536;
-}
 
-.product-carousel-pagination .swiper-pagination-bullet:focus-visible {
-  outline: 2px solid #653536;
-  outline-offset: 1px;
-}
+
