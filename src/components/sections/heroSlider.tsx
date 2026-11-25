@@ -38,7 +38,7 @@ function HeroSlider({ section }: { section: HomeSection }) {
       data-testid="hero-slider"
       // svh (not vh): iOS Safari's vh ignores the collapsing toolbar, so a
       // vh-sized hero jumps/resizes as the toolbar shows and hides.
-      className="relative w-full h-svh min-h-[600px] overflow-hidden"
+      className="relative aspect-[16/10] min-h-[220px] w-full overflow-hidden sm:aspect-[21/9] sm:min-h-[320px] md:aspect-auto md:h-[min(78svh,760px)] md:min-h-[520px]"
       style={{ backgroundColor: section.backgroundColor }}
     >
       <Swiper
