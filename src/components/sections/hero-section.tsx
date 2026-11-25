@@ -136,7 +136,6 @@ export default function HeroSection({
   const swiperRef = useRef<SwiperInstance | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [firstLoaded, setFirstLoaded] = useState(false);
-  const [carouselReady, setCarouselReady] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   // Slides whose media has been mounted. Once mounted a slide stays mounted,
   // so swiping back never flashes black.
@@ -150,25 +149,6 @@ export default function HeroSection({
   // block autoplay forever, so give up waiting after 4 seconds.
   const firstIsImage = banners[0]?.type === MediaType.IMAGE;
   const ready = firstLoaded || !firstIsImage;
-
-  // Let the browser paint the static first image before Swiper performs its
-  // initial width/slide measurements. This keeps carousel layout work off the
-  // LCP image's first paint.
-  useEffect(() => {
-    if (!ready || totalSlides === 0) return;
-
-    let secondFrame = 0;
-    const firstFrame = window.requestAnimationFrame(() => {
-      secondFrame = window.requestAnimationFrame(() => {
-        setCarouselReady(true);
-      });
-    });
-
-    return () => {
-      window.cancelAnimationFrame(firstFrame);
-      if (secondFrame) window.cancelAnimationFrame(secondFrame);
-    };
-  }, [ready, totalSlides]);
 
   useEffect(() => {
     if (ready || totalSlides === 0) return;
@@ -207,7 +187,7 @@ export default function HeroSection({
     } else {
       swiper.autoplay.stop();
     }
-  }, [ready, reducedMotion, totalSlides, carouselReady]);
+  }, [ready, reducedMotion, totalSlides]);
 
   // Keep the active index valid if the banner list shrinks.
   useEffect(() => {
@@ -255,61 +235,13 @@ export default function HeroSection({
       aria-roledescription="carousel"
       aria-label="Promotional banners"
     >
-      {/* First image is kept outside Swiper so it can paint from the server HTML
-          immediately, without waiting for the carousel's client initialization.
-          Swiper reuses the same visual layer for slide one and controls later slides. */}
-      {firstIsImage && (
-        <div
-          className="pointer-events-none absolute inset-0 z-0"
-          data-lcp-hero-image
-        >
-          <BannerPicture
-            banner={banners[0]}
-            isFirst
-            onFirstSettled={handleFirstSettled}
-          />
-
-          {/* Keep the primary heading in the server HTML while the carousel
-              waits for the first image paint and its deferred initialization. */}
-          {!carouselReady && (
-            <>
-              <div
-                className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent"
-                aria-hidden="true"
-              />
-              <div className="absolute inset-0 flex items-end justify-center px-5 pb-14 sm:px-8 sm:pb-24">
-                <div className="mx-auto w-full max-w-5xl text-center">
-                  <h1 className={HEADING_CLASS}>
-                    {banners[0].title || "Timeless Elegance"}
-                  </h1>
-                  {banners[0].text && (
-                    <p className="mx-auto mt-4 hidden max-w-3xl text-base font-light tracking-wide text-white/90 text-shadow-hero-sm sm:block lg:text-lg">
-                      {banners[0].text}
-                    </p>
-                  )}
-                  {banners[0].link && (
-                    <Link
-                      href={banners[0].link}
-                      className="pointer-events-auto mt-4 inline-flex min-h-11 min-w-36 items-center justify-center border border-white bg-black/30 px-6 text-xs font-semibold uppercase tracking-[0.16em] text-white transition-colors hover:bg-white hover:text-black focus-visible:bg-white focus-visible:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black active:scale-[0.98] sm:mt-7 sm:min-w-44 sm:px-8 sm:text-sm md:bg-black/15 md:backdrop-blur-sm"
-                    >
-                      Explore Collection
-                    </Link>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      )}
-
       {/* =====================================
           SWIPER
           Mobile: finger swipe (vertical scroll still works).
           Desktop: mouse drag, arrows, dots and arrow keys.
           Autoplay pauses while the pointer is over the hero.
       ====================================== */}
-      <div className="absolute inset-0 z-10">
-        {carouselReady && (
+      <div className="absolute inset-0">
         <Swiper
           className="home-hero-swiper h-full w-full md:cursor-grab md:active:cursor-grabbing"
           modules={[Autoplay, Keyboard, A11y]}
@@ -346,13 +278,11 @@ export default function HeroSection({
                 <div className="relative h-full w-full">
                   {shouldMount &&
                     (banner.type === MediaType.IMAGE ? (
-                      index === 0 ? null : (
-                        <BannerPicture
-                          banner={banner}
-                          isFirst={false}
-                          onFirstSettled={handleFirstSettled}
-                        />
-                      )
+                      <BannerPicture
+                        banner={banner}
+                        isFirst={index === 0}
+                        onFirstSettled={handleFirstSettled}
+                      />
                     ) : (
                       <BannerVideo banner={banner} isActive={isActive} />
                     ))}
@@ -400,10 +330,9 @@ export default function HeroSection({
             );
           })}
         </Swiper>
-        )}
       </div>
 
-      {carouselReady && totalSlides > 1 && (
+      {totalSlides > 1 && (
         <>
           {/* =====================================
               DESKTOP ARROWS (mobile uses swipe)
