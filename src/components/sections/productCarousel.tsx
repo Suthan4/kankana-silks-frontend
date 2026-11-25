@@ -196,7 +196,7 @@ export default function ProductCarousel({
                       {product.media?.[0]?.url ? (
                         <SmartImage
                           src={product.media[0].url}
-                          alt={product.name}
+                          alt=""
                           fill
                           sizes="(max-width: 640px) 92vw, 560px"
                           className="object-cover object-top"
@@ -224,7 +224,7 @@ export default function ProductCarousel({
                   </div>
 
                   <div className="p-4 sm:p-5">
-                    <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-stone-500">
+                    <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-stone-600">
                       {product.category?.name || "Collection"}
                     </p>
                     <h3 className="mt-1.5 line-clamp-2 min-h-11 text-base font-semibold leading-6 text-stone-900">
@@ -238,12 +238,12 @@ export default function ProductCarousel({
                           : `₹${inr(sellingPrice)}`}
                       </span>
                       {!stockOverview.isZeroStock && discount > 0 && (
-                        <span className="text-sm text-stone-400 line-through">
+                        <span className="text-sm text-stone-600 line-through">
                           ₹{inr(basePrice)}
                         </span>
                       )}
                       {stockLabel && (
-                        <span className="text-xs font-medium text-stone-500" aria-live="polite">
+                        <span className="text-xs font-medium text-stone-600" aria-live="polite">
                           {stockLabel}
                         </span>
                       )}
@@ -277,7 +277,7 @@ export default function ProductCarousel({
 
         <div
           ref={paginationRef}
-          className="mt-4 flex justify-center gap-1.5"
+          className="product-carousel-pagination mt-1 flex min-h-11 items-center justify-center gap-0"
         />
       </div>
 
@@ -290,7 +290,7 @@ export default function ProductCarousel({
               <SmartImage
                 key={currentProduct.id}
                 src={currentProduct.media[0].url}
-                alt={currentProduct.name}
+                alt=""
                 fill
                 sizes="(min-width: 1536px) 680px, (min-width: 1024px) 52vw, 100vw"
                 className="object-cover object-top transition duration-500 ease-out group-hover:scale-[1.02]"
@@ -365,14 +365,14 @@ export default function ProductCarousel({
                   : `₹${inr(currentProduct.sellingPrice)}`}
               </span>
               {currentDiscount && (
-                <span className="text-sm text-gray-500 line-through lg:text-base">
+                <span className="text-sm text-stone-600 line-through lg:text-base">
                   ₹{inr(currentProduct.basePrice)}
                 </span>
               )}
             </div>
 
             {currentStockLabel && (
-              <p className="mt-2 text-sm font-medium text-stone-500" aria-live="polite">
+              <p className="mt-2 text-sm font-medium text-stone-600" aria-live="polite">
                 {currentStockLabel}
               </p>
             )}
@@ -410,7 +410,7 @@ export default function ProductCarousel({
             {products.length > 1 && (
               <div className="mt-8 flex max-w-2xl items-center justify-between gap-4 border-t border-stone-200 pt-5">
                 <div className="flex shrink-0 items-center gap-3">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-400">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-600">
                     Explore
                   </span>
                   <span className="text-xs font-semibold tabular-nums text-stone-700">
