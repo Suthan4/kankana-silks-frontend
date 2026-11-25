@@ -22,7 +22,7 @@ function findMatchingRequest(
   return requests.find((request) =>
     request.productId === productId &&
     (request.variantId ?? null) === (variantId ?? null) &&
-    request.status !== "CANCELLED"
+    (request.status === "PENDING" || request.status === "APPROVED")
   ) ?? null;
 }
 
@@ -32,6 +32,7 @@ const buttonCopy: Record<ProductRequestStatus, { label: string; detail: string; 
   REJECTED: { label: "View Request Update", detail: "There is an update to your request", icon: AlertCircle },
   FULFILLED: { label: "View Request", detail: "Your request has been fulfilled", icon: CheckCircle2 },
   CANCELLED: { label: "Request Product", detail: "Submit a new request", icon: RotateCcw },
+  CLOSED: { label: "Available again", detail: "This product became available again", icon: CheckCircle2 },
 };
 
 export function ProductRequestStatusButton({
