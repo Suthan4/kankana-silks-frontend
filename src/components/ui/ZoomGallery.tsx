@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import SmartImage from "@/components/common/smartImage";
 import { AnimatePresence, motion } from "framer-motion";
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import {
@@ -205,7 +205,7 @@ export function ZoomGallery({
             {images.map((img, idx) => (
               <SwiperSlide key={img.id ?? img.url ?? idx}>
                 <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#f8f5f2]">
-                  <Image
+                  <SmartImage
                     src={img.url}
                     alt={product?.name ?? "Product image"}
                     fill
@@ -286,7 +286,7 @@ export function ZoomGallery({
                 aria-pressed={safeSelectedIndex === idx}
                 className={`relative h-[92px] w-[64px] shrink-0 overflow-hidden rounded-lg border-2 bg-[#f8f5f2] transition ${safeSelectedIndex === idx ? "border-stone-900 opacity-100" : "border-transparent opacity-65 hover:opacity-100"}`}
               >
-                <Image
+                <SmartImage
                   src={img.url}
                   alt=""
                   fill
@@ -316,7 +316,7 @@ export function ZoomGallery({
             }}
           >
             {activeImageUrl && (
-              <Image
+              <SmartImage
                 key={activeImageUrl}
                 src={activeImageUrl}
                 alt={product?.name ?? "Product image"}
@@ -460,7 +460,7 @@ export function ZoomGallery({
                 </button>
               )}
               <div className="relative h-full w-full max-w-6xl overflow-hidden">
-                <Image
+                <SmartImage
                   key={`lightbox-${activeImageUrl}`}
                   src={activeImageUrl}
                   alt={product?.name ?? "Product image"}
@@ -499,7 +499,7 @@ export function ZoomGallery({
                     aria-pressed={safeSelectedIndex === idx}
                     className={`relative h-14 w-11 shrink-0 overflow-hidden rounded-md border-2 transition sm:h-16 sm:w-12 ${safeSelectedIndex === idx ? "border-white opacity-100" : "border-white/15 opacity-55 hover:opacity-100"}`}
                   >
-                    <Image
+                    <SmartImage
                       src={img.url}
                       alt=""
                       fill
