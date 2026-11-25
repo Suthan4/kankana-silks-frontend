@@ -227,6 +227,96 @@ export const getCartItemStockState = (
 };
 
 /**
+ * Resolve aggregate product availability while keeping variable-product stock
+ * rows isolated per variant. A single purchasable variant keeps the product
+ * selectable even when another variant is below its own threshold.
+ */
+export interface ProductStockOverview {
+  item: any;
+  state: CartStockState;
+  hasStockData: boolean;
+  isOutOfStock: boolean;
+  purchasableVariantCount: number;
+}
+
+export const getProductStockOverview = (product: any): ProductStockOverview => {
+  const productVariants = Array.isArray(product?.variants)
+    ? product.variants
+    : [];
+  let variantsToCheck = productVariants;
+
+  // Home-section payloads include stock rows but may omit nested variant
+  // objects. Group those rows by variantId and evaluate each variant separately.
+  if (
+    product?.hasVariants &&
+    variantsToCheck.length === 0 &&
+    Array.isArray(product?.stock)
+  ) {
+    const stockByVariant = new Map<string, any[]>();
+    for (const row of product.stock) {
+      if (row?.variantId == null) continue;
+      const variantKey = String(row.variantId);
+      const rows = stockByVariant.get(variantKey) ?? [];
+      rows.push(row);
+      stockByVariant.set(variantKey, rows);
+    }
+    variantsToCheck = Array.from(stockByVariant.entries()).map(
+      ([id, rows]) => ({ id, stock: rows }),
+    );
+  }
+
+  if (product?.hasVariants && variantsToCheck.length > 0) {
+    const variantResults = variantsToCheck.map((variant: any) => {
+      const item = {
+        product,
+        variant,
+        variantId: variant?.id,
+        quantity: 1,
+        allowOutOfStockOrders: product?.allowOutOfStockOrders,
+      };
+      return { item, state: getCartItemStockState(item) };
+    });
+    const known = variantResults.filter((result) => result.state.hasStockData);
+    const purchasable = known.filter((result) => !result.state.isOutOfStock);
+
+    if (known.length > 0) {
+      const representative = (purchasable.length > 0 ? purchasable : known)
+        .slice()
+        .sort((left, right) => {
+          // Prefer a variant with normal ordering, then the largest allowed
+          // quantity. A low-stock variant is only representative when all
+          // purchasable variants are limited.
+          return (
+            Number(left.state.isLimited) - Number(right.state.isLimited) ||
+            right.state.maxAllowed - left.state.maxAllowed
+          );
+        })[0];
+
+      return {
+        ...representative,
+        hasStockData: true,
+        isOutOfStock: purchasable.length === 0,
+        purchasableVariantCount: purchasable.length,
+      };
+    }
+  }
+
+  const item = {
+    product,
+    quantity: 1,
+    allowOutOfStockOrders: product?.allowOutOfStockOrders,
+  };
+  const state = getCartItemStockState(item);
+  return {
+    item,
+    state,
+    hasStockData: state.hasStockData,
+    isOutOfStock: state.isOutOfStock,
+    purchasableVariantCount: state.isOutOfStock ? 0 : 1,
+  };
+};
+
+/**
  * Return whether the next quantity increase is allowed by the current stock
  * snapshot. Unknown stock is not treated as unlimited for increments.
  */
