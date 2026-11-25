@@ -53,13 +53,22 @@ export function CategoryMobileFilters({
 
       <AnimatePresence>
         {open && (
-          <>
+          <motion.div
+            key="category-mobile-filters"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="fixed inset-0 z-50 md:hidden"
+          >
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              onClick={onClose}
+              onPointerDown={(event) => {
+                if (event.target === event.currentTarget) onClose();
+              }}
               className="ios-modal-backdrop ios-modal-motion fixed inset-0 z-50 bg-black/50 md:hidden"
             />
             <motion.div
@@ -98,7 +107,7 @@ export function CategoryMobileFilters({
                 </motion.button>
               </div>
             </motion.div>
-          </>
+          </motion.div>
         )}
       </AnimatePresence>
     </>
