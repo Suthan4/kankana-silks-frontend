@@ -46,7 +46,7 @@ export function ProductRequestStatusButton({
 
   const requestQuery = useQuery({
     queryKey: ["my-product-requests"],
-    queryFn: () => productRequestApi.getMyRequests({ page: 1, limit: 100 }),
+    queryFn: () => productRequestApi.getMyRequests({ page: 1, limit: 50 }),
     enabled: Boolean(user),
     staleTime: 15_000,
     refetchInterval: user ? 30_000 : false,
