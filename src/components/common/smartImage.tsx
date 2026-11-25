@@ -1,4 +1,33 @@
+import { useState } from "react";
 import Image, { type ImageProps } from "next/image";
+
+const PRODUCT_MEDIA_CDN = "https://d2eb3zuw9j68gk.cloudfront.net";
+
+function normalizeImageSource(source: string): string {
+  const trimmed = source.trim();
+  if (!trimmed) return trimmed;
+
+  if (
+    trimmed.startsWith("//") ||
+    trimmed.startsWith("/") && !/^\/(?:products|categories|banners|home-sections|bulk)\//i.test(trimmed) ||
+    /^(?:https?:|data:|blob:)/i.test(trimmed)
+  ) {
+    return trimmed;
+  }
+
+  const storageKey = trimmed
+    .replace(/^(?:\.\/)+/, "")
+    .replace(/^\/+/, "");
+
+  // The backend stores S3 object keys under these folders when older product
+  // records contain a key instead of the generated CloudFront URL.
+  if (/^(?:products|categories|banners|home-sections|bulk)\//i.test(storageKey)) {
+    return `${PRODUCT_MEDIA_CDN}/${storageKey}`;
+  }
+
+  // Keep ordinary site-relative image paths rooted at the storefront origin.
+  return `/${storageKey}`;
+}
 
 /**
  * Hosts configured in next.config.ts -> images.remotePatterns.
@@ -53,17 +82,29 @@ export default function SmartImage({
   style,
   loading,
   draggable,
+  onLoad,
+  onError,
+  onClick,
 }: SmartImageProps) {
-  if (!canOptimize(src)) {
+  const imageSrc = normalizeImageSource(src);
+  const [failedOptimizedSource, setFailedOptimizedSource] = useState("");
+
+  const useNativeImage =
+    !canOptimize(imageSrc) || failedOptimizedSource === imageSrc;
+
+  if (useNativeImage) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={src}
+        src={imageSrc}
         alt={alt}
         className={className}
         loading={priority ? "eager" : (loading ?? "lazy")}
         draggable={draggable}
         decoding="async"
+        onLoad={onLoad}
+        onError={onError}
+        onClick={onClick}
         style={
           fill
             ? {
@@ -81,7 +122,7 @@ export default function SmartImage({
 
   return (
     <Image
-      src={src}
+      src={imageSrc}
       alt={alt}
       fill={fill}
       sizes={sizes}
@@ -89,6 +130,14 @@ export default function SmartImage({
       priority={priority}
       loading={priority ? undefined : loading}
       draggable={draggable}
+      onLoad={onLoad}
+      onError={() => {
+        // Retry directly from the original media URL if Next's optimizer cannot
+        // fetch a supported remote image (e.g. older CDN/S3 objects).
+        // Do not bubble this transient optimizer error: the native image may load.
+        setFailedOptimizedSource(imageSrc);
+      }}
+      onClick={onClick}
       className={className}
       style={style}
     />
