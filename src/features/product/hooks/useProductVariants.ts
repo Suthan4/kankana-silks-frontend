@@ -74,12 +74,15 @@ export function useProductVariants(product: Product) {
     hasVariants ? variants[0] ?? null : null,
   );
 
-  const images = useMemo(() => {
-    const variantImages = getImageMedia(selectedVariant?.media);
-    const productImages = getImageMedia(product.media);
-
-    return variantImages.length > 0 ? variantImages : productImages;
-  }, [product.media, selectedVariant?.media]);
+  const productImages = useMemo(
+    () => getImageMedia(product.media),
+    [product.media],
+  );
+  const variantImages = useMemo(
+    () => getImageMedia(selectedVariant?.media),
+    [selectedVariant?.media],
+  );
+  const images = variantImages.length > 0 ? variantImages : productImages;
 
   const options = useMemo(() => {
     if (!hasVariants) return [];
@@ -143,6 +146,8 @@ export function useProductVariants(product: Product) {
     hasVariants,
     selectedVariant,
     images,
+    productImages,
+    hasVariantImages: variantImages.length > 0,
     options,
     getSelectedAttributeValue,
     getSwatchImage,
