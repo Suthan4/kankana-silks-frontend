@@ -254,22 +254,24 @@ function HeroSlider({ section }: { section: HomeSection }) {
             {slides.map((_, index) => (
               <button
                 key={index}
+                type="button"
                 onClick={() => {
                   if (useLoop) swiperRef.current?.slideToLoop(index);
                   else swiperRef.current?.slideTo(index);
                 }}
-                className={`
-            rounded-full
-            transition-[width,height,background-color] duration-500
-            ${
-              index === currentIndex
-                ? "w-10 h-[3px] bg-white"
-                : "w-2 h-2 bg-white/35"
-            }
-          `}
+                className="flex h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                 aria-label={`Go to slide ${index + 1}`}
                 aria-current={index === currentIndex}
-              />
+              >
+                <span
+                  aria-hidden="true"
+                  className={`block rounded-full transition-[width,height,background-color] duration-500 ${
+                    index === currentIndex
+                      ? "h-[3px] w-10 bg-white"
+                      : "h-2 w-2 bg-white/60"
+                  }`}
+                />
+              </button>
             ))}
           </div>
 
