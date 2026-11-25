@@ -166,7 +166,7 @@ function CategoryShowcase({
                 {category.image ? (
                   <SmartImage
                     src={category.image}
-                    alt={category.name}
+                    alt=""
                     fill
                     sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                     className="object-cover transition-transform duration-700 group-hover:scale-110"
@@ -232,15 +232,22 @@ function CategoryShowcase({
               {Array.from({ length: totalSlides }).map((_, index) => (
                 <button
                   key={index}
+                  type="button"
                   onClick={() => setCurrentIndex(index)}
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    index === currentIndex
-                      ? "w-8 opacity-100"
-                      : "w-2 opacity-40 hover:opacity-70"
-                  }`}
-                  style={{ backgroundColor: textColor }}
+                  className="flex h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                   aria-label={`Go to slide ${index + 1}`}
-                />
+                  aria-current={index === currentIndex ? "true" : undefined}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`block h-2 rounded-full transition-all duration-300 ${
+                      index === currentIndex
+                        ? "w-8 opacity-100"
+                        : "w-2 opacity-50 hover:opacity-80"
+                    }`}
+                    style={{ backgroundColor: textColor }}
+                  />
+                </button>
               ))}
             </div>
           )}
