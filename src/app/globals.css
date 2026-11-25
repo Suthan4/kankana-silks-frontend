@@ -1518,3 +1518,47 @@ input[aria-invalid="true"], textarea[aria-invalid="true"], select[aria-invalid="
   outline: 2px solid #653536;
   outline-offset: 1px;
 }
+
+
+/* Minimal Swiper core layout for the homepage hero.
+   Avoid importing the full Swiper stylesheet into the critical homepage CSS. */
+.home-hero-swiper.swiper {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 1;
+  touch-action: pan-y;
+}
+
+.home-hero-swiper .swiper-wrapper {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  box-sizing: content-box;
+  transition-property: transform;
+}
+
+.home-hero-swiper .swiper-slide {
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+  width: 100%;
+  height: 100%;
+  transition-property: transform;
+}
+
+.home-hero-swiper .swiper-notification {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1000;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
