@@ -1321,7 +1321,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"], select[aria-invalid="
 
 /* Breathing-room homepage typography and mobile layout tokens. */
 .home-breathing-room {
-  font-family: var(--font-sans), Arial, sans-serif;
+  font-family: "Jost", sans-serif;
 }
 
 .home-mobile-header {
@@ -1363,7 +1363,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"], select[aria-invalid="
 .home-section-heading__title {
   margin: 0;
   color: var(--color-brand-primary, #653536);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Cormorant Garamond", Georgia, serif;
   font-size: clamp(2.1rem, 5vw, 3.6rem);
   font-weight: 600;
   line-height: 1.08;
@@ -1451,7 +1451,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"], select[aria-invalid="
   width: 100%;
   margin: 0;
   color: #171717 !important;
-  font-family: var(--font-sans), Arial, sans-serif !important;
+  font-family: "Jost", Arial, sans-serif !important;
   font-size: clamp(1.12rem, 5.2vw, 2.25rem) !important;
   font-weight: 700 !important;
   line-height: 1.2 !important;
