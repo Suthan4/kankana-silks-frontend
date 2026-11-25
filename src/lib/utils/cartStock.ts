@@ -236,6 +236,7 @@ export interface ProductStockOverview {
   state: CartStockState;
   hasStockData: boolean;
   isOutOfStock: boolean;
+  isZeroStock: boolean;
   purchasableVariantCount: number;
 }
 
@@ -296,6 +297,7 @@ export const getProductStockOverview = (product: any): ProductStockOverview => {
         ...representative,
         hasStockData: true,
         isOutOfStock: purchasable.length === 0,
+        isZeroStock: known.every((result) => result.state.isZeroStock),
         purchasableVariantCount: purchasable.length,
       };
     }
@@ -312,6 +314,7 @@ export const getProductStockOverview = (product: any): ProductStockOverview => {
     state,
     hasStockData: state.hasStockData,
     isOutOfStock: state.isOutOfStock,
+    isZeroStock: state.isZeroStock,
     purchasableVariantCount: state.isOutOfStock ? 0 : 1,
   };
 };
