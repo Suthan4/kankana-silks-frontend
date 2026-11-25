@@ -34,9 +34,6 @@ const getStockItem = (product: Product) => ({
 const getProductStockState = (product: Product) =>
   getCartItemStockState(getStockItem(product));
 
-const isInStock = (product: Product) =>
-  !getProductStockState(product).isOutOfStock;
-
 const arrowClass =
   "absolute top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-black/5 bg-white/90 text-xl text-gray-900 shadow-sm backdrop-blur-sm transition hover:scale-105 hover:bg-white active:scale-95";
 
