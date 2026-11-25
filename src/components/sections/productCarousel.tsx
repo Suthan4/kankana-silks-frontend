@@ -64,7 +64,6 @@ export default function ProductCarousel({
   const safeIndex = Math.min(Math.max(index, 0), products.length - 1);
   const currentProduct = products[safeIndex];
   const currentStockOverview = getProductStockOverview(currentProduct);
-  const currentStockState = currentStockOverview.state;
   const currentStockMessage = getCartItemStockMessage(currentStockOverview.item);
   const currentInStock = !currentStockOverview.isOutOfStock;
   const currentDiscount =
