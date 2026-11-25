@@ -65,10 +65,17 @@ export default function ProductRequestModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onPointerDown={(event) => {
+              if (event.target === event.currentTarget) onClose();
+            }}
             className="ios-modal-backdrop ios-modal-motion fixed inset-0 bg-black/60 z-50"
           />
-          <div className="ios-modal-viewport ios-request-modal-viewport fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+          <div
+            className="ios-modal-viewport ios-request-modal-viewport fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4"
+            onPointerDown={(event) => {
+              if (event.target === event.currentTarget) onClose();
+            }}
+          >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
