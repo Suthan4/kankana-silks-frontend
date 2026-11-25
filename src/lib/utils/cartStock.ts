@@ -267,7 +267,8 @@ export const getProductStockOverview = (product: any): ProductStockOverview => {
   }
 
   if (product?.hasVariants && variantsToCheck.length > 0) {
-    const variantResults = variantsToCheck.map((variant: any) => {
+    const variantResults: Array<{ item: any; state: CartStockState }> =
+      variantsToCheck.map((variant: any) => {
       const item = {
         product,
         variant,
@@ -276,7 +277,7 @@ export const getProductStockOverview = (product: any): ProductStockOverview => {
         allowOutOfStockOrders: product?.allowOutOfStockOrders,
       };
       return { item, state: getCartItemStockState(item) };
-    });
+      });
     const known = variantResults.filter((result) => result.state.hasStockData);
     const purchasable = known.filter((result) => !result.state.isOutOfStock);
 
