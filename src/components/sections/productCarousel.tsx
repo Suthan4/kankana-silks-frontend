@@ -20,20 +20,11 @@ import "swiper/css";
 import "swiper/css/pagination";
 import SmartImage from "../common/smartImage";
 import HomeSectionHeading from "../common/homeSectionHeading";
-import { getCartItemStockMessage, getCartItemStockState } from "@/lib/utils/cartStock";
+import { getCartItemStockMessage, getProductStockOverview } from "@/lib/utils/cartStock";
 import { formatMaskedPrice } from "@/lib/utils/priceMasked";
 
 const stripHtml = (html?: string) => (html ? html.replace(/<[^>]+>/g, "") : "");
 const inr = (value: number | string) => Number(value).toLocaleString("en-IN");
-const getStockItem = (product: Product) => ({
-  product,
-  quantity: 1,
-  allowOutOfStockOrders: product.allowOutOfStockOrders,
-});
-
-const getProductStockState = (product: Product) =>
-  getCartItemStockState(getStockItem(product));
-
 const arrowClass =
   "absolute top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-black/5 bg-white/90 text-xl text-gray-900 shadow-sm backdrop-blur-sm transition hover:scale-105 hover:bg-white active:scale-95";
 
@@ -72,20 +63,20 @@ export default function ProductCarousel({
 
   const safeIndex = Math.min(Math.max(index, 0), products.length - 1);
   const currentProduct = products[safeIndex];
-  const currentStockState = getProductStockState(currentProduct);
-  const currentStockMessage = getCartItemStockMessage(getStockItem(currentProduct));
-  const currentInStock = !currentStockState.isOutOfStock;
+  const currentStockOverview = getProductStockOverview(currentProduct);
+  const currentStockState = currentStockOverview.state;
+  const currentStockMessage = getCartItemStockMessage(currentStockOverview.item);
+  const currentInStock = !currentStockOverview.isOutOfStock;
   const currentDiscount =
-    !currentStockState.isOutOfStock &&
+    !currentStockOverview.isOutOfStock &&
     Number(currentProduct.basePrice) > Number(currentProduct.sellingPrice);
 
   const handleAddToCart = async (product: Product) => {
-    const stockItem = getStockItem(product);
-    const stockState = getCartItemStockState(stockItem);
+    const stockOverview = getProductStockOverview(product);
 
-    if (stockState.isOutOfStock) {
+    if (stockOverview.isOutOfStock) {
       toast.error(
-        getCartItemStockMessage(stockItem)?.message ??
+        getCartItemStockMessage(stockOverview.item)?.message ??
           "This product is currently unavailable.",
       );
       return;
@@ -174,10 +165,10 @@ export default function ProductCarousel({
           spaceBetween={12}
         >
           {products.map((product) => {
-            const stockItem = getStockItem(product);
-            const stockState = getCartItemStockState(stockItem);
-            const stockMessage = getCartItemStockMessage(stockItem);
-            const inStock = !stockState.isOutOfStock;
+            const stockOverview = getProductStockOverview(product);
+            const stockState = stockOverview.state;
+            const stockMessage = getCartItemStockMessage(stockOverview.item);
+            const inStock = !stockOverview.isOutOfStock;
 
             return (
               <SwiperSlide key={product.id}>
@@ -212,7 +203,7 @@ export default function ProductCarousel({
                     </h3>
                     <div className="mt-3 flex items-center justify-between gap-3">
                       <span className="font-medium">
-                        {stockState.isOutOfStock
+                        {stockOverview.isOutOfStock
                           ? formatMaskedPrice(Number(product.sellingPrice))
                           : `₹${inr(product.sellingPrice)}`}
                       </span>
@@ -230,7 +221,7 @@ export default function ProductCarousel({
                         {!inStock ? "Sold out" : product.hasVariants ? "Options" : "Add"}
                       </button>
                     </div>
-                    {!stockState.isOutOfStock && stockMessage && (
+                    {!stockOverview.isOutOfStock && stockMessage && (
                       <p className="mt-2 text-xs font-medium text-amber-700">
                         {stockMessage.message}
                       </p>
@@ -327,7 +318,7 @@ export default function ProductCarousel({
 
             <div className="mt-5 flex items-baseline gap-3">
               <span className="text-2xl font-medium tracking-tight lg:text-3xl">
-                {currentStockState.isOutOfStock
+                {currentStockOverview.isOutOfStock
                   ? formatMaskedPrice(Number(currentProduct.sellingPrice))
                   : `₹${inr(currentProduct.sellingPrice)}`}
               </span>
@@ -338,7 +329,7 @@ export default function ProductCarousel({
               )}
             </div>
 
-            {!currentStockState.isOutOfStock && currentStockMessage && (
+            {!currentStockOverview.isOutOfStock && currentStockMessage && (
               <p className="mt-2 text-sm font-medium text-amber-700" aria-live="polite">
                 {currentStockMessage.message}
               </p>
