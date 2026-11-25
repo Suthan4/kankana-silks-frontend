@@ -110,7 +110,17 @@ export function ReturnModal({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="ios-modal-viewport ios-return-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
+        <motion.div
+          key="return-order-modal"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+          className="ios-modal-viewport ios-return-overlay fixed inset-0 z-50 flex items-center justify-center p-4"
+          onPointerDown={(event) => {
+            if (event.target === event.currentTarget) onClose();
+          }}
+        >
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -406,7 +416,7 @@ export function ReturnModal({
               </div>
             </div>
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );
