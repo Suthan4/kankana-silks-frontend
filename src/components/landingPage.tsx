@@ -13,7 +13,6 @@ import { useQuery } from "@tanstack/react-query";
 import type { Banner } from "@/lib/api/banner.api";
 import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
-import VideoConsultationModal from "./video-consultationModal";
 
 const HeroSlider = dynamic(() => import("./sections/heroSlider"));
 const ProductGrid = dynamic(() => import("./sections/productGrid"));
@@ -24,6 +23,9 @@ const AestheticFullImage = dynamic(
   () => import("./sections/aestheticFullImage"),
 );
 const BannerSection = dynamic(() => import("./sections/bannerSection"));
+const VideoConsultationModal = dynamic(
+  () => import("./video-consultationModal"),
+);
 const InstagramTrendsSection = dynamic(
   () => import("./sections/instagramTrendsSection"),
 );
