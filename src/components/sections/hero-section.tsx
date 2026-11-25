@@ -5,7 +5,6 @@ import "swiper/css";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { getImageProps } from "next/image";
-import { preload } from "react-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Swiper as SwiperInstance } from "swiper";
 import { A11y, Autoplay, Keyboard } from "swiper/modules";
@@ -56,7 +55,7 @@ function BannerPicture({
   const { props: desktop } = getImageProps({
     ...common,
     src: banner.url,
-    loading: "eager" as const,
+    loading: isFirst ? ("eager" as const) : ("lazy" as const),
     fetchPriority: isFirst ? ("high" as const) : ("low" as const),
   });
   const { props: mobile } = getImageProps({
@@ -64,24 +63,6 @@ function BannerPicture({
     src: banner.mobileUrl || banner.url,
   });
   const { srcSet: desktopSrcSet, ...imgProps } = desktop;
-
-  // The first banner is the LCP element: preload one hint per screen size.
-  if (isFirst) {
-    preload(mobile.src, {
-      as: "image",
-      imageSrcSet: mobile.srcSet,
-      imageSizes: "100vw",
-      media: "(max-width: 767px)",
-      fetchPriority: "high",
-    });
-    preload(desktop.src, {
-      as: "image",
-      imageSrcSet: desktopSrcSet,
-      imageSizes: "100vw",
-      media: "(min-width: 768px)",
-      fetchPriority: "high",
-    });
-  }
 
   return (
     <picture>
