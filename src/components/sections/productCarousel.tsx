@@ -64,7 +64,9 @@ export default function ProductCarousel({
   const safeIndex = Math.min(Math.max(index, 0), products.length - 1);
   const currentProduct = products[safeIndex];
   const currentStockOverview = getProductStockOverview(currentProduct);
-  const currentStockLabel = getProductStockLabel(currentStockOverview);
+  const currentStockLabel = currentStockOverview.isOutOfStock
+    ? null
+    : getProductStockLabel(currentStockOverview);
   const currentInStock = !currentStockOverview.isOutOfStock;
   const currentDiscount =
     !currentStockOverview.isZeroStock &&
@@ -165,8 +167,9 @@ export default function ProductCarousel({
         >
           {products.map((product) => {
             const stockOverview = getProductStockOverview(product);
-            const stockState = stockOverview.state;
-            const stockLabel = getProductStockLabel(stockOverview);
+            const stockLabel = stockOverview.isOutOfStock
+              ? null
+              : getProductStockLabel(stockOverview);
             const inStock = !stockOverview.isOutOfStock;
 
             return (
