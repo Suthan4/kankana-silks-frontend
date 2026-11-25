@@ -5,7 +5,8 @@ export type ProductRequestStatus =
   | "APPROVED"
   | "REJECTED"
   | "FULFILLED"
-  | "CANCELLED";
+  | "CANCELLED"
+  | "CLOSED";
 
 export interface ProductRequestData {
   productId: string;
