@@ -1,12 +1,23 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Product, ProductVariant } from "@/lib/api/product.api";
+import type { Product, ProductMedia, ProductVariant } from "@/lib/api/product.api";
 
 type VariantAttributeRow = {
   key?: unknown;
   value?: unknown;
 };
+
+function getImageMedia(media?: ProductMedia[]): ProductMedia[] {
+  return (media ?? [])
+    .filter(
+      (item) =>
+        typeof item.url === "string" &&
+        item.url.trim().length > 0 &&
+        String(item.type ?? "IMAGE").toUpperCase() === "IMAGE",
+    )
+    .map((item) => ({ ...item, url: item.url.trim() }));
+}
 
 function getAttributeValue(
   variant: ProductVariant | null,
@@ -64,10 +75,8 @@ export function useProductVariants(product: Product) {
   );
 
   const images = useMemo(() => {
-    const variantImages =
-      selectedVariant?.media?.filter((media) => media.type === "IMAGE") ?? [];
-    const productImages =
-      product.media?.filter((media) => media.type === "IMAGE") ?? [];
+    const variantImages = getImageMedia(selectedVariant?.media);
+    const productImages = getImageMedia(product.media);
 
     return variantImages.length > 0 ? variantImages : productImages;
   }, [product.media, selectedVariant?.media]);
