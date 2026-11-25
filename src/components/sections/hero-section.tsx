@@ -136,6 +136,7 @@ export default function HeroSection({
   const swiperRef = useRef<SwiperInstance | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [firstLoaded, setFirstLoaded] = useState(false);
+  const [carouselReady, setCarouselReady] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   // Slides whose media has been mounted. Once mounted a slide stays mounted,
   // so swiping back never flashes black.
@@ -149,6 +150,25 @@ export default function HeroSection({
   // block autoplay forever, so give up waiting after 4 seconds.
   const firstIsImage = banners[0]?.type === MediaType.IMAGE;
   const ready = firstLoaded || !firstIsImage;
+
+  // Let the browser paint the static first image before Swiper performs its
+  // initial width/slide measurements. This keeps carousel layout work off the
+  // LCP image's first paint.
+  useEffect(() => {
+    if (!ready || totalSlides === 0) return;
+
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        setCarouselReady(true);
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      if (secondFrame) window.cancelAnimationFrame(secondFrame);
+    };
+  }, [ready, totalSlides]);
 
   useEffect(() => {
     if (ready || totalSlides === 0) return;
@@ -187,7 +207,7 @@ export default function HeroSection({
     } else {
       swiper.autoplay.stop();
     }
-  }, [ready, reducedMotion, totalSlides]);
+  }, [ready, reducedMotion, totalSlides, carouselReady]);
 
   // Keep the active index valid if the banner list shrinks.
   useEffect(() => {
@@ -259,6 +279,7 @@ export default function HeroSection({
           Autoplay pauses while the pointer is over the hero.
       ====================================== */}
       <div className="absolute inset-0 z-10">
+        {carouselReady && (
         <Swiper
           className="home-hero-swiper h-full w-full md:cursor-grab md:active:cursor-grabbing"
           modules={[Autoplay, Keyboard, A11y]}
@@ -349,9 +370,10 @@ export default function HeroSection({
             );
           })}
         </Swiper>
+        )}
       </div>
 
-      {totalSlides > 1 && (
+      {carouselReady && totalSlides > 1 && (
         <>
           {/* =====================================
               DESKTOP ARROWS (mobile uses swipe)
