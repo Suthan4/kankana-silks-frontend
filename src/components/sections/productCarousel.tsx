@@ -20,7 +20,7 @@ import "swiper/css";
 import "swiper/css/pagination";
 import SmartImage from "../common/smartImage";
 import HomeSectionHeading from "../common/homeSectionHeading";
-import { getCartItemStockMessage, getProductStockOverview } from "@/lib/utils/cartStock";
+import { getCartItemStockMessage, getProductStockLabel, getProductStockOverview } from "@/lib/utils/cartStock";
 import { formatMaskedPrice } from "@/lib/utils/priceMasked";
 
 const stripHtml = (html?: string) => (html ? html.replace(/<[^>]+>/g, "") : "");
@@ -64,7 +64,9 @@ export default function ProductCarousel({
   const safeIndex = Math.min(Math.max(index, 0), products.length - 1);
   const currentProduct = products[safeIndex];
   const currentStockOverview = getProductStockOverview(currentProduct);
-  const currentStockMessage = getCartItemStockMessage(currentStockOverview.item);
+  const currentStockLabel = currentStockOverview.isOutOfStock
+    ? null
+    : getProductStockLabel(currentStockOverview);
   const currentInStock = !currentStockOverview.isOutOfStock;
   const currentDiscount =
     !currentStockOverview.isZeroStock &&
@@ -165,8 +167,9 @@ export default function ProductCarousel({
         >
           {products.map((product) => {
             const stockOverview = getProductStockOverview(product);
-            const stockState = stockOverview.state;
-            const stockMessage = getCartItemStockMessage(stockOverview.item);
+            const stockLabel = stockOverview.isOutOfStock
+              ? null
+              : getProductStockLabel(stockOverview);
             const inStock = !stockOverview.isOutOfStock;
 
             return (
@@ -226,9 +229,12 @@ export default function ProductCarousel({
                             : "Add"}
                       </button>
                     </div>
-                    {!stockOverview.isZeroStock && stockMessage && (
-                      <p className="mt-2 text-xs font-medium text-amber-700">
-                        {stockMessage.message}
+                    {stockLabel && (
+                      <p
+                        className="mt-2 min-h-4 text-[11px] font-medium leading-4 text-stone-500"
+                        aria-live="polite"
+                      >
+                        {stockLabel}
                       </p>
                     )}
                   </div>
@@ -334,9 +340,9 @@ export default function ProductCarousel({
               )}
             </div>
 
-            {!currentStockOverview.isZeroStock && currentStockMessage && (
-              <p className="mt-2 text-sm font-medium text-amber-700" aria-live="polite">
-                {currentStockMessage.message}
+            {currentStockLabel && (
+              <p className="mt-2 text-sm font-medium text-stone-500" aria-live="polite">
+                {currentStockLabel}
               </p>
             )}
 

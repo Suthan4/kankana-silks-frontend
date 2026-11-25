@@ -320,6 +320,21 @@ export const getProductStockOverview = (product: any): ProductStockOverview => {
 };
 
 /**
+ * Short, non-urgent stock label for product cards and carousels.
+ * Keep this separate from the longer cart/checkout validation messages.
+ */
+export const getProductStockLabel = (
+  overview: ProductStockOverview,
+): string | null => {
+  if (!overview.hasStockData) return null;
+  if (overview.isZeroStock) return "Sold out";
+  if (overview.isOutOfStock) return "Currently unavailable";
+  if (overview.state.isLastOne) return "Only 1 left";
+  if (overview.state.isLimited) return "Max 1 per order";
+  return null;
+};
+
+/**
  * Return whether the next quantity increase is allowed by the current stock
  * snapshot. Unknown stock is not treated as unlimited for increments.
  */
