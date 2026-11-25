@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
 import type { Swiper as SwiperType } from "swiper";
 import type { HomeSection } from "@/lib/api/home-section.api";
 import SmartImage from "../common/smartImage";
