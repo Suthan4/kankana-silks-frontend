@@ -1,4 +1,33 @@
+import { useState } from "react";
 import Image, { type ImageProps } from "next/image";
+
+const PRODUCT_MEDIA_CDN = "https://d2eb3zuw9j68gk.cloudfront.net";
+
+function normalizeImageSource(source: string): string {
+  const trimmed = source.trim();
+  if (!trimmed) return trimmed;
+
+  if (
+    trimmed.startsWith("//") ||
+    trimmed.startsWith("/") && !/^\/(?:products|categories|banners|home-sections|bulk)\//i.test(trimmed) ||
+    /^(?:https?:|data:|blob:)/i.test(trimmed)
+  ) {
+    return trimmed;
+  }
+
+  const storageKey = trimmed
+    .replace(/^(?:\.\/)+/, "")
+    .replace(/^\/+/, "");
+
+  // The backend stores S3 object keys under these folders when older product
+  // records contain a key instead of the generated CloudFront URL.
+  if (/^(?:products|categories|banners|home-sections|bulk)\//i.test(storageKey)) {
+    return `${PRODUCT_MEDIA_CDN}/${storageKey}`;
+  }
+
+  // Keep ordinary site-relative image paths rooted at the storefront origin.
+  return `/${storageKey}`;
+}
 
 /**
  * Hosts configured in next.config.ts -> images.remotePatterns.
@@ -57,18 +86,13 @@ export default function SmartImage({
   onError,
   onClick,
 }: SmartImageProps) {
-  // Media URLs saved before the CDN migration may be relative paths without a
-  // leading slash. Resolve those from the site root, not the current product URL.
-  const trimmedSrc = src.trim();
-  const imageSrc =
-    trimmedSrc &&
-    !trimmedSrc.startsWith("/") &&
-    !/^(?:https?:)?\/\//i.test(trimmedSrc) &&
-    !/^(?:data|blob):/i.test(trimmedSrc)
-      ? `/${trimmedSrc.replace(/^\.\//, "")}`
-      : trimmedSrc;
+  const imageSrc = normalizeImageSource(src);
+  const [failedOptimizedSource, setFailedOptimizedSource] = useState("");
 
-  if (!canOptimize(imageSrc)) {
+  const useNativeImage =
+    !canOptimize(imageSrc) || failedOptimizedSource === imageSrc;
+
+  if (useNativeImage) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
@@ -107,7 +131,12 @@ export default function SmartImage({
       loading={priority ? undefined : loading}
       draggable={draggable}
       onLoad={onLoad}
-      onError={onError}
+      onError={(event) => {
+        // Retry directly from the original media URL if Next's optimizer cannot
+        // fetch a supported remote image (e.g. older CDN/S3 objects).
+        setFailedOptimizedSource(imageSrc);
+        onError?.(event);
+      }}
       onClick={onClick}
       className={className}
       style={style}
