@@ -337,7 +337,9 @@ export default function MiniCartDrawer() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            onClick={close}
+            onPointerDown={(event) => {
+              if (event.target === event.currentTarget) close();
+            }}
             className="ios-modal-backdrop ios-modal-motion fixed inset-0 bg-black/60 z-[150]"
             aria-hidden="true"
           />
