@@ -585,6 +585,7 @@ export default function ReturnDetailsPage() {
             className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4"
           >
             <ModalScrollLock />
+            <AnimatePresence propagate>
             <motion.div
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
@@ -664,6 +665,7 @@ export default function ReturnDetailsPage() {
                 </a>
               </div>
             </motion.div>
+            </AnimatePresence>
           </motion.div>
           )}
         </AnimatePresence>
