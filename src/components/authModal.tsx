@@ -1,9 +1,7 @@
 "use client";
 
-import { Portal } from "@/components/ui/Portal";
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { type FormEvent, useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   X,
   User,
@@ -18,7 +16,6 @@ import { useAuthModal } from "@/store/useAuthModalStore";
 import { z } from "zod";
 import { authService } from "@/lib/api/api.base.service";
 import { useQueryClient } from "@tanstack/react-query";
-import { ModalScrollLock } from "./ui/ModalScrollLock";
 
 // Zod Schemas
 const loginSchema = z.object({
@@ -56,7 +53,6 @@ type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 
 export default function AuthModal() {
   const { isOpen, mode, closeModal, setMode, setAuth } = useAuthModal();
-  const [mounted, setMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -98,11 +94,6 @@ export default function AuthModal() {
     setForgotErrors({});
     setApiError("");
   }, [mode]);
-
-  // Prevent hydration mismatch
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleLoginSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -233,52 +224,22 @@ export default function AuthModal() {
     }
   };
 
-  if (!mounted) return null;
-
   return (
-    <Portal>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            className="ios-auth-motion-root ios-modal-motion"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            role="presentation"
-          >
-            <motion.div
-              key="auth-modal-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="ios-auth-overlay ios-modal-viewport ios-modal-motion fixed inset-0 bg-black/60 flex items-center justify-center p-3 z-50"
-              onPointerDown={(event) => {
-                if (event.target === event.currentTarget) closeModal();
-              }}
-              role="presentation"
-            >
-              <AnimatePresence propagate>
-                <motion.div
-                  // iOS/WebKit: a spring on scale + opacity of a large, shadowed card
-                  // drops the layer for a frame or two when it settles (the modal blinked
-                  // in the recording) and re-rasterises the text while scaling. Use a
-                  // short tween on opacity/translate only, and keep the layer promoted.
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 8 }}
-                  transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                  style={{
-                    willChange: "transform, opacity",
-                    WebkitBackfaceVisibility: "hidden",
-                    backfaceVisibility: "hidden",
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="ios-modal-panel ios-auth-panel ios-modal-motion rounded-2xl shadow-xl w-full max-w-sm h-auto flex flex-col bg-white"
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby="modal-title"
-                >
-                  <ModalScrollLock />
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) closeModal();
+      }}
+    >
+      <DialogContent
+        showCloseButton={false}
+        aria-labelledby="modal-title"
+        className="auth-dialog-content w-[calc(100%-1.5rem)] max-w-sm max-h-[calc(100dvh-1.5rem)] overflow-hidden rounded-2xl border-0 bg-white p-0 shadow-xl"
+        style={{
+          maxHeight: "calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px)",
+        }}
+      >
+        <div className="flex min-h-0 flex-col overflow-hidden">
                   {/* Header - Compact mobile-first */}
                   <div className="relative bg-gradient-to-br from-gray-50 to-white px-4 py-2 sm:px-6 sm:pt-6 sm:pb-4 text-black flex-shrink-0 border-b border-gray-100">
                     <button
@@ -289,15 +250,11 @@ export default function AuthModal() {
                       <X className="w-5 h-5" />
                     </button>
                     <div className="flex justify-center mb-2">
-                      <motion.img
+                      <img
                         src="/image-removebg-preview.png"
                         width={316}
                         height={152}
-                        alt="Kankana Silks"
-                        // No layoutId: its only partner (the splash screen) is disabled, and
-                        // a layout-projected image inside a scaling modal visibly shakes on
-                        // iOS while the spring runs.
-                        className="h-9 w-auto object-contain"
+                        alt="Kankana Silks"                        className="h-9 w-auto object-contain"
                       />
                     </div>
                     <h2
@@ -321,9 +278,7 @@ export default function AuthModal() {
                   {/* Form - Non-scrollable, compact */}
                   <div className="ios-modal-content bg-white px-4 py-4 sm:px-6 sm:py-6 flex-1 flex flex-col overflow-hidden">
                     {apiError && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
+                      <div
                         className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2"
                       >
                         <AlertCircle
@@ -333,17 +288,14 @@ export default function AuthModal() {
                         <p className="text-xs sm:text-sm text-red-700">
                           {apiError}
                         </p>
-                      </motion.div>
+                      </div>
                     )}
 
-                    <AnimatePresence mode="wait">
+                    
                       {/* Login Form */}
                       {mode === "login" && (
-                        <motion.form
+                        <form
                           key="login"
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 20 }}
                           className="space-y-3 sm:space-y-4"
                           onSubmit={handleLoginSubmit}
                         >
@@ -475,15 +427,13 @@ export default function AuthModal() {
                             </button>
                           </div>
 
-                          <motion.button
+                          <button
                             type="submit"
-                            whileHover={{ scale: isLoading ? 1 : 1.02 }}
-                            whileTap={{ scale: isLoading ? 1 : 0.98 }}
                             disabled={isLoading}
                             className="brand-button w-full rounded-lg py-2 sm:py-2.5 text-sm sm:text-base disabled:cursor-not-allowed"
                           >
                             {isLoading ? "Signing in..." : "Sign In"}
-                          </motion.button>
+                          </button>
 
                           <p className="text-center text-xs sm:text-sm text-gray-600">
                             Don't have an account?{" "}
@@ -495,16 +445,13 @@ export default function AuthModal() {
                               Sign up
                             </button>
                           </p>
-                        </motion.form>
+                        </form>
                       )}
 
                       {/* Register Form */}
                       {mode === "register" && (
-                        <motion.form
+                        <form
                           key="register"
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 20 }}
                           className="space-y-3 sm:space-y-4"
                           onSubmit={handleRegisterSubmit}
                         >
@@ -814,17 +761,15 @@ export default function AuthModal() {
                             )}
                           </div>
 
-                          <motion.button
+                          <button
                             type="submit"
-                            whileHover={{ scale: isLoading ? 1 : 1.02 }}
-                            whileTap={{ scale: isLoading ? 1 : 0.98 }}
                             disabled={isLoading}
                             className="brand-button w-full rounded-lg py-2 sm:py-2.5 text-sm sm:text-base disabled:cursor-not-allowed"
                           >
                             {isLoading
                               ? "Creating Account..."
                               : "Create Account"}
-                          </motion.button>
+                          </button>
 
                           <p className="text-center text-xs sm:text-sm text-gray-600">
                             Already have an account?{" "}
@@ -836,16 +781,13 @@ export default function AuthModal() {
                               Sign in
                             </button>
                           </p>
-                        </motion.form>
+                        </form>
                       )}
 
                       {/* Forgot Password Form */}
                       {mode === "forgot" && (
-                        <motion.form
+                        <form
                           key="forgot"
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 20 }}
                           className="space-y-4"
                           onSubmit={handleForgotSubmit}
                         >
@@ -898,15 +840,13 @@ export default function AuthModal() {
                             )}
                           </div>
 
-                          <motion.button
+                          <button
                             type="submit"
-                            whileHover={{ scale: isLoading ? 1 : 1.02 }}
-                            whileTap={{ scale: isLoading ? 1 : 0.98 }}
                             disabled={isLoading}
                             className="brand-button w-full rounded-lg py-2 sm:py-2.5 text-sm sm:text-base disabled:cursor-not-allowed"
                           >
                             {isLoading ? "Sending..." : "Send Reset Link"}
-                          </motion.button>
+                          </button>
 
                           <button
                             type="button"
@@ -915,16 +855,13 @@ export default function AuthModal() {
                           >
                             ← Back to Sign In
                           </button>
-                        </motion.form>
+                        </form>
                       )}
-                    </AnimatePresence>
+                    
                   </div>
-                </motion.div>
-              </AnimatePresence>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </Portal>
+
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
