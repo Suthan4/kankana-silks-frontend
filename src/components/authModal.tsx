@@ -249,7 +249,6 @@ export default function AuthModal() {
             }}
             role="presentation"
           >
-            <ModalScrollLock />
             <AnimatePresence propagate>
               <motion.div
               // iOS/WebKit: a spring on scale + opacity of a large, shadowed card
@@ -271,6 +270,7 @@ export default function AuthModal() {
               aria-modal="true"
               aria-labelledby="modal-title"
             >
+              <ModalScrollLock />
               {/* Header - Compact mobile-first */}
               <div className="relative bg-gradient-to-br from-gray-50 to-white px-4 py-2 sm:px-6 sm:pt-6 sm:pb-4 text-black flex-shrink-0 border-b border-gray-100">
                 <button
