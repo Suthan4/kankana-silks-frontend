@@ -956,7 +956,7 @@ html {
   transition: opacity 700ms ease-out 350ms, transform 700ms ease-out 350ms;
 }
 
-/* ==========================================================================   iOS MODAL LAYOUT STABILIZATION   Fixes Safari/WebKit viewport resizing, modal flickering, scroll conflicts,   and layout glitches on mobile dialogs.   Scoped to iOS WebKit and mobile widths.   Desktop, Android, and consultation modal remain untouched.   ========================================================================== */
+/* ==========================================================================   iOS MODAL LAYOUT STABILIZATION   Fixes Safari/WebKit viewport resizing, modal flickering, scroll conflicts,   and layout glitches on mobile dialogs.   Scoped to iOS WebKit and mobile widths.   Shared by all modal surfaces; desktop and Android keep their existing layout.   ========================================================================== */
 @supports (-webkit-touch-callout: none) {
   @media screen and (max-width: 767px) {
     html {
