@@ -1,10 +1,9 @@
 "use client";
 
-import { Portal } from "@/components/ui/Portal";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import React, { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+
 import {
   X,
   User,
@@ -25,7 +24,6 @@ import {
   CreateConsultationRequest,
 } from "@/lib/api/consultation";
 import { toast } from "sonner";
-import { ModalScrollLock } from "./ui/ModalScrollLock";
 
 type VideoConsultationModalProps = {
   isOpen: boolean;
@@ -172,38 +170,16 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
   ];
 
   return (
-    <Portal>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            key="video-consultation-modal"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
-            className="ios-modal-viewport fixed inset-0 z-[1000] flex items-end justify-center overflow-hidden bg-black/50 md:items-center md:p-4"
-            onPointerDown={(event) => {
-              if (event.target === event.currentTarget) onClose();
-            }}
-            role="presentation"
-          >
-            <AnimatePresence propagate>
-              <motion.section
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 16 }}
-                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="video-consultation-title"
-                className="ios-modal-panel flex w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl bg-surface-elevated text-text-main shadow-brand-float md:rounded-2xl"
-                style={{
-                  height: "min(92dvh, 820px)",
-                  maxHeight: "calc(100dvh - env(safe-area-inset-top) - 8px)",
-                  paddingBottom: "env(safe-area-inset-bottom)",
-                }}
-              >
-                <ModalScrollLock />
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent
+        aria-labelledby="video-consultation-title"
+        className="w-full max-w-3xl max-h-[92dvh] overflow-hidden rounded-t-2xl md:rounded-2xl"
+        style={{
+          height: "min(92dvh, 820px)",
+          maxHeight: "calc(100dvh - env(safe-area-inset-top) - 8px)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+      >
                 {/* Header */}
                 <header className="relative flex shrink-0 items-start justify-between border-b border-gray-200 px-5 pb-4 pt-5 sm:px-6">
                   <div className="absolute left-1/2 top-2 h-1 w-9 -translate-x-1/2 rounded-full bg-gray-300 md:hidden" />
@@ -443,12 +419,8 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
                     )}
                   </button>
                 </div>
-              </motion.section>
-            </AnimatePresence>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </Portal>
+      </DialogContent>
+    </Dialog>
   );
 };
 
