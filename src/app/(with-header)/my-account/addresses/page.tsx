@@ -356,6 +356,7 @@ export default function AddressesPage() {
           role="presentation"
         >
           <ModalScrollLock />
+          <AnimatePresence propagate>
           <motion.section
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -651,6 +652,7 @@ export default function AddressesPage() {
               </button>
             </div>
           </motion.section>
+          </AnimatePresence>
         </motion.div>
           )}
         </AnimatePresence>
