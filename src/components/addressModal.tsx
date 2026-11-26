@@ -142,7 +142,6 @@ export default function AddressModal({
           if (event.target === event.currentTarget) onClose();
         }}
       >
-        <ModalScrollLock />
         <AnimatePresence propagate>
         <motion.div
           onClick={(e) => e.stopPropagation()}
@@ -159,6 +158,7 @@ export default function AddressModal({
             overflow-hidden
           "
         >
+          <ModalScrollLock />
           {/* ── Header ── */}
           <div className="relative bg-white px-5 py-3.5 text-black flex items-center gap-3 shrink-0">
             <div className="w-8 h-8 bg-black/20 rounded-full flex items-center justify-center">
