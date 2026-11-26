@@ -1,7 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
+import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
+import { Portal } from "@/components/ui/Portal";
 import { X, SlidersHorizontal } from "lucide-react";
 import type { Category } from "@/lib/api/category.api";
 import { CategoryFilterSidebar } from "./CategoryFilterSidebar";
@@ -37,8 +38,6 @@ export function CategoryMobileFilters({
   onPriceRangeChange,
   onFabricChange,
 }: CategoryMobileFiltersProps) {
-  useModalScrollLock(open);
-
   return (
     <>
       <motion.button
@@ -54,8 +53,9 @@ export function CategoryMobileFilters({
         Filter & Sort
       </motion.button>
 
-      <AnimatePresence>
-        {open && (
+      <Portal>
+        <AnimatePresence>
+          {open && (
           <motion.div
             key="category-mobile-filters"
             initial={{ opacity: 0 }}
@@ -64,6 +64,7 @@ export function CategoryMobileFilters({
             transition={{ duration: 0.18, ease: "easeOut" }}
             className="fixed inset-0 z-50 md:hidden"
           >
+            <ModalScrollLock />
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -111,8 +112,9 @@ export function CategoryMobileFilters({
               </div>
             </motion.div>
           </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
+      </Portal>
     </>
   );
 }
