@@ -112,6 +112,7 @@ export function CategoryMobileFilters({
                 </motion.button>
               </div>
             </motion.div>
+            </AnimatePresence>
           </motion.div>
           )}
         </AnimatePresence>
