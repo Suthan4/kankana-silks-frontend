@@ -128,6 +128,7 @@ export default function UnifiedSearchModal({
         >
           <ModalScrollLock />
           <div className="ios-search-positioner flex items-start justify-center min-h-dvh p-4 pt-[10vh]">
+            <AnimatePresence propagate>
             <motion.div
               ref={modalRef}
               initial={{ opacity: 0, scale: 0.95, y: -20 }}
@@ -465,6 +466,7 @@ export default function UnifiedSearchModal({
                 </div>
               </div>
             </motion.div>
+            </AnimatePresence>
           </div>
         </motion.div>
         )}
