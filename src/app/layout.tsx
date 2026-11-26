@@ -14,6 +14,11 @@ import MiniCartDrawer from "@/components/miniCartDrawerProvider";
 import { SkipLink } from "@/components/ui/SkipLink";
 import { NavigationProgress } from "@/components/ui/NavigationProgress";
 import DeferredBrandFonts from "@/components/DeferredBrandFonts";
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+
 
 // --------------------------------------------------
 // Site Configuration
@@ -217,7 +222,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en-IN">
+    <html lang="en-IN" className={cn("font-sans", geist.variable)}>
       <head>
         <link rel="preconnect" href="https://use.typekit.net" crossOrigin="" />
         <link

@@ -173,7 +173,6 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent
         aria-labelledby="video-consultation-title"
-        closeOnBackdrop
         className="w-full max-w-3xl max-h-[92dvh] overflow-hidden rounded-t-2xl md:rounded-2xl"
         style={{
           height: "min(92dvh, 820px)",
@@ -181,12 +180,6 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
           paddingBottom: "env(safe-area-inset-bottom)",
         }}
       >
-                style={{
-                  height: "min(92dvh, 820px)",
-                  maxHeight: "calc(100dvh - env(safe-area-inset-top) - 8px)",
-                  paddingBottom: "env(safe-area-inset-bottom)",
-                }}
-              >
                 {/* Header */}
                 <header className="relative flex shrink-0 items-start justify-between border-b border-gray-200 px-5 pb-4 pt-5 sm:px-6">
                   <div className="absolute left-1/2 top-2 h-1 w-9 -translate-x-1/2 rounded-full bg-gray-300 md:hidden" />
