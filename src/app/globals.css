@@ -964,15 +964,8 @@ html {
       scroll-behavior: auto !important;
     }
 
-    /* Disable motion only for affected modal surfaces on iOS */
-    .ios-modal-motion {
-      animation: none !important;
-      transition: none !important;
-      transform: none !important;
-      -webkit-transform: none !important;
-      opacity: 1 !important;
-      will-change: auto !important;
-    }
+    /* Modal opacity and transforms are controlled by each dialog's animation.
+       Do not override them here: iOS must run the same enter/exit lifecycle. */
 
     .ios-auth-motion-root {
       display: contents !important;
@@ -991,11 +984,10 @@ html {
       isolation: isolate;
     }
 
-    /* Backdrop */
+    /* Backdrop position only. Opacity is owned by the component transition. */
     .ios-modal-backdrop {
       position: fixed !important;
       inset: 0 !important;
-      opacity: 1 !important;
       pointer-events: auto;
     }
 

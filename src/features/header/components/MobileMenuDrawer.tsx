@@ -2,6 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import type { User } from "@/store/useAuthModalStore";
 import type { Category } from "@/lib/api/category.api";
 import { MobileMenuProfile } from "./MobileMenuProfile";
@@ -38,6 +39,8 @@ export function MobileMenuDrawer({
   onLogin,
   onLogout,
 }: MobileMenuDrawerProps) {
+  useModalScrollLock(open && !!portalRoot);
+
   if (!portalRoot) return null;
 
   return createPortal(
