@@ -85,6 +85,7 @@ export default function ProductRequestModal({
               if (event.target === event.currentTarget) onClose();
             }}
           >
+            <AnimatePresence propagate>
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -203,6 +204,7 @@ export default function ProductRequestModal({
                 </div>
               </form>
             </motion.div>
+            </AnimatePresence>
           </div>
         </motion.div>
         )}
