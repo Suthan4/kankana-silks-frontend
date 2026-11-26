@@ -75,6 +75,7 @@ export function CategoryMobileFilters({
               }}
               className="ios-modal-backdrop ios-modal-motion fixed inset-0 z-50 bg-black/50 md:hidden"
             />
+            <AnimatePresence propagate>
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
