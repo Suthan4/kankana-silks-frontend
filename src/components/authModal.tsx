@@ -1,5 +1,6 @@
 "use client";
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
+import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
+import { Portal } from "@/components/ui/Portal";
 import { type FormEvent, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -101,7 +102,6 @@ export default function AuthModal() {
     setMounted(true);
   }, []);
 
-  useModalScrollLock(isOpen);
 
   const handleLoginSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -235,15 +235,9 @@ export default function AuthModal() {
   if (!mounted) return null;
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          className="ios-auth-motion-root ios-modal-motion"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          role="presentation"
-        >
+    <Portal>
+      <AnimatePresence>
+        {isOpen && (
           <motion.div
             key="auth-modal-backdrop"
             initial={{ opacity: 0 }}
@@ -255,6 +249,7 @@ export default function AuthModal() {
             }}
             role="presentation"
           >
+            <ModalScrollLock />
             <motion.div
               // iOS/WebKit: a spring on scale + opacity of a large, shadowed card
               // drops the layer for a frame or two when it settles (the modal blinked
@@ -911,8 +906,8 @@ export default function AuthModal() {
               </div>
             </motion.div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+    </Portal>
   );
 }
