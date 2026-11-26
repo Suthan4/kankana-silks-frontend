@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
+import { Portal } from "@/components/ui/Portal";
 import {
   MapPin,
   Plus,
@@ -334,8 +337,14 @@ export default function AddressesPage() {
       </div>
 
       {/* Add/Edit Address — mobile-first iOS style sheet */}
-      {isModalOpen && (
-        <div
+      <Portal>
+        <AnimatePresence>
+          {isModalOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
           className="fixed inset-0 z-[1000] flex items-end justify-center bg-black/50 md:bg-black/45 md:backdrop-blur-[2px] md:items-center md:p-6"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
@@ -346,7 +355,12 @@ export default function AddressesPage() {
           }}
           role="presentation"
         >
-          <section
+          <ModalScrollLock />
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             role="dialog"
             aria-modal="true"
             aria-labelledby="address-modal-title"
@@ -636,9 +650,11 @@ export default function AddressesPage() {
                 )}
               </button>
             </div>
-          </section>
-        </div>
-      )}
+          </motion.section>
+        </motion.div>
+          )}
+        </AnimatePresence>
+      </Portal>
     </div>
   );
 }
