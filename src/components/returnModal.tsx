@@ -135,6 +135,7 @@ export function ReturnModal({
           />
 
           {/* Modal */}
+          <AnimatePresence propagate>
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -418,6 +419,7 @@ export function ReturnModal({
               </div>
             </div>
           </motion.div>
+          </AnimatePresence>
         </motion.div>
         )}
       </AnimatePresence>
