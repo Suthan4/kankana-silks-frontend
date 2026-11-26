@@ -355,7 +355,6 @@ export default function AddressesPage() {
           }}
           role="presentation"
         >
-          <ModalScrollLock />
           <AnimatePresence propagate>
           <motion.section
             initial={{ opacity: 0, y: 20 }}
@@ -372,6 +371,7 @@ export default function AddressesPage() {
               paddingBottom: "env(safe-area-inset-bottom)",
             }}
           >
+            <ModalScrollLock />
             {/* Drag handle + fixed header */}
             <div className="shrink-0 border-b border-gray-100 bg-white px-5 pb-4 pt-3">
               <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-gray-300 md:hidden" />
