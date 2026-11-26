@@ -85,6 +85,7 @@ test.describe("home page on a phone", () => {
     await openHome(page);
 
     const initialScrollY = await page.evaluate(() => {
+      document.documentElement.style.scrollBehavior = "auto";
       const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
       window.scrollTo(0, Math.min(500, Math.max(0, maxScroll)));
       return window.scrollY;
