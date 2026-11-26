@@ -105,10 +105,6 @@ function Header() {
     Boolean(hoveredCategory) ||
     locationModalOpen ||
     userMenuOpen;
-  const portalRoot =
-    typeof document !== "undefined"
-      ? document.getElementById("portal-root")
-      : null;
 
   return (
     <>
@@ -179,7 +175,6 @@ function Header() {
       />
       <MobileMenuDrawer
         open={mobileMenuOpen}
-        portalRoot={portalRoot}
         categories={categories}
         loading={loading}
         user={user}
