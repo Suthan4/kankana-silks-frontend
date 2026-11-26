@@ -320,6 +320,7 @@ export default function OrderDetailsPage() {
           aria-labelledby="cancel-order-title"
         >
           <ModalScrollLock />
+          <AnimatePresence propagate>
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -409,6 +410,7 @@ export default function OrderDetailsPage() {
               </div>
             </div>
           </motion.div>
+          </AnimatePresence>
         </motion.div>
           )}
         </AnimatePresence>
