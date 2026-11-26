@@ -735,8 +735,7 @@ export default function AuthModal() {
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="underline font-medium hover:text-black"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
+                                                >
                                   Terms of Service
                                 </a>{" "}
                                 and{" "}
