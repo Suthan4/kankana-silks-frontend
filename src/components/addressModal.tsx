@@ -1,6 +1,7 @@
 "use client";
 
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
+import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
+import { Portal } from "@/components/ui/Portal";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, MapPin, Check } from "lucide-react";
 import { useEffect } from "react";
@@ -54,7 +55,6 @@ export default function AddressModal({
   mode,
 }: AddressModalProps) {
   const queryClient = useQueryClient();
-  useModalScrollLock(isOpen);
 
   const {
     register,
@@ -130,8 +130,9 @@ export default function AddressModal({
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
+    <Portal>
+      <AnimatePresence>
+        {isOpen && (
       <motion.div
         className="ios-modal-viewport ios-address-overlay ios-modal-motion fixed inset-0 z-50 bg-black/60 flex items-end md:items-center justify-center p-0 md:p-4"
         initial={{ opacity: 0 }}
@@ -141,6 +142,7 @@ export default function AddressModal({
           if (event.target === event.currentTarget) onClose();
         }}
       >
+        <ModalScrollLock />
         <motion.div
           onClick={(e) => e.stopPropagation()}
           initial={{ y: "100%" }}
@@ -316,8 +318,9 @@ export default function AddressModal({
           </form>
         </motion.div>
       </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+    </Portal>
   );
 }
 
