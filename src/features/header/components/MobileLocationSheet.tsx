@@ -1,5 +1,7 @@
 "use client";
 
+import { Portal } from "@/components/ui/Portal";
+
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import type { RefObject } from "react";
@@ -43,7 +45,8 @@ export function MobileLocationSheet({
   mobileLocationRef,
 }: MobileLocationSheetProps) {
   return (
-    <AnimatePresence>
+    <Portal>
+      <AnimatePresence>
       {open && (
         <motion.div
           className="ios-location-overlay ios-modal-motion fixed inset-0 z-[100] h-[100dvh] overflow-hidden md:hidden"
@@ -107,6 +110,7 @@ export function MobileLocationSheet({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </Portal>
   );
 }
