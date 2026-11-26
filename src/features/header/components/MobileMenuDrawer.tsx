@@ -39,7 +39,7 @@ export function MobileMenuDrawer({
   onLogin,
   onLogout,
 }: MobileMenuDrawerProps) {
-  useModalScrollLock(open);
+  useModalScrollLock(open && !!portalRoot);
 
   if (!portalRoot) return null;
 
