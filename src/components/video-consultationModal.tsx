@@ -186,7 +186,6 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
         }}
         role="presentation"
       >
-      <ModalScrollLock />
       <AnimatePresence propagate>
       <motion.section
         initial={{ opacity: 0, y: 24 }}
@@ -203,6 +202,7 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
           paddingBottom: "env(safe-area-inset-bottom)",
         }}
       >
+        <ModalScrollLock />
         {/* Header */}
         <header className="relative flex shrink-0 items-start justify-between border-b border-gray-200 px-5 pb-4 pt-5 sm:px-6">
           <div className="absolute left-1/2 top-2 h-1 w-9 -translate-x-1/2 rounded-full bg-gray-300 md:hidden" />
