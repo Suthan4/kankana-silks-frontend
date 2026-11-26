@@ -1,5 +1,7 @@
 "use client";
 
+import { Portal } from "@/components/ui/Portal";
+
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartDrawer } from "@/store/useCartDrawer";
@@ -328,7 +330,8 @@ export default function MiniCartDrawer() {
   };
 
   return (
-    <AnimatePresence>
+    <Portal>
+      <AnimatePresence>
       {isOpen && (
         <motion.div
           key="mini-cart-drawer-overlay"
@@ -482,6 +485,7 @@ export default function MiniCartDrawer() {
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </Portal>
   );
 }

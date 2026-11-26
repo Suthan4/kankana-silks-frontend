@@ -1,5 +1,7 @@
 "use client";
 
+import { Portal } from "@/components/ui/Portal";
+
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -58,7 +60,8 @@ export default function ProductRequestModal({
   };
 
   return (
-    <AnimatePresence>
+    <Portal>
+      <AnimatePresence>
       {isOpen && (
         <motion.div
           key="product-request-modal"
@@ -204,6 +207,7 @@ export default function ProductRequestModal({
           </div>
         </motion.div>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </Portal>
   );
 }

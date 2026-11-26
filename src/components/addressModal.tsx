@@ -1,5 +1,7 @@
 "use client";
 
+import { Portal } from "@/components/ui/Portal";
+
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, MapPin, Check } from "lucide-react";
@@ -130,7 +132,8 @@ export default function AddressModal({
   };
 
   return (
-    <AnimatePresence>
+    <Portal>
+      <AnimatePresence>
       {isOpen && (
       <motion.div
         className="ios-modal-viewport ios-address-overlay ios-modal-motion fixed inset-0 z-50 bg-black/60 flex items-end md:items-center justify-center p-0 md:p-4"
@@ -317,7 +320,8 @@ export default function AddressModal({
         </motion.div>
       </motion.div>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </Portal>
   );
 }
 
