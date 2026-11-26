@@ -339,7 +339,6 @@ export default function MiniCartDrawer() {
           transition={{ duration: 0.18, ease: "easeOut" }}
           className="fixed inset-0 z-[150]"
         >
-          <ModalScrollLock />
           {/* BACKDROP OVERLAY */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -378,6 +377,7 @@ export default function MiniCartDrawer() {
               }
             `}
           >
+            <ModalScrollLock />
             {/* MOBILE DRAG HANDLE */}
             {isMobile && (
               <div className="w-full pt-3 pb-1 flex justify-center cursor-grab active:cursor-grabbing touch-none select-none">
