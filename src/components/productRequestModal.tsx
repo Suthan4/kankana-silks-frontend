@@ -69,7 +69,6 @@ export default function ProductRequestModal({
           transition={{ duration: 0.18, ease: "easeOut" }}
           className="fixed inset-0 z-50"
         >
-          <ModalScrollLock />
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -93,6 +92,7 @@ export default function ProductRequestModal({
               transition={{ type: "spring", duration: 0.5 }}
               className="ios-modal-panel ios-request-panel ios-modal-motion bg-white rounded-t-3xl md:rounded-2xl shadow-2xl max-w-md w-full overflow-hidden max-h-[92vh] overflow-y-auto"
             >
+              <ModalScrollLock />
               <div className="relative bg-gray-100 p-6 border-b border-gray-100">
                 <button
                   onClick={onClose}
