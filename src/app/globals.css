@@ -964,14 +964,8 @@ html {
       scroll-behavior: auto !important;
     }
 
-    /* Keep Framer Motion's opacity/transform states intact on iOS.
-       Overriding these properties here cancelled both enter and exit frames,
-       leaving the backdrop and panel visually out of sync. */
-    .ios-modal-motion {
-      will-change: opacity, transform;
-      -webkit-backface-visibility: hidden;
-      backface-visibility: hidden;
-    }
+    /* Modal opacity and transforms are controlled by each dialog's animation.
+       Do not override them here: iOS must run the same enter/exit lifecycle. */
 
     .ios-auth-motion-root {
       display: contents !important;
