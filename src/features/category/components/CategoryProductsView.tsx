@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
@@ -39,6 +39,10 @@ export function CategoryProductsView({
   const cart = useCategoryCart();
   const wishlist = useWishlist();
   const ui = useCategoryPageUI(cart.user);
+  const [hasOpenedRequestModal, setHasOpenedRequestModal] = useState(false);
+  const [lastRequestProduct, setLastRequestProduct] = useState<Product | null>(null);
+  const [lastRequestVariant, setLastRequestVariant] = useState<ProductVariant | null>(null);
+
   const scroller = useCategorySubcategoryScroller(category.children);
   const canAddProductToCart = useCallback(
     (product: Product) => !isProductUnavailable(product),
@@ -51,7 +55,12 @@ export function CategoryProductsView({
   const handleRequestProduct = useCallback((
     product: Product,
     variant: ProductVariant | null,
-  ) => ui.openRequestModal(product, variant), [ui.openRequestModal]);
+  ) => {
+    setLastRequestProduct(product);
+    setLastRequestVariant(variant);
+    setHasOpenedRequestModal(true);
+    ui.openRequestModal(product, variant);
+  }, [ui.openRequestModal]);
 
   if (productsQuery.isError) {
     return (
@@ -166,12 +175,12 @@ export function CategoryProductsView({
         onFabricChange={filters.handleFabricChange}
       />
 
-      {ui.requestProduct && (
+      {hasOpenedRequestModal && lastRequestProduct && (
         <ProductRequestModal
           isOpen={ui.isRequestModalOpen}
           onClose={ui.closeRequestModal}
-          product={ui.requestProduct}
-          selectedVariant={ui.requestVariant}
+          product={ui.requestProduct ?? lastRequestProduct}
+          selectedVariant={ui.requestVariant ?? lastRequestVariant ?? undefined}
         />
       )}
     </div>

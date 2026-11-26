@@ -1,5 +1,7 @@
 "use client";
 
+import { Portal } from "@/components/ui/Portal";
+
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartDrawer } from "@/store/useCartDrawer";
@@ -21,6 +23,7 @@ import { cartKeys, cartQueryPolicy } from "@/lib/query/cartQuery";
 import { CartDrawerSkeleton } from "@/features/cart/components/CartDrawerSkeleton";
 import { MiniCartItemRow } from "@/features/cart/components/MiniCartItemRow";
 import { MiniCartFooter } from "@/features/cart/components/MiniCartFooter";
+import { ModalScrollLock } from "./ui/ModalScrollLock";
 
 export default function MiniCartDrawer() {
   const { isOpen, close } = useCartDrawer();
@@ -53,8 +56,6 @@ export default function MiniCartDrawer() {
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
-
-  useModalScrollLock(isOpen);
 
   /* -------------------- ESCAPE KEY HANDLER -------------------- */
   useEffect(() => {
@@ -291,7 +292,10 @@ export default function MiniCartDrawer() {
 
     const stockState = getStockState(item);
     const currentQuantity = Number(item.quantity) || 0;
-    if (newQty > currentQuantity && !canIncreaseCartItemQuantity(item, newQty)) {
+    if (
+      newQty > currentQuantity &&
+      !canIncreaseCartItemQuantity(item, newQty)
+    ) {
       toast.error(
         !stockState.hasStockData
           ? "Stock availability could not be verified. Please refresh your cart."
@@ -328,45 +332,47 @@ export default function MiniCartDrawer() {
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          key="mini-cart-drawer-overlay"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.18, ease: "easeOut" }}
-          className="fixed inset-0 z-[150]"
-        >
-          {/* BACKDROP OVERLAY */}
+    <Portal>
+      <AnimatePresence>
+        {isOpen && (
           <motion.div
+            key="mini-cart-drawer-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            onPointerDown={(event) => {
-              if (event.target === event.currentTarget) close();
-            }}
-            className="ios-modal-backdrop ios-modal-motion fixed inset-0 bg-black/60 z-[150]"
-            aria-hidden="true"
-          />
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="fixed inset-0 z-[150]"
+          >
+            {/* BACKDROP OVERLAY */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              onPointerDown={(event) => {
+                if (event.target === event.currentTarget) close();
+              }}
+              className="ios-modal-backdrop ios-modal-motion fixed inset-0 bg-black/60 z-[150]"
+              aria-hidden="true"
+            />
 
-          {/* DRAWER (Desktop: Right -> Left, Mobile: Bottom -> Top) */}
-          <motion.div
-            initial={isMobile ? { y: "100%" } : { x: "100%" }}
-            animate={isMobile ? { y: 0 } : { x: 0 }}
-            exit={isMobile ? { y: "100%" } : { x: "100%" }}
-            transition={{ type: "spring", stiffness: 340, damping: 34 }}
-            drag={isMobile ? "y" : false}
-            dragDirectionLock
-            dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={{ top: 0, bottom: 0.6 }}
-            onDragEnd={(_, info) => {
-              if (info.offset.y > 80 || info.velocity.y > 400) {
-                close();
-              }
-            }}
-            className={`
+            {/* DRAWER (Desktop: Right -> Left, Mobile: Bottom -> Top) */}
+            <AnimatePresence propagate>
+              <motion.div
+                initial={isMobile ? { y: "100%" } : { x: "100%" }}
+                animate={isMobile ? { y: 0 } : { x: 0 }}
+                exit={isMobile ? { y: "100%" } : { x: "100%" }}
+                transition={{ type: "spring", stiffness: 340, damping: 34 }}
+                drag={isMobile ? "y" : false}
+                dragDirectionLock
+                dragConstraints={{ top: 0, bottom: 0 }}
+                dragElastic={{ top: 0, bottom: 0.6 }}
+                onDragEnd={(_, info) => {
+                  if (info.offset.y > 80 || info.velocity.y > 400) {
+                    close();
+                  }
+                }}
+                className={`
             ios-modal-panel ios-cart-drawer ios-modal-motion fixed z-[151] bg-surface-elevated shadow-brand-float flex flex-col overflow-hidden
               ${
                 isMobile
@@ -374,114 +380,125 @@ export default function MiniCartDrawer() {
                   : "right-0 top-0 h-full w-full sm:w-[420px]"
               }
             `}
-          >
-            {/* MOBILE DRAG HANDLE */}
-            {isMobile && (
-              <div className="w-full pt-3 pb-1 flex justify-center cursor-grab active:cursor-grabbing touch-none select-none">
-                <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
-              </div>
-            )}
-            {/* HEADER */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-surface">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center">
-                  <ShoppingBag className="w-4 h-4" />
-                </div>
-                <div>
-                  <h2 className="font-semibold text-base text-gray-900 leading-tight">
-                    Shopping Bag
-                  </h2>
-                  <p className="text-xs text-gray-500">
-                    {totalItems} {totalItems === 1 ? "item" : "items"}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={close}
-                aria-label="Close cart drawer"
-                className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
               >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            {/* BODY / ITEMS LIST */}
-            <div className="ios-modal-content flex-1 overflow-y-auto px-5 py-3 divide-y divide-gray-100">
-              {displayItems.length === 0 && user && isCartLoading ? (
-                <CartDrawerSkeleton />
-              ) : displayItems.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full py-16 text-center">
-                  <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 mb-4">
-                    <ShoppingBag className="w-8 h-8" />
+                <ModalScrollLock />
+                {/* MOBILE DRAG HANDLE */}
+                {isMobile && (
+                  <div className="w-full pt-3 pb-1 flex justify-center cursor-grab active:cursor-grabbing touch-none select-none">
+                    <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
                   </div>
-                  <h3 className="font-medium text-gray-800 text-base mb-1">
-                    Your bag is empty
-                  </h3>
-                  <p className="text-xs text-gray-500 max-w-[220px] mb-6">
-                    Add items to your cart to see them here.
-                  </p>
+                )}
+                {/* HEADER */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-surface">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center">
+                      <ShoppingBag className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h2 className="font-semibold text-base text-gray-900 leading-tight">
+                        Shopping Bag
+                      </h2>
+                      <p className="text-xs text-gray-500">
+                        {totalItems} {totalItems === 1 ? "item" : "items"}
+                      </p>
+                    </div>
+                  </div>
                   <button
                     onClick={close}
-                    className="brand-button rounded-lg px-5 py-2.5 text-xs"
+                    aria-label="Close cart drawer"
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
                   >
-                    Continue Shopping
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
-              ) : (
-                displayItems.map((item: any) => {
-                  const itemPrice = getItemPrice(item);
-                  const imageUrl = getItemImage(item);
-                  const stockState = getStockState(item);
-                  const stockQty = stockState.available;
-                  const cartQuantity = Math.max(0, Number(item.quantity) || 0);
+                {/* BODY / ITEMS LIST */}
+                <div className="ios-modal-content flex-1 overflow-y-auto px-5 py-3 divide-y divide-gray-100">
+                  {displayItems.length === 0 && user && isCartLoading ? (
+                    <CartDrawerSkeleton />
+                  ) : displayItems.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full py-16 text-center">
+                      <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 mb-4">
+                        <ShoppingBag className="w-8 h-8" />
+                      </div>
+                      <h3 className="font-medium text-gray-800 text-base mb-1">
+                        Your bag is empty
+                      </h3>
+                      <p className="text-xs text-gray-500 max-w-[220px] mb-6">
+                        Add items to your cart to see them here.
+                      </p>
+                      <button
+                        onClick={close}
+                        className="brand-button rounded-lg px-5 py-2.5 text-xs"
+                      >
+                        Continue Shopping
+                      </button>
+                    </div>
+                  ) : (
+                    displayItems.map((item: any) => {
+                      const itemPrice = getItemPrice(item);
+                      const imageUrl = getItemImage(item);
+                      const stockState = getStockState(item);
+                      const stockQty = stockState.available;
+                      const cartQuantity = Math.max(
+                        0,
+                        Number(item.quantity) || 0,
+                      );
 
-                  // Remaining inventory after considering this customer's cart.
-                  const remainingStock = Math.max(0, stockQty - cartQuantity);
+                      // Remaining inventory after considering this customer's cart.
+                      const remainingStock = Math.max(
+                        0,
+                        stockQty - cartQuantity,
+                      );
 
-                  // Customer has added the only physically available item.
-                  const isLastOneInCart =
-                    stockState.hasStockData &&
-                    stockQty === 1 &&
-                    cartQuantity === 1;
+                      // Customer has added the only physically available item.
+                      const isLastOneInCart =
+                        stockState.hasStockData &&
+                        stockQty === 1 &&
+                        cartQuantity === 1;
 
-                  // Other customers can still purchase the remaining quantity.
-                  const hasOnlyOneRemaining =
-                    stockState.hasStockData && remainingStock === 1;
-                  const variantAttrs = item?.variant
-                    ? extractVariantAttributes(item.variant)
-                    : [];
+                      // Other customers can still purchase the remaining quantity.
+                      const hasOnlyOneRemaining =
+                        stockState.hasStockData && remainingStock === 1;
+                      const variantAttrs = item?.variant
+                        ? extractVariantAttributes(item.variant)
+                        : [];
 
-                  return (
-                    <MiniCartItemRow
-                      key={item.id}
-                      item={item}
-                      itemPrice={itemPrice}
-                      imageUrl={imageUrl}
-                      stockState={stockState}
-                      isLastOneInCart={isLastOneInCart}
-                      hasOnlyOneRemaining={hasOnlyOneRemaining}
-                      remainingStock={remainingStock}
-                      variantAttrs={variantAttrs}
-                      isUpdating={updateQuantityMutation.isPending}
-                      isRemoving={removeItemMutation.isPending}
-                      onQuantityChange={(quantity) => handleUpdateQuantity(item, quantity)}
-                      onRemove={() => handleRemove(item)}
-                    />
-                  );
-                })
-              )}
-            </div>
-            {displayItems.length > 0 && (
-              <MiniCartFooter
-                totalItems={totalItems}
-                subtotal={subtotal}
-                onCheckout={handleCheckoutNavigation}
-                onViewCart={handleCartNavigation}
-                onClose={close}
-              />
-            )}
+                      return (
+                        <MiniCartItemRow
+                          key={item.id}
+                          item={item}
+                          itemPrice={itemPrice}
+                          imageUrl={imageUrl}
+                          stockState={stockState}
+                          isLastOneInCart={isLastOneInCart}
+                          hasOnlyOneRemaining={hasOnlyOneRemaining}
+                          remainingStock={remainingStock}
+                          variantAttrs={variantAttrs}
+                          isUpdating={updateQuantityMutation.isPending}
+                          isRemoving={removeItemMutation.isPending}
+                          onQuantityChange={(quantity) =>
+                            handleUpdateQuantity(item, quantity)
+                          }
+                          onRemove={() => handleRemove(item)}
+                        />
+                      );
+                    })
+                  )}
+                </div>
+                {displayItems.length > 0 && (
+                  <MiniCartFooter
+                    totalItems={totalItems}
+                    subtotal={subtotal}
+                    onCheckout={handleCheckoutNavigation}
+                    onViewCart={handleCartNavigation}
+                    onClose={close}
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+    </Portal>
   );
 }

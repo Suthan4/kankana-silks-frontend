@@ -36,6 +36,11 @@ export default function WishlistPage() {
     id: string;
     name: string;
   } | null>(null);
+  const [lastRequestProduct, setLastRequestProduct] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [hasOpenedRequestModal, setHasOpenedRequestModal] = useState(false);
 
   const {
     items,
@@ -325,11 +330,11 @@ export default function WishlistPage() {
         </div>
       </div>
 
-      {requestProduct && (
+      {hasOpenedRequestModal && lastRequestProduct && (
         <ProductRequestModal
           isOpen={Boolean(requestProduct)}
           onClose={() => setRequestProduct(null)}
-          product={requestProduct}
+          product={requestProduct ?? lastRequestProduct}
         />
       )}
     </ProtectedRoute>

@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import SmartImage from "@/components/common/smartImage";
 import { AnimatePresence, motion } from "framer-motion";
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
+import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
+import { Portal } from "@/components/ui/Portal";
 import {
   ChevronLeft,
   ChevronRight,
@@ -45,7 +46,6 @@ export function ZoomGallery({
   const [hoverOrigin, setHoverOrigin] = useState("50% 50%");
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isLightboxZoomed, setIsLightboxZoomed] = useState(false);
-  useModalScrollLock(isLightboxOpen);
 
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const swiperRef = useRef<SwiperType | null>(null);
@@ -400,8 +400,9 @@ export function ZoomGallery({
 
       {/* Dedicated lightbox: the zoomed image stays inside the viewport and no
           longer overlaps the product actions, sticky bar, or details section. */}
-      <AnimatePresence>
-        {isLightboxOpen && activeImageUrl && (
+      <Portal>
+        <AnimatePresence>
+          {isLightboxOpen && activeImageUrl && (
           <motion.div
             key="product-image-lightbox"
             role="dialog"
@@ -417,6 +418,7 @@ export function ZoomGallery({
             ref={lightboxRef}
             className="ios-product-lightbox ios-modal-motion fixed inset-0 z-[10000] flex flex-col bg-[#121212]/[0.97] text-white"
           >
+            <ModalScrollLock />
             <header className="relative z-10 flex min-h-[68px] items-center justify-between gap-4 border-b border-white/10 px-4 py-3 sm:px-7">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium sm:text-base">
@@ -521,8 +523,9 @@ export function ZoomGallery({
               </footer>
             )}
           </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
+      </Portal>
     </>
   );
 }

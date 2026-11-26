@@ -1,8 +1,8 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion } from "framer-motion";
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
+import { AnimatePresence, motion, MotionConfig } from "framer-motion";
+import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
 import type { User } from "@/store/useAuthModalStore";
 import type { Category } from "@/lib/api/category.api";
 import { MobileMenuProfile } from "./MobileMenuProfile";
@@ -39,50 +39,52 @@ export function MobileMenuDrawer({
   onLogin,
   onLogout,
 }: MobileMenuDrawerProps) {
-  useModalScrollLock(open && !!portalRoot);
-
   if (!portalRoot) return null;
 
   return createPortal(
-    <AnimatePresence initial={false}>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.18, ease: "easeOut" }}
-          className="md:hidden fixed inset-0 z-[110] isolate"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Mobile navigation"
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 110,
-            isolation: "isolate",
-            contain: "layout paint",
-            transform: "translate3d(0, 0, 0)",
-            WebkitTransform: "translate3d(0, 0, 0)",
-          }}
-        >
-          {/* Static backdrop avoids animating opacity over the hero image. */}
-          <button
+    <MotionConfig reducedMotion="user">
+      <>
+      {/* Backdrop and drawer have independent presence lifecycles. This lets
+          the backdrop fade while the panel completes its slide-out transition. */}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.button
+            key="mobile-menu-backdrop"
             type="button"
             aria-label="Close navigation menu"
-            className="absolute inset-0 h-full w-full touch-none bg-black/50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="fixed inset-0 z-[110] bg-black/50 md:hidden"
             onClick={onClose}
           />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence initial={false}>
+        {open && (
           <motion.div
+            key="mobile-navigation-panel"
             initial={{ x: "-100%" }}
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-            className="mobile-drawer-panel absolute inset-y-0 left-0 w-[85%] max-w-[420px] overflow-y-auto overscroll-contain bg-white pb-[env(safe-area-inset-bottom)]"
+            className="mobile-drawer-panel fixed inset-y-0 left-0 z-[111] w-[85%] max-w-[420px] overflow-y-auto overscroll-contain bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
             style={{ WebkitOverflowScrolling: "touch" }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mobile navigation"
             onClick={(event) => event.stopPropagation()}
           >
+            <ModalScrollLock />
             <div className="px-4 py-6">
-              <button className="mb-4" onClick={onClose} aria-label="Close menu">
+              <button
+                className="mb-4"
+                onClick={onClose}
+                aria-label="Close menu"
+                type="button"
+              >
                 <span aria-hidden="true">×</span>
               </button>
               <MobileMenuProfile
@@ -103,9 +105,10 @@ export function MobileMenuDrawer({
               />
             </div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>,
+        )}
+      </AnimatePresence>
+      </>
+    </MotionConfig>,
     portalRoot,
   );
 }

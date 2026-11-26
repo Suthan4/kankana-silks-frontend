@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
+import { Portal } from "@/components/ui/Portal";
 import {
   MapPin,
   Plus,
@@ -334,8 +337,14 @@ export default function AddressesPage() {
       </div>
 
       {/* Add/Edit Address — mobile-first iOS style sheet */}
-      {isModalOpen && (
-        <div
+      <Portal>
+        <AnimatePresence>
+          {isModalOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
           className="fixed inset-0 z-[1000] flex items-end justify-center bg-black/50 md:bg-black/45 md:backdrop-blur-[2px] md:items-center md:p-6"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
@@ -346,7 +355,12 @@ export default function AddressesPage() {
           }}
           role="presentation"
         >
-          <section
+          <AnimatePresence propagate>
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             role="dialog"
             aria-modal="true"
             aria-labelledby="address-modal-title"
@@ -357,6 +371,7 @@ export default function AddressesPage() {
               paddingBottom: "env(safe-area-inset-bottom)",
             }}
           >
+            <ModalScrollLock />
             {/* Drag handle + fixed header */}
             <div className="shrink-0 border-b border-gray-100 bg-white px-5 pb-4 pt-3">
               <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-gray-300 md:hidden" />
@@ -636,9 +651,12 @@ export default function AddressesPage() {
                 )}
               </button>
             </div>
-          </section>
-        </div>
-      )}
+          </motion.section>
+          </AnimatePresence>
+        </motion.div>
+          )}
+        </AnimatePresence>
+      </Portal>
     </div>
   );
 }
