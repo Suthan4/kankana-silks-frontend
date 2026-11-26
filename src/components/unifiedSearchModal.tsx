@@ -1,6 +1,7 @@
 "use client";
-import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
+
 import { Portal } from "@/components/ui/Portal";
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -119,7 +120,7 @@ export default function UnifiedSearchModal({
   return (
     <Portal>
       <AnimatePresence>
-        {isOpen && (
+      {isOpen && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -469,7 +470,7 @@ export default function UnifiedSearchModal({
             </AnimatePresence>
           </div>
         </motion.div>
-        )}
+      )}
       </AnimatePresence>
     </Portal>
   );

@@ -1,7 +1,8 @@
 "use client";
 
-import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
 import { Portal } from "@/components/ui/Portal";
+
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, AlertCircle, Send, Package } from "lucide-react";
@@ -60,7 +61,7 @@ export default function ProductRequestModal({
   return (
     <Portal>
       <AnimatePresence>
-        {isOpen && (
+      {isOpen && (
         <motion.div
           key="product-request-modal"
           initial={{ opacity: 0 }}
@@ -207,7 +208,7 @@ export default function ProductRequestModal({
             </AnimatePresence>
           </div>
         </motion.div>
-        )}
+      )}
       </AnimatePresence>
     </Portal>
   );

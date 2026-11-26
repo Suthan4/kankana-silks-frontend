@@ -1,7 +1,8 @@
 "use client";
 
-import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
 import { Portal } from "@/components/ui/Portal";
+
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -173,7 +174,7 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
   return (
     <Portal>
       <AnimatePresence>
-        {isOpen && (
+      {isOpen && (
       <motion.div
         key="video-consultation-modal"
         initial={{ opacity: 0 }}
@@ -431,7 +432,7 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
       </motion.section>
       </AnimatePresence>
       </motion.div>
-        )}
+      )}
       </AnimatePresence>
     </Portal>
   );

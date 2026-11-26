@@ -1,6 +1,7 @@
 "use client";
-import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
+
 import { Portal } from "@/components/ui/Portal";
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { type FormEvent, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -237,7 +238,14 @@ export default function AuthModal() {
   return (
     <Portal>
       <AnimatePresence>
-        {isOpen && (
+      {isOpen && (
+        <motion.div
+          className="ios-auth-motion-root ios-modal-motion"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          role="presentation"
+        >
           <motion.div
             key="auth-modal-backdrop"
             initial={{ opacity: 0 }}
@@ -908,7 +916,8 @@ export default function AuthModal() {
               </motion.div>
             </AnimatePresence>
           </motion.div>
-        )}
+        </motion.div>
+      )}
       </AnimatePresence>
     </Portal>
   );

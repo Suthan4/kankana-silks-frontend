@@ -1,7 +1,8 @@
 "use client";
 
-import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
 import { Portal } from "@/components/ui/Portal";
+
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, AlertCircle, Info, Loader2, CheckCircle2 } from "lucide-react";
@@ -110,7 +111,7 @@ export function ReturnModal({
   return (
     <Portal>
       <AnimatePresence>
-        {isOpen && (
+      {isOpen && (
         <motion.div
           key="return-order-modal"
           initial={{ opacity: 0 }}
@@ -421,7 +422,7 @@ export function ReturnModal({
           </motion.div>
           </AnimatePresence>
         </motion.div>
-        )}
+      )}
       </AnimatePresence>
     </Portal>
   );
