@@ -1,13 +1,15 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
-import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
-import { Portal } from "@/components/ui/Portal";
 import { X } from "lucide-react";
 import type { RefObject } from "react";
 import type { Address } from "@/lib/api/addresses.api";
 import type { User } from "@/store/useAuthModalStore";
 import type { HeaderLocation } from "../types";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { MobileLocationAddressList } from "./MobileLocationAddressList";
 import { MobileLocationPincodeForm } from "./MobileLocationPincodeForm";
 
@@ -45,75 +47,64 @@ export function MobileLocationSheet({
   mobileLocationRef,
 }: MobileLocationSheetProps) {
   return (
-    <Portal>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            className="ios-location-overlay ios-modal-motion fixed inset-0 z-[100] h-[100dvh] overflow-hidden md:hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <div
-              className="ios-modal-backdrop absolute inset-0 z-10 bg-black/50"
-              onClick={(event) => {
-                event.stopPropagation();
+    <Sheet
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) onClose();
+      }}
+    >
+      <SheetContent
+        side="bottom"
+        showCloseButton={false}
+        className="max-h-[calc(100dvh-env(safe-area-inset-top)-8px)] w-full gap-0 overflow-hidden rounded-t-3xl border-0 bg-white p-0 shadow-xl md:hidden"
+      >
+        <SheetTitle className="sr-only">Choose your location</SheetTitle>
+        <div
+          ref={mobileLocationRef}
+          className="min-h-0 max-h-[calc(100dvh-env(safe-area-inset-top)-8px)] overflow-y-auto overscroll-contain pb-[max(24px,env(safe-area-inset-bottom))]"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
+          <div className="p-6 pb-8">
+            <div className="mb-6 flex items-center justify-center">
+              <span className="h-1.5 w-12 rounded-full bg-gray-300" />
+            </div>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-xl font-futura-bold">
+                Choose your location
+              </h3>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close location selector"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-gray-600 hover:bg-gray-100"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <MobileLocationAddressList
+              addresses={addresses}
+              location={location}
+              setLocation={setLocation}
+              onClose={onClose}
+            />
+            <MobileLocationPincodeForm
+              user={user}
+              hasSavedAddresses={addresses.length > 0}
+              location={location}
+              pincode={pincode}
+              setPincode={setPincode}
+              isCheckingPincode={isCheckingPincode}
+              isGettingLocation={isGettingLocation}
+              onSubmitPincode={onSubmitPincode}
+              onUseCurrentLocation={onUseCurrentLocation}
+              onLogin={() => {
                 onClose();
+                onLogin();
               }}
             />
-            <AnimatePresence propagate>
-              <motion.div
-                ref={mobileLocationRef}
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                exit={{ y: "100%" }}
-                transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                className="ios-modal-panel ios-location-sheet ios-modal-motion absolute inset-x-0 bottom-0 z-20 max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain rounded-t-3xl bg-white pb-[env(safe-area-inset-bottom)]"
-                style={{ WebkitOverflowScrolling: "touch" }}
-                onClick={(event) => event.stopPropagation()}
-              >
-                <ModalScrollLock />
-                <div className="p-6 pb-8">
-                  <div className="mx-auto mb-6 h-1.5 w-12 rounded-full bg-gray-300" />
-                  <div className="mb-4 flex justify-between">
-                    <h3 className="text-xl font-futura-bold">
-                      Choose your location
-                    </h3>
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      aria-label="Close location selector"
-                    >
-                      <X />
-                    </button>
-                  </div>
-                  <MobileLocationAddressList
-                    addresses={addresses}
-                    location={location}
-                    setLocation={setLocation}
-                    onClose={onClose}
-                  />
-                  <MobileLocationPincodeForm
-                    user={user}
-                    hasSavedAddresses={addresses.length > 0}
-                    location={location}
-                    pincode={pincode}
-                    setPincode={setPincode}
-                    isCheckingPincode={isCheckingPincode}
-                    isGettingLocation={isGettingLocation}
-                    onSubmitPincode={onSubmitPincode}
-                    onUseCurrentLocation={onUseCurrentLocation}
-                    onLogin={() => {
-                      onClose();
-                      onLogin();
-                    }}
-                  />
-                </div>
-              </motion.div>
-            </AnimatePresence>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </Portal>
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
