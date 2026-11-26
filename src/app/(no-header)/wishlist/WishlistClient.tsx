@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -41,12 +41,6 @@ export default function WishlistPage() {
     name: string;
   } | null>(null);
   const [hasOpenedRequestModal, setHasOpenedRequestModal] = useState(false);
-
-  useEffect(() => {
-    if (!requestProduct) return;
-    setLastRequestProduct(requestProduct);
-    setHasOpenedRequestModal(true);
-  }, [requestProduct]);
 
   const {
     items,
