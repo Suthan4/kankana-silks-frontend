@@ -1,5 +1,6 @@
 "use client";
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
+import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
+import { Portal } from "@/components/ui/Portal";
 import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -49,7 +50,6 @@ export default function UnifiedSearchModal({
   } = useUnifiedSearch();
 
   useOnClickOutside(modalRef, onClose, isOpen);
-  useModalScrollLock(isOpen);
 
   // Focus input when modal opens
   useEffect(() => {
@@ -117,14 +117,16 @@ export default function UnifiedSearchModal({
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
+    <Portal>
+      <AnimatePresence>
+        {isOpen && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="ios-modal-viewport ios-search-overlay ios-modal-motion fixed inset-0 z-[200] bg-black/60"
         >
+          <ModalScrollLock />
           <div className="ios-search-positioner flex items-start justify-center min-h-dvh p-4 pt-[10vh]">
             <motion.div
               ref={modalRef}
@@ -465,7 +467,8 @@ export default function UnifiedSearchModal({
             </motion.div>
           </div>
         </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+    </Portal>
   );
 }
