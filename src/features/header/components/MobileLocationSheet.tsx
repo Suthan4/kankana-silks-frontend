@@ -62,6 +62,7 @@ export function MobileLocationSheet({
               onClose();
             }}
           />
+          <AnimatePresence propagate>
           <motion.div
             ref={mobileLocationRef}
             initial={{ y: "100%" }}
@@ -109,6 +110,7 @@ export function MobileLocationSheet({
               />
             </div>
           </motion.div>
+          </AnimatePresence>
         </motion.div>
         )}
       </AnimatePresence>
