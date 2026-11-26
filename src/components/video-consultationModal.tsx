@@ -1,6 +1,7 @@
 "use client";
 
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
+import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
+import { Portal } from "@/components/ui/Portal";
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -95,7 +96,6 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
     },
   });
 
-  useModalScrollLock(isOpen);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -171,27 +171,33 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
   ];
 
   return (
-    <AnimatePresence>
-      {isOpen && (
+    <Portal>
+      <AnimatePresence>
+        {isOpen && (
       <motion.div
         key="video-consultation-modal"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.18, ease: "easeOut" }}
-        className="fixed inset-0 z-[1000] flex items-end justify-center bg-black/50 md:items-center md:p-4"
+        className="ios-modal-viewport fixed inset-0 z-[1000] flex items-end justify-center overflow-hidden bg-black/50 md:items-center md:p-4"
         onPointerDown={(event) => {
           if (event.target === event.currentTarget) onClose();
         }}
         role="presentation"
       >
-      <section
+      <ModalScrollLock />
+      <motion.section
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 16 }}
+        transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="video-consultation-title"
-        className="flex w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl bg-surface-elevated text-text-main shadow-brand-float md:rounded-2xl"
+        className="ios-modal-panel flex w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl bg-surface-elevated text-text-main shadow-brand-float md:rounded-2xl"
         style={{
-          height: "min(94dvh, 820px)",
+          height: "min(92dvh, 820px)",
           maxHeight: "calc(100dvh - env(safe-area-inset-top) - 8px)",
           paddingBottom: "env(safe-area-inset-bottom)",
         }}
@@ -421,10 +427,11 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
             )}
           </button>
         </div>
-      </section>
+      </motion.section>
       </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+    </Portal>
   );
 };
 
