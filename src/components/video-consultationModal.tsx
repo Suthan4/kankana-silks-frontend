@@ -165,11 +165,10 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
       <DialogContent
         showCloseButton={false}
         aria-labelledby="video-consultation-title"
-        className="w-full max-w-3xl max-h-[92dvh] overflow-hidden rounded-t-2xl md:rounded-2xl"
+        className="flex h-[min(92dvh,820px)] w-[calc(100%-1rem)] max-w-3xl flex-col gap-0 overflow-hidden rounded-2xl border-0 bg-white p-0 shadow-xl"
         style={{
           height: "min(92dvh, 820px)",
-          maxHeight: "calc(100dvh - env(safe-area-inset-top) - 8px)",
-          paddingBottom: "env(safe-area-inset-bottom)",
+          maxHeight: "calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px)",
         }}
       >
                 {/* Header */}
