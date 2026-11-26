@@ -64,7 +64,6 @@ export function CategoryMobileFilters({
             transition={{ duration: 0.18, ease: "easeOut" }}
             className="fixed inset-0 z-50 md:hidden"
           >
-            <ModalScrollLock />
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -83,6 +82,7 @@ export function CategoryMobileFilters({
               transition={{ type: "spring", stiffness: 380, damping: 30 }}
               className="ios-modal-panel ios-filter-sheet ios-modal-motion fixed bottom-0 left-0 right-0 z-50 max-h-[90vh] overflow-y-auto bg-white md:hidden"
             >
+              <ModalScrollLock />
               <div className="sticky top-0 flex items-center justify-between border-b bg-white px-5 py-4">
                 <span className="text-xs font-medium uppercase tracking-widest">Filter & Sort</span>
                 <motion.button type="button" whileTap={{ scale: 0.9 }} onClick={onClose} aria-label="Close filters">
