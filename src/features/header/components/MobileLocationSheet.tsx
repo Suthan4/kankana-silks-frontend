@@ -54,7 +54,6 @@ export function MobileLocationSheet({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          <ModalScrollLock />
           <div
             className="ios-modal-backdrop absolute inset-0 z-10 bg-black/50"
             onClick={(event) => {
@@ -73,6 +72,7 @@ export function MobileLocationSheet({
             style={{ WebkitOverflowScrolling: "touch" }}
             onClick={(event) => event.stopPropagation()}
           >
+            <ModalScrollLock />
             <div className="p-6 pb-8">
               <div className="mx-auto mb-6 h-1.5 w-12 rounded-full bg-gray-300" />
               <div className="mb-4 flex justify-between">
