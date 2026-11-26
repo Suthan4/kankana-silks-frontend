@@ -96,15 +96,6 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
     },
   });
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [isOpen, onClose]);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -172,6 +163,7 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent
+        showCloseButton={false}
         aria-labelledby="video-consultation-title"
         className="w-full max-w-3xl max-h-[92dvh] overflow-hidden rounded-t-2xl md:rounded-2xl"
         style={{
@@ -182,7 +174,6 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
       >
                 {/* Header */}
                 <header className="relative flex shrink-0 items-start justify-between border-b border-gray-200 px-5 pb-4 pt-5 sm:px-6">
-                  <div className="absolute left-1/2 top-2 h-1 w-9 -translate-x-1/2 rounded-full bg-gray-300 md:hidden" />
                   <div className="min-w-0 pr-3 pt-1 md:pt-0">
                     <h2
                       id="video-consultation-title"
