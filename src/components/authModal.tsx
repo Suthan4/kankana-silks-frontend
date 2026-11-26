@@ -250,7 +250,8 @@ export default function AuthModal() {
             role="presentation"
           >
             <ModalScrollLock />
-            <motion.div
+            <AnimatePresence propagate>
+              <motion.div
               // iOS/WebKit: a spring on scale + opacity of a large, shadowed card
               // drops the layer for a frame or two when it settles (the modal blinked
               // in the recording) and re-rasterises the text while scaling. Use a
@@ -904,7 +905,8 @@ export default function AuthModal() {
                   )}
                 </AnimatePresence>
               </div>
-            </motion.div>
+              </motion.div>
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>
