@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { MotionConfig } from "framer-motion";
 
 type PortalProps = {
   children: React.ReactNode;
@@ -19,5 +20,8 @@ export function Portal({ children }: PortalProps) {
   const portalRoot = document.getElementById("portal-root");
   if (!portalRoot) return null;
 
-  return createPortal(children, portalRoot);
+  return createPortal(
+    <MotionConfig reducedMotion="user">{children}</MotionConfig>,
+    portalRoot,
+  );
 }
