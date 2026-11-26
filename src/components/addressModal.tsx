@@ -143,6 +143,7 @@ export default function AddressModal({
         }}
       >
         <ModalScrollLock />
+        <AnimatePresence propagate>
         <motion.div
           onClick={(e) => e.stopPropagation()}
           initial={{ y: "100%" }}
@@ -317,6 +318,7 @@ export default function AddressModal({
             </div>
           </form>
         </motion.div>
+        </AnimatePresence>
       </motion.div>
         )}
       </AnimatePresence>
