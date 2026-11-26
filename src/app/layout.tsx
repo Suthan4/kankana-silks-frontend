@@ -244,7 +244,7 @@ export default function RootLayout({
         />
       </head>
 
-      <body className="bg-[#faf7f2] text-neutral-900 antialiased overflow-x-hidden">
+      <body className="bg-[#faf7f2] text-neutral-900 antialiased overflow-x-clip">
         <DeferredBrandFonts />
         <SkipLink />
 
