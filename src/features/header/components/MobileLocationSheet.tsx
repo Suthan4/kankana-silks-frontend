@@ -1,6 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
+import { Portal } from "@/components/ui/Portal";
 import { X } from "lucide-react";
 import type { RefObject } from "react";
 import type { Address } from "@/lib/api/addresses.api";
@@ -43,14 +45,16 @@ export function MobileLocationSheet({
   mobileLocationRef,
 }: MobileLocationSheetProps) {
   return (
-    <AnimatePresence>
-      {open && (
+    <Portal>
+      <AnimatePresence>
+        {open && (
         <motion.div
           className="ios-location-overlay ios-modal-motion fixed inset-0 z-[100] h-[100dvh] overflow-hidden md:hidden"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
+          <ModalScrollLock />
           <div
             className="ios-modal-backdrop absolute inset-0 z-10 bg-black/50"
             onClick={(event) => {
@@ -106,7 +110,8 @@ export function MobileLocationSheet({
             </div>
           </motion.div>
         </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+    </Portal>
   );
 }
