@@ -2,7 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
+import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
 import type { User } from "@/store/useAuthModalStore";
 import type { Category } from "@/lib/api/category.api";
 import { MobileMenuProfile } from "./MobileMenuProfile";
@@ -39,8 +39,6 @@ export function MobileMenuDrawer({
   onLogin,
   onLogout,
 }: MobileMenuDrawerProps) {
-  useModalScrollLock(open && !!portalRoot);
-
   if (!portalRoot) return null;
 
   return createPortal(
@@ -55,16 +53,9 @@ export function MobileMenuDrawer({
           role="dialog"
           aria-modal="true"
           aria-label="Mobile navigation"
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 110,
-            isolation: "isolate",
-            contain: "layout paint",
-            transform: "translate3d(0, 0, 0)",
-            WebkitTransform: "translate3d(0, 0, 0)",
-          }}
+          style={{ position: "fixed", inset: 0, zIndex: 110, isolation: "isolate" }}
         >
+          <ModalScrollLock />
           {/* Static backdrop avoids animating opacity over the hero image. */}
           <button
             type="button"
