@@ -967,10 +967,6 @@ html {
     /* Modal opacity and transforms are controlled by each dialog's animation.
        Do not override them here: iOS must run the same enter/exit lifecycle. */
 
-    .ios-auth-motion-root {
-      display: contents !important;
-    }
-
     /* Fixed viewport wrapper */
     .ios-modal-viewport {
       position: fixed !important;
