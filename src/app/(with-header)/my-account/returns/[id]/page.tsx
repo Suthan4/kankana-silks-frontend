@@ -584,7 +584,6 @@ export default function ReturnDetailsPage() {
             onClick={() => setMediaModalOpen(false)}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4"
           >
-            <ModalScrollLock />
             <AnimatePresence propagate>
             <motion.div
               initial={{ scale: 0.9 }}
@@ -593,6 +592,7 @@ export default function ReturnDetailsPage() {
               onClick={(e) => e.stopPropagation()}
               className="relative max-w-5xl w-full bg-white rounded-lg overflow-hidden"
             >
+              <ModalScrollLock />
               <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-gray-900">
