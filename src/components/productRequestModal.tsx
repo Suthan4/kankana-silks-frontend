@@ -1,6 +1,7 @@
 "use client";
 
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
+import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
+import { Portal } from "@/components/ui/Portal";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, AlertCircle, Send, Package } from "lucide-react";
@@ -22,7 +23,6 @@ export default function ProductRequestModal({
   product,
   selectedVariant,
 }: ProductRequestModalProps) {
-  useModalScrollLock(isOpen);
   const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
 
@@ -58,8 +58,9 @@ export default function ProductRequestModal({
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
+    <Portal>
+      <AnimatePresence>
+        {isOpen && (
         <motion.div
           key="product-request-modal"
           initial={{ opacity: 0 }}
@@ -68,6 +69,7 @@ export default function ProductRequestModal({
           transition={{ duration: 0.18, ease: "easeOut" }}
           className="fixed inset-0 z-50"
         >
+          <ModalScrollLock />
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -203,7 +205,8 @@ export default function ProductRequestModal({
             </motion.div>
           </div>
         </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+    </Portal>
   );
 }
