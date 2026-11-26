@@ -75,6 +75,8 @@ export default function ProductDetailsClient({
   const [quantity, setQuantity] = useState(1);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [hasOpenedRequestModal, setHasOpenedRequestModal] = useState(false);
+  const [hasOpenedVideoModal, setHasOpenedVideoModal] = useState(false);
 
   const { item: stockItem, state: stockState, message: stockMessage } = getProductStock({
     product,
@@ -149,6 +151,7 @@ export default function ProductDetailsClient({
       toast.info("Please login to book a consultation");
       return;
     }
+    setHasOpenedVideoModal(true);
     setIsVideoModalOpen(true);
   };
 
@@ -158,6 +161,7 @@ export default function ProductDetailsClient({
       toast.info("Please login to request this product");
       return;
     }
+    setHasOpenedRequestModal(true);
     setIsRequestModalOpen(true);
   };
 
@@ -438,7 +442,7 @@ export default function ProductDetailsClient({
         </div>
       </div>
 
-      {isRequestModalOpen && (
+      {hasOpenedRequestModal && (
         <ProductRequestModal
           isOpen={isRequestModalOpen}
           onClose={() => setIsRequestModalOpen(false)}
@@ -446,7 +450,7 @@ export default function ProductDetailsClient({
           selectedVariant={selectedVariant}
         />
       )}
-      {isVideoModalOpen && (
+      {hasOpenedVideoModal && (
         <VideoConsultationModal
           isOpen={isVideoModalOpen}
           onClose={() => setIsVideoModalOpen(false)}
