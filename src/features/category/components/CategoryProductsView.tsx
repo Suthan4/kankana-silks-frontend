@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
@@ -43,12 +43,6 @@ export function CategoryProductsView({
   const [lastRequestProduct, setLastRequestProduct] = useState<Product | null>(null);
   const [lastRequestVariant, setLastRequestVariant] = useState<ProductVariant | null>(null);
 
-  useEffect(() => {
-    if (!ui.requestProduct) return;
-    setLastRequestProduct(ui.requestProduct);
-    setLastRequestVariant(ui.requestVariant);
-    setHasOpenedRequestModal(true);
-  }, [ui.requestProduct, ui.requestVariant]);
   const scroller = useCategorySubcategoryScroller(category.children);
   const canAddProductToCart = useCallback(
     (product: Product) => !isProductUnavailable(product),
@@ -61,7 +55,12 @@ export function CategoryProductsView({
   const handleRequestProduct = useCallback((
     product: Product,
     variant: ProductVariant | null,
-  ) => ui.openRequestModal(product, variant), [ui.openRequestModal]);
+  ) => {
+    setLastRequestProduct(product);
+    setLastRequestVariant(variant);
+    setHasOpenedRequestModal(true);
+    ui.openRequestModal(product, variant);
+  }, [ui.openRequestModal]);
 
   if (productsQuery.isError) {
     return (
