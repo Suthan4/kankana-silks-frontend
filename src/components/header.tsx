@@ -1,8 +1,7 @@
 "use client";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 const VideoConsultationModal = dynamic(() => import("./video-consultationModal"));
 const UnifiedSearchModal = dynamic(() => import("./unifiedSearchModal"));
 import { useHeaderData } from "@/features/header/hooks/useHeaderData";
@@ -27,6 +26,18 @@ function Header() {
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [hasOpenedSearchModal, setHasOpenedSearchModal] = useState(false);
+  const [hasOpenedVideoModal, setHasOpenedVideoModal] = useState(false);
+
+  const openSearch = useCallback(() => {
+    setHasOpenedSearchModal(true);
+    setIsSearchOpen(true);
+  }, []);
+
+  const setHeaderConsultationOpen = useCallback((open: boolean) => {
+    if (open) setHasOpenedVideoModal(true);
+    setIsModalOpen(open);
+  }, []);
   const mobileLocationRef = useRef<HTMLDivElement | null>(null);
 
   const {
@@ -64,14 +75,6 @@ function Header() {
     setIsHeaderHovered,
   });
 
-  useModalScrollLock(
-    locationModalOpen &&
-      typeof window !== "undefined" &&
-      window.innerWidth < 768 &&
-      typeof CSS !== "undefined" &&
-      CSS.supports("-webkit-touch-callout", "none"),
-  );
-
   const isMyAccountPage = pathname?.startsWith("/my-account");
   const isProductDetailPage = Boolean(
     pathname?.match(/^\/products\/[^/]+$/) ||
@@ -88,7 +91,7 @@ function Header() {
     cartItemsCount,
     wishlistCount,
     isModalOpen,
-    setIsModalOpen,
+    setIsModalOpen: setHeaderConsultationOpen,
   });
   const handleLogout = async () => {
     await handleSessionLogout();
@@ -129,7 +132,7 @@ function Header() {
         icons={icons}
         userMenuOpen={userMenuOpen}
         setUserMenuOpen={setUserMenuOpen}
-        onSearch={() => setIsSearchOpen(true)}
+        onSearch={openSearch}
         onLogout={handleLogout}
         navRef={navRef}
         showNav={showNav}
@@ -155,7 +158,7 @@ function Header() {
         isCategoryPage={isCategoryPage}
         location={locationState.location}
         onOpenLocation={() => setLocationModalOpen(true)}
-        onOpenSearch={() => setIsSearchOpen(true)}
+        onOpenSearch={openSearch}
         isVisible={showMobileHeader || mobileMenuOpen || locationModalOpen}
       />
       <MobileLocationSheet
@@ -209,13 +212,13 @@ function Header() {
         openLogin={() => openModal("login")}
       />
 
-      {isSearchOpen && (
+      {hasOpenedSearchModal && (
         <UnifiedSearchModal
           isOpen={isSearchOpen}
           onClose={() => setIsSearchOpen(false)}
         />
       )}
-      {isModalOpen && (
+      {hasOpenedVideoModal && (
         <VideoConsultationModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}

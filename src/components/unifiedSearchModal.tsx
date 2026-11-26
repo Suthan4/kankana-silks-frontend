@@ -51,7 +51,6 @@ export default function UnifiedSearchModal({
   } = useUnifiedSearch();
 
   useOnClickOutside(modalRef, onClose, isOpen);
-  useModalScrollLock(isOpen);
 
   // Focus input when modal opens
   useEffect(() => {
@@ -129,6 +128,7 @@ export default function UnifiedSearchModal({
           className="ios-modal-viewport ios-search-overlay ios-modal-motion fixed inset-0 z-[200] bg-black/60"
         >
           <div className="ios-search-positioner flex items-start justify-center min-h-dvh p-4 pt-[10vh]">
+            <AnimatePresence propagate>
             <motion.div
               ref={modalRef}
               initial={{ opacity: 0, scale: 0.95, y: -20 }}
@@ -137,6 +137,7 @@ export default function UnifiedSearchModal({
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
               className="ios-modal-panel ios-search-panel ios-modal-motion w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden"
             >
+              <ModalScrollLock />
               {/* Search Input */}
               <div className="p-4 border-b border-gray-200">
                 <div className="relative mb-3">
@@ -466,6 +467,7 @@ export default function UnifiedSearchModal({
                 </div>
               </div>
             </motion.div>
+            </AnimatePresence>
           </div>
         </motion.div>
       )}

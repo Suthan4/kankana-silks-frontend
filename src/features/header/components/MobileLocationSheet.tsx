@@ -3,6 +3,8 @@
 import { Portal } from "@/components/ui/Portal";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
+import { Portal } from "@/components/ui/Portal";
 import { X } from "lucide-react";
 import type { RefObject } from "react";
 import type { Address } from "@/lib/api/addresses.api";
@@ -61,6 +63,7 @@ export function MobileLocationSheet({
               onClose();
             }}
           />
+          <AnimatePresence propagate>
           <motion.div
             ref={mobileLocationRef}
             initial={{ y: "100%" }}
@@ -71,6 +74,7 @@ export function MobileLocationSheet({
             style={{ WebkitOverflowScrolling: "touch" }}
             onClick={(event) => event.stopPropagation()}
           >
+            <ModalScrollLock />
             <div className="p-6 pb-8">
               <div className="mx-auto mb-6 h-1.5 w-12 rounded-full bg-gray-300" />
               <div className="mb-4 flex justify-between">
@@ -108,6 +112,7 @@ export function MobileLocationSheet({
               />
             </div>
           </motion.div>
+          </AnimatePresence>
         </motion.div>
       )}
       </AnimatePresence>

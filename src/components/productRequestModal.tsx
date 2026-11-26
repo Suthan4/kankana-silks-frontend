@@ -24,7 +24,6 @@ export default function ProductRequestModal({
   product,
   selectedVariant,
 }: ProductRequestModalProps) {
-  useModalScrollLock(isOpen);
   const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
 
@@ -86,6 +85,7 @@ export default function ProductRequestModal({
               if (event.target === event.currentTarget) onClose();
             }}
           >
+            <AnimatePresence propagate>
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -93,6 +93,7 @@ export default function ProductRequestModal({
               transition={{ type: "spring", duration: 0.5 }}
               className="ios-modal-panel ios-request-panel ios-modal-motion bg-white rounded-t-3xl md:rounded-2xl shadow-2xl max-w-md w-full overflow-hidden max-h-[92vh] overflow-y-auto"
             >
+              <ModalScrollLock />
               <div className="relative bg-gray-100 p-6 border-b border-gray-100">
                 <button
                   onClick={onClose}
@@ -204,6 +205,7 @@ export default function ProductRequestModal({
                 </div>
               </form>
             </motion.div>
+            </AnimatePresence>
           </div>
         </motion.div>
       )}

@@ -13,7 +13,6 @@ type LockSnapshot = {
   bodyLeft: string;
   bodyRight: string;
   bodyWidth: string;
-  bodyPaddingRight: string;
   scrollX: number;
   scrollY: number;
 };
@@ -36,7 +35,6 @@ function acquireScrollLock() {
 
   if (activeLocks.size === 0) {
     const body = document.body;
-    const html = document.documentElement;
     const scrollX = window.scrollX;
     const scrollY = window.scrollY;
 
@@ -47,17 +45,9 @@ function acquireScrollLock() {
       bodyLeft: body.style.left,
       bodyRight: body.style.right,
       bodyWidth: body.style.width,
-      bodyPaddingRight: body.style.paddingRight,
       scrollX,
       scrollY,
     };
-
-    // Desktop browsers need scrollbar compensation to avoid a horizontal
-    // layout shift. Overlay scrollbars (including iOS) naturally report 0.
-    const scrollbarWidth = Math.max(0, window.innerWidth - html.clientWidth);
-    if (scrollbarWidth > 0) {
-      body.style.paddingRight = `calc(${getComputedStyle(body).paddingRight} + ${scrollbarWidth}px)`;
-    }
 
     body.style.overflow = "hidden";
 
@@ -93,7 +83,6 @@ function acquireScrollLock() {
     body.style.left = previous.bodyLeft;
     body.style.right = previous.bodyRight;
     body.style.width = previous.bodyWidth;
-    body.style.paddingRight = previous.bodyPaddingRight;
     delete body.dataset.modalScrollLocked;
 
     if (isIOSWebKit()) {

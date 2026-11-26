@@ -103,7 +103,6 @@ export default function AuthModal() {
     setMounted(true);
   }, []);
 
-  useModalScrollLock(isOpen);
 
   const handleLoginSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -258,7 +257,8 @@ export default function AuthModal() {
             }}
             role="presentation"
           >
-            <motion.div
+            <AnimatePresence propagate>
+              <motion.div
               // iOS/WebKit: a spring on scale + opacity of a large, shadowed card
               // drops the layer for a frame or two when it settles (the modal blinked
               // in the recording) and re-rasterises the text while scaling. Use a
@@ -278,6 +278,7 @@ export default function AuthModal() {
               aria-modal="true"
               aria-labelledby="modal-title"
             >
+              <ModalScrollLock />
               {/* Header - Compact mobile-first */}
               <div className="relative bg-gradient-to-br from-gray-50 to-white px-4 py-2 sm:px-6 sm:pt-6 sm:pb-4 text-black flex-shrink-0 border-b border-gray-100">
                 <button
@@ -912,7 +913,8 @@ export default function AuthModal() {
                   )}
                 </AnimatePresence>
               </div>
-            </motion.div>
+              </motion.div>
+            </AnimatePresence>
           </motion.div>
         </motion.div>
       )}

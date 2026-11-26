@@ -13,7 +13,9 @@ import { useParams, useRouter } from "next/navigation";
 import { useOrder, useCancelOrder, useCanCancelOrder } from "@/hooks/useOrders";
 import { useOrderActions } from "@/hooks/useOrderActions";
 import { orderApi } from "@/lib/api/order.api";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
+import { Portal } from "@/components/ui/Portal";
 import { OrderDetailsPageSkeleton } from "@/features/orders/components/OrderPageSkeletons";
 import { OrderItemsSection } from "@/features/orders/components/OrderItemsSection";
 import { OrderStatusSection } from "@/features/orders/components/OrderStatusSection";
@@ -304,18 +306,28 @@ export default function OrderDetailsPage() {
       </div>
 
       {/* Cancel Modal */}
-      {showCancelModal && (
-        <div
+      <Portal>
+        <AnimatePresence>
+          {showCancelModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
           className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="cancel-order-title"
         >
+          <AnimatePresence propagate>
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, scale: 0.96, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: 8 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
             className="bg-white rounded-2xl w-full max-w-md"
           >
+            <ModalScrollLock />
             <div className="p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
@@ -398,8 +410,11 @@ export default function OrderDetailsPage() {
               </div>
             </div>
           </motion.div>
-        </div>
-      )}
+          </AnimatePresence>
+        </motion.div>
+          )}
+        </AnimatePresence>
+      </Portal>
     </div>
   );
 }

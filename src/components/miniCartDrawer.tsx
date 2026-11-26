@@ -56,7 +56,6 @@ export default function MiniCartDrawer() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  useModalScrollLock(isOpen);
 
   /* -------------------- ESCAPE KEY HANDLER -------------------- */
   useEffect(() => {
@@ -355,6 +354,7 @@ export default function MiniCartDrawer() {
           />
 
           {/* DRAWER (Desktop: Right -> Left, Mobile: Bottom -> Top) */}
+          <AnimatePresence propagate>
           <motion.div
             initial={isMobile ? { y: "100%" } : { x: "100%" }}
             animate={isMobile ? { y: 0 } : { x: 0 }}
@@ -378,6 +378,7 @@ export default function MiniCartDrawer() {
               }
             `}
           >
+            <ModalScrollLock />
             {/* MOBILE DRAG HANDLE */}
             {isMobile && (
               <div className="w-full pt-3 pb-1 flex justify-center cursor-grab active:cursor-grabbing touch-none select-none">
@@ -483,6 +484,7 @@ export default function MiniCartDrawer() {
               />
             )}
           </motion.div>
+          </AnimatePresence>
         </motion.div>
       )}
       </AnimatePresence>

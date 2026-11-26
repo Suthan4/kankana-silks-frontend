@@ -173,6 +173,65 @@ test.describe("home page on a phone", () => {
     expect(elapsed).toBeGreaterThan(120);
   });
 
+  test("consultation sheet completes its exit and can reopen cleanly", async ({
+    page,
+  }) => {
+    await openHome(page);
+
+    const consultationButton = page
+      .locator("nav.fixed.bottom-0")
+      .getByRole("button", { name: "Consultation" });
+    const dialog = page.locator(
+      '[role="dialog"][aria-labelledby="video-consultation-title"]',
+    );
+
+    await consultationButton.click();
+    await expect(dialog).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(() => document.body.dataset.modalScrollLocked ?? ""),
+      )
+      .toBe("true");
+
+    await page.getByRole("button", { name: "Close video consultation" }).click();
+    await expect(dialog).toBeHidden();
+    await expect
+      .poll(() =>
+        page.evaluate(() => document.body.dataset.modalScrollLocked ?? ""),
+      )
+      .toBe("");
+
+    await consultationButton.click();
+    await expect(dialog).toBeVisible();
+    await page.getByRole("button", { name: "Close video consultation" }).click();
+    await expect(dialog).toBeHidden();
+  });
+
+  test("mobile navigation drawer slides out before releasing the page lock", async ({
+    page,
+  }) => {
+    await openHome(page);
+
+    await page.getByRole("button", { name: "Open menu" }).click();
+    const drawer = page.locator(
+      '[role="dialog"][aria-label="Mobile navigation"]',
+    );
+    await expect(drawer).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(() => document.body.dataset.modalScrollLocked ?? ""),
+      )
+      .toBe("true");
+
+    await drawer.getByRole("button", { name: "Close menu" }).click();
+    await expect(drawer).toBeHidden();
+    await expect
+      .poll(() =>
+        page.evaluate(() => document.body.dataset.modalScrollLocked ?? ""),
+      )
+      .toBe("");
+  });
+
   test("hero cross-fade keeps the old slide opaque under the new one", async ({
     page,
   }) => {

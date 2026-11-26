@@ -29,7 +29,6 @@ export function ReturnModal({
   onClose,
   onSuccess,
 }: ReturnModalProps) {
-  useModalScrollLock(isOpen);
 
   const { createReturn, loading } = useCreateReturn();
 
@@ -136,12 +135,14 @@ export function ReturnModal({
           />
 
           {/* Modal */}
+          <AnimatePresence propagate>
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="ios-modal-panel ios-return-panel ios-modal-motion relative bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
           >
+            <ModalScrollLock />
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b">
               <div>
@@ -419,6 +420,7 @@ export function ReturnModal({
               </div>
             </div>
           </motion.div>
+          </AnimatePresence>
         </motion.div>
       )}
       </AnimatePresence>

@@ -1,7 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
+import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
+import { Portal } from "@/components/ui/Portal";
 import { X, SlidersHorizontal } from "lucide-react";
 import type { Category } from "@/lib/api/category.api";
 import { CategoryFilterSidebar } from "./CategoryFilterSidebar";
@@ -37,8 +38,6 @@ export function CategoryMobileFilters({
   onPriceRangeChange,
   onFabricChange,
 }: CategoryMobileFiltersProps) {
-  useModalScrollLock(open);
-
   return (
     <>
       <motion.button
@@ -54,8 +53,9 @@ export function CategoryMobileFilters({
         Filter & Sort
       </motion.button>
 
-      <AnimatePresence>
-        {open && (
+      <Portal>
+        <AnimatePresence>
+          {open && (
           <motion.div
             key="category-mobile-filters"
             initial={{ opacity: 0 }}
@@ -74,6 +74,7 @@ export function CategoryMobileFilters({
               }}
               className="ios-modal-backdrop ios-modal-motion fixed inset-0 z-50 bg-black/50 md:hidden"
             />
+            <AnimatePresence propagate>
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
@@ -81,6 +82,7 @@ export function CategoryMobileFilters({
               transition={{ type: "spring", stiffness: 380, damping: 30 }}
               className="ios-modal-panel ios-filter-sheet ios-modal-motion fixed bottom-0 left-0 right-0 z-50 max-h-[90vh] overflow-y-auto bg-white md:hidden"
             >
+              <ModalScrollLock />
               <div className="sticky top-0 flex items-center justify-between border-b bg-white px-5 py-4">
                 <span className="text-xs font-medium uppercase tracking-widest">Filter & Sort</span>
                 <motion.button type="button" whileTap={{ scale: 0.9 }} onClick={onClose} aria-label="Close filters">
@@ -110,9 +112,11 @@ export function CategoryMobileFilters({
                 </motion.button>
               </div>
             </motion.div>
+            </AnimatePresence>
           </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
+      </Portal>
     </>
   );
 }

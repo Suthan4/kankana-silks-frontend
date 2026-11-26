@@ -1,6 +1,8 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
+import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
+import { Portal } from "@/components/ui/Portal";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import {
@@ -572,8 +574,9 @@ export default function ReturnDetailsPage() {
       </div>
 
       {/* ✅ Media Viewer Modal */}
-      <AnimatePresence>
-        {mediaModalOpen && selectedMedia && (
+      <Portal>
+        <AnimatePresence>
+          {mediaModalOpen && selectedMedia && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -581,6 +584,7 @@ export default function ReturnDetailsPage() {
             onClick={() => setMediaModalOpen(false)}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4"
           >
+            <AnimatePresence propagate>
             <motion.div
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
@@ -588,6 +592,7 @@ export default function ReturnDetailsPage() {
               onClick={(e) => e.stopPropagation()}
               className="relative max-w-5xl w-full bg-white rounded-lg overflow-hidden"
             >
+              <ModalScrollLock />
               <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-gray-900">
@@ -660,9 +665,11 @@ export default function ReturnDetailsPage() {
                 </a>
               </div>
             </motion.div>
+            </AnimatePresence>
           </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
+      </Portal>
     </div>
   );
 }
