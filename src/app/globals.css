@@ -964,14 +964,13 @@ html {
       scroll-behavior: auto !important;
     }
 
-    /* Disable motion only for affected modal surfaces on iOS */
+    /* Keep Framer Motion's opacity/transform states intact on iOS.
+       Overriding these properties here cancelled both enter and exit frames,
+       leaving the backdrop and panel visually out of sync. */
     .ios-modal-motion {
-      animation: none !important;
-      transition: none !important;
-      transform: none !important;
-      -webkit-transform: none !important;
-      opacity: 1 !important;
-      will-change: auto !important;
+      will-change: opacity, transform;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
     }
 
     .ios-auth-motion-root {
@@ -991,11 +990,10 @@ html {
       isolation: isolate;
     }
 
-    /* Backdrop */
+    /* Backdrop position only. Opacity is owned by the component transition. */
     .ios-modal-backdrop {
       position: fixed !important;
       inset: 0 !important;
-      opacity: 1 !important;
       pointer-events: auto;
     }
 
