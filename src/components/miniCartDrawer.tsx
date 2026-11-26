@@ -1,6 +1,7 @@
 "use client";
 
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
+import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
+import { Portal } from "@/components/ui/Portal";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartDrawer } from "@/store/useCartDrawer";
 import { useCartStore } from "@/store/useCartStore";
@@ -54,7 +55,6 @@ export default function MiniCartDrawer() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  useModalScrollLock(isOpen);
 
   /* -------------------- ESCAPE KEY HANDLER -------------------- */
   useEffect(() => {
@@ -328,8 +328,9 @@ export default function MiniCartDrawer() {
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
+    <Portal>
+      <AnimatePresence>
+        {isOpen && (
         <motion.div
           key="mini-cart-drawer-overlay"
           initial={{ opacity: 0 }}
@@ -338,6 +339,7 @@ export default function MiniCartDrawer() {
           transition={{ duration: 0.18, ease: "easeOut" }}
           className="fixed inset-0 z-[150]"
         >
+          <ModalScrollLock />
           {/* BACKDROP OVERLAY */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -481,7 +483,8 @@ export default function MiniCartDrawer() {
             )}
           </motion.div>
         </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+    </Portal>
   );
 }
