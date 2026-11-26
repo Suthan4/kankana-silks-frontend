@@ -354,6 +354,7 @@ export default function MiniCartDrawer() {
           />
 
           {/* DRAWER (Desktop: Right -> Left, Mobile: Bottom -> Top) */}
+          <AnimatePresence propagate>
           <motion.div
             initial={isMobile ? { y: "100%" } : { x: "100%" }}
             animate={isMobile ? { y: 0 } : { x: 0 }}
@@ -482,6 +483,7 @@ export default function MiniCartDrawer() {
               />
             )}
           </motion.div>
+          </AnimatePresence>
         </motion.div>
         )}
       </AnimatePresence>
