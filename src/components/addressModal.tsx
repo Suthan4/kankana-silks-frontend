@@ -54,6 +54,7 @@ export default function AddressModal({
   mode,
 }: AddressModalProps) {
   const queryClient = useQueryClient();
+  useModalScrollLock(isOpen);
 
   const {
     register,

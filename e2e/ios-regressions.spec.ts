@@ -79,6 +79,50 @@ test.describe("home page on a phone", () => {
     expect(opacity).toBe("1");
   });
 
+  test("modal locks the page and restores the original scroll position", async ({
+    page,
+  }) => {
+    await openHome(page);
+
+    const initialScrollY = await page.evaluate(() => {
+      document.documentElement.style.scrollBehavior = "auto";
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      window.scrollTo(0, Math.min(500, Math.max(0, maxScroll)));
+      return window.scrollY;
+    });
+    test.skip(initialScrollY < 1, "Page is not tall enough to verify scroll restoration");
+
+    const dialog = page.locator('[role="dialog"][aria-labelledby="modal-title"]');
+    const loginButton = page
+      .locator("nav.fixed.bottom-0")
+      .getByRole("button", { name: /login/i });
+
+    await loginButton.click();
+    await expect(dialog).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(() => document.body.dataset.modalScrollLocked ?? ""),
+      )
+      .toBe("true");
+
+    const lockedStyles = await page.evaluate(() => ({
+      overflow: document.body.style.overflow,
+      position: document.body.style.position,
+    }));
+    expect(lockedStyles.overflow).toBe("hidden");
+
+    await page.getByRole("button", { name: "Close dialog" }).click();
+    await expect(dialog).toBeHidden();
+    await expect
+      .poll(() =>
+        page.evaluate(() => document.body.dataset.modalScrollLocked ?? ""),
+      )
+      .toBe("");
+
+    const restoredScrollY = await page.evaluate(() => window.scrollY);
+    expect(Math.abs(restoredScrollY - initialScrollY)).toBeLessThanOrEqual(2);
+  });
+
   test("login modal plays its exit animation instead of vanishing", async ({
     page,
   }) => {
