@@ -122,7 +122,6 @@ export function ReturnModal({
             if (event.target === event.currentTarget) onClose();
           }}
         >
-          <ModalScrollLock />
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -142,6 +141,7 @@ export function ReturnModal({
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="ios-modal-panel ios-return-panel ios-modal-motion relative bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
           >
+            <ModalScrollLock />
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b">
               <div>
