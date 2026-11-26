@@ -319,7 +319,6 @@ export default function OrderDetailsPage() {
           aria-modal="true"
           aria-labelledby="cancel-order-title"
         >
-          <ModalScrollLock />
           <AnimatePresence propagate>
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 12 }}
@@ -328,6 +327,7 @@ export default function OrderDetailsPage() {
             transition={{ duration: 0.18, ease: "easeOut" }}
             className="bg-white rounded-2xl w-full max-w-md"
           >
+            <ModalScrollLock />
             <div className="p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
