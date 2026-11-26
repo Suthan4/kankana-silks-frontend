@@ -1,7 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, MotionConfig } from "framer-motion";
 import { ModalScrollLock } from "@/components/ui/ModalScrollLock";
 import type { User } from "@/store/useAuthModalStore";
 import type { Category } from "@/lib/api/category.api";
@@ -42,7 +42,8 @@ export function MobileMenuDrawer({
   if (!portalRoot) return null;
 
   return createPortal(
-    <>
+    <MotionConfig reducedMotion="user">
+      <>
       {/* Backdrop and drawer have independent presence lifecycles. This lets
           the backdrop fade while the panel completes its slide-out transition. */}
       <AnimatePresence initial={false}>
@@ -106,7 +107,8 @@ export function MobileMenuDrawer({
           </motion.div>
         )}
       </AnimatePresence>
-    </>,
+      </>
+    </MotionConfig>,
     portalRoot,
   );
 }
