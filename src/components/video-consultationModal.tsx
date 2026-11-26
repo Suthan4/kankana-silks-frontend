@@ -187,6 +187,7 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
         role="presentation"
       >
       <ModalScrollLock />
+      <AnimatePresence propagate>
       <motion.section
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
@@ -428,6 +429,7 @@ const VideoConsultationModal: React.FC<VideoConsultationModalProps> = ({
           </button>
         </div>
       </motion.section>
+      </AnimatePresence>
       </motion.div>
         )}
       </AnimatePresence>
