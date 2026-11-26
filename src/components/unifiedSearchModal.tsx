@@ -126,7 +126,6 @@ export default function UnifiedSearchModal({
           exit={{ opacity: 0 }}
           className="ios-modal-viewport ios-search-overlay ios-modal-motion fixed inset-0 z-[200] bg-black/60"
         >
-          <ModalScrollLock />
           <div className="ios-search-positioner flex items-start justify-center min-h-dvh p-4 pt-[10vh]">
             <AnimatePresence propagate>
             <motion.div
@@ -137,6 +136,7 @@ export default function UnifiedSearchModal({
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
               className="ios-modal-panel ios-search-panel ios-modal-motion w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden"
             >
+              <ModalScrollLock />
               {/* Search Input */}
               <div className="p-4 border-b border-gray-200">
                 <div className="relative mb-3">
