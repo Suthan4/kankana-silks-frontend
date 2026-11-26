@@ -1,5 +1,7 @@
 "use client";
 
+import { Portal } from "@/components/ui/Portal";
+
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -108,7 +110,8 @@ export function ReturnModal({
   const isFreeReturn = isFreeReturnReason(reason);
 
   return (
-    <AnimatePresence>
+    <Portal>
+      <AnimatePresence>
       {isOpen && (
         <motion.div
           key="return-order-modal"
@@ -418,6 +421,7 @@ export function ReturnModal({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </Portal>
   );
 }
