@@ -1,9 +1,11 @@
+
 import type { NextConfig } from "next";
 
 const isProduction = process.env.NODE_ENV === "production";
 
 const API_ORIGIN = (() => {
   const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+
   if (!configuredApiUrl) return undefined;
 
   try {
@@ -21,16 +23,13 @@ const MEDIA_S3 = "https://kankana-bucket.s3.ap-south-1.amazonaws.com";
 const MEDIA_VERCEL_BLOB = "https://*.public.blob.vercel-storage.com";
 
 /**
- * Compatibility CSP for the current statically rendered App Router storefront.
+ * Compatibility CSP for the statically rendered App Router storefront.
  *
- * Next.js emits inline bootstrap/Flight scripts, while the Adobe Fonts kit
- * requires inline styles. This policy therefore allows inline script/style
- * execution but blocks eval, plugins, arbitrary HTTPS origins and untrusted
- * frames. It is an important baseline, not a strict nonce/hash CSP.
+ * Adobe Fonts:
+ * - use.typekit.net: Adobe Fonts stylesheet and font resources.
+ * - p.typekit.net: Adobe Fonts supporting resources.
  *
- * A nonce-based strict CSP would require request-time rendering and would
- * disable the current static/ISR caching model. Evaluate that as a separate
- * architecture change rather than silently sacrificing page caching.
+ * This remains a compatibility CSP, not a strict nonce/hash CSP.
  */
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -38,18 +37,26 @@ const contentSecurityPolicy = [
   "object-src 'none'",
   "frame-ancestors 'self'",
   "form-action 'self' https://*.razorpay.com",
+
+  // Scripts
   "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://*.razorpay.com https://use.typekit.net https://www.clarity.ms https://*.clarity.ms",
-  "style-src 'self' 'unsafe-inline' https://use.typekit.net https://fonts.googleapis.com",
+
+  // Adobe Fonts stylesheet permissions
+  "style-src 'self' 'unsafe-inline' https://use.typekit.net https://p.typekit.net https://fonts.googleapis.com",
+
+  // Images
   `img-src 'self' data: blob: ${MEDIA_CLOUDFRONT} ${MEDIA_S3} ${MEDIA_VERCEL_BLOB} https://p.typekit.net https://www.google-analytics.com https://c.bing.com`,
-  // Without media-src, <video> falls back to default-src 'self' and videos
-  // from CloudFront/S3 are blocked (Safari shows a slashed play icon).
-  // blob: is required for the video card's blob recovery fallback.
+
+  // Videos
   `media-src 'self' blob: ${MEDIA_CLOUDFRONT} ${MEDIA_S3} ${MEDIA_VERCEL_BLOB}`,
+
+  // Adobe Fonts font files
   "font-src 'self' data: https://use.typekit.net https://p.typekit.net https://fonts.gstatic.com",
+
+  // API and external connections
   [
     "connect-src 'self'",
     API_ORIGIN,
-    // Needed for the video card's blob recovery (fetch of the video file).
     MEDIA_CLOUDFRONT,
     MEDIA_S3,
     "https://www.googletagmanager.com",
@@ -65,9 +72,11 @@ const contentSecurityPolicy = [
   ]
     .filter(Boolean)
     .join(" "),
+
   "frame-src 'self' https://*.razorpay.com",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
+
   ...(isProduction ? ["upgrade-insecure-requests"] : []),
 ].join("; ");
 
@@ -75,13 +84,20 @@ const nextConfig: NextConfig = {
   // Keep route metadata in the document <head> for search crawlers.
   htmlLimitedBots:
     /Googlebot|Google-InspectionTool|bingbot|BingPreview|DuckDuckBot|Slurp|YandexBot|Baiduspider|Screaming Frog SEO Spider|AhrefsBot|SemrushBot|MJ12bot|DotBot|PetalBot/i,
+
   async headers() {
     return [
       {
         source: "/:path*",
         headers: [
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
+            key: "X-Frame-Options",
+            value: "SAMEORIGIN",
+          },
           {
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin",
@@ -98,6 +114,7 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+
   async redirects() {
     return [
       {
@@ -122,16 +139,26 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+
   images: {
     remotePatterns: [
-      { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
+      {
+        protocol: "https",
+        hostname: "*.public.blob.vercel-storage.com",
+      },
+
       // AWS S3
       {
         protocol: "https",
         hostname: "kankana-bucket.s3.ap-south-1.amazonaws.com",
       },
-      // Cloudfront
-      { protocol: "https", hostname: "d2eb3zuw9j68gk.cloudfront.net" },
+
+      // CloudFront
+      {
+        protocol: "https",
+        hostname: "d2eb3zuw9j68gk.cloudfront.net",
+      },
+
       // LocalStack / local S3
       {
         protocol: "http",
@@ -140,11 +167,13 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       },
     ],
-    // WebP only: AVIF takes ~9x longer to encode, which slows the first
-    // (uncached) request for each banner size.
+
+    // WebP only
     formats: ["image/webp"],
+
     qualities: [60, 75, 80],
-    // Optimised images are cached for 30 days (banner URLs are content-hashed).
+
+    // Cache optimized images for 30 days.
     minimumCacheTTL: 60 * 60 * 24 * 30,
   },
 };
