@@ -73,7 +73,7 @@ export interface Order {
   id: string;
   orderNumber: string;
   userId: string;
-  status: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "COMPLETED" |"OUT_FOR_DELIVERY";
+  status: "PENDING" | "PROCESSING" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "RETURNED" | "CANCELLED" | "COMPLETED";
   subtotal: number;
   discount: number;
   shippingCost: number;
@@ -111,6 +111,9 @@ export interface Order {
     shippedAt?: string;
     deliveredAt?: string;
     estimatedDelivery?: string;
+    shiprocketStatus?: string | null;
+    shiprocketStatusId?: number | null;
+    statusUpdatedAt?: string | null;
   };
   shippingInfo?: OrderShippingInfo;
   coupon?: {
@@ -245,7 +248,7 @@ export interface VerifyPaymentDTO {
 }
 
 export interface UpdateOrderStatusDTO {
-  status: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "COMPLETED";
+  status: "PENDING" | "PROCESSING" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "RETURNED" | "CANCELLED" | "COMPLETED";
 }
 
 export interface CancelOrderDTO {
@@ -255,7 +258,7 @@ export interface CancelOrderDTO {
 export interface QueryOrderParams {
   page?: number;
   limit?: number;
-  status?: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "COMPLETED" | "OUT_FOR_DELIVERY";
+  status?: "PENDING" | "PROCESSING" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "RETURNED" | "CANCELLED" | "COMPLETED";
   startDate?: string;
   endDate?: string;
   sortBy?: "createdAt" | "total" | "orderNumber";
@@ -500,6 +503,8 @@ class OrderApiService {
     switch (status.toUpperCase()) {
       case "DELIVERED":
         return "bg-green-100 text-green-700";
+      case "RETURNED":
+        return "bg-orange-100 text-orange-700";
       case "SHIPPED":
         return "bg-blue-100 text-blue-700";
       case "PROCESSING":
@@ -523,6 +528,8 @@ class OrderApiService {
       case "DELIVERED":
       case "COMPLETED":
         return "from-green-500 to-emerald-600";
+      case "RETURNED":
+        return "from-orange-500 to-amber-600";
       case "SHIPPED":
         return "from-blue-500 to-indigo-600";
       case "PROCESSING":
