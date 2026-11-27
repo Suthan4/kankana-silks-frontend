@@ -1,7 +1,7 @@
 "use client";
 
 import { HomeSection } from "@/lib/api/home-section.api";
-import { useRef, useState, type TouchEvent } from "react";
+import { useEffect, useRef, useState, type TouchEvent } from "react";
 import { getImageProps } from "next/image";
 import { preload } from "react-dom";
 import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
@@ -91,6 +91,47 @@ function SlidePicture({
         className="absolute inset-0 block h-full w-full object-cover object-center"
       />
     </picture>
+  );
+}
+
+function ActiveSectionVideo({
+  src,
+  poster,
+  isActive,
+}: {
+  src: string;
+  poster?: string;
+  isActive: boolean;
+}) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (!isActive) {
+      video.pause();
+      video.currentTime = 0;
+      return;
+    }
+
+    void video.play().catch(() => {
+      // Autoplay can be unavailable on a device; keep the poster visible.
+    });
+  }, [isActive, src]);
+
+  return (
+    <video
+      ref={videoRef}
+      src={src}
+      poster={poster}
+      autoPlay={isActive}
+      loop
+      muted
+      playsInline
+      preload={isActive ? "auto" : "none"}
+      className="w-full h-full object-cover"
+    />
   );
 }
 
@@ -185,14 +226,14 @@ export default function AestheticFullImage({
                 isLcp={priority && index === 0}
               />
             ) : (
-              <video
+              <ActiveSectionVideo
                 src={imageUrl}
-                autoPlay
-                loop
-                muted
-                playsInline
-                preload="metadata"
-                className="w-full h-full object-cover"
+                poster={
+                  "thumbnailUrl" in item && typeof item.thumbnailUrl === "string"
+                    ? item.thumbnailUrl
+                    : undefined
+                }
+                isActive={index === currentSlide}
               />
             )}
 
