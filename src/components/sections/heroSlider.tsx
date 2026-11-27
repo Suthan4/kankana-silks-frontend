@@ -39,7 +39,7 @@ function ActiveHeroVideo({
   return (
     <video
       ref={videoRef}
-      src={src}
+      src={isActive ? src : undefined}
       poster={poster || undefined}
       className="w-full h-full object-cover"
       autoPlay={isActive}
