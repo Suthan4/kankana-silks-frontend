@@ -47,6 +47,8 @@ function ActiveHeroVideo({
       muted
       playsInline
       preload={isActive ? "auto" : "none"}
+      aria-hidden="true"
+      tabIndex={-1}
     />
   );
 }

@@ -299,6 +299,8 @@ export default function BannerSection({ section }: { section: HomeSection }) {
                         muted
                         playsInline
                         preload={isActive ? "auto" : "none"}
+                        aria-hidden="true"
+                        tabIndex={-1}
                         onError={() =>
                           setFailedVideos((prev) => ({
                             ...prev,

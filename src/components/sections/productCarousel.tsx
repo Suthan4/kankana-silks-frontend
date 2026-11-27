@@ -287,7 +287,7 @@ export default function ProductCarousel({
                 : `₹${inr(current.sellingPrice)}`}
             </span>
             {hasDiscount && (
-              <span className="text-sm line-through opacity-50">
+              <span className="text-sm font-medium text-gray-600 line-through">
                 ₹{inr(current.basePrice)}
               </span>
             )}
