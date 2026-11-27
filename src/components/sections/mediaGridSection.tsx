@@ -249,14 +249,21 @@ function MediaGridSection({ section }: { section: HomeSection }) {
                 <button
                   key={index}
                   onClick={() => setCurrentIndex(index)}
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    index === currentIndex
-                      ? "w-8 opacity-100"
-                      : "w-2 opacity-40 hover:opacity-70"
-                  }`}
-                  style={{ backgroundColor: section.textColor }}
+                  className="flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                  style={{ color: section.textColor }}
                   aria-label={`Go to slide ${index + 1}`}
-                />
+                  aria-current={index === currentIndex ? "true" : undefined}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`block rounded-full transition-all duration-300 ${
+                      index === currentIndex
+                        ? "h-2 w-8 opacity-100"
+                        : "h-2 w-2 opacity-40 hover:opacity-70"
+                    }`}
+                    style={{ backgroundColor: section.textColor }}
+                  />
+                </button>
               ))}
             </div>
           )}
