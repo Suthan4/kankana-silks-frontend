@@ -123,7 +123,7 @@ function ActiveSectionVideo({
   return (
     <video
       ref={videoRef}
-      src={src}
+      src={isActive ? src : undefined}
       poster={poster}
       autoPlay={isActive}
       loop
