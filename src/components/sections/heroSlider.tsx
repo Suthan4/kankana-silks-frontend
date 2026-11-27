@@ -10,6 +10,47 @@ import SmartImage from "../common/smartImage";
 
 const AUTOPLAY_MS = 5000;
 
+function ActiveHeroVideo({
+  src,
+  poster,
+  isActive,
+}: {
+  src: string;
+  poster?: string | null;
+  isActive: boolean;
+}) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (!isActive) {
+      video.pause();
+      video.currentTime = 0;
+      return;
+    }
+
+    void video.play().catch(() => {
+      // Autoplay may be blocked; the poster remains available.
+    });
+  }, [isActive, src]);
+
+  return (
+    <video
+      ref={videoRef}
+      src={src}
+      poster={poster || undefined}
+      className="w-full h-full object-cover"
+      autoPlay={isActive}
+      loop
+      muted
+      playsInline
+      preload={isActive ? "auto" : "none"}
+    />
+  );
+}
+
 function HeroSlider({ section }: { section: HomeSection }) {
   const slides = section.media ?? [];
   const slideCount = slides.length;
@@ -86,14 +127,10 @@ function HeroSlider({ section }: { section: HomeSection }) {
                 draggable={false}
               />
             ) : (
-              <video
+              <ActiveHeroVideo
                 src={slide.url}
-                poster={slide.thumbnailUrl || undefined}
-                className="w-full h-full object-cover"
-                autoPlay
-                loop
-                muted
-                playsInline
+                poster={slide.thumbnailUrl}
+                isActive={index === currentIndex}
               />
             )}
 
