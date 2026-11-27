@@ -29,10 +29,13 @@ const SECTION_SIZE = `
 `;
 
 /**
- * One responsive, optimised banner image (same optimisation as before):
- * - Served through the Next.js image optimiser, right-sized per screen.
- * - Mobile gets its own source when the banner has a mobileUrl.
- * - Only the first slide is high priority.
+ * Responsive CloudFront banner image.
+ *
+ * - Loads original CloudFront URLs directly.
+ * - No Next.js image optimizer requests.
+ * - Supports separate desktop/mobile images.
+ * - First slide receives high loading priority.
+ * - Other slides load lazily.
  */
 function BannerPicture({
   banner,
@@ -43,50 +46,41 @@ function BannerPicture({
   isFirst: boolean;
   onFirstSettled: () => void;
 }) {
-  const common = {
-    alt:
-      banner.title?.trim() ||
-      banner.text?.trim() ||
-      "Kankana Silks silk saree collection banner",
-    fill: true,
-    sizes: "100vw",
-    quality: 60,
-    draggable: false,
-  } as const;
-
-  const { props: desktop } = getImageProps({
-    ...common,
-    src: banner.url,
-    loading: isFirst ? ("eager" as const) : ("lazy" as const),
-    fetchPriority: isFirst ? ("high" as const) : ("low" as const),
-  });
-  const { props: mobile } = getImageProps({
-    ...common,
-    src: banner.mobileUrl || banner.url,
-  });
-  const { srcSet: desktopSrcSet, ...imgProps } = desktop;
+  const alt =
+    banner.title?.trim() ||
+    banner.text?.trim() ||
+    "Kankana Silks silk saree collection banner";
 
   return (
     <picture>
-      <source media="(max-width: 767px)" srcSet={mobile.srcSet} sizes="100vw" />
-      <source media="(min-width: 768px)" srcSet={desktopSrcSet} sizes="100vw" />
+      {banner.mobileUrl && (
+        <source media="(max-width: 767px)" srcSet={banner.mobileUrl} />
+      )}
+
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        {...imgProps}
-        alt={
-          banner.title?.trim() ||
-          banner.text?.trim() ||
-          "Kankana Silks silk saree collection banner"
-        }
+        src={banner.url}
+        alt={alt}
+        loading={isFirst ? "eager" : "lazy"}
+        fetchPriority={isFirst ? "high" : "auto"}
+        decoding="async"
+        draggable={false}
         ref={(node) => {
-          // The image may finish loading before React hydrates.
-          if (isFirst && node?.complete) onFirstSettled();
+          if (isFirst && node?.complete) {
+            onFirstSettled();
+          }
         }}
         onLoad={isFirst ? onFirstSettled : undefined}
         onError={isFirst ? onFirstSettled : undefined}
-        // pointer-events-none stops the browser's native image drag from
-        // fighting Swiper's mouse drag on desktop.
-        className="pointer-events-none absolute inset-0 block h-full w-full select-none object-cover object-[50%_25%] md:object-center"
+        className="
+          pointer-events-none
+          absolute inset-0
+          block h-full w-full
+          select-none
+          object-cover
+          object-[50%_25%]
+          md:object-center
+        "
       />
     </picture>
   );
@@ -273,7 +267,6 @@ export default function HeroSection({
             const isActive = index === activeIndex;
             const shouldMount =
               index === 0 || index === activeIndex || mounted.has(index);
-
             return (
               <SwiperSlide key={banner.id} className="!h-full">
                 <div className="relative h-full w-full">
