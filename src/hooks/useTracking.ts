@@ -10,7 +10,9 @@ export function useTracking(trackingNumber?: string) {
       shipmentApi.trackByTrackingNumber(trackingNumber as string),
 
     enabled: !!trackingNumber, // only run when exists
-    staleTime: 30_000,
+    staleTime: 10_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
     gcTime: 5 * 60_000,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
