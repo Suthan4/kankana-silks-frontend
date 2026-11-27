@@ -16,12 +16,6 @@ interface AestheticFullImageProps {
   priority?: boolean;
 }
 
-/**
- * One full-width responsive slide image.
- * Served through the Next.js optimiser (right-sized WebP per screen) instead of
- * the original multi-megabyte upload, with a separate mobile source when the
- * media has a mobileUrl.
- */
 function SlidePicture({
   url,
   mobileUrl,
@@ -33,49 +27,30 @@ function SlidePicture({
   alt: string;
   isLcp: boolean;
 }) {
-  // Unknown host (not in next.config remotePatterns): plain <img>, no crash.
-  if (!canOptimize(url) || !canOptimize(mobileUrl)) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={url}
-        alt={alt}
-        className="absolute inset-0 h-full w-full object-cover object-center"
-        loading={isLcp ? "eager" : "lazy"}
-      />
-    );
-  }
+  const imageUrl = mobileUrl || url;
 
-  const common = {
+  if (!url) return null;
+
+  const { props: imageProps } = getImageProps({
+    src: url,
     alt,
     fill: true,
     sizes: "100vw",
-    quality: 60,
-  } as const;
-
-  const { props: desktop } = getImageProps({
-    ...common,
-    src: url,
-    loading: isLcp ? ("eager" as const) : ("lazy" as const),
-    fetchPriority: isLcp ? ("high" as const) : ("auto" as const),
+    unoptimized: true,
+    loading: isLcp ? "eager" : "lazy",
+    fetchPriority: isLcp ? "high" : "auto",
   });
-  const { props: mobile } = getImageProps({ ...common, src: mobileUrl });
-  const { srcSet: desktopSrcSet, ...imgProps } = desktop;
 
-  // <picture> images are not preloaded by default, so tell the browser about
-  // the LCP image in <head> (one hint per screen size) before JS runs.
+  // Preload the correct original image for each viewport.
   if (isLcp) {
-    preload(mobile.src, {
+    preload(imageUrl, {
       as: "image",
-      imageSrcSet: mobile.srcSet,
-      imageSizes: "100vw",
       media: "(max-width: 767px)",
       fetchPriority: "high",
     });
-    preload(desktop.src, {
+
+    preload(url, {
       as: "image",
-      imageSrcSet: desktopSrcSet,
-      imageSizes: "100vw",
       media: "(min-width: 768px)",
       fetchPriority: "high",
     });
@@ -83,11 +58,17 @@ function SlidePicture({
 
   return (
     <picture className="absolute inset-0 block h-full w-full">
-      <source media="(max-width: 767px)" srcSet={mobile.srcSet} sizes="100vw" />
-      <source media="(min-width: 768px)" srcSet={desktopSrcSet} sizes="100vw" />
+      {/* Dedicated mobile image */}
+      {imageUrl !== url && (
+        <source media="(max-width: 767px)" srcSet={imageUrl} />
+      )}
+
+      {/* Desktop image / fallback */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        {...imgProps}
+        {...imageProps}
+        alt={alt}
+        draggable={false}
         className="absolute inset-0 block h-full w-full object-cover object-center"
       />
     </picture>
@@ -196,7 +177,13 @@ export default function AestheticFullImage({
 
   return (
     <section
-      className="relative w-full h-[70vh] md:h-screen overflow-hidden touch-pan-y select-none"
+      className="
+  relative isolate w-full
+  h-[70vh] min-h-[420px]
+  md:h-screen md:min-h-0
+  overflow-hidden
+  touch-pan-y select-none
+"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchCancel}
@@ -250,7 +237,15 @@ export default function AestheticFullImage({
       })}
 
       {/* Content Overlay - Bottom anchored, matches Banner carousel */}
-      <div className="absolute inset-x-0 bottom-8 sm:bottom-14 lg:bottom-16 z-10 flex flex-col items-center justify-center px-4 text-center sm:px-12 md:px-16">
+      <div
+        className="
+  absolute inset-x-0 bottom-16
+  sm:bottom-14 lg:bottom-16
+  z-10 flex flex-col items-center justify-center
+  px-4 text-center sm:px-12 md:px-16
+"
+      >
+        {" "}
         {/* Subtitle / Overlay Text */}
         {((section.showSubtitle && section.subtitle) || section.title) && (
           <div className="max-w-3xl space-y-1.5 sm:space-y-2 mb-4 md:mb-6">
@@ -276,7 +271,6 @@ export default function AestheticFullImage({
             )}
           </div>
         )}
-
         {/* CTA Buttons — pill style, matches Banner carousel's "Shop Now" */}
         {section.ctaButtons && section.ctaButtons.length > 0 && (
           <div className="flex flex-wrap justify-center gap-3 sm:gap-4">

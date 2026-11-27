@@ -1,0 +1,397 @@
+/* Normal-flow section. No pinning, no scroll-jacking, no extra page height. */
+.root {
+    background: var(--bg);
+    color: var(--fg);
+    overflow-x: clip;
+    padding-block: clamp(1.5rem, 4vw, 3.5rem) clamp(2rem, 5vw, 4.5rem);
+}
+
+.scene {
+    max-width: 1200px;
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 4vw, 3rem);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr);
+    align-items: center;
+    gap: clamp(2rem, 6vw, 6rem);
+}
+
+/* ---------- Details ---------- */
+.details {
+    min-width: 0;
+    animation: rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes rise {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+}
+
+.eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 11px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    opacity: 0.7;
+}
+
+.eyebrow::before {
+    content: "";
+    width: 2.5rem;
+    height: 1px;
+    background: var(--accent);
+}
+
+.name {
+    margin: 1rem 0 0;
+    max-width: 22ch;
+    font-family: var(--font-display), Georgia, serif;
+    font-weight: 400;
+    font-size: clamp(2rem, 3.6vw, 3.4rem);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.primary,
+.secondary {
+    display: inline-flex;
+    min-height: 3rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: filter 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.primary {
+    padding: 0.75rem 1.75rem 0.75rem 2rem;
+    border: 0;
+    background: var(--accent);
+    color: #fff;
+}
+
+.primary:hover {
+    filter: brightness(0.88);
+}
+
+.primary svg {
+    transition: transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.primary:hover svg {
+    transform: translate(2px, -2px);
+}
+
+.secondary {
+    padding: 0.75rem 1.5rem;
+    border: 1px solid color-mix(in srgb, var(--fg) 25%, transparent);
+    background: transparent;
+    color: inherit;
+}
+
+.secondary:hover:not(:disabled) {
+    border-color: var(--fg);
+}
+
+.secondary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.primary:active,
+.secondary:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.primary:focus-visible,
+.secondary:focus-visible,
+.arrow:focus-visible,
+.thumb:focus-visible,
+.photoBtn:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
+}
+
+/* ---------- Photo ---------- */
+.frameWrap {
+    justify-self: center;
+    width: 100%;
+    max-width: 480px;
+}
+
+.frame {
+    position: relative;
+    isolation: isolate;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: 1.25rem;
+    background: #f4efe9;
+    box-shadow: 0 30px 60px -36px rgb(40 20 20 / 0.4);
+    touch-action: pan-y;
+}
+
+/* Desktop hover: the photo gently zooms and pans with the cursor (set from JS). */
+.zoomer {
+    position: absolute;
+    inset: 0;
+    transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+    will-change: transform;
+}
+
+.layer {
+    position: absolute;
+    inset: 0;
+}
+
+.inner {
+    position: absolute;
+    inset: 0;
+}
+
+/* Product change: the new photo is revealed by a wipe while it settles in
+   and the old one drifts away. dir=1 wipes from the right, dir=-1 from the left. */
+.enter[data-dir="1"] {
+    --from: inset(0 0 0 100%);
+}
+
+.enter[data-dir="-1"] {
+    --from: inset(0 100% 0 0);
+}
+
+.enter {
+    animation: reveal 0.9s cubic-bezier(0.65, 0, 0.2, 1) both;
+}
+
+.enter .inner {
+    animation: settle 0.9s cubic-bezier(0.65, 0, 0.2, 1) both;
+}
+
+.leave[data-dir="1"] {
+    --dx: -9%;
+}
+
+.leave[data-dir="-1"] {
+    --dx: 9%;
+}
+
+.leave .inner {
+    animation: drift 0.9s cubic-bezier(0.65, 0, 0.2, 1) both;
+}
+
+@keyframes reveal {
+    from {
+        clip-path: var(--from);
+    }
+
+    to {
+        clip-path: inset(0 0 0 0);
+    }
+}
+
+@keyframes settle {
+    from {
+        transform: scale(1.18);
+    }
+
+    to {
+        transform: scale(1);
+    }
+}
+
+@keyframes drift {
+    to {
+        transform: translateX(var(--dx));
+    }
+}
+
+.photoBtn {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: block;
+    width: 100%;
+    border: 0;
+    padding: 0;
+    background: none;
+    cursor: pointer;
+}
+
+.badge {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 3;
+}
+
+.wish {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: 3;
+}
+
+/* counter + arrows sit on the photo */
+.bar {
+    position: absolute;
+    inset-inline: 0.75rem;
+    bottom: 0.75rem;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
+}
+
+.bar>* {
+    pointer-events: auto;
+}
+
+.counter {
+    padding: 0.45rem 0.8rem;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.88);
+    backdrop-filter: blur(8px);
+    color: #1c1917;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    font-variant-numeric: tabular-nums;
+}
+
+.arrows {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.arrow {
+    display: inline-flex;
+    height: 2.5rem;
+    width: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.88);
+    backdrop-filter: blur(8px);
+    color: #1c1917;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.arrow:hover {
+    background: #fff;
+    transform: scale(1.06);
+}
+
+.arrow:active {
+    transform: scale(0.95);
+}
+
+/* ---------- Thumbnails ---------- */
+.thumbs {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.thumb {
+    position: relative;
+    width: 3.25rem;
+    aspect-ratio: 4 / 5;
+    padding: 0;
+    border: 0;
+    border-radius: 0.6rem;
+    overflow: hidden;
+    background: #f4efe9;
+    opacity: 0.55;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    cursor: pointer;
+    transition: opacity 0.25s, outline-color 0.25s;
+}
+
+.thumb:hover {
+    opacity: 0.9;
+}
+
+.thumb[data-active="true"] {
+    opacity: 1;
+    outline-color: var(--accent);
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 860px) {
+    .root {
+        /* leave room for the app's bottom tab bar */
+        padding-bottom: 5.5rem;
+    }
+
+    .scene {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .frameWrap {
+        order: -1;
+        max-width: none;
+    }
+
+    .frame {
+        max-height: 68svh;
+    }
+
+    .thumbs {
+        justify-content: center;
+    }
+
+    .thumb {
+        width: 3rem;
+    }
+
+    .name {
+        max-width: none;
+        font-size: 1.75rem;
+    }
+
+    .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .primary,
+    .secondary {
+        width: 100%;
+        padding-inline: 1rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .details,
+    .enter,
+    .enter .inner,
+    .leave .inner {
+        animation: none;
+    }
+
+    .zoomer {
+        transform: none !important;
+        transition: none;
+    }
+}

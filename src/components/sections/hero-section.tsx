@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { getImageProps } from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -311,10 +311,12 @@ export default function HeroSection({
                         <Link
                           href={banner.link}
                           tabIndex={isActive ? 0 : -1}
-                          // min-h-11 = 44px, the recommended touch target.
-                          className="mt-4 inline-flex min-h-11 min-w-36 items-center justify-center border border-white bg-black/30 px-6 text-xs font-semibold uppercase tracking-[0.16em] text-white transition-colors hover:bg-white hover:text-black focus-visible:bg-white focus-visible:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black active:scale-[0.98] sm:mt-7 sm:min-w-44 sm:px-8 sm:text-sm md:bg-black/15 md:backdrop-blur-sm"
+                          className="group mt-3 inline-flex h-10 items-center gap-2 overflow-hidden rounded-full [border-radius:9999px] border border-white/40 bg-black/25 pl-4 pr-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur-md transition-all duration-300 hover:border-white hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black active:scale-[0.97] sm:mt-6 sm:h-11 sm:gap-3 sm:pl-5 sm:pr-1.5 sm:text-xs"
                         >
                           Explore Collection
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full [border-radius:9999px] bg-white text-black transition-all duration-300 group-hover:bg-black group-hover:text-white sm:h-8 sm:w-8">
+                            <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:rotate-45" />
+                          </span>
                         </Link>
                       )}
                     </div>
