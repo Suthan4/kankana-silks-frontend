@@ -1,0 +1,27 @@
+{
+  "entries": [
+    {
+      "@context": "https://agenticresourcediscovery.org/context/v1",
+      "identifier": "urn:air:kankanasilks.com:storefront",
+      "displayName": "Kankana Silks Online Store",
+      "type": "text/html",
+      "url": "https://www.kankanasilks.com/",
+      "description": "The public Kankana Silks storefront. Visitors and browsing agents can explore currently listed silk saree collections, product details, store information, and published shopping policies. This entry describes the website and does not claim to expose a callable MCP or A2A agent.",
+      "tags": [
+        "ecommerce",
+        "silk-sarees",
+        "Kanchipuram",
+        "Banarasi",
+        "Paithani",
+        "Mysore-silk",
+        "handloom",
+        "India"
+      ],
+      "representativeQueries": [
+        "Browse the current silk saree collections at Kankana Silks",
+        "Find Kanchipuram, Banarasi, Paithani and Mysore silk sarees online",
+        "Read Kankana Silks product details, store information and shopping policies"
+      ]
+    }
+  ]
+}
