@@ -112,6 +112,8 @@ function ActiveSectionVideo({
       playsInline
       preload={isActive ? "auto" : "none"}
       className="w-full h-full object-cover"
+      aria-hidden="true"
+      tabIndex={-1}
     />
   );
 }
