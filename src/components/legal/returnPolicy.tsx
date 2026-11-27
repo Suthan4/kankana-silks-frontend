@@ -22,8 +22,10 @@ const ReturnRefundPolicy: React.FC = () => {
             </p>
 
             <p>
-              Requests raised beyond this period may be rejected at sole
-              discretion of Kankana Silks.
+              The 24-hour window is calculated from the delivery timestamp
+              confirmed by the courier and recorded against your order. The
+              request must be submitted before that deadline; requests after
+              the deadline are not eligible.
             </p>
           </section>
 
