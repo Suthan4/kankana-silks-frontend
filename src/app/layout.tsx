@@ -224,6 +224,7 @@ export default function RootLayout({
   return (
     <html lang="en-IN" className={cn("font-sans", geist.variable)}>
       <head>
+        <link rel="ard" href="/.well-known/ard.json" type="application/json" />
         <link rel="preconnect" href="https://use.typekit.net" crossOrigin="" />
         <link
           rel="preload"

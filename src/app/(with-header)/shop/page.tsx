@@ -1,4 +1,5 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
+import { JsonLd, breadcrumbJsonLd, SITE_URL } from "@/lib/seo/json-ld";
 import ShopClient from "@/components/sections/shopClient";
 import { seoPageDescription } from "@/lib/seo/metadata";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -52,58 +53,123 @@ async function getCategories(): Promise<Category[]> {
 export const revalidate = 60;
 
 export async function generateMetadata(): Promise<Metadata> {
+  const title = "Shop Silk Sarees Online";
+  const description = seoPageDescription(
+    "Explore Kanchipuram, Banarasi, Paithani, Mysore silk and handloom sarees at Kankana Silks, Mysore. Browse the current collection online with delivery options across India.",
+    "Shop traditional silk and handloom sarees online at Kankana Silks, Mysore.",
+  );
+
   return {
-    title: "Shop Silk Sarees Online",
-    description: seoPageDescription(
-      "Explore Kanchipuram, Banarasi, Paithani and handloom sarees at Kankana Silks, Mysore. Shop online from Bengaluru, Chennai, Hyderabad and across India.",
-      "Shop Kanchipuram, Banarasi, Paithani and handloom sarees online at Kankana Silks, Mysore.",
-    ),
+    title,
+    description,
     keywords: [
-      "silk sarees",
-      "traditional wear",
-      "handloom sarees",
-      "silk sarees in Mysore",
-      "silk sarees in Bengaluru",
-      "online saree shopping India",
-      "Kankana Silks",
+      "silk sarees online",
       "Kanchipuram silk sarees",
       "Banarasi sarees",
       "Paithani sarees",
+      "Mysore silk sarees",
+      "handloom sarees",
       "bridal silk sarees",
-      "ethnic wear",
-      "shop sarees",
+      "traditional Indian sarees",
+      "saree collections online India",
+      "Kankana Silks",
     ],
+    alternates: {
+      canonical: "/shop",
+    },
     openGraph: {
       title: "Shop Silk Sarees Online | Kankana Silks",
-      description: seoPageDescription(
-        "Shop curated silk and handloom saree collections from Kankana Silks, Mysore, with delivery across India.",
-        "Shop curated silk and handloom saree collections from Kankana Silks, Mysore.",
-      ),
+      description,
       type: "website",
-      url: "https://www.kankanasilks.com/shop",
+      url: `${SITE_URL}/shop`,
       siteName: "Kankana Silks",
+      locale: "en_IN",
+      images: [
+        {
+          url: "/kankana-silks-logo.png",
+          width: 1200,
+          height: 630,
+          alt: "Kankana Silks silk saree collections",
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: "Shop Silk Sarees Online | Kankana Silks",
-      description: seoPageDescription(
-        "Shop silk and handloom sarees online from Kankana Silks, Mysore. We deliver to Bengaluru and across India.",
-        "Shop silk and handloom sarees online from Kankana Silks, Mysore.",
-      ),
-    },
-    alternates: {
-      canonical: "/shop",
+      description,
+      images: ["/kankana-silks-logo.png"],
     },
     robots: {
       index: true,
       follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
   };
+}
+
+function getCategoryItems(categories: Category[]): Category[] {
+  const items: Category[] = [];
+  const visited = new Set<string>();
+
+  const visit = (category: Category) => {
+    if (category.isActive === false || !category.slug || visited.has(category.slug)) {
+      return;
+    }
+
+    visited.add(category.slug);
+    items.push(category);
+    category.children?.forEach(visit);
+  };
+
+  categories.forEach(visit);
+  return items;
 }
 
 // Main page component
 export default async function ShopPage() {
   const categories = await getCategories();
+  const categoryItems = getCategoryItems(categories);
 
-  return <ShopClient categories={categories} />;
+  return (
+    <>
+      <JsonLd
+        data={[
+          breadcrumbJsonLd([
+            { name: "Home", path: "/" },
+            { name: "Shop", path: "/shop" },
+          ]),
+          {
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            name: "Shop Silk Sarees Online",
+            description:
+              "Browse Kankana Silks' current silk, traditional and handloom saree collections.",
+            url: `${SITE_URL}/shop`,
+            isPartOf: {
+              "@type": "WebSite",
+              name: "Kankana Silks",
+              url: SITE_URL,
+            },
+            mainEntity: {
+              "@type": "ItemList",
+              itemListOrder: "https://schema.org/ItemListUnordered",
+              numberOfItems: categoryItems.length,
+              itemListElement: categoryItems.map((category, index) => ({
+                "@type": "ListItem",
+                position: index + 1,
+                name: category.name,
+                url: `${SITE_URL}/shop/${encodeURIComponent(category.slug)}`,
+              })),
+            },
+          },
+        ]}
+      />
+      <ShopClient categories={categories} />
+    </>
+  );
 }

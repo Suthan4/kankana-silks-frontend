@@ -18,6 +18,7 @@ interface BannerSlide {
   title: string;
   subtitle?: string;
   imageUrl: string;
+  posterUrl?: string;
   mediaType: "IMAGE" | "VIDEO";
   link?: string;
   badge?: string;
@@ -61,6 +62,11 @@ function extractSlides(section: HomeSection): BannerSlide[] {
           ? stripHtml(product.description)
           : undefined,
         imageUrl,
+        posterUrl:
+          primaryMedia && "thumbnailUrl" in primaryMedia &&
+          typeof primaryMedia.thumbnailUrl === "string"
+            ? primaryMedia.thumbnailUrl
+            : undefined,
         mediaType: primaryMedia?.type || "IMAGE",
         link: `/products/${product.slug}`,
         badge,
@@ -78,6 +84,7 @@ function extractSlides(section: HomeSection): BannerSlide[] {
         title: media.overlayTitle || media.title || section.title,
         subtitle: media.overlaySubtitle || section.subtitle || undefined,
         imageUrl: media.url,
+        posterUrl: media.thumbnailUrl || undefined,
         mediaType: media.type,
         link: section.ctaButtons?.[0]?.url || undefined,
         buttonText: section.ctaButtons?.[0]?.text || "Explore Collection",
@@ -94,6 +101,7 @@ export default function BannerSection({ section }: { section: HomeSection }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timerKey, setTimerKey] = useState(0);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+  const [failedVideos, setFailedVideos] = useState<Record<string, boolean>>({});
 
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -268,14 +276,37 @@ export default function BannerSection({ section }: { section: HomeSection }) {
                 >
                   {/* Image / Video */}
                   {slide.mediaType === "VIDEO" ? (
-                    <video
-                      src={slide.imageUrl}
-                      className="h-full w-full object-cover object-center"
-                      autoPlay={isActive}
-                      loop
-                      muted
-                      playsInline
-                    />
+                    failedVideos[slide.id] ? (
+                      slide.posterUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={slide.posterUrl}
+                          alt={slide.title || "Banner preview"}
+                          className="h-full w-full object-cover object-center"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-neutral-900 text-neutral-400">
+                          <p className="text-sm">Video temporarily unavailable</p>
+                        </div>
+                      )
+                    ) : (
+                      <video
+                        src={isActive ? slide.imageUrl : undefined}
+                        poster={slide.posterUrl}
+                        className="h-full w-full object-cover object-center"
+                        autoPlay={isActive}
+                        loop
+                        muted
+                        playsInline
+                        preload={isActive ? "auto" : "none"}
+                        onError={() =>
+                          setFailedVideos((prev) => ({
+                            ...prev,
+                            [slide.id]: true,
+                          }))
+                        }
+                      />
+                    )
                   ) : hasError ? (
                     <div className="flex h-full w-full items-center justify-center bg-neutral-900 text-neutral-400">
                       <p className="text-sm">Image unavailable</p>

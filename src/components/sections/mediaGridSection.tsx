@@ -76,13 +76,14 @@ function MediaGridSection({ section }: { section: HomeSection }) {
           />
         ) : (
           <video
-            src={media.url}
+            src={isHovered === index ? media.url : undefined}
             poster={media.thumbnailUrl || undefined}
             className="h-full w-full object-cover"
             loop
             muted
             playsInline
             autoPlay={isHovered === index}
+            preload={isHovered === index ? "auto" : "none"}
           />
         )}
 
