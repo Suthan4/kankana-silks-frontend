@@ -1,4 +1,5 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
+import { JsonLd } from "@/lib/seo/json-ld";
 import ShopClient from "@/components/sections/shopClient";
 import { seoPageDescription } from "@/lib/seo/metadata";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -93,6 +94,23 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     alternates: {
       canonical: "/shop",
+    },
+    openGraph: {
+      title: "Shop Silk Sarees Online | Kankana Silks",
+      description: seoPageDescription(
+        "Shop curated silk and handloom saree collections from Kankana Silks, Mysore, with delivery across India.",
+        "Shop curated silk and handloom saree collections from Kankana Silks, Mysore.",
+      ),
+      type: "website",
+      url: "https://www.kankanasilks.com/shop",
+      siteName: "Kankana Silks",
+      locale: "en_IN",
+      images: [{
+        url: "/kankana-silks-logo.png",
+        width: 1200,
+        height: 630,
+        alt: "Kankana Silks silk saree collections",
+      }],
     },
     robots: {
       index: true,
