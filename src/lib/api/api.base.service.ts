@@ -17,6 +17,8 @@ const isAuthEndpoint = (url?: string): boolean => {
   if (!url) return false;
   return (
     url.includes("/auth/login") ||
+    url.includes("/auth/email-otp/send") ||
+    url.includes("/auth/email-otp/verify") ||
     url.includes("/auth/refresh-token") ||
     url.includes("/auth/register") ||
     url.includes("/auth/forgot-password") ||
@@ -188,6 +190,14 @@ export class BaseApiService {
     termsAccepted:boolean;
   }) {
     return this.api.post("/auth/register", data);
+  }
+
+  async sendEmailOtp(email: string) {
+    return this.api.post("/auth/email-otp/send", { email });
+  }
+
+  async verifyEmailOtp(email: string, otp: string, termsAccepted = false) {
+    return this.api.post("/auth/email-otp/verify", { email, otp, termsAccepted });
   }
 
   async login(credentials: { email: string; password: string }) {
