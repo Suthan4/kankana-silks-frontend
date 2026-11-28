@@ -15,6 +15,8 @@ export default function AuthModal() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [isNewAccount, setIsNewAccount] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -23,6 +25,8 @@ export default function AuthModal() {
       setOtp("");
       setError("");
       setMessage("");
+      setIsNewAccount(false);
+      setTermsAccepted(false);
     }
   }, [isOpen]);
 
@@ -37,7 +41,9 @@ export default function AuthModal() {
     }
     setLoading(true);
     try {
-      await authService.sendEmailOtp(normalizedEmail);
+      const response = await authService.sendEmailOtp(normalizedEmail);
+      setIsNewAccount(Boolean(response.data?.data?.isNewAccount));
+      setTermsAccepted(false);
       setEmail(normalizedEmail);
       setStep("otp");
       setMessage("We sent a 6-digit verification code to your email.");
@@ -57,7 +63,11 @@ export default function AuthModal() {
     }
     setLoading(true);
     try {
-      const response = await authService.verifyEmailOtp(email, otp);
+      if (isNewAccount && !termsAccepted) {
+        setError("Please accept the Terms of Service and Privacy Policy to create your account.");
+        return;
+      }
+      const response = await authService.verifyEmailOtp(email, otp, isNewAccount ? termsAccepted : false);
       const data = response.data?.data;
       if (!data?.accessToken || !data?.user) throw new Error("Sign-in response was incomplete.");
       setAuth(data.accessToken, data.user, data.refreshToken);
@@ -75,7 +85,8 @@ export default function AuthModal() {
     setMessage("");
     setLoading(true);
     try {
-      await authService.sendEmailOtp(email);
+      const response = await authService.sendEmailOtp(email);
+      setIsNewAccount(Boolean(response.data?.data?.isNewAccount));
       setMessage("A new verification code has been sent.");
       setOtp("");
     } catch (err: any) {
@@ -130,7 +141,18 @@ export default function AuthModal() {
                   <label htmlFor="auth-otp" className="mb-1.5 block text-sm font-medium text-gray-700">Verification code</label>
                   <input id="auth-otp" type="text" inputMode="numeric" autoComplete="one-time-code" autoFocus maxLength={6} value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000" disabled={loading} className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-center text-2xl font-semibold tracking-[0.5em] outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10" />
                 </div>
-                <button type="submit" disabled={loading || otp.length !== 6} className="w-full rounded-lg bg-black px-4 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60">
+                {isNewAccount && (
+                  <label className="flex cursor-pointer items-start gap-2 text-left text-xs leading-relaxed text-gray-600">
+                    <input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} disabled={loading} className="mt-0.5 h-4 w-4 shrink-0 accent-black" />
+                    <span>
+                      I agree to the{" "}
+                      <a href="/terms-and-conditions" target="_blank" rel="noopener noreferrer" className="font-medium underline hover:text-black">Terms of Service</a>
+                      {" "}and{" "}
+                      <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="font-medium underline hover:text-black">Privacy Policy</a>.
+                    </span>
+                  </label>
+                )}
+                <button type="submit" disabled={loading || otp.length !== 6 || (isNewAccount && !termsAccepted)} className="w-full rounded-lg bg-black px-4 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60">
                   {loading ? "Verifying..." : "Verify and sign in"}
                 </button>
                 <button type="button" disabled={loading} onClick={resendCode} className="w-full py-2 text-sm font-medium text-gray-600 hover:text-black disabled:opacity-50">Resend code</button>

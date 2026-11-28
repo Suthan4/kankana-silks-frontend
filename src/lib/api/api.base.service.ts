@@ -196,8 +196,8 @@ export class BaseApiService {
     return this.api.post("/auth/email-otp/send", { email });
   }
 
-  async verifyEmailOtp(email: string, otp: string) {
-    return this.api.post("/auth/email-otp/verify", { email, otp });
+  async verifyEmailOtp(email: string, otp: string, termsAccepted = false) {
+    return this.api.post("/auth/email-otp/verify", { email, otp, termsAccepted });
   }
 
   async login(credentials: { email: string; password: string }) {
