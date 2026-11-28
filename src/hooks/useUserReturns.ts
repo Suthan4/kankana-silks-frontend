@@ -10,6 +10,11 @@ export function useUserReturns(params?: {
   return useQuery({
     queryKey: ["returns", "user", params],
     queryFn: () => ReturnApiService.getUserReturns(params),
+    staleTime: 10_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 }
 
@@ -19,6 +24,11 @@ export function useReturn(returnId: string) {
     queryKey: ["returns", returnId],
     queryFn: () => ReturnApiService.getReturn(returnId),
     enabled: !!returnId,
+    staleTime: 10_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 }
 

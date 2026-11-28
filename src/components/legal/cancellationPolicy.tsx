@@ -16,10 +16,10 @@ const CancellationPolicy: React.FC = () => {
             </h2>
 
             <p className="mb-3">
-              Orders can be cancelled before dispatch confirmation. If you
-              need to request a cancellation, contact our support team as soon
-              as possible and share your order number so the order status can
-              be checked.
+              Orders can be cancelled only before shipment and within{" "}
+              <strong>24 hours of order placement</strong>. Submit the
+              cancellation request from your account while the order remains
+              eligible.
             </p>
             <p className="mb-3">
               A cancellation request is subject to the order not having been

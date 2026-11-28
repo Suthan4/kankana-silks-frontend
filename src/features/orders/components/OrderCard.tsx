@@ -35,6 +35,7 @@ function OrderCardComponent({
     "SHIPPED",
     "OUT_FOR_DELIVERY",
     "DELIVERED",
+    "RETURNED",
     "COMPLETED",
   ].includes(order.status);
 

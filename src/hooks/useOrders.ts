@@ -29,6 +29,8 @@ export const orderQueryPolicy = {
   refetchOnMount: true,
   refetchOnWindowFocus: true,
   refetchOnReconnect: true,
+  refetchInterval: 30_000,
+  refetchIntervalInBackground: false,
 } as const;
 
 // ==================== USER QUERIES ====================

@@ -8,6 +8,7 @@ import {
   MapPin,
   Phone,
   Clock,
+  RotateCcw,
 } from "lucide-react";
 import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -89,13 +90,15 @@ export default function OrderTrackingPage() {
         date:
           order?.status === "PROCESSING" ||
           order?.status === "SHIPPED" ||
-          order?.status === "DELIVERED"
+          order?.status === "DELIVERED" ||
+          order?.status === "RETURNED"
             ? "In Progress"
             : "Pending",
         completed:
           order?.status === "PROCESSING" ||
           order?.status === "SHIPPED" ||
-          order?.status === "DELIVERED",
+          order?.status === "DELIVERED" ||
+          order?.status === "RETURNED",
       },
       {
         status: "Shipped",
@@ -109,7 +112,10 @@ export default function OrderTrackingPage() {
                 order.shipment.estimatedDelivery,
               ).toLocaleDateString()}`
             : "Expected Soon",
-        completed: order?.status === "SHIPPED" || order?.status === "DELIVERED",
+        completed:
+          order?.status === "SHIPPED" ||
+          order?.status === "DELIVERED" ||
+          order?.status === "RETURNED",
         active: order?.status === "SHIPPED",
       },
       {
@@ -122,18 +128,31 @@ export default function OrderTrackingPage() {
         completed: false,
       },
       {
-        status: "Delivered",
-        date: order?.shipment?.deliveredAt
-          ? new Date(order.shipment.deliveredAt).toLocaleString("en-IN", {
-              month: "short",
-              day: "numeric",
-            })
-          : order?.shipment?.estimatedDelivery
-            ? `Expected ${new Date(
-                order.shipment.estimatedDelivery,
-              ).toLocaleDateString()}`
-            : "Pending",
-        completed: order?.status === "DELIVERED",
+        status:
+          order?.status === "RETURNED"
+            ? "Returned to Warehouse"
+            : "Delivered",
+        date: order?.status === "RETURNED"
+          ? order?.shipment?.statusUpdatedAt
+            ? new Date(order.shipment.statusUpdatedAt).toLocaleString("en-IN", {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "Returned to warehouse"
+          : order?.shipment?.deliveredAt
+            ? new Date(order.shipment.deliveredAt).toLocaleString("en-IN", {
+                month: "short",
+                day: "numeric",
+              })
+            : order?.shipment?.estimatedDelivery
+              ? `Expected ${new Date(
+                  order.shipment.estimatedDelivery,
+                ).toLocaleDateString()}`
+              : "Pending",
+        completed:
+          order?.status === "DELIVERED" || order?.status === "RETURNED",
       },
     ];
 
@@ -208,9 +227,11 @@ export default function OrderTrackingPage() {
           className={`bg-gradient-to-br ${
             order.status === "DELIVERED"
               ? "from-green-500 to-emerald-600"
-              : order.status === "SHIPPED"
-                ? "from-blue-500 to-indigo-600"
-                : "from-orange-500 to-amber-600"
+              : order.status === "RETURNED"
+                ? "from-orange-500 to-amber-600"
+                : order.status === "SHIPPED"
+                  ? "from-blue-500 to-indigo-600"
+                  : "from-orange-500 to-amber-600"
           } text-white rounded-2xl p-6`}
         >
           <div className="flex items-start justify-between mb-3">
@@ -218,7 +239,9 @@ export default function OrderTrackingPage() {
               <p className="text-sm opacity-90 mb-1">
                 {order.status === "DELIVERED"
                   ? "DELIVERED"
-                  : "ESTIMATED DELIVERY"}
+                  : order.status === "RETURNED"
+                    ? "RETURNED TO WAREHOUSE"
+                    : "ESTIMATED DELIVERY"}
               </p>
               <h2 className="text-2xl font-futura-bold">
                 {order.shipment?.deliveredAt
@@ -248,6 +271,8 @@ export default function OrderTrackingPage() {
             <div className="bg-white/20 p-3 rounded-full">
               {order.status === "DELIVERED" ? (
                 <CheckCircle2 className="w-6 h-6" />
+              ) : order.status === "RETURNED" ? (
+                <RotateCcw className="w-6 h-6" />
               ) : (
                 <Truck className="w-6 h-6" />
               )}

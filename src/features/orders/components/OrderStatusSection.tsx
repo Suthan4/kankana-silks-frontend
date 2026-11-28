@@ -51,6 +51,8 @@ export function OrderStatusSection({
         <div className="bg-white/20 p-3 rounded-full">
           {order.status === "DELIVERED" || order.status === "COMPLETED" ? (
             <CheckCircle2 className="w-6 h-6" />
+          ) : order.status === "RETURNED" ? (
+            <RotateCcw className="w-6 h-6" />
           ) : order.status === "SHIPPED" ||
             order.status === "OUT_FOR_DELIVERY" ? (
             <Truck className="w-6 h-6" />
